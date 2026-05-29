@@ -1,0 +1,51 @@
+# ── OS / Editor ─────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# ── Environment ─────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── Dependencies ────────────────────────────────────────────────────
+node_modules/
+
+# ── Frontend (React Router) ─────────────────────────────────────────
+frontend/build/
+frontend/.react-router/
+
+# ── Backend (Express) ───────────────────────────────────────────────
+backend/dist/
+
+# ── Build / Output ──────────────────────────────────────────────────
+dist/
+.cache/
+
+# ── Logs ────────────────────────────────────────────────────────────
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ── Testing ─────────────────────────────────────────────────────────
+coverage/
+.nyc_output/
+
+# ── Uploads ─────────────────────────────────────────────────────────
+uploads/
+public_html/
+
+# ── Backend (PM2 / Logs) ────────────────────────────────────────────
+backend/logs/
+backend/pids/
+backend/.env
+backend/dist/
+
+# ── Docker ──────────────────────────────────────────────────────────
+.docker/
