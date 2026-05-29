@@ -1,0 +1,139 @@
+// ── Generator & Datasource ──────────────────────────────────────────
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ── User ────────────────────────────────────────────────────────────
+enum Role {
+  ADMIN
+  TEACHER
+  STUDENT
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      Role     @default(STUDENT)
+  phone     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  payments       Payment[]
+  uploadedFiles  Material[]
+  sentInquiries  Inquiry[]
+}
+
+// ── Course ──────────────────────────────────────────────────────────
+model Course {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  description String?
+  level       String   // Playgroup, LKG, UKG, etc.
+  price       Float?
+  imageUrl    String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  materials Material[]
+  payments  Payment[]
+}
+
+// ── Material (PDF / PPT / Resources) ────────────────────────────────
+model Material {
+  id           String   @id @default(cuid())
+  title        String
+  description  String?
+  type         String   // PDF, PPT, VIDEO, IMAGE, DOC
+  fileUrl      String
+  fileSize     Int?
+  isApproved   Boolean  @default(false)
+  courseId     String
+  uploadedById String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  course      Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  uploadedBy  User?   @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+}
+
+// ── Payment / Razorpay ──────────────────────────────────────────────
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+model Payment {
+  id               String        @id @default(cuid())
+  amount           Float
+  currency         String        @default("INR")
+  status           PaymentStatus @default(PENDING)
+  razorpayOrderId  String?       @unique
+  razorpayPaymentId String?      @unique
+  razorpaySignature String?
+  userId           String
+  courseId         String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course? @relation(fields: [courseId], references: [id], onDelete: SetNull)
+}
+
+// ── Contact / Inquiry ───────────────────────────────────────────────
+model Inquiry {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  message   String
+  isRead    Boolean  @default(false)
+  repliedAt DateTime?
+  userId    String?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
+
+// ── Testimonial ─────────────────────────────────────────────────────
+model Testimonial {
+  id         String   @id @default(cuid())
+  name       String
+  content    String
+  rating     Int      @default(5)
+  isApproved Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+// ── Gallery / Media ─────────────────────────────────────────────────
+model Gallery {
+  id        String   @id @default(cuid())
+  title     String?
+  imageUrl  String
+  type      String   @default("IMAGE") // IMAGE, VIDEO
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+// ── Franchise Inquiry ───────────────────────────────────────────────
+model FranchiseInquiry {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String
+  location  String?
+  message   String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
