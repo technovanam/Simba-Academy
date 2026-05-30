@@ -5,12 +5,12 @@ import { contactLimiter } from "../middleware/rateLimiter.js";
 import { inquirySchema, franchiseInquirySchema } from "../config/schemas.js";
 import { sendEmail, getInquiryAutoReplyHtml, getAdminInquiryHtml } from "../services/email.js";
 import { env } from "../config/env.js";
-import { authenticate } from "../middleware/auth.js";
+import { authenticate, optionalAuthenticate } from "../middleware/auth.js";
 
 const router = Router();
 
 // ── Submit General Inquiry ──────────────────────────────────────────
-router.post("/inquiry", contactLimiter, validate(inquirySchema), async (req, res, next) => {
+router.post("/inquiry", contactLimiter, optionalAuthenticate, validate(inquirySchema), async (req, res, next) => {
   try {
     const { name, email, phone, message } = req.body;
     const userId = req.user?.userId ?? null;

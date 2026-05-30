@@ -21,6 +21,9 @@ import { prisma } from "./config/database.js";
 const app = express();
 const PORT = env.PORT;
 
+// ── Trust Proxy ──────────────────────────────────────────────────────
+app.set("trust proxy", 1);
+
 // ── Security Middleware ──────────────────────────────────────────────
 app.use(helmet());
 app.use(

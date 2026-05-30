@@ -1,11 +1,14 @@
 import { Router } from "express";
 import { Prisma } from "@prisma/client";
+import fs from "node:fs";
+import path from "node:path";
 import { prisma } from "../config/database.js";
-import { authenticate, authorize } from "../middleware/auth.js";
+import { authenticate, authorize, optionalAuthenticate } from "../middleware/auth.js";
 import { upload } from "../middleware/upload.js";
 import { validate } from "../middleware/validate.js";
 import { createMaterialSchema } from "../config/schemas.js";
 import { AppError } from "../utils/errors.js";
+import { env } from "../config/env.js";
 
 const router = Router();
 
@@ -14,21 +17,42 @@ interface UploadedFile extends Express.Multer.File {
   size: number;
 }
 
+/**
+ * Utility to delete a file if something goes wrong after upload.
+ */
+function deleteFile(filename: string): void {
+  const filePath = path.resolve(env.STORAGE_PATH, filename);
+  if (fs.existsSync(filePath)) {
+    fs.unlink(filePath, (err) => {
+      if (err) console.error(`Failed to delete orphaned file: ${filePath}`, err);
+    });
+  }
+}
+
 // ── Upload File (Teachers / Admin) ──────────────────────────────────
 router.post(
   "/upload",
   authenticate,
   authorize("ADMIN", "TEACHER"),
   upload.single("file"),
-  validate(createMaterialSchema),
   async (req, res, next) => {
+    let uploadedFilename: string | undefined;
     try {
       if (!req.file) {
         throw new AppError("No file uploaded", 400);
       }
+      uploadedFilename = req.file.filename;
 
+      // Validate body manually to allow cleanup on failure
+      const validation = createMaterialSchema.safeParse(req.body);
+      if (!validation.success) {
+        // Return first error message
+        const message = validation.error.issues[0]?.message ?? "Validation failed";
+        throw new AppError(message, 400);
+      }
+
+      const { title, description, type, courseId } = validation.data;
       const file = req.file as UploadedFile;
-      const { title, description, type, courseId } = req.body;
 
       // Verify course exists
       const course = await prisma.course.findUnique({ where: { id: courseId } });
@@ -51,6 +75,10 @@ router.post(
 
       res.status(201).json(material);
     } catch (err) {
+      // Cleanup orphaned file
+      if (uploadedFilename) {
+        deleteFile(uploadedFilename);
+      }
       next(err);
     }
   }
@@ -63,14 +91,20 @@ router.post(
   authorize("ADMIN", "TEACHER"),
   upload.array("files", 10),
   async (req, res, next) => {
+    const uploadedFiles: string[] = [];
     try {
       if (!req.files || !Array.isArray(req.files) || req.files.length === 0) {
         throw new AppError("No files uploaded", 400);
       }
 
-      const { courseId } = req.body;
-      const uploadedFiles = [];
+      for (const f of req.files) uploadedFiles.push(f.filename);
 
+      const { courseId } = req.body;
+      if (!courseId) {
+        throw new AppError("Course ID is required", 400);
+      }
+
+      const results = [];
       for (const file of req.files) {
         const material = await prisma.material.create({
           data: {
@@ -83,11 +117,13 @@ router.post(
             isApproved: req.user!.role === "ADMIN",
           },
         });
-        uploadedFiles.push(material);
+        results.push(material);
       }
 
-      res.status(201).json(uploadedFiles);
+      res.status(201).json(results);
     } catch (err) {
+      // Cleanup all orphaned files
+      uploadedFiles.forEach(deleteFile);
       next(err);
     }
   }
@@ -103,7 +139,7 @@ function getFileType(mimetype: string): string {
 }
 
 // ── List All Materials ──────────────────────────────────────────────
-router.get("/materials", async (req, res, next) => {
+router.get("/materials", optionalAuthenticate, async (req, res, next) => {
   try {
     const { courseId, type } = req.query;
 
@@ -132,7 +168,7 @@ router.get("/materials", async (req, res, next) => {
 });
 
 // ── Get Material by ID ──────────────────────────────────────────────
-router.get("/materials/:id", async (req, res, next) => {
+router.get("/materials/:id", optionalAuthenticate, async (req, res, next) => {
   try {
     const material = await prisma.material.findUnique({
       where: { id: String(req.params.id) },
