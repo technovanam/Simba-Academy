@@ -3,8 +3,8 @@ import { Welcome } from "../welcome/welcome";
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "New React Router App" },
-    { name: "description", content: "Welcome to React Router!" },
+    { title: "Simba Academy Preschool | Where Little Cubs Learn to Roar" },
+    { name: "description", content: "Welcome to Simba Academy Preschool, the ultimate jungle safari for early childhood education, creative play, and early learning." },
   ];
 }
 
