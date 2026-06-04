@@ -2,21 +2,40 @@ import { Router } from "express";
 import { prisma } from "../config/database.js";
 import { authenticate } from "../middleware/auth.js";
 import { createOrder, verifyPayment } from "../services/payment.js";
+import { getZohoCheckoutConfig } from "../services/zohoPayments.js";
 import { sendEmail, getPaymentSuccessHtml } from "../services/email.js";
-import { env } from "../config/env.js";
 import { AppError } from "../utils/errors.js";
 
 const router = Router();
 
-// ── Create Order ─────────────────────────────────────────────────────
+function checkoutPayload(session: {
+  id: string;
+  amount: number;
+  amountInr?: number;
+  amountString?: string;
+  currency: string;
+}) {
+  const zoho = getZohoCheckoutConfig();
+  return {
+    paymentSessionId: session.id,
+    orderId: session.id,
+    amount: session.amount,
+    amountInr: session.amountInr ?? session.amount / 100,
+    amountString: session.amountString ?? ((session.amountInr ?? session.amount / 100).toFixed(2)),
+    currency: session.currency,
+    ...zoho,
+  };
+}
+
+// ── Create Order (authenticated) ────────────────────────────────────
 router.post("/create-order", authenticate, async (req, res, next) => {
   try {
     const { amount, courseId } = req.body;
     const userId = req.user!.userId;
 
-    // The amount is determined server-side. For a course payment the price is
-    // taken from the Course record so the client cannot dictate what it pays.
     let finalAmount: number;
+    let description = "Simba Academy payment";
+
     if (courseId) {
       const course = await prisma.course.findUnique({ where: { id: courseId } });
       if (!course) {
@@ -26,8 +45,8 @@ router.post("/create-order", authenticate, async (req, res, next) => {
         throw new AppError("This course is not available for online payment", 400);
       }
       finalAmount = course.price;
+      description = `Course enrollment: ${course.title}`;
     } else {
-      // General (non-course) fee — no server-side price to compare against.
       if (typeof amount !== "number" || amount < 1) {
         throw new AppError("Amount must be a valid number greater than 0", 400);
       }
@@ -35,28 +54,23 @@ router.post("/create-order", authenticate, async (req, res, next) => {
     }
 
     const order = await createOrder({
-      amount: Math.round(finalAmount * 100), // Convert to paise
+      amount: Math.round(finalAmount * 100),
       receipt: `receipt_${userId}_${Date.now()}`,
       notes: { userId, courseId: courseId ?? "" },
+      description,
     });
 
-    // Save pending payment record
     await prisma.payment.create({
       data: {
         amount: finalAmount,
-        razorpayOrderId: order.id,
+        paymentSessionId: order.id,
         userId,
         courseId: courseId ?? null,
         status: "PENDING",
       },
     });
 
-    res.json({
-      orderId: order.id,
-      amount: order.amount,
-      currency: order.currency,
-      key: env.RAZORPAY_KEY_ID,
-    });
+    res.json(checkoutPayload(order));
   } catch (err) {
     next(err);
   }
@@ -65,16 +79,16 @@ router.post("/create-order", authenticate, async (req, res, next) => {
 // ── Verify Payment ───────────────────────────────────────────────────
 router.post("/verify", authenticate, async (req, res, next) => {
   try {
-    const { razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body;
+    const paymentSessionId = req.body.paymentSessionId ?? req.body.razorpayOrderId;
+    const paymentId = req.body.paymentId ?? req.body.razorpayPaymentId;
+    const signature = req.body.signature ?? req.body.razorpaySignature;
 
-    if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
+    if (!paymentSessionId || !paymentId || !signature) {
       throw new AppError("Missing payment verification fields", 400);
     }
 
-    // Idempotency: if this order was already verified, return it without
-    // re-processing (and without re-sending the confirmation email).
     const existing = await prisma.payment.findUnique({
-      where: { razorpayOrderId },
+      where: { paymentSessionId },
       include: {
         user: { select: { name: true, email: true } },
         course: { select: { title: true } },
@@ -89,27 +103,25 @@ router.post("/verify", authenticate, async (req, res, next) => {
     }
 
     const isValid = verifyPayment({
-      orderId: razorpayOrderId,
-      paymentId: razorpayPaymentId,
-      signature: razorpaySignature,
+      orderId: paymentSessionId,
+      paymentId,
+      signature,
     });
 
     if (!isValid) {
-      // Mark payment as failed
       await prisma.payment.updateMany({
-        where: { razorpayOrderId },
-        data: { status: "FAILED", razorpayPaymentId },
+        where: { paymentSessionId },
+        data: { status: "FAILED", gatewayPaymentId: paymentId },
       });
       throw new AppError("Payment verification failed", 400);
     }
 
-    // Update payment record
     const payment = await prisma.payment.update({
-      where: { razorpayOrderId },
+      where: { paymentSessionId },
       data: {
         status: "SUCCESS",
-        razorpayPaymentId,
-        razorpaySignature,
+        gatewayPaymentId: paymentId,
+        paymentSignature: signature,
       },
       include: {
         user: { select: { name: true, email: true } },
@@ -117,16 +129,11 @@ router.post("/verify", authenticate, async (req, res, next) => {
       },
     });
 
-    // Send confirmation email
     try {
       await sendEmail({
         to: payment.user.email,
         subject: "Payment Successful - Simba Academy",
-        html: getPaymentSuccessHtml(
-          payment.user.name,
-          payment.amount,
-          payment.course?.title
-        ),
+        html: getPaymentSuccessHtml(payment.user.name, payment.amount, payment.course?.title),
       });
     } catch {
       console.error("Failed to send payment confirmation email");
@@ -176,20 +183,16 @@ router.get("/:id", authenticate, async (req, res, next) => {
 // ── Create Pre-Register Order (Public) ────────────────────────────────
 router.post("/create-pre-register-order", async (req, res, next) => {
   try {
-    const flatAmount = 120; // 120 INR
+    const flatAmount = 130;
 
     const order = await createOrder({
-      amount: Math.round(flatAmount * 100), // Convert to paise
+      amount: Math.round(flatAmount * 100),
       receipt: `pre_receipt_${Date.now()}`,
       notes: { type: "pre_register" },
+      description: "Student Platform Registration Fee",
     });
 
-    res.json({
-      orderId: order.id,
-      amount: order.amount,
-      currency: order.currency,
-      key: env.RAZORPAY_KEY_ID,
-    });
+    res.json(checkoutPayload(order));
   } catch (err) {
     next(err);
   }
