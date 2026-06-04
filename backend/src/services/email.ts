@@ -9,7 +9,31 @@ const transporter = nodemailer.createTransport({
     user: env.SMTP_USER,
     pass: env.SMTP_PASS,
   },
+  connectionTimeout: 8_000,
+  greetingTimeout: 8_000,
+  socketTimeout: 10_000,
 });
+
+function logDevEmailFallback(to: string, subject: string, html: string): void {
+  console.warn("⚠️ [DEV MODE] Email delivery failed but bypassed. Message details below:");
+  console.log("========================================");
+  console.log(`TO: ${to}`);
+  console.log(`SUBJECT: ${subject}`);
+
+  const tempPassword = html.match(
+    /Temporary Password<\/td><td[^>]*>([^<]+)</i
+  )?.[1];
+  if (tempPassword) {
+    console.log(`TEMPORARY PASSWORD: ${tempPassword.trim()}`);
+  }
+
+  const links = [...new Set(html.match(/href="([^"]+)"/g)?.map((l) => l.replace(/href="|"/g, "")) ?? [])];
+  if (links.length > 0) {
+    console.log("LINKS:");
+    links.forEach((l) => console.log(`  - ${l}`));
+  }
+  console.log("========================================");
+}
 
 interface SendEmailParams {
   to: string;
@@ -18,7 +42,8 @@ interface SendEmailParams {
   replyTo?: string;
 }
 
-export async function sendEmail({ to, subject, html, replyTo }: SendEmailParams): Promise<void> {
+/** @returns true if the message was delivered to SMTP; false if dev bypass after failure */
+export async function sendEmail({ to, subject, html, replyTo }: SendEmailParams): Promise<boolean> {
   try {
     await transporter.sendMail({
       from: `"Simba Academy" <${env.EMAIL_FROM}>`,
@@ -28,26 +53,15 @@ export async function sendEmail({ to, subject, html, replyTo }: SendEmailParams)
       replyTo,
     });
     console.log(`✉️ Email successfully sent to ${to} (Subject: "${subject}")`);
+    return true;
   } catch (error) {
     console.error(`❌ Failed to send email to ${to} (Subject: "${subject}"):`, error);
-    
-    // In development mode, mock/bypass email errors to prevent throwing 500 errors
+
     if (env.NODE_ENV === "development" || env.SMTP_USER === "placeholder@email.com") {
-      console.warn("⚠️ [DEV MODE] Email delivery failed but bypassed. Message details below:");
-      console.log(`========================================`);
-      console.log(`TO: ${to}`);
-      console.log(`SUBJECT: ${subject}`);
-      
-      // Try to extract links from HTML (e.g. password resets)
-      const links = html.match(/href="([^"]+)"/g);
-      if (links) {
-        console.log("LINKS:");
-        links.forEach((l) => console.log(`  - ${l.replace(/href="|"/g, "")}`));
-      }
-      console.log(`========================================`);
-      return;
+      logDevEmailFallback(to, subject, html);
+      return false;
     }
-    
+
     throw error;
   }
 }
