@@ -1,3 +1,6 @@
+/** One-time student platform registration fee (INR) */
+export const STUDENT_PLATFORM_FEE_INR = 130;
+
 export const WHATSAPP_NUMBER = "919884866727";
 export const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}`;
 
