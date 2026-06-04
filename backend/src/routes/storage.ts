@@ -9,7 +9,8 @@ import { validate } from "../middleware/validate.js";
 import { createMaterialSchema } from "../config/schemas.js";
 import { AppError } from "../utils/errors.js";
 import { env } from "../config/env.js";
-import { uploadFileToWebDAV, deleteFileFromWebDAV } from "../services/webdav.js";
+import { uploadFileToWebDAV } from "../services/webdav.js";
+import { removeStoredFile } from "../services/removeStoredFile.js";
 
 const router = Router();
 
@@ -108,15 +109,19 @@ router.post(
       uploadedFilename = req.file.filename;
       const file = req.file as UploadedFile;
 
+      const localPath = path.resolve(env.STORAGE_PATH, file.filename);
       let fileUrl = `/uploads/${file.filename}`;
+      let storage: "webdav" | "local" = "local";
+
       if (env.USE_WEBDAV) {
-        const localPath = path.resolve(env.STORAGE_PATH, file.filename);
         fileUrl = await uploadFileToWebDAV(localPath, file.filename);
-        // Clean up local temp file
+        storage = "webdav";
         deleteFile(file.filename);
+      } else {
+        await fs.promises.access(localPath);
       }
 
-      res.status(200).json({ url: fileUrl });
+      res.status(200).json({ url: fileUrl, storage, verified: true });
     } catch (err) {
       if (uploadedFilename) {
         deleteFile(uploadedFilename);
@@ -268,14 +273,8 @@ router.delete(
         throw new AppError("You can only delete your own uploads", 403);
       }
 
+      await removeStoredFile(material.fileUrl);
       await prisma.material.delete({ where: { id: String(req.params.id) } });
-
-      // Clean up from cPanel WebDAV storage (runs asynchronously)
-      if (material.fileUrl) {
-        deleteFileFromWebDAV(material.fileUrl).catch((err) => 
-          console.error("Failed to delete material from cPanel WebDAV:", err)
-        );
-      }
 
       res.json({ message: "Material deleted successfully" });
     } catch (err) {
