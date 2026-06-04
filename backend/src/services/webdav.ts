@@ -5,7 +5,7 @@ import { env } from "../config/env.js";
 // cPanel's Web Disk often presents a self-signed / hostname-mismatched cert on
 // its custom port. We skip cert verification ONLY for these WebDAV requests via
 // a dedicated agent — never globally (which would also weaken Razorpay/SMTP TLS).
-const webdavAgent = new https.Agent({ rejectUnauthorized: false });
+export const webdavAgent = new https.Agent({ rejectUnauthorized: false });
 
 interface WebDavResponse {
   status: number;
@@ -84,9 +84,32 @@ export async function uploadFileToWebDAV(localFilePath: string, filename: string
 
   console.log(`✅ Successfully uploaded ${filename} to Web Disk`);
 
+  await verifyFileOnWebDAV(filename);
+
   // Construct public download URL
   const baseUrl = env.WEBDAV_BASE_URL.replace(/\/$/, "");
   return `${baseUrl}/${filename}`;
+}
+
+/** Confirms the file is readable on WebDAV after upload (HEAD, or GET if HEAD unsupported). */
+export async function verifyFileOnWebDAV(filename: string): Promise<void> {
+  if (!env.USE_WEBDAV || !env.WEBDAV_PASSWORD) {
+    throw new Error("WebDAV is not configured");
+  }
+
+  const webdavUrl = env.WEBDAV_URL.replace(/\/$/, "");
+  const targetUrl = `${webdavUrl}/${encodeURIComponent(filename)}`;
+  const authHeader = "Basic " + Buffer.from(`${env.WEBDAV_USER}:${env.WEBDAV_PASSWORD}`).toString("base64");
+
+  let response = await webdavRequest(targetUrl, "HEAD", { Authorization: authHeader });
+
+  if (response.status === 405 || response.status === 501 || response.status === 404) {
+    response = await webdavRequest(targetUrl, "GET", { Authorization: authHeader });
+  }
+
+  if (response.status < 200 || response.status >= 300) {
+    throw new Error(`Storage verification failed for ${filename} (HTTP ${response.status})`);
+  }
 }
 
 /**
