@@ -83,6 +83,45 @@ export async function optionalAuthenticate(req: Request, _res: Response, next: N
   }
 }
 
+/** JWT from Authorization header or ?token= (for opening library PDFs in a new tab). */
+export async function authenticateFromHeaderOrQuery(
+  req: Request,
+  _res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    let token: string | undefined;
+    const authHeader = req.headers.authorization;
+    if (authHeader?.startsWith("Bearer ")) {
+      token = authHeader.split(" ")[1];
+    } else if (typeof req.query.token === "string" && req.query.token.length > 0) {
+      token = req.query.token;
+    }
+
+    if (!token) {
+      return next(new UnauthorizedError("Missing or invalid token"));
+    }
+
+    const decoded = jwt.verify(token, env.JWT_SECRET) as JwtPayload;
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: { status: true, isDeleted: true, role: true, email: true },
+    });
+
+    if (!user || user.isDeleted) {
+      return next(new UnauthorizedError("User no longer exists"));
+    }
+    if (user.status !== "ACTIVE") {
+      return next(new ForbiddenError("Account is deactivated"));
+    }
+
+    req.user = { userId: decoded.userId, email: user.email, role: user.role };
+    next();
+  } catch {
+    next(new UnauthorizedError("Invalid or expired token"));
+  }
+}
+
 /**
  * Middleware to authorize requests based on user roles.
  */
