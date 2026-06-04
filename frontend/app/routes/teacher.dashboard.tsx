@@ -8,8 +8,11 @@ import {
   type Course,
   type Material,
   type Task,
+  type StoryBook,
 } from "../lib/api";
 import { clearSession, getToken, getUser } from "../lib/auth";
+import { StoryBookActions } from "../components/StoryBookActions";
+import { PortalSelect } from "../components/PortalSelect";
 import { ModalCloseButton } from "../components/ModalCloseButton";
 import {
   BookOpen,
@@ -18,6 +21,7 @@ import {
   Trash2,
   Calendar,
   Book,
+  Compass,
   Search,
   Filter,
   Check,
@@ -40,7 +44,7 @@ export function meta({}: Route.MetaArgs) {
   return [{ title: "Teacher Dashboard | Simba Academy" }];
 }
 
-type TabType = "overview" | "tasks" | "materials" | "planner";
+type TabType = "overview" | "tasks" | "materials" | "library" | "planner";
 
 export default function TeacherDashboardPage() {
   const navigate = useNavigate();
@@ -61,6 +65,7 @@ export default function TeacherDashboardPage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [materials, setMaterials] = useState<Material[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [books, setBooks] = useState<StoryBook[]>([]);
 
   // Loading & Feedback States
   const [loading, setLoading] = useState(true);
@@ -115,6 +120,8 @@ export default function TeacherDashboardPage() {
   const [taskStatusFilter, setTaskStatusFilter] = useState("ALL");
   const [materialSearch, setMaterialSearch] = useState("");
   const [materialCourseFilter, setMaterialCourseFilter] = useState("ALL");
+  const [librarySearch, setLibrarySearch] = useState("");
+  const [libraryCategory, setLibraryCategory] = useState("ALL");
 
   // Modal / Form States
   const [showProofModal, setShowProofModal] = useState(false);
@@ -166,6 +173,9 @@ export default function TeacherDashboardPage() {
       } else if (tab === "materials") {
         const allMaterials = await api.getTeacherMaterials(token);
         setMaterials(allMaterials);
+      } else if (tab === "library") {
+        const allBooks = await api.getTeacherStoryBooks(token);
+        setBooks(allBooks);
       } else if (tab === "planner") {
         const [allTasks, allMaterials] = await Promise.all([
           api.getTeacherTasks(token),
@@ -178,7 +188,7 @@ export default function TeacherDashboardPage() {
       console.error(`Teacher dashboard data load error for tab "${tab}":`, err);
       if (err instanceof ApiError && err.status === 401) {
         clearSession();
-        navigate("/login");
+        navigate("/teacher/login");
       } else {
         setError(`Failed to load data for tab "${tab}". Please try again.`);
       }
@@ -352,7 +362,8 @@ export default function TeacherDashboardPage() {
               { id: "overview", label: "Dashboard", icon: Layers },
               { id: "tasks", label: "Assigned Tasks", icon: Calendar },
               { id: "materials", label: "Course Materials", icon: BookOpen },
-              { id: "planner", label: "Lesson Planner", icon: Book },
+              { id: "library", label: "Story Library", icon: Book },
+              { id: "planner", label: "Lesson Planner", icon: Compass },
             ].map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -502,7 +513,7 @@ export default function TeacherDashboardPage() {
                           <Activity className="w-4 h-4 text-[#8AC926]" />
                           <h3 className="font-bold text-xs uppercase tracking-wider text-slate-800">Your Task Backlog</h3>
                         </div>
-                        <button onClick={() => setActiveTab("tasks")} className="text-2xs font-bold text-[#8AC926] hover:underline flex items-center">
+                        <button onClick={() => setActiveTab("tasks")} className="text-2xs font-bold text-[#8AC926] hover:underline inline-arrow">
                           View All <ChevronRight className="w-3 h-3" />
                         </button>
                       </div>
@@ -623,7 +634,8 @@ export default function TeacherDashboardPage() {
                       />
                     </div>
                     <div className="flex gap-2">
-                      <select
+                      <PortalSelect
+                        size="sm"
                         value={taskStatusFilter}
                         onChange={(e) => setTaskStatusFilter(e.target.value)}
                         className="rounded-xl bg-slate-50 border border-slate-200 px-3 py-2 text-xs outline-none focus:border-[#8AC926] focus:bg-white transition"
@@ -633,7 +645,7 @@ export default function TeacherDashboardPage() {
                         <option value="COMPLETED">Submitted for Review</option>
                         <option value="APPROVED">Approved</option>
                         <option value="REJECTED">Rejected</option>
-                      </select>
+                      </PortalSelect>
                     </div>
                   </div>
 
@@ -768,7 +780,8 @@ export default function TeacherDashboardPage() {
                       />
                     </div>
                     <div className="flex gap-2">
-                      <select
+                      <PortalSelect
+                        size="sm"
                         value={materialCourseFilter}
                         onChange={(e) => setMaterialCourseFilter(e.target.value)}
                         className="rounded-xl bg-slate-50 border border-slate-200 px-3 py-2 text-xs outline-none focus:border-[#8AC926] focus:bg-white transition"
@@ -777,7 +790,7 @@ export default function TeacherDashboardPage() {
                         {courses.map((c) => (
                           <option key={c.id} value={c.id}>{c.title}</option>
                         ))}
-                      </select>
+                      </PortalSelect>
                     </div>
                   </div>
 
@@ -823,6 +836,76 @@ export default function TeacherDashboardPage() {
                           </div>
                         </div>
                       ))
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* ────────────────── STORY LIBRARY Tab ────────────────── */}
+              {activeTab === "library" && token && (
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="font-sans text-xl font-extrabold text-slate-900">Story Library</h2>
+                    <p className="text-xs text-slate-600 font-semibold">
+                      Books shared for teachers. View and print only — downloads are reserved for administrators.
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-3">
+                    <div className="relative flex-1 min-w-[200px]">
+                      <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        placeholder="Search story books…"
+                        value={librarySearch}
+                        onChange={(e) => setLibrarySearch(e.target.value)}
+                        className="pl-9 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs w-full outline-none focus:border-[#8AC926]"
+                      />
+                    </div>
+                    <PortalSelect
+                      size="sm"
+                      value={libraryCategory}
+                      onChange={(e) => setLibraryCategory(e.target.value)}
+                      className="rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-bold bg-white"
+                    >
+                      <option value="ALL">All categories</option>
+                      {Array.from(new Set(books.map((b) => b.category))).map((cat) => (
+                        <option key={cat} value={cat}>
+                          {cat}
+                        </option>
+                      ))}
+                    </PortalSelect>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {books
+                      .filter((b) => {
+                        const q = librarySearch.toLowerCase();
+                        const matchesSearch =
+                          !q ||
+                          b.title.toLowerCase().includes(q) ||
+                          (b.author ?? "").toLowerCase().includes(q);
+                        const matchesCat = libraryCategory === "ALL" || b.category === libraryCategory;
+                        return matchesSearch && matchesCat;
+                      })
+                      .map((b) => (
+                        <div
+                          key={b.id}
+                          className="bg-white rounded-2xl border border-slate-200 shadow-md p-5 flex flex-col gap-4"
+                        >
+                          <div>
+                            <span className="px-2 py-0.5 rounded-lg text-4xs font-black uppercase bg-amber-50 text-amber-800 border border-amber-200">
+                              {b.category}
+                            </span>
+                            <h3 className="font-bold text-sm text-slate-900 mt-2">{b.title}</h3>
+                            {b.author && (
+                              <p className="text-2xs text-slate-600 font-semibold">Author: {b.author}</p>
+                            )}
+                          </div>
+                          <StoryBookActions bookId={b.id} token={token} role="TEACHER" title={b.title} variant="teacher" />
+                        </div>
+                      ))}
+                    {books.length === 0 && (
+                      <div className="col-span-full text-center py-12 text-slate-600 font-semibold bg-white rounded-2xl border border-slate-200">
+                        No story books assigned to the teacher library yet.
+                      </div>
                     )}
                   </div>
                 </div>
@@ -1033,28 +1116,28 @@ export default function TeacherDashboardPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-slate-700 font-bold mb-1.5">Resource Type</label>
-                  <select
+                  <PortalSelect
                     value={materialForm.type}
                     onChange={(e) => setMaterialForm({ ...materialForm, type: e.target.value as any })}
-                    className="w-full rounded-xl bg-white border border-slate-200 px-4 py-2.5 text-slate-900 outline-none focus:border-[#8AC926] transition"
+                    className="rounded-xl bg-white border border-slate-200 px-4 py-2.5 text-slate-900 outline-none focus:border-[#8AC926] transition"
                   >
                     <option value="PDF">PDF E-Book</option>
                     <option value="PPT">PPT Slide Deck</option>
-                  </select>
+                  </PortalSelect>
                 </div>
 
                 <div>
                   <label className="block text-slate-700 font-bold mb-1.5">Select Course</label>
-                  <select
+                  <PortalSelect
                     required
                     value={materialForm.courseId}
                     onChange={(e) => setMaterialForm({ ...materialForm, courseId: e.target.value })}
-                    className="w-full rounded-xl bg-white border border-slate-200 px-4 py-2.5 text-slate-900 outline-none focus:border-[#8AC926] transition"
+                    className="rounded-xl bg-white border border-slate-200 px-4 py-2.5 text-slate-900 outline-none focus:border-[#8AC926] transition"
                   >
                     {courses.map((c) => (
                       <option key={c.id} value={c.id}>{c.title}</option>
                     ))}
-                  </select>
+                  </PortalSelect>
                 </div>
               </div>
 
