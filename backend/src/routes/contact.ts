@@ -5,19 +5,20 @@ import { contactLimiter } from "../middleware/rateLimiter.js";
 import { inquirySchema, franchiseInquirySchema } from "../config/schemas.js";
 import { sendEmail, getInquiryAutoReplyHtml, getAdminInquiryHtml } from "../services/email.js";
 import { env } from "../config/env.js";
-import { authenticate, optionalAuthenticate } from "../middleware/auth.js";
+import { authenticate, authorize, optionalAuthenticate } from "../middleware/auth.js";
 
 const router = Router();
 
 // ── Submit General Inquiry ──────────────────────────────────────────
 router.post("/inquiry", contactLimiter, optionalAuthenticate, validate(inquirySchema), async (req, res, next) => {
   try {
-    const { name, email, phone, message } = req.body;
+    const { name, email, phone, message, inquiryType } = req.body;
     const userId = req.user?.userId ?? null;
+    const fullMessage = inquiryType ? `[${inquiryType}] ${message}` : message;
 
     // Save to database
     await prisma.inquiry.create({
-      data: { name, email, phone, message, userId },
+      data: { name, email, phone, message: fullMessage, userId },
     });
 
     // Send auto-reply to the inquirer
@@ -36,7 +37,7 @@ router.post("/inquiry", contactLimiter, optionalAuthenticate, validate(inquirySc
       await sendEmail({
         to: env.EMAIL_TO,
         subject: `New Inquiry from ${name} - Simba Academy`,
-        html: getAdminInquiryHtml({ name, email, phone, message }),
+        html: getAdminInquiryHtml({ name, email, phone, message: fullMessage }),
       });
     } catch {
       console.error("Failed to send admin notification email");
@@ -86,7 +87,7 @@ router.post("/franchise", contactLimiter, validate(franchiseInquirySchema), asyn
 });
 
 // ── Admin: List Inquiries ───────────────────────────────────────────
-router.get("/inquiries", authenticate, async (req, res, next) => {
+router.get("/inquiries", authenticate, authorize("ADMIN"), async (req, res, next) => {
   try {
     const inquiries = await prisma.inquiry.findMany({
       orderBy: { createdAt: "desc" },
@@ -99,7 +100,7 @@ router.get("/inquiries", authenticate, async (req, res, next) => {
 });
 
 // ── Admin: Mark Inquiry as Read ─────────────────────────────────────
-router.patch("/inquiries/:id/read", authenticate, async (req, res, next) => {
+router.patch("/inquiries/:id/read", authenticate, authorize("ADMIN"), async (req, res, next) => {
   try {
     const inquiry = await prisma.inquiry.update({
       where: { id: String(req.params.id) },
@@ -112,12 +113,25 @@ router.patch("/inquiries/:id/read", authenticate, async (req, res, next) => {
 });
 
 // ── Admin: List Franchise Inquiries ─────────────────────────────────
-router.get("/franchises", authenticate, async (req, res, next) => {
+router.get("/franchises", authenticate, authorize("ADMIN"), async (req, res, next) => {
   try {
     const franchises = await prisma.franchiseInquiry.findMany({
       orderBy: { createdAt: "desc" },
     });
     res.json(franchises);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── Admin: Mark Franchise Inquiry as Read ─────────────────────────────
+router.patch("/franchises/:id/read", authenticate, authorize("ADMIN"), async (req, res, next) => {
+  try {
+    const franchise = await prisma.franchiseInquiry.update({
+      where: { id: String(req.params.id) },
+      data: { isRead: true },
+    });
+    res.json(franchise);
   } catch (err) {
     next(err);
   }

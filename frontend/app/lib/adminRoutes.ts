@@ -1,0 +1,64 @@
+export type AdminTab =
+  | "overview"
+  | "users"
+  | "teachers"
+  | "courses"
+  | "materials"
+  | "tasks"
+  | "books"
+  | "inquiries"
+  | "reviews"
+  | "gallery";
+
+/** URL segment after /admin/ */
+export const ADMIN_TAB_SECTIONS: Record<AdminTab, string> = {
+  overview: "dashboard",
+  users: "users",
+  teachers: "teachers",
+  courses: "courses",
+  materials: "materials",
+  tasks: "tasks",
+  books: "books",
+  inquiries: "inquiries",
+  reviews: "reviews",
+  gallery: "gallery",
+};
+
+export const ADMIN_TAB_PATHS: Record<AdminTab, string> = Object.fromEntries(
+  Object.entries(ADMIN_TAB_SECTIONS).map(([tab, section]) => [tab, `/admin/${section}`])
+) as Record<AdminTab, string>;
+
+const SECTION_TO_TAB = Object.fromEntries(
+  Object.entries(ADMIN_TAB_SECTIONS).map(([tab, section]) => [section, tab])
+) as Record<string, AdminTab>;
+
+export const ADMIN_SECTIONS = new Set(Object.values(ADMIN_TAB_SECTIONS));
+
+/** Legacy combined marketing URL */
+export const ADMIN_LEGACY_SECTION_REDIRECTS: Record<string, string> = {
+  marketing: "/admin/reviews",
+};
+
+export function adminTabFromSection(section: string | undefined): AdminTab {
+  if (!section) return "overview";
+  if (section in ADMIN_LEGACY_SECTION_REDIRECTS) {
+    return "overview";
+  }
+  return SECTION_TO_TAB[section] ?? "overview";
+}
+
+export function adminTabTitle(tab: AdminTab): string {
+  const titles: Record<AdminTab, string> = {
+    overview: "Dashboard",
+    users: "Registered Users",
+    teachers: "Teacher Management",
+    courses: "Courses",
+    materials: "Approve Uploads",
+    tasks: "Assign Tasks",
+    books: "Story Library",
+    inquiries: "Admissions Leads",
+    reviews: "Parent Reviews",
+    gallery: "Media Gallery",
+  };
+  return titles[tab];
+}

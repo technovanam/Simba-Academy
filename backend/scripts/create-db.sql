@@ -1,0 +1,3 @@
+-- cPanel: database simbapre_simbaacademy is already created in MySQL Databases.
+-- After creating a cPanel user (simbapre_*), add them to this database with ALL PRIVILEGES.
+-- Then run from backend/: npm run db:push && npm run db:seed

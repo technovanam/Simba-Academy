@@ -1,8 +1,9 @@
 import "dotenv/config";
 import cors from "cors";
-import type { ErrorRequestHandler } from "express";
+import type { ErrorRequestHandler, RequestHandler } from "express";
 import express from "express";
 import helmet from "helmet";
+import jwt from "jsonwebtoken";
 import morgan from "morgan";
 import path from "node:path";
 import { env } from "./config/env.js";
@@ -16,7 +17,11 @@ import contactRoutes from "./routes/contact.js";
 import storageRoutes from "./routes/storage.js";
 import courseRoutes from "./routes/courses.js";
 import adminRoutes from "./routes/admin.js";
+import publicRoutes from "./routes/public.js";
+import teacherRoutes from "./routes/teacher.js";
 import { prisma } from "./config/database.js";
+import { ensureDefaultAdmin } from "./config/seedAdmin.js";
+
 
 const app = express();
 const PORT = env.PORT;
@@ -25,7 +30,9 @@ const PORT = env.PORT;
 app.set("trust proxy", 1);
 
 // ── Security Middleware ──────────────────────────────────────────────
-app.use(helmet());
+// Allow the frontend (served from a different origin) to load uploaded
+// images/PDFs from /uploads — helmet's default CORP is same-origin.
+app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -52,7 +59,44 @@ app.use("/api", apiLimiter);
 
 // ── Static Files (Uploaded PPT/PDF) ─────────────────────────────────
 const storagePath = path.resolve(env.STORAGE_PATH);
-app.use("/uploads", express.static(storagePath, {
+
+// Gate direct access to files that back an unapproved Material. Approved files
+// and non-material assets (gallery/course images, raw uploads) stay public.
+// Admin/Teacher previews can pass a JWT via Authorization header or ?token=.
+const uploadAccessGuard: RequestHandler = async (req, res, next) => {
+  try {
+    // req.path is "/<filename>"; stored fileUrl is "/uploads/<filename>".
+    const fileUrl = `/uploads${req.path}`;
+    const material = await prisma.material.findFirst({
+      where: { fileUrl },
+      select: { isApproved: true },
+    });
+
+    if (!material || material.isApproved) return next();
+
+    const headerToken = req.headers.authorization?.startsWith("Bearer ")
+      ? req.headers.authorization.split(" ")[1]
+      : undefined;
+    const queryToken = typeof req.query.token === "string" ? req.query.token : undefined;
+    const token = headerToken ?? queryToken;
+
+    if (token) {
+      try {
+        const decoded = jwt.verify(token, env.JWT_SECRET) as { role?: string };
+        if (decoded.role === "ADMIN" || decoded.role === "TEACHER") return next();
+      } catch {
+        // fall through to 403
+      }
+    }
+
+    res.status(403).json({ error: "This material is pending approval" });
+  } catch {
+    // On any lookup error, fail open to normal static handling.
+    next();
+  }
+};
+
+app.use("/uploads", uploadAccessGuard, express.static(storagePath, {
   maxAge: "1d",
   etag: true,
   lastModified: true,
@@ -72,6 +116,9 @@ app.use("/api/contact", contactRoutes);
 app.use("/api/storage", storageRoutes);
 app.use("/api/courses", courseRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/public", publicRoutes);
+app.use("/api/teacher", teacherRoutes);
+
 
 // ── Health Check ─────────────────────────────────────────────────────
 app.get("/api/health", (_req, res) => {
@@ -90,7 +137,8 @@ app.use((_req, res) => {
 
 // ── Global Error Handler ─────────────────────────────────────────────
 const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
-  console.error("Unhandled error:", err);  if (err instanceof AppError) {
+  console.error("Unhandled error:", err);
+  if (err instanceof AppError) {
       res.status(err.statusCode).json({
         error: err.message,
         ...(err instanceof ValidationError ? { errors: err.errors } : {}),
@@ -111,21 +159,31 @@ const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
 app.use(errorHandler);
 
 // ── Start Server ─────────────────────────────────────────────────────
-const server = app.listen(PORT, () => {
-  console.log(`🚀 Simba Academy API running at http://localhost:${PORT}`);
-  console.log(`🌐 Environment: ${env.NODE_ENV}`);
-  console.log(`📁 Storage: ${storagePath}`);
-  console.log(`✅ Allowed origins: ${env.ALLOWED_ORIGINS.join(", ")}`);
-});
+async function startServer() {
+  try {
+    await ensureDefaultAdmin();
+  } catch (err) {
+    console.error("Failed to seed default admin:", err);
+  }
 
-// ── Graceful Shutdown ────────────────────────────────────────────────
-const shutdown = (signal: string) => {
-  console.log(`\n${signal} received. Shutting down gracefully...`);
-  server.close(async () => {
-    await prisma.$disconnect();
-    process.exit(0);
+  const server = app.listen(PORT, () => {
+    console.log(`🚀 Simba Academy API running at http://localhost:${PORT}`);
+    console.log(`🌐 Environment: ${env.NODE_ENV}`);
+    console.log(`📁 Storage: ${storagePath}`);
+    console.log(`✅ Allowed origins: ${env.ALLOWED_ORIGINS.join(", ")}`);
   });
-};
 
-process.on("SIGTERM", () => shutdown("SIGTERM"));
-process.on("SIGINT", () => shutdown("SIGINT"));
+  // ── Graceful Shutdown ────────────────────────────────────────────────
+  const shutdown = (signal: string) => {
+    console.log(`\n${signal} received. Shutting down gracefully...`);
+    server.close(async () => {
+      await prisma.$disconnect();
+      process.exit(0);
+    });
+  };
+
+  process.on("SIGTERM", () => shutdown("SIGTERM"));
+  process.on("SIGINT", () => shutdown("SIGINT"));
+}
+
+startServer();

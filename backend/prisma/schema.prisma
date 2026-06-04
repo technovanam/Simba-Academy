@@ -4,7 +4,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
 }
 
 // ── User ────────────────────────────────────────────────────────────
@@ -14,20 +14,48 @@ enum Role {
   STUDENT
 }
 
-model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  name      String
-  role      Role     @default(STUDENT)
-  phone     String?
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+enum AccountStatus {
+  ACTIVE
+  DEACTIVATED
+}
 
-  payments       Payment[]
-  uploadedFiles  Material[]
-  sentInquiries  Inquiry[]
+model User {
+  id                 String        @id @default(cuid())
+  email              String        @unique
+  password           String
+  name               String
+  firstName          String?
+  lastName           String?
+  role               Role          @default(STUDENT)
+  phone              String?
+  employeeId         String?       @unique
+  status             AccountStatus @default(ACTIVE)
+  mustChangePassword Boolean       @default(false)
+  isDeleted          Boolean       @default(false)
+  deletedAt          DateTime?
+  createdBy          String?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  payments            Payment[]
+  uploadedFiles       Material[]
+  sentInquiries       Inquiry[]
+  tasks               Task[]              @relation("TeacherTasks")
+  passwordResetTokens PasswordResetToken[]
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  token     String    @unique
+  userId    String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 // ── Course ──────────────────────────────────────────────────────────
@@ -136,4 +164,31 @@ model FranchiseInquiry {
   message   String?
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
+}
+
+// ── Teacher Tasks (Assigned by Admin) ───────────────────────────────
+model Task {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  dueDate     DateTime?
+  status      String   @default("PENDING") // PENDING, COMPLETED, APPROVED, REJECTED
+  proofUrl    String?
+  proofDesc   String?
+  teacherId   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  teacher     User     @relation("TeacherTasks", fields: [teacherId], references: [id], onDelete: Cascade)
+}
+
+// ── Story Books (Children Library) ──────────────────────────────────
+model StoryBook {
+  id          String   @id @default(cuid())
+  title       String
+  author      String?
+  category    String   // Fairy Tales, Phonics, Bedtime Stories, etc.
+  fileUrl     String   // Uploaded PDF file URL
+  fileSize    Int?
+  createdAt   DateTime @default(now())
 }

@@ -1,5 +1,14 @@
 import { z } from "zod";
 
+// Accepts either an absolute http(s) URL (WebDAV/CDN mode) or a local upload
+// path like "/uploads/abc.pdf" (returned when WebDAV is disabled).
+const urlOrUploadPath = z
+  .string()
+  .refine(
+    (v) => /^https?:\/\//.test(v) || v.startsWith("/uploads/"),
+    "Must be a valid URL or upload path"
+  );
+
 // ── Auth ────────────────────────────────────────────────────────────
 export const registerSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -18,6 +27,7 @@ export const inquirySchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Invalid email address"),
   phone: z.string().optional(),
+  inquiryType: z.enum(["Preschool", "Franchise"]).default("Preschool"),
   message: z.string().min(10, "Message must be at least 10 characters"),
 });
 
@@ -29,27 +39,25 @@ export const franchiseInquirySchema = z.object({
   message: z.string().optional(),
 });
 
-// ── Payment ─────────────────────────────────────────────────────────
-export const createOrderSchema = z.object({
-  amount: z.number().min(1, "Amount must be greater than 0"),
-  currency: z.string().default("INR"),
-  courseId: z.string().optional(),
-});
-
-export const verifyPaymentSchema = z.object({
-  razorpayOrderId: z.string(),
-  razorpayPaymentId: z.string(),
-  razorpaySignature: z.string(),
-  courseId: z.string().optional(),
-});
-
 // ── Course ──────────────────────────────────────────────────────────
 export const createCourseSchema = z.object({
   title: z.string().min(2, "Title must be at least 2 characters"),
   description: z.string().optional(),
-  level: z.enum(["Playgroup", "LKG", "UKG", "Nursery", "All"]),
+  level: z.enum([
+    "Daycare",
+    "Playgroup",
+    "Pre-KG",
+    "LKG",
+    "UKG",
+    "Phonics",
+    "Handwriting",
+    "Spoken English",
+    "Nursery",
+    "All",
+  ]),
   price: z.number().positive("Price must be positive").optional(),
-  imageUrl: z.string().url().optional(),
+  imageUrl: urlOrUploadPath.optional(),
+  isActive: z.boolean().optional(),
 });
 
 export const updateCourseSchema = createCourseSchema.partial();
@@ -63,11 +71,43 @@ export const createMaterialSchema = z.object({
 });
 
 // ── Admin ───────────────────────────────────────────────────────────
+export const createTeacherSchema = z.object({
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  email: z.string().email("Invalid email address"),
+  phone: z.string().min(7, "Valid phone number required").optional(),
+});
+
+export const updateTeacherSchema = z.object({
+  firstName: z.string().min(1).optional(),
+  lastName: z.string().min(1).optional(),
+  email: z.string().email().optional(),
+  phone: z.string().min(7).optional().nullable(),
+  status: z.enum(["ACTIVE", "DEACTIVATED"]).optional(),
+});
+
 export const updateUserSchema = z.object({
   name: z.string().min(2).optional(),
+  firstName: z.string().min(1).optional(),
+  lastName: z.string().min(1).optional(),
   email: z.string().email().optional(),
   role: z.enum(["ADMIN", "TEACHER", "STUDENT"]).optional(),
-  isActive: z.boolean().optional(),
+  status: z.enum(["ACTIVE", "DEACTIVATED"]).optional(),
+  phone: z.string().optional().nullable(),
+});
+
+export const forgotPasswordSchema = z.object({
+  email: z.string().email("Invalid email address"),
+});
+
+export const resetPasswordSchema = z.object({
+  token: z.string().min(1, "Reset token is required"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+});
+
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, "Current password is required"),
+  newPassword: z.string().min(8, "New password must be at least 8 characters"),
 });
 
 export const approveMaterialSchema = z.object({
@@ -88,6 +128,35 @@ export const approveTestimonialSchema = z.object({
 // ── Gallery ─────────────────────────────────────────────────────────
 export const createGallerySchema = z.object({
   title: z.string().optional(),
-  imageUrl: z.string(),
-  type: z.enum(["IMAGE", "VIDEO"]).default("IMAGE"),
+  imageUrl: urlOrUploadPath,
+  type: z.literal("IMAGE").default("IMAGE"),
 });
+
+// ── Task Assignment (Admin) ─────────────────────────────────────────
+export const createTaskSchema = z.object({
+  title: z.string().min(2, "Title must be at least 2 characters"),
+  description: z.string().optional(),
+  dueDate: z.string().optional().nullable(),
+  teacherId: z.string(),
+});
+
+export const approveTaskSchema = z.object({
+  status: z.enum(["PENDING", "COMPLETED", "APPROVED", "REJECTED"]),
+  proofDesc: z.string().optional(),
+});
+
+// ── Story Book (Admin) ──────────────────────────────────────────────
+export const createStoryBookSchema = z.object({
+  title: z.string().min(2, "Title must be at least 2 characters"),
+  author: z.string().optional().nullable(),
+  category: z.string().min(2, "Category is required"),
+  fileUrl: urlOrUploadPath,
+  fileSize: z.number().optional().nullable(),
+});
+
+// ── Task Proof Submission (Teacher) ─────────────────────────────────
+export const submitTaskProofSchema = z.object({
+  proofUrl: urlOrUploadPath,
+  proofDesc: z.string().min(5, "Proof description must be at least 5 characters"),
+});
+

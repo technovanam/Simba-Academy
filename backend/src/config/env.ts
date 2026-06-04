@@ -39,6 +39,9 @@ export const env = {
   SMTP_PASS: envString("SMTP_PASS", "placeholder"),
   EMAIL_FROM: process.env.EMAIL_FROM ?? "noreply@simbapreschool.in",
   EMAIL_TO: process.env.EMAIL_TO ?? "info@simbapreschool.in",
+  PLATFORM_NAME: process.env.PLATFORM_NAME ?? "Simba Academy",
+  FRONTEND_URL: (process.env.FRONTEND_URL ?? "http://localhost:5173").replace(/\/$/, ""),
+  PASSWORD_RESET_EXPIRES_MINUTES: envInt("PASSWORD_RESET_EXPIRES_MINUTES", 30),
 
   // ── Domains (CORS) ─────────────────────────────────────────────
   ALLOWED_ORIGINS: (process.env.ALLOWED_ORIGINS ?? "http://localhost:5173,http://localhost:3000,https://www.simbapreschool.in,https://simbapreschool.in").split(",").map(s => s.trim()),
@@ -50,4 +53,18 @@ export const env = {
   // ── Rate Limiting ──────────────────────────────────────────────
   RATE_LIMIT_WINDOW_MS: envInt("RATE_LIMIT_WINDOW_MS", 15 * 60 * 1000), // 15 min
   RATE_LIMIT_MAX: envInt("RATE_LIMIT_MAX", 100),
+
+  // ── Admin Bootstrap (server-side only, not exposed in UI) ───────
+  // No password default on purpose — if DEFAULT_ADMIN_PASSWORD is unset the
+  // seed is skipped, so a known credential is never baked into the source.
+  DEFAULT_ADMIN_EMAIL: process.env.DEFAULT_ADMIN_EMAIL ?? "admin@simbaacademy.in",
+  DEFAULT_ADMIN_PASSWORD: process.env.DEFAULT_ADMIN_PASSWORD,
+  SYNC_DEFAULT_ADMIN_PASSWORD: process.env.SYNC_DEFAULT_ADMIN_PASSWORD === "true",
+
+  // ── Web Disk / WebDAV (cPanel Storage) ──────────────────────────
+  USE_WEBDAV: process.env.USE_WEBDAV === "true",
+  WEBDAV_URL: process.env.WEBDAV_URL ?? "https://simbapreschool.in:2078",
+  WEBDAV_USER: process.env.WEBDAV_USER ?? "simba@simbapreschool.in",
+  WEBDAV_PASSWORD: process.env.WEBDAV_PASSWORD ?? "",
+  WEBDAV_BASE_URL: process.env.WEBDAV_BASE_URL ?? "https://simbapreschool.in/simba",
 } as const;

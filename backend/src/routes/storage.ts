@@ -9,6 +9,7 @@ import { validate } from "../middleware/validate.js";
 import { createMaterialSchema } from "../config/schemas.js";
 import { AppError } from "../utils/errors.js";
 import { env } from "../config/env.js";
+import { uploadFileToWebDAV, deleteFileFromWebDAV } from "../services/webdav.js";
 
 const router = Router();
 
@@ -60,12 +61,20 @@ router.post(
         throw new AppError("Course not found", 404);
       }
 
+      let fileUrl = `/uploads/${file.filename}`;
+      if (env.USE_WEBDAV) {
+        const localPath = path.resolve(env.STORAGE_PATH, file.filename);
+        fileUrl = await uploadFileToWebDAV(localPath, file.filename);
+        // Clean up local temp file
+        deleteFile(file.filename);
+      }
+
       const material = await prisma.material.create({
         data: {
           title,
           description,
           type,
-          fileUrl: `/uploads/${file.filename}`,
+          fileUrl,
           fileSize: file.size,
           courseId,
           uploadedById: req.user!.userId,
@@ -76,6 +85,39 @@ router.post(
       res.status(201).json(material);
     } catch (err) {
       // Cleanup orphaned file
+      if (uploadedFilename) {
+        deleteFile(uploadedFilename);
+      }
+      next(err);
+    }
+  }
+);
+
+// ── Upload Raw File (Generic - returns JSON with URL) ────────────────
+router.post(
+  "/upload-raw",
+  authenticate,
+  authorize("ADMIN", "TEACHER"),
+  upload.single("file"),
+  async (req, res, next) => {
+    let uploadedFilename: string | undefined;
+    try {
+      if (!req.file) {
+        throw new AppError("No file uploaded", 400);
+      }
+      uploadedFilename = req.file.filename;
+      const file = req.file as UploadedFile;
+
+      let fileUrl = `/uploads/${file.filename}`;
+      if (env.USE_WEBDAV) {
+        const localPath = path.resolve(env.STORAGE_PATH, file.filename);
+        fileUrl = await uploadFileToWebDAV(localPath, file.filename);
+        // Clean up local temp file
+        deleteFile(file.filename);
+      }
+
+      res.status(200).json({ url: fileUrl });
+    } catch (err) {
       if (uploadedFilename) {
         deleteFile(uploadedFilename);
       }
@@ -104,13 +146,27 @@ router.post(
         throw new AppError("Course ID is required", 400);
       }
 
+      // Verify course exists before creating any material rows.
+      const course = await prisma.course.findUnique({ where: { id: courseId } });
+      if (!course) {
+        throw new AppError("Course not found", 404);
+      }
+
       const results = [];
       for (const file of req.files) {
+        let fileUrl = `/uploads/${file.filename}`;
+        if (env.USE_WEBDAV) {
+          const localPath = path.resolve(env.STORAGE_PATH, file.filename);
+          fileUrl = await uploadFileToWebDAV(localPath, file.filename);
+          // Clean up local temp file
+          deleteFile(file.filename);
+        }
+
         const material = await prisma.material.create({
           data: {
             title: file.originalname,
             type: getFileType(file.mimetype),
-            fileUrl: `/uploads/${file.filename}`,
+            fileUrl,
             fileSize: file.size,
             courseId,
             uploadedById: req.user!.userId,
@@ -213,6 +269,13 @@ router.delete(
       }
 
       await prisma.material.delete({ where: { id: String(req.params.id) } });
+
+      // Clean up from cPanel WebDAV storage (runs asynchronously)
+      if (material.fileUrl) {
+        deleteFileFromWebDAV(material.fileUrl).catch((err) => 
+          console.error("Failed to delete material from cPanel WebDAV:", err)
+        );
+      }
 
       res.json({ message: "Material deleted successfully" });
     } catch (err) {

@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import { Link } from "react-router";
+import { useState } from "react";
 import { 
   MapPin, 
   Phone, 
@@ -6,14 +7,13 @@ import {
   Clock,
   Compass,
   GraduationCap,
-  Backpack,
-  Calendar,
   ArrowUp,
   Heart,
   Sparkles,
   ChevronRight,
   PawPrint
 } from "lucide-react";
+import { FOOTER_QUICK_LINKS, SOCIAL_LINKS, COURSE_LEVELS, BRANCHES } from "../lib/constants";
 
 export function JungleFooter() {
   const [isLionHovered, setIsLionHovered] = useState(false);
@@ -39,7 +39,7 @@ export function JungleFooter() {
   ];
 
   return (
-    <footer className="relative w-full overflow-hidden font-quicksand bg-gradient-to-b from-[#FAF8F5] via-[#EAEFEA] to-[#DCE3DC] mt-32 text-[#3E2723] border-t border-[#8AC926]/20">
+    <footer className="relative w-full overflow-hidden font-sans bg-gradient-to-b from-[#FAF8F5] via-[#EAEFEA] to-[#DCE3DC] mt-32 text-[#3E2723] border-t border-[#8AC926]/20">
       <style>{`
         @keyframes jungle-swing {
           0%, 100% { transform: rotate(-8deg); }
@@ -180,7 +180,7 @@ export function JungleFooter() {
         {footerFireflies.map((f, i) => (
           <div 
             key={i}
-            className="absolute w-1.5 h-1.5 bg-[#FFD54F] rounded-full animate-firefly-footer firefly-glow"
+            className="absolute w-1.5 h-1.5 bg-[#FFD54F] rounded-lg animate-firefly-footer firefly-glow"
             style={{ 
               left: f.left, 
               bottom: f.bottom, 
@@ -326,9 +326,9 @@ export function JungleFooter() {
         >
           {isElephantHovered && (
             <div className="absolute top-[-30px] left-[20px] w-20 h-20 pointer-events-none">
-              <div className="absolute top-[35px] left-[35px] w-2.5 h-2.5 bg-[#B3E5FC] rounded-full animate-spray-1 shadow-xs"></div>
-              <div className="absolute top-[35px] left-[35px] w-3 h-3 bg-[#81D4FA] rounded-full animate-spray-2 shadow-xs"></div>
-              <div className="absolute top-[35px] left-[35px] w-2 h-2 bg-[#B3E5FC] rounded-full animate-spray-3 shadow-xs"></div>
+              <div className="absolute top-[35px] left-[35px] w-2.5 h-2.5 bg-[#B3E5FC] rounded-lg animate-spray-1 shadow-xs"></div>
+              <div className="absolute top-[35px] left-[35px] w-3 h-3 bg-[#81D4FA] rounded-lg animate-spray-2 shadow-xs"></div>
+              <div className="absolute top-[35px] left-[35px] w-2 h-2 bg-[#B3E5FC] rounded-lg animate-spray-3 shadow-xs"></div>
             </div>
           )}
           <svg viewBox="0 0 100 100" fill="none">
@@ -362,7 +362,7 @@ export function JungleFooter() {
             {/* Column 1: School Info & Socials (Spans 3) */}
             <div className="lg:col-span-3 flex flex-col items-center lg:items-start text-center lg:text-left">
               {/* Simba Academy Custom Logo Frame */}
-              <div className="bg-[#FAF3E0] p-2.5 rounded-2.5rem border-3 border-[#8C6239] shadow-md inline-block max-w-[140px] mb-5 hover:scale-105 hover:rotate-2 transition-all duration-300 cursor-pointer">
+              <div className="inline-block max-w-[180px] mb-5 hover:scale-105 hover:rotate-2 transition-all duration-300 cursor-pointer">
                 <img 
                   src="/Simba Logo 2025.pdf.png" 
                   alt="Simba Academy Logo" 
@@ -371,7 +371,7 @@ export function JungleFooter() {
               </div>
 
               {/* Tagline */}
-              <h5 className="font-fredoka text-[15px] text-[#3E2723] font-extrabold italic mb-2 tracking-wide leading-snug">
+              <h5 className="font-sans text-[15px] text-[#3E2723] font-extrabold italic mb-2 tracking-wide leading-snug">
                 "Nurturing Young Minds for a Brighter Future"
               </h5>
               
@@ -384,11 +384,13 @@ export function JungleFooter() {
               <div className="flex gap-3">
                 {/* Facebook Wood Token */}
                 <a 
-                  href="#" 
-                  className="wood-token w-10.5 h-10.5 rounded-full bg-[#EADAC2] border-3 border-[#8C6239] flex items-center justify-center relative shadow-sm group"
+                  href={SOCIAL_LINKS.facebook}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="wood-token w-10.5 h-10.5 rounded-md bg-[#EADAC2] border-3 border-[#8C6239] flex items-center justify-center relative shadow-sm group"
                   aria-label="Facebook"
                 >
-                  <div className="absolute inset-0.5 rounded-full border border-[#8C6239]/40 opacity-70"></div>
+                  <div className="absolute inset-0.5 rounded-lg border border-[#8C6239]/40 opacity-70"></div>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-4.5 h-4.5 text-[#5D4037] relative z-10 group-hover:text-white transition-colors">
                     <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
                   </svg>
@@ -396,11 +398,13 @@ export function JungleFooter() {
 
                 {/* Instagram Wood Token */}
                 <a 
-                  href="#" 
-                  className="wood-token w-10.5 h-10.5 rounded-full bg-[#EADAC2] border-3 border-[#8C6239] flex items-center justify-center relative shadow-sm group"
+                  href={SOCIAL_LINKS.instagram}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="wood-token w-10.5 h-10.5 rounded-md bg-[#EADAC2] border-3 border-[#8C6239] flex items-center justify-center relative shadow-sm group"
                   aria-label="Instagram"
                 >
-                  <div className="absolute inset-0.5 rounded-full border border-[#8C6239]/40 opacity-70"></div>
+                  <div className="absolute inset-0.5 rounded-lg border border-[#8C6239]/40 opacity-70"></div>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-4.5 h-4.5 text-[#5D4037] relative z-10 group-hover:text-white transition-colors">
                     <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/>
                     <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
@@ -410,11 +414,13 @@ export function JungleFooter() {
 
                 {/* Youtube Wood Token */}
                 <a 
-                  href="#" 
-                  className="wood-token w-10.5 h-10.5 rounded-full bg-[#EADAC2] border-3 border-[#8C6239] flex items-center justify-center relative shadow-sm group"
+                  href={SOCIAL_LINKS.youtube}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="wood-token w-10.5 h-10.5 rounded-md bg-[#EADAC2] border-3 border-[#8C6239] flex items-center justify-center relative shadow-sm group"
                   aria-label="YouTube"
                 >
-                  <div className="absolute inset-0.5 rounded-full border border-[#8C6239]/40 opacity-70"></div>
+                  <div className="absolute inset-0.5 rounded-lg border border-[#8C6239]/40 opacity-70"></div>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-4.5 h-4.5 text-[#5D4037] relative z-10 group-hover:text-white transition-colors">
                     <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"/>
                     <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02" fill="currentColor"/>
@@ -423,13 +429,13 @@ export function JungleFooter() {
 
                 {/* WhatsApp Wood Token */}
                 <a 
-                  href="https://wa.me/919884866727" 
+                  href={SOCIAL_LINKS.whatsapp}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="wood-token w-10.5 h-10.5 rounded-full bg-[#EADAC2] border-3 border-[#8C6239] flex items-center justify-center relative shadow-sm group"
+                  className="wood-token w-10.5 h-10.5 rounded-md bg-[#EADAC2] border-3 border-[#8C6239] flex items-center justify-center relative shadow-sm group"
                   aria-label="WhatsApp"
                 >
-                  <div className="absolute inset-0.5 rounded-full border border-[#8C6239]/40 opacity-70"></div>
+                  <div className="absolute inset-0.5 rounded-lg border border-[#8C6239]/40 opacity-70"></div>
                   <svg viewBox="0 0 24 24" fill="currentColor" className="w-4.5 h-4.5 text-[#5D4037] relative z-10 group-hover:text-white transition-colors">
                     <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.003 5.324 5.328 0 11.859 0c3.166.001 6.141 1.233 8.377 3.469 2.235 2.237 3.465 5.214 3.464 8.384-.003 6.536-5.328 11.86-11.859 11.86-2.002-.001-3.973-.509-5.714-1.486L0 24zm6.529-3.722l.379.225c1.462.868 3.093 1.325 4.767 1.326 5.37 0 9.739-4.37 9.742-9.743.002-2.602-1.01-5.05-2.85-6.892-1.84-1.84-4.29-2.853-6.897-2.853-5.372 0-9.744 4.373-9.747 9.747-.001 1.769.467 3.498 1.354 5.023l.247.428-1.012 3.693 3.788-.992zm10.231-6.862c-.276-.139-1.636-.807-1.89-.899-.254-.093-.439-.139-.624.139-.185.276-.717.899-.878 1.084-.162.185-.323.208-.599.069-.276-.139-1.168-.43-2.223-1.372-.821-.733-1.376-1.639-1.537-1.916-.162-.276-.017-.426.121-.563.125-.124.276-.323.415-.485.139-.162.185-.276.276-.462.093-.185.046-.347-.023-.485-.069-.139-.624-1.503-.856-2.058-.225-.54-.452-.466-.624-.475-.162-.009-.346-.01-.53-.01-.185 0-.485.069-.739.347-.254.276-.97 1.018-.97 2.483 0 1.465 1.063 2.879 1.202 3.064.139.185 2.092 3.194 5.068 4.48.708.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.636-.668 1.867-1.317.23-1.5.23-1.1.161-1.316.03-.227-.2-.27-.47-.41z"/>
                   </svg>
@@ -439,28 +445,28 @@ export function JungleFooter() {
 
             {/* Column 2: Quick Links (Spans 2) */}
             <div className="lg:col-span-2">
-              <h4 className="font-fredoka text-lg text-[#3E2723] mb-5 flex items-center justify-center lg:justify-start gap-2">
+              <h4 className="font-sans text-lg text-[#3E2723] mb-5 flex items-center justify-center lg:justify-start gap-2">
                 <Compass className="w-5 h-5 text-[#FF9F1C]" /> Quick Links
               </h4>
               
               <div className="flex flex-col select-none">
                 {/* Hanging Ropes */}
                 <div className="flex gap-14 justify-center lg:justify-start lg:pl-10 -mb-1 z-10">
-                  <div className="w-1 h-5 bg-[#8C6239]/50 rounded-full"></div>
-                  <div className="w-1 h-5 bg-[#8C6239]/50 rounded-full"></div>
+                  <div className="w-1 h-5 bg-[#8C6239]/50 rounded-lg"></div>
+                  <div className="w-1 h-5 bg-[#8C6239]/50 rounded-lg"></div>
                 </div>
                 
                 {/* Wooden Board */}
-                <div className="bg-[#FFF8E1] border-3 border-[#D4A373]/80 rounded-[1.5rem] p-5 shadow-md relative overflow-hidden group">
+                <div className="bg-[#FFF8E1] border-3 border-[#D4A373]/80 rounded-lg p-5 shadow-md relative overflow-hidden group">
                   <div className="absolute inset-0 opacity-15 pointer-events-none" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'100\' height=\'20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M0,10 Q25,0 50,10 T100,10\' stroke=\'%238C6239\' stroke-width=\'1.5\' fill=\'none\'/%3E%3C/svg%3E")' }}></div>
                   
                   <ul className="space-y-3.5 relative z-10 text-center lg:text-left">
-                    {["Home", "About Us", "Courses", "Franchise", "Gallery", "Contact Us"].map((link, i) => (
-                      <li key={i}>
-                        <a href="#" className="text-[13px] text-[#5D4037] hover:text-[#3E2723] safari-link pb-0.5 transition-all font-extrabold inline-flex items-center justify-center lg:justify-start gap-2 group/link">
+                    {FOOTER_QUICK_LINKS.map((link) => (
+                      <li key={link.to}>
+                        <Link to={link.to} className="text-[13px] text-[#5D4037] hover:text-[#3E2723] safari-link pb-0.5 transition-all font-extrabold inline-flex items-center justify-center lg:justify-start gap-2 group/link">
                           <Sparkles className="w-3 h-3 text-[#8AC926] group-hover/link:text-[#FF9F1C] transition-colors" /> 
-                          {link}
-                        </a>
+                          {link.label}
+                        </Link>
                       </li>
                     ))}
                   </ul>
@@ -470,14 +476,14 @@ export function JungleFooter() {
 
             {/* Column 3: Courses (Spans 2) */}
             <div className="lg:col-span-2">
-              <h4 className="font-fredoka text-lg text-[#3E2723] mb-5 flex items-center justify-center lg:justify-start gap-2 select-none">
+              <h4 className="font-sans text-lg text-[#3E2723] mb-5 flex items-center justify-center lg:justify-start gap-2 select-none">
                 <GraduationCap className="w-5 h-5 text-[#FF9F1C]" /> Courses
               </h4>
               <div className="space-y-3">
-                {["Daycare", "Playgroup", "Pre-KG", "LKG", "UKG", "Phonics", "Spoken English"].map((course, idx) => (
+                {COURSE_LEVELS.map((course, idx) => (
                   <div 
                     key={idx}
-                    className="group cursor-pointer bg-white/70 border-2 border-[#8AC926]/20 hover:border-[#8AC926]/45 p-2 rounded-2.5rem hover:bg-white transition-all duration-300 shadow-xs hover:-translate-y-0.5 hover:rotate-1"
+                    className="group cursor-pointer bg-white/70 border-2 border-[#8AC926]/20 hover:border-[#8AC926]/45 p-2 rounded-lg hover:bg-white transition-all duration-300 shadow-xs hover:-translate-y-0.5 hover:rotate-1"
                   >
                     <div className="flex items-center gap-2.5">
                       <div className="w-7.5 h-7.5 rounded-lg bg-[#FAF8F5] flex items-center justify-center shrink-0 border border-[#8AC926]/20 group-hover:scale-110 group-hover:rotate-6 transition-transform">
@@ -494,16 +500,16 @@ export function JungleFooter() {
 
             {/* Column 4: Contact Information (Spans 3) */}
             <div className="lg:col-span-3">
-              <h4 className="font-fredoka text-lg text-[#3E2723] mb-5 flex items-center justify-center lg:justify-start gap-2 select-none">
+              <h4 className="font-sans text-lg text-[#3E2723] mb-5 flex items-center justify-center lg:justify-start gap-2 select-none">
                 <MapPin className="w-5 h-5 text-[#FF9F1C]" /> Contact Info
               </h4>
               <div 
-                className="glass-panel-footer rounded-2.5rem p-5 relative overflow-hidden shadow-md group cursor-pointer"
+                className="glass-panel-footer rounded-lg p-5 relative overflow-hidden shadow-md group cursor-pointer"
                 onMouseEnter={() => setIsLanternHovered(true)}
                 onMouseLeave={() => setIsLanternHovered(false)}
               >
                 {/* Wooden support beam for lantern */}
-                <div className="absolute top-2.5 left-7 w-12 h-1.5 bg-[#8C6239]/50 rounded-full border border-[#3B2110]/30 z-20 shadow-md"></div>
+                <div className="absolute top-2.5 left-7 w-12 h-1.5 bg-[#8C6239]/50 rounded-lg border border-[#3B2110]/30 z-20 shadow-md"></div>
                 
                 {/* Detailed Hanging, Swinging and Glowing Lantern SVG */}
                 <div className="absolute top-3.5 left-10 w-9 h-14 z-20 animate-lantern-swing">
@@ -546,7 +552,7 @@ export function JungleFooter() {
                 {/* Contact data shifted down */}
                 <ul className="space-y-4 relative z-10 text-left pt-11">
                   <li className="flex items-start gap-2.5">
-                    <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center shrink-0 text-[#3E2723] border border-[#8AC926]/20 shadow-xs">
+                    <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shrink-0 text-[#3E2723] border border-[#8AC926]/20 shadow-xs">
                       <MapPin className="w-4 h-4 text-[#FF9F1C]" />
                     </div>
                     <div className="text-[11.5px] text-[#5D4037] font-semibold leading-relaxed pt-0.5">
@@ -555,7 +561,7 @@ export function JungleFooter() {
                   </li>
                   
                   <li className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center shrink-0 text-[#3E2723] border border-[#8AC926]/20 shadow-xs">
+                    <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shrink-0 text-[#3E2723] border border-[#8AC926]/20 shadow-xs">
                       <Phone className="w-4 h-4 text-[#FF9F1C]" />
                     </div>
                     <a href="tel:+919884866727" className="text-[12px] text-[#5D4037] hover:text-[#3E2723] transition-colors font-semibold">
@@ -564,7 +570,7 @@ export function JungleFooter() {
                   </li>
                   
                   <li className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center shrink-0 text-[#3E2723] border border-[#8AC926]/20 shadow-xs">
+                    <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shrink-0 text-[#3E2723] border border-[#8AC926]/20 shadow-xs">
                       <Mail className="w-4 h-4 text-[#FF9F1C]" />
                     </div>
                     <a href="mailto:info@simbaacademy.com" className="text-[12px] text-[#5D4037] hover:text-[#3E2723] transition-colors font-semibold truncate">
@@ -573,7 +579,7 @@ export function JungleFooter() {
                   </li>
 
                   <li className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center shrink-0 text-[#3E2723] border border-[#8AC926]/20 shadow-xs">
+                    <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shrink-0 text-[#3E2723] border border-[#8AC926]/20 shadow-xs">
                       <Clock className="w-4 h-4 text-[#FF9F1C]" />
                     </div>
                     <div className="text-[11.5px] text-[#5D4037] font-semibold">
@@ -586,28 +592,28 @@ export function JungleFooter() {
 
             {/* Column 5: Branch Locations (Spans 2) */}
             <div className="lg:col-span-2">
-              <h4 className="font-fredoka text-lg text-[#3E2723] mb-5 flex items-center justify-center lg:justify-start gap-2 select-none">
+              <h4 className="font-sans text-lg text-[#3E2723] mb-5 flex items-center justify-center lg:justify-start gap-2 select-none">
                 <Compass className="w-5 h-5 text-[#FF9F1C]" /> Branches
               </h4>
               
               <div className="flex flex-col select-none">
                 {/* Hanging Ropes */}
                 <div className="flex gap-14 justify-center lg:justify-start lg:pl-10 -mb-1 z-10">
-                  <div className="w-1 h-5 bg-[#8C6239]/50 rounded-full"></div>
-                  <div className="w-1 h-5 bg-[#8C6239]/50 rounded-full"></div>
+                  <div className="w-1 h-5 bg-[#8C6239]/50 rounded-lg"></div>
+                  <div className="w-1 h-5 bg-[#8C6239]/50 rounded-lg"></div>
                 </div>
                 
                 {/* Wooden Board */}
-                <div className="bg-[#FFF8E1] border-3 border-[#D4A373]/80 rounded-[1.5rem] p-5 shadow-md relative overflow-hidden group">
+                <div className="bg-[#FFF8E1] border-3 border-[#D4A373]/80 rounded-lg p-5 shadow-md relative overflow-hidden group">
                   <div className="absolute inset-0 opacity-15 pointer-events-none" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'100\' height=\'20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M0,10 Q25,0 50,10 T100,10\' stroke=\'%238C6239\' stroke-width=\'1.5\' fill=\'none\'/%3E%3C/svg%3E")' }}></div>
                   
                   <ul className="space-y-3.5 relative z-10 text-center lg:text-left">
-                    {["Ramakrishna Park", "Ponnamapet", "Kondalampatti", "Steel Plant", "Ammapet"].map((branch, i) => (
-                      <li key={i}>
-                        <a href="#" className="text-[13px] text-[#5D4037] hover:text-[#3E2723] safari-link pb-0.5 transition-all font-extrabold inline-flex items-center justify-center lg:justify-start gap-2 group/branch">
+                    {BRANCHES.map((branch) => (
+                      <li key={branch.name}>
+                        <Link to="/contact" className="text-[13px] text-[#5D4037] hover:text-[#3E2723] safari-link pb-0.5 transition-all font-extrabold inline-flex items-center justify-center lg:justify-start gap-2 group/branch">
                           <Sparkles className="w-3 h-3 text-[#8AC926] group-hover/branch:text-[#FF9F1C] transition-colors" /> 
-                          {branch}
-                        </a>
+                          {branch.name}
+                        </Link>
                       </li>
                     ))}
                   </ul>
@@ -633,16 +639,16 @@ export function JungleFooter() {
             
             {/* Legal Links */}
             <div className="flex gap-6 text-[13px] text-[#83a886] font-bold">
-              <a href="#" className="hover:text-[#3E2723] transition-colors flex items-center gap-1">
+              <Link to="/contact" className="hover:text-[#3E2723] transition-colors flex items-center gap-1">
                 <ChevronRight className="w-3.5 h-3.5 text-[#E0EFE0]" /> Privacy Policy
-              </a>
-              <a href="#" className="hover:text-[#3E2723] transition-colors flex items-center gap-1">
+              </Link>
+              <Link to="/contact" className="hover:text-[#3E2723] transition-colors flex items-center gap-1">
                 <ChevronRight className="w-3.5 h-3.5 text-[#E0EFE0]" /> Terms & Conditions
-              </a>
+              </Link>
             </div>
 
             {/* Techno Vanam Attribution */}
-            <div className="text-[13px] text-[#3E2723] font-fredoka font-extrabold flex items-center gap-1.5 select-none hover:scale-105 transition-transform duration-300">
+            <div className="text-[13px] text-[#3E2723] font-sans font-extrabold flex items-center gap-1.5 select-none hover:scale-105 transition-transform duration-300">
               <span>Designed & Developed by</span>
               <a 
                 href="https://technovanam.com" 
@@ -682,7 +688,7 @@ export function JungleFooter() {
         </svg>
         
         {/* Glow indicator with ArrowUp from Lucide in the center */}
-        <div className="absolute top-[40%] left-[34%] z-20 w-6 h-6 rounded-full bg-[#FAF3E0] shadow-sm flex items-center justify-center border border-[#8c5a3c]/30 group-hover:bg-white group-hover:scale-110 transition-all duration-300">
+        <div className="absolute top-[40%] left-[34%] z-20 w-6 h-6 rounded-lg bg-[#FAF3E0] shadow-sm flex items-center justify-center border border-[#8c5a3c]/30 group-hover:bg-white group-hover:scale-110 transition-all duration-300">
           <ArrowUp className="w-3.5 h-3.5 text-[#5e3a21] stroke-[2.5]" />
         </div>
       </button>

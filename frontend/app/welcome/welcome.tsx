@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import { Link } from "react-router";
+import { useState, type ReactNode } from "react";
 import { 
   Palette, 
   Leaf, 
@@ -9,19 +10,15 @@ import {
   PawPrint,
   Clock,
   Sparkles,
-  BookOpen,
   ArrowRight,
   Heart,
   Calendar,
   Backpack,
-  Map,
   ShieldCheck,
-  Smile,
-  Info,
-  Trees,
   Footprints
 } from "lucide-react";
 import { JungleFooter } from "../components/JungleFooter";
+import { FloatingWhatsApp } from "../components/FloatingWhatsApp";
 
 // Custom Animated Floating Butterfly
 function Butterfly({ className, color = "#FF70A6", delay = "0s" }: { className?: string; color?: string; delay?: string }) {
@@ -35,7 +32,7 @@ function Butterfly({ className, color = "#FF70A6", delay = "0s" }: { className?:
           </svg>
         </div>
         {/* Body */}
-        <div className="w-[2px] h-6 bg-[#3E2723] rounded-full z-10"></div>
+        <div className="w-[2px] h-6 bg-[#3E2723] rounded-lg z-10"></div>
         {/* Right wing */}
         <div className="w-4 h-6 flap-right">
           <svg viewBox="0 0 50 80" fill="none" className="transform scale-x-[-1]">
@@ -52,7 +49,7 @@ interface Outpost {
   id: string;
   name: string;
   age: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
   color: string;
   badgeBg: string;
   textColor: string;
@@ -134,7 +131,7 @@ export function Welcome() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#E3F2FD] via-[#FAF8F5] to-[#FAF8F5] font-quicksand text-[#3E2723] selection:bg-[#FFD275] selection:text-[#3E2723] overflow-x-hidden relative">
+    <div className="min-h-screen bg-gradient-to-b from-[#E3F2FD] via-[#FAF8F5] to-[#FAF8F5] font-sans text-[#3E2723] selection:bg-[#FFD275] selection:text-[#3E2723] overflow-x-hidden relative">
       
       {/* Interactive styles for homepage micro-animations */}
       <style>{`
@@ -250,7 +247,7 @@ export function Welcome() {
         {fireflies.map((f, i) => (
           <div 
             key={i}
-            className="absolute w-1.5 h-1.5 bg-[#FFD54F] rounded-full animate-firefly firefly-glow"
+            className="absolute w-1.5 h-1.5 bg-[#FFD54F] rounded-lg animate-firefly firefly-glow"
             style={{ 
               left: f.left, 
               top: f.top, 
@@ -288,12 +285,12 @@ export function Welcome() {
       <nav className="relative z-40 max-w-7xl mx-auto px-6 pt-6 flex justify-between items-center select-none">
         
         {/* Simba Academy wood carved identity badge */}
-        <div className="flex items-center gap-3 bg-[#FFFFFF] border-2 border-[#8AC926]/30 rounded-2xl px-5 py-2.5 shadow-lg hover:scale-105 transition-transform cursor-pointer group">
-          <div className="w-10 h-10 rounded-xl bg-[#8AC926] flex items-center justify-center text-[#FAF3E0] group-hover:rotate-12 transition-transform duration-300 shadow-md">
-            <PawPrint className="w-6 h-6 text-white fill-white" />
+        <div className="flex items-center gap-3 bg-[#FFFFFF] border-2 border-[#8AC926]/30 rounded-lg px-5 py-2.5 shadow-lg hover:scale-105 transition-transform cursor-pointer group">
+          <div className="w-16 h-16 flex items-center justify-center group-hover:rotate-12 transition-transform duration-300">
+            <img src="/Simba Logo 2025.pdf.png" alt="Simba Academy Logo" className="w-full h-full object-contain" />
           </div>
           <div className="text-left">
-            <h1 className="font-fredoka font-bold text-lg leading-none tracking-wide text-[#3E2723]">
+            <h1 className="font-sans font-bold text-lg leading-none tracking-wide text-[#3E2723]">
               Simba Academy
             </h1>
             <span className="text-[10px] font-bold text-[#4E8C52] tracking-widest uppercase mt-0.5 block">
@@ -304,12 +301,12 @@ export function Welcome() {
 
         {/* Action Linkings */}
         <div className="flex gap-4">
-          <button className="hidden sm:inline-flex px-6 py-2.5 rounded-xl border-2 border-[#8C6239]/40 text-[#5D4037] font-fredoka font-bold hover:bg-[#FFFFFF] transition-colors text-sm shadow-sm bg-white/50">
-            Parent Outpost
-          </button>
-          <button className="px-6 py-2.5 rounded-xl bg-[#FF9F1C] border-b-4 border-[#E07A00] text-white font-fredoka font-bold text-sm hover:translate-y-[-1px] active:translate-y-[1px] active:border-b-0 shadow-lg transition-all">
+          <Link to="/login" className="hidden sm:inline-flex px-6 py-2.5 rounded-md border-2 border-[#8C6239]/40 text-[#5D4037] font-sans font-bold hover:bg-[#FFFFFF] transition-colors text-sm shadow-sm bg-white/50">
+            Parent Login
+          </Link>
+          <Link to="/contact" className="px-6 py-2.5 rounded-md bg-[#FF9F1C] border-b-4 border-[#E07A00] text-white font-sans font-bold text-sm hover:translate-y-[-1px] active:translate-y-[1px] active:border-b-0 shadow-lg transition-all">
             Join Expedition
-          </button>
+          </Link>
         </div>
       </nav>
 
@@ -323,9 +320,9 @@ export function Welcome() {
           <div className="lg:col-span-7 flex flex-col items-center lg:items-start text-center lg:text-left">
             
             {/* Upper label banner */}
-            <div className="inline-flex items-center gap-2.5 px-5 py-2 rounded-full bg-white border border-[#8AC926]/30 shadow-sm mb-8 hover:scale-105 transition-transform duration-300">
+            <div className="inline-flex items-center gap-2.5 px-5 py-2 rounded-lg bg-white border border-[#8AC926]/30 shadow-sm mb-8 hover:scale-105 transition-transform duration-300">
               <Sparkles className="w-4 h-4 text-[#FF9F1C] animate-spin-slow" />
-              <span className="font-fredoka font-bold text-xs uppercase tracking-widest text-[#4E8C52]">
+              <span className="font-sans font-bold text-xs uppercase tracking-widest text-[#4E8C52]">
                 An Award-Winning Early Childhood Savanna
               </span>
               <Sparkles className="w-4 h-4 text-[#FF9F1C] animate-spin-slow" />
@@ -333,7 +330,7 @@ export function Welcome() {
 
             {/* Glowing Title */}
             <div className="relative mb-8 max-w-2xl">
-              <h2 className="font-fredoka text-5.5xl sm:text-6.5xl text-[#3E2723] font-extrabold leading-[1.08] tracking-wide drop-shadow-[0_2px_4px_rgba(74,46,27,0.1)]">
+              <h2 className="font-sans text-5.5xl sm:text-6.5xl text-[#3E2723] font-extrabold leading-[1.08] tracking-wide drop-shadow-[0_2px_4px_rgba(74,46,27,0.1)]">
                 Where Little Cubs <br/>
                 <span className="text-[#8AC926] relative inline-block">
                   Learn to Roar!
@@ -350,14 +347,14 @@ export function Welcome() {
 
             {/* CTA action buttons */}
             <div className="flex flex-col sm:flex-row gap-5 w-full justify-center lg:justify-start">
-              <button className="px-8 py-4.5 rounded-2xl bg-[#FF9F1C] border-b-6 border-[#E07A00] font-fredoka font-extrabold text-lg text-white hover:bg-[#FFAE33] hover:translate-y-[-2px] active:translate-y-[2px] active:border-b-0 shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2.5 group">
+              <Link to="/contact" className="px-8 py-4.5 rounded-md bg-[#FF9F1C] border-b-6 border-[#E07A00] font-sans font-extrabold text-lg text-white hover:bg-[#FFAE33] hover:translate-y-[-2px] active:translate-y-[2px] active:border-b-0 shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2.5 group">
                 <Compass className="w-5.5 h-5.5 text-white group-hover:rotate-45 transition-transform" />
                 Book Safari Tour
-              </button>
-              <button className="px-8 py-4.5 rounded-2xl bg-[#8AC926] border-b-6 border-[#6FA31D] font-fredoka font-extrabold text-lg text-white hover:bg-[#9BE230] hover:translate-y-[-2px] active:translate-y-[2px] active:border-b-0 shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2.5 group">
+              </Link>
+              <Link to="/register" className="px-8 py-4.5 rounded-md bg-[#8AC926] border-b-6 border-[#6FA31D] font-sans font-extrabold text-lg text-white hover:bg-[#9BE230] hover:translate-y-[-2px] active:translate-y-[2px] active:border-b-0 shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2.5 group">
                 <GraduationCap className="w-5.5 h-5.5 text-white group-hover:scale-110 transition-transform" />
                 Enroll Your Cub
-              </button>
+              </Link>
             </div>
 
           </div>
@@ -367,7 +364,7 @@ export function Welcome() {
             
             {/* Interactive Speech bubble */}
             <div 
-              className={`absolute top-[-40px] z-30 bg-[#FAF3E0] text-[#3E2723] border-3 border-[#8C6239] rounded-2.5rem p-5 max-w-[280px] shadow-xl transition-all duration-300 ${isMascotHovered ? 'scale-100 opacity-100' : 'scale-90 opacity-0 pointer-events-none'}`}
+              className={`absolute top-[-40px] z-30 bg-[#FAF3E0] text-[#3E2723] border-3 border-[#8C6239] rounded-lg p-5 max-w-[280px] shadow-xl transition-all duration-300 ${isMascotHovered ? 'scale-100 opacity-100' : 'scale-90 opacity-0 pointer-events-none'}`}
               style={{ animation: isMascotHovered ? 'bubble-pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' : 'none' }}
             >
               <div className="relative">
@@ -445,7 +442,7 @@ export function Welcome() {
               </svg>
             </div>
             
-            <span className="text-[11px] font-fredoka font-bold text-[#4E8C52] tracking-widest mt-2 uppercase">
+            <span className="text-[11px] font-sans font-bold text-[#4E8C52] tracking-widest mt-2 uppercase">
               Meet Ranger Simba
             </span>
           </div>
@@ -462,7 +459,7 @@ export function Welcome() {
         <div className="max-w-7xl mx-auto">
           
           <div className="text-center max-w-3xl mx-auto mb-16 select-none">
-            <h3 className="font-fredoka text-4xl sm:text-5xl font-extrabold text-[#3E2723] mb-5 tracking-wide">
+            <h3 className="font-sans text-4xl sm:text-5xl font-extrabold text-[#3E2723] mb-5 tracking-wide">
               Savanna Expedition Map
             </h3>
             <p className="text-[#5D4037] font-semibold text-base sm:text-lg">
@@ -474,7 +471,7 @@ export function Welcome() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
             
             {/* Left 8 Columns: Illustrated Winding SVG Safari Map */}
-            <div className="lg:col-span-8 bg-[#FAF6EE] border-3 border-[#8C6239]/40 rounded-[3rem] p-6 shadow-xl relative select-none overflow-hidden h-[420px] md:h-[480px]">
+            <div className="lg:col-span-8 bg-[#FAF6EE] border-3 border-[#8C6239]/40 rounded-lg p-6 shadow-xl relative select-none overflow-hidden h-[420px] md:h-[480px]">
               
               <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#8C6239 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
               
@@ -516,11 +513,11 @@ export function Welcome() {
                     style={{ left: outpost.mapX, top: outpost.mapY, transform: 'translate(-50%, -50%)' }}
                   >
                     {/* Ring pulsing animation */}
-                    <div className={`absolute -inset-4 rounded-full transition-all ${isActive ? 'map-pulse-ring scale-110' : 'bg-[#FF9F1C]/25 animate-ping'}`} />
+                    <div className={`absolute -inset-4 rounded-lg transition-all ${isActive ? 'map-pulse-ring scale-110' : 'bg-[#FF9F1C]/25 animate-ping'}`} />
                     
                     {/* Outpost button badge */}
                     <div 
-                      className={`w-14 h-14 rounded-2xl flex items-center justify-center relative z-10 border-3 shadow-lg transition-all ${isActive ? 'scale-110' : 'scale-100 group-hover:scale-105'}`}
+                      className={`w-14 h-14 rounded-full flex items-center justify-center relative z-10 border-3 shadow-lg transition-all ${isActive ? 'scale-110' : 'scale-100 group-hover:scale-105'}`}
                       style={{ 
                         backgroundColor: outpost.color, 
                         borderColor: isActive ? '#FFFFFF' : outpost.textColor,
@@ -531,7 +528,7 @@ export function Welcome() {
                     </div>
 
                     <span 
-                      className={`absolute bottom-[-28px] left-[50%] transform -translate-x-[50%] whitespace-nowrap text-2xs font-extrabold px-2.5 py-1 rounded-md shadow-sm transition-all ${isActive ? 'bg-[#FF9F1C] text-white border-2 border-white' : 'bg-[#FFFFFF] text-[#5D4037] border border-[#8AC926]/30 group-hover:bg-[#FFF8E1]'}`}
+                      className={`absolute bottom-[-28px] left-[50%] transform -translate-x-[50%] whitespace-nowrap text-2xs font-extrabold px-2.5 py-1 rounded-lg shadow-sm transition-all ${isActive ? 'bg-[#FF9F1C] text-white border-2 border-white' : 'bg-[#FFFFFF] text-[#5D4037] border border-[#8AC926]/30 group-hover:bg-[#FFF8E1]'}`}
                     >
                       {outpost.name.split(" ")[0]} outpost
                     </span>
@@ -552,7 +549,7 @@ export function Welcome() {
             <div className="lg:col-span-4 h-full">
               
               <div 
-                className="glass-panel rounded-[2.5rem] p-8 text-left shadow-xl relative overflow-hidden h-full flex flex-col justify-between"
+                className="glass-panel rounded-lg p-8 text-left shadow-xl relative overflow-hidden h-full flex flex-col justify-between"
                 style={{ animation: 'bubble-pop 0.5s ease-out' }}
               >
                 <div className="absolute top-0 right-0 w-28 h-28 text-[#8AC926]/5 pointer-events-none">
@@ -563,14 +560,14 @@ export function Welcome() {
                   
                   {/* Category badging */}
                   <div 
-                    className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full font-fredoka font-extrabold text-xs mb-6"
+                    className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg font-sans font-extrabold text-xs mb-6"
                     style={{ backgroundColor: currentOutpost.badgeBg, color: currentOutpost.textColor }}
                   >
                     <Clock className="w-3.5 h-3.5" />
                     <span>{currentOutpost.age} Class</span>
                   </div>
 
-                  <h4 className="font-fredoka text-3xl font-extrabold text-[#3E2723] mb-4 leading-tight">
+                  <h4 className="font-sans text-3xl font-extrabold text-[#3E2723] mb-4 leading-tight">
                     {currentOutpost.name}
                   </h4>
                   
@@ -598,7 +595,7 @@ export function Welcome() {
                     <ul className="space-y-2.5 text-xs font-semibold text-[#5D4037]">
                       {currentOutpost.highlights.map((h, idx) => (
                         <li key={idx} className="flex items-center gap-2">
-                          <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: currentOutpost.color }}></span>
+                          <span className="w-1.5 h-1.5 rounded-lg" style={{ backgroundColor: currentOutpost.color }}></span>
                           {h}
                         </li>
                       ))}
@@ -608,7 +605,7 @@ export function Welcome() {
                 </div>
 
                 <div className="flex gap-3">
-                  <button className="w-full py-4 rounded-xl bg-white hover:bg-[#FAF8F5] text-[#3E2723] font-fredoka font-extrabold text-sm border-2 border-[#8AC926]/20 shadow-md transition-all flex items-center justify-center gap-2">
+                  <button className="w-full py-4 rounded-md bg-white hover:bg-[#FAF8F5] text-[#3E2723] font-sans font-extrabold text-sm border-2 border-[#8AC926]/20 shadow-md transition-all flex items-center justify-center gap-2">
                     <span>Expedition Curriculum</span>
                     <ArrowRight className="w-4 h-4" />
                   </button>
@@ -636,12 +633,12 @@ export function Welcome() {
           {/* Wooden signage title */}
           <div className="flex flex-col items-center mb-16 text-center select-none">
             <div className="flex gap-20 justify-center -mb-1">
-              <div className="w-1.5 h-8 bg-[#8C6239] rounded-full"></div>
-              <div className="w-1.5 h-8 bg-[#8C6239] rounded-full"></div>
+              <div className="w-1.5 h-8 bg-[#8C6239] rounded-lg"></div>
+              <div className="w-1.5 h-8 bg-[#8C6239] rounded-lg"></div>
             </div>
-            <div className="bg-[#A8763E] border-4 border-[#5E3A21] rounded-2xl px-12 py-4.5 shadow-xl max-w-lg transform -rotate-1 relative overflow-hidden">
+            <div className="bg-[#A8763E] border-4 border-[#5E3A21] rounded-lg px-12 py-4.5 shadow-xl max-w-lg transform -rotate-1 relative overflow-hidden">
               <div className="absolute inset-0 opacity-15 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-900 via-amber-950 to-stone-950"></div>
-              <h3 className="font-fredoka text-2xl sm:text-3xl text-[#FAF3E0] font-extrabold uppercase tracking-widest drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)]">
+              <h3 className="font-sans text-2xl sm:text-3xl text-[#FAF3E0] font-extrabold uppercase tracking-widest drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)]">
                 Our Savanna Paths
               </h3>
             </div>
@@ -651,12 +648,12 @@ export function Welcome() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             
             {/* Card 1: Creative Crafts */}
-            <div className="group glass-panel glass-panel-hover rounded-[2.5rem] p-8 shadow-xl flex flex-col items-center text-center relative overflow-hidden select-none">
-              <div className="absolute top-0 right-0 w-24 h-24 bg-[#FFD275]/10 rounded-bl-[5rem] pointer-events-none"></div>
-              <div className="w-20 h-20 bg-[#FFF8E1] border-2 border-[#FFD275] rounded-3xl flex items-center justify-center mb-8 group-hover:scale-110 group-hover:rotate-12 transition-transform duration-300 shadow-sm">
+            <div className="group glass-panel glass-panel-hover rounded-lg p-8 shadow-xl flex flex-col items-center text-center relative overflow-hidden select-none">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-[#FFD275]/10 rounded-lg pointer-events-none"></div>
+              <div className="w-20 h-20 bg-[#FFF8E1] border-2 border-[#FFD275] rounded-lg flex items-center justify-center mb-8 group-hover:scale-110 group-hover:rotate-12 transition-transform duration-300 shadow-sm">
                 <Palette className="w-10 h-10 text-[#FF9F1C]" />
               </div>
-              <h4 className="font-fredoka text-2xl font-extrabold text-[#3E2723] mb-4">Creative Crafts</h4>
+              <h4 className="font-sans text-2xl font-extrabold text-[#3E2723] mb-4">Creative Crafts</h4>
               <p className="text-sm text-[#5D4037] font-semibold leading-relaxed">
                 Finger dexterity is our launchpad! Cubs build tropical clay trees, mold plaster paw prints, and paint beautiful sunrise canvases using natural organic dyes.
               </p>
@@ -667,12 +664,12 @@ export function Welcome() {
             </div>
 
             {/* Card 2: Nature Safaris */}
-            <div className="group glass-panel glass-panel-hover rounded-[2.5rem] p-8 shadow-xl flex flex-col items-center text-center relative overflow-hidden select-none">
-              <div className="absolute top-0 right-0 w-24 h-24 bg-[#8AC926]/10 rounded-bl-[5rem] pointer-events-none"></div>
-              <div className="w-20 h-20 bg-[#E8F5E9] border-2 border-[#8AC926] rounded-3xl flex items-center justify-center mb-8 group-hover:scale-110 group-hover:-rotate-12 transition-transform duration-300 shadow-sm">
+            <div className="group glass-panel glass-panel-hover rounded-lg p-8 shadow-xl flex flex-col items-center text-center relative overflow-hidden select-none">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-[#8AC926]/10 rounded-lg pointer-events-none"></div>
+              <div className="w-20 h-20 bg-[#E8F5E9] border-2 border-[#8AC926] rounded-lg flex items-center justify-center mb-8 group-hover:scale-110 group-hover:-rotate-12 transition-transform duration-300 shadow-sm">
                 <Leaf className="w-10 h-10 text-[#4CAF50]" />
               </div>
-              <h4 className="font-fredoka text-2xl font-extrabold text-[#3E2723] mb-4">Nature Safaris</h4>
+              <h4 className="font-sans text-2xl font-extrabold text-[#3E2723] mb-4">Nature Safaris</h4>
               <p className="text-sm text-[#5D4037] font-semibold leading-relaxed">
                 Nature is our live amphitheater. Toddlers trace evolutionary insect timelines, plant climbing sunflowers, and analyze garden soil in our open-air save savanna.
               </p>
@@ -683,12 +680,12 @@ export function Welcome() {
             </div>
 
             {/* Card 3: Cub Collaboration */}
-            <div className="group glass-panel glass-panel-hover rounded-[2.5rem] p-8 shadow-xl flex flex-col items-center text-center relative overflow-hidden select-none">
-              <div className="absolute top-0 right-0 w-24 h-24 bg-[#4EA8DE]/10 rounded-bl-[5rem] pointer-events-none"></div>
-              <div className="w-20 h-20 bg-[#E0F7FA] border-2 border-[#4EA8DE] rounded-3xl flex items-center justify-center mb-8 group-hover:scale-110 group-hover:rotate-12 transition-transform duration-300 shadow-sm">
+            <div className="group glass-panel glass-panel-hover rounded-lg p-8 shadow-xl flex flex-col items-center text-center relative overflow-hidden select-none">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-[#4EA8DE]/10 rounded-lg pointer-events-none"></div>
+              <div className="w-20 h-20 bg-[#E0F7FA] border-2 border-[#4EA8DE] rounded-lg flex items-center justify-center mb-8 group-hover:scale-110 group-hover:rotate-12 transition-transform duration-300 shadow-sm">
                 <Users className="w-10 h-10 text-[#00BCD4]" />
               </div>
-              <h4 className="font-fredoka text-2xl font-extrabold text-[#3E2723] mb-4">Cub Collaboration</h4>
+              <h4 className="font-sans text-2xl font-extrabold text-[#3E2723] mb-4">Cub Collaboration</h4>
               <p className="text-sm text-[#5D4037] font-semibold leading-relaxed">
                 Team building begins at the campfire. Children collaborate in groups, coordinate puppet acts, and learn core emotional compassion inside kind group play circles.
               </p>
@@ -708,17 +705,17 @@ export function Welcome() {
         
         <div className="flex flex-col items-center mb-10 animate-float-gentle">
           <div className="relative w-28 h-28">
-            <div className="absolute bottom-2 left-2 w-24 h-5 bg-[#5D4037] rounded-full transform rotate-12 border-2 border-[#3E2723] z-10 shadow-md"></div>
-            <div className="absolute bottom-2 left-2 w-24 h-5 bg-[#5D4037] rounded-full transform -rotate-12 border-2 border-[#3E2723] z-10 shadow-md"></div>
-            <div className="absolute bottom-6 left-6 w-16 h-20 bg-gradient-to-t from-[#FF3D00] via-[#FF9100] to-[#FFEA00] rounded-b-full rounded-tl-full transform rotate-45 animate-fire-glow opacity-95"></div>
-            <div className="absolute bottom-6 left-8 w-12 h-16 bg-gradient-to-t from-[#FF3D00] via-[#FFD600] to-yellow-200 rounded-b-full rounded-tl-full transform rotate-45 animate-fire-glow opacity-90" style={{ animationDelay: "0.4s" }}></div>
+            <div className="absolute bottom-2 left-2 w-24 h-5 bg-[#5D4037] rounded-lg transform rotate-12 border-2 border-[#3E2723] z-10 shadow-md"></div>
+            <div className="absolute bottom-2 left-2 w-24 h-5 bg-[#5D4037] rounded-lg transform -rotate-12 border-2 border-[#3E2723] z-10 shadow-md"></div>
+            <div className="absolute bottom-6 left-6 w-16 h-20 bg-gradient-to-t from-[#FF3D00] via-[#FF9100] to-[#FFEA00] rounded-lg rounded-lg transform rotate-45 animate-fire-glow opacity-95"></div>
+            <div className="absolute bottom-6 left-8 w-12 h-16 bg-gradient-to-t from-[#FF3D00] via-[#FFD600] to-yellow-200 rounded-lg rounded-lg transform rotate-45 animate-fire-glow opacity-90" style={{ animationDelay: "0.4s" }}></div>
           </div>
-          <span className="text-xs uppercase font-fredoka font-extrabold text-[#FF9F1C] tracking-widest mt-4">Campfire stories</span>
+          <span className="text-xs uppercase font-sans font-extrabold text-[#FF9F1C] tracking-widest mt-4">Campfire stories</span>
         </div>
 
         {/* Testimonial glass placard */}
-        <div className="glass-panel rounded-[3.5rem] p-10 md:p-14 shadow-2xl max-w-4xl mx-auto relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-24 h-24 bg-[#FF9F1C]/5 rounded-br-[5rem] pointer-events-none"></div>
+        <div className="glass-panel rounded-lg p-10 md:p-14 shadow-2xl max-w-4xl mx-auto relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-24 h-24 bg-[#FF9F1C]/5 rounded-lg pointer-events-none"></div>
           
           <div className="absolute top-6 left-6 text-[#FF9F1C]/30">
             <Quote className="w-12 h-12 fill-current rotate-180" />
@@ -736,7 +733,7 @@ export function Welcome() {
               <Heart className="w-6 h-6 text-[#8AC926] fill-[#8AC926]" />
             </div>
             <div className="text-left">
-              <h5 className="font-fredoka text-base font-extrabold text-[#3E2723]">Mama Sarah Jenkins</h5>
+              <h5 className="font-sans text-base font-extrabold text-[#3E2723]">Mama Sarah Jenkins</h5>
               <p className="text-xs text-[#5D4037] font-extrabold tracking-wide">Proud Parent of Lily (Age 2.5)</p>
             </div>
           </div>
@@ -748,22 +745,22 @@ export function Welcome() {
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8">
           <div className="flex flex-col items-center">
             <ShieldCheck className="w-10 h-10 text-[#4CAF50] mb-3" />
-            <h5 className="font-fredoka font-extrabold text-sm text-[#3E2723]">100% Safe Savanna</h5>
+            <h5 className="font-sans font-extrabold text-sm text-[#3E2723]">100% Safe Savanna</h5>
             <p className="text-xs text-[#5D4037] mt-1 font-semibold">Gated perimeter & guard patrols</p>
           </div>
           <div className="flex flex-col items-center">
             <GraduationCap className="w-10 h-10 text-[#FF9F1C] mb-3" />
-            <h5 className="font-fredoka font-extrabold text-sm text-[#3E2723]">Licensed Guides</h5>
+            <h5 className="font-sans font-extrabold text-sm text-[#3E2723]">Licensed Guides</h5>
             <p className="text-xs text-[#5D4037] mt-1 font-semibold">Degrees in early-ed & bio labs</p>
           </div>
           <div className="flex flex-col items-center">
             <Leaf className="w-10 h-10 text-[#00BCD4] mb-3" />
-            <h5 className="font-fredoka font-extrabold text-sm text-[#3E2723]">Savanna Nutrition</h5>
+            <h5 className="font-sans font-extrabold text-sm text-[#3E2723]">Savanna Nutrition</h5>
             <p className="text-xs text-[#5D4037] mt-1 font-semibold">Jungle-fresh healthy meals</p>
           </div>
           <div className="flex flex-col items-center">
             <Calendar className="w-10 h-10 text-[#FF70A6] mb-3" />
-            <h5 className="font-fredoka font-extrabold text-sm text-[#3E2723]">Flexible Expeditions</h5>
+            <h5 className="font-sans font-extrabold text-sm text-[#3E2723]">Flexible Expeditions</h5>
             <p className="text-xs text-[#5D4037] mt-1 font-semibold">Full, half-day, & nursery camps</p>
           </div>
         </div>
@@ -771,6 +768,7 @@ export function Welcome() {
 
       {/* JungleFooter is embedded beautifully at the bottom */}
       <JungleFooter />
+      <FloatingWhatsApp />
     </div>
   );
 }

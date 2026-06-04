@@ -32,21 +32,23 @@ export async function authenticate(req: Request, _res: Response, next: NextFunct
     const token = authHeader.split(" ")[1];
     const decoded = jwt.verify(token, env.JWT_SECRET) as JwtPayload;
 
-    // Check if user still exists and is active
+    // Check if user still exists and is active. Role is read from the DB (not
+    // the token) so demotions/promotions take effect immediately rather than
+    // persisting in a stale token until it expires.
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: { isActive: true },
+      select: { status: true, isDeleted: true, role: true, email: true },
     });
 
-    if (!user) {
+    if (!user || user.isDeleted) {
       return next(new UnauthorizedError("User no longer exists"));
     }
 
-    if (!user.isActive) {
-      return next(new ForbiddenError("Your account has been deactivated"));
+    if (user.status !== "ACTIVE") {
+      return next(new ForbiddenError("Account is deactivated"));
     }
 
-    req.user = decoded;
+    req.user = { userId: decoded.userId, email: user.email, role: user.role };
     next();
   } catch (error) {
     next(new UnauthorizedError("Invalid or expired token"));
@@ -67,11 +69,11 @@ export async function optionalAuthenticate(req: Request, _res: Response, next: N
 
       const user = await prisma.user.findUnique({
         where: { id: decoded.userId },
-        select: { isActive: true },
+        select: { status: true, isDeleted: true, role: true, email: true },
       });
 
-      if (user && user.isActive) {
-        req.user = decoded;
+      if (user && !user.isDeleted && user.status === "ACTIVE") {
+        req.user = { userId: decoded.userId, email: user.email, role: user.role };
       }
     }
     next();
