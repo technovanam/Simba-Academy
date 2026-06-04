@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import type { Route } from "./+types/student.checkout";
 import { api, ApiError, type AuthUser, type Course } from "../lib/api";
+import { openZohoCheckout } from "../lib/zohoCheckout";
 import { clearSession, getToken, getUser } from "../lib/auth";
 import { ModalCloseButton } from "../components/ModalCloseButton";
 import {
@@ -113,16 +114,6 @@ export default function StudentCheckoutPage() {
     }
   }, [error, message]);
 
-  const loadScript = (src: string) => {
-    return new Promise((resolve) => {
-      const script = document.createElement("script");
-      script.src = src;
-      script.onload = () => resolve(true);
-      script.onerror = () => resolve(false);
-      document.body.appendChild(script);
-    });
-  };
-
   async function handleEnroll(course: Course) {
     if (!token || !user) return;
     setActionLoading(`enroll-${course.id}`);
@@ -130,67 +121,39 @@ export default function StudentCheckoutPage() {
     setMessage("");
 
     try {
-      // 1. Load Razorpay Checkout SDK
-      const scriptLoaded = await loadScript("https://checkout.razorpay.com/v1/checkout.js");
-      if (!scriptLoaded) {
-        throw new Error("Razorpay Checkout SDK failed to load. Are you connected to the internet?");
-      }
+      const orderData = await api.createOrder(token, { courseId: course.id });
 
-      // 2. Request order details from backend
-      const orderData = await api.createOrder(token, {
-        courseId: course.id,
-      });
-
-      // 3. Open Razorpay options
-      const options = {
-        key: orderData.key,
-        amount: orderData.amount,
-        currency: orderData.currency,
-        name: "Simba Academy 🦁",
+      const payment = await openZohoCheckout({
+        session: orderData,
         description: `Enroll: ${course.title}`,
-        image: "/Simba Logo 2025.pdf.png",
-        order_id: orderData.orderId,
-        handler: async function (response: any) {
-          try {
-            setActionLoading("verify");
-            const verifyResult = await api.verifyPayment(token, {
-              razorpayOrderId: response.razorpay_order_id,
-              razorpayPaymentId: response.razorpay_payment_id,
-              razorpaySignature: response.razorpay_signature,
-            });
-
-            if (verifyResult.success) {
-              setMessage(`Congratulations! Course "${course.title}" unlocked successfully!`);
-              setIsSuccess(true);
-            } else {
-              setError("Payment verification failed. Please contact Simba support.");
-            }
-          } catch (err) {
-            console.error("Verification error:", err);
-            setError("Signature validation failed. Contact support.");
-          } finally {
-            setActionLoading(null);
-          }
-        },
-        prefill: {
+        referenceNumber: orderData.paymentSessionId,
+        customer: {
           name: user.name,
           email: user.email,
-          contact: user.phone ?? "",
+          phone: user.phone ?? undefined,
         },
-        theme: {
-          color: "#8AC926",
-        },
-      };
-
-      const rzp = new (window as any).Razorpay(options);
-      rzp.on("payment.failed", function (response: any) {
-        setError(`Payment failed: ${response.error.description}`);
       });
-      rzp.open();
 
-    } catch (err) {
-      console.error("Order creation failed:", err);
-      setError(err instanceof Error ? err.message : "Failed to initiate payment.");
+      setActionLoading("verify");
+      const verifyResult = await api.verifyPayment(token, {
+        paymentSessionId: payment.payments_session_id,
+        paymentId: payment.payment_id,
+        signature: payment.signature,
+      });
+
+      if (verifyResult.success) {
+        setMessage(`Congratulations! Course "${course.title}" unlocked successfully!`);
+        setIsSuccess(true);
+      } else {
+        setError("Payment verification failed. Please contact Simba support.");
+      }
+    } catch (err: unknown) {
+      const code = (err as { code?: string })?.code;
+      if (code === "widget_closed") {
+        setError("Payment was cancelled.");
+      } else {
+        setError(err instanceof Error ? err.message : "Failed to initiate payment.");
+      }
     } finally {
       setActionLoading(null);
     }
@@ -351,7 +314,7 @@ export default function StudentCheckoutPage() {
 
       {/* Footer bar */}
       <footer className="h-14 border-t border-slate-200 bg-white/70 backdrop-blur-md px-6 flex items-center justify-center shrink-0 text-3xs font-semibold text-slate-400">
-        Simba Preschool Academy © {new Date().getFullYear()} — Secure Payment Processing via Razorpay
+        Simba Preschool Academy © {new Date().getFullYear()} — Secure payments via Zoho Payments
       </footer>
 
     </div>

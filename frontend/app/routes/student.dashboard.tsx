@@ -11,6 +11,9 @@ import {
   type StoryBook,
 } from "../lib/api";
 import { clearSession, getToken, getUser } from "../lib/auth";
+import { openZohoCheckout } from "../lib/zohoCheckout";
+import { StoryBookActions } from "../components/StoryBookActions";
+import { PortalSelect } from "../components/PortalSelect";
 import { ModalCloseButton } from "../components/ModalCloseButton";
 import {
   BookOpen,
@@ -141,7 +144,7 @@ export default function StudentDashboardPage() {
       const [allCourses, allPayments, allBooks, allMaterials] = await Promise.all([
         api.getCourses(),
         api.getStudentPayments(token),
-        api.getPublicStoryBooks(),
+        api.getPublicStoryBooks(token),
         api.getTeacherMaterials(token), // Fetches approved materials
       ]);
 
@@ -168,17 +171,7 @@ export default function StudentDashboardPage() {
     }
   }
 
-  // ── RAZORPAY PAYMENT CHECKOUT FLOW ────────────────────────────────────
-  const loadScript = (src: string) => {
-    return new Promise((resolve) => {
-      const script = document.createElement("script");
-      script.src = src;
-      script.onload = () => resolve(true);
-      script.onerror = () => resolve(false);
-      document.body.appendChild(script);
-    });
-  };
-
+  // ── Zoho Payments checkout ───────────────────────────────────────────
   async function handleEnroll(course: Course) {
     if (!token || !user) return;
     setActionLoading(`enroll-${course.id}`);
@@ -186,67 +179,39 @@ export default function StudentDashboardPage() {
     setMessage("");
 
     try {
-      // 1. Load Razorpay Checkout SDK
-      const scriptLoaded = await loadScript("https://checkout.razorpay.com/v1/checkout.js");
-      if (!scriptLoaded) {
-        throw new Error("Razorpay Checkout SDK failed to load. Are you connected to the internet?");
-      }
+      const orderData = await api.createOrder(token, { courseId: course.id });
 
-      // 2. Request order details from backend
-      const orderData = await api.createOrder(token, {
-        courseId: course.id,
-      });
-
-      // 3. Open Razorpay payment gateway options window
-      const options = {
-        key: orderData.key,
-        amount: orderData.amount,
-        currency: orderData.currency,
-        name: "Simba Academy 🦁",
+      const payment = await openZohoCheckout({
+        session: orderData,
         description: `Unlock Course: ${course.title}`,
-        image: "/Simba Logo 2025.pdf.png",
-        order_id: orderData.orderId,
-        handler: async function (response: any) {
-          try {
-            setActionLoading("verify");
-            const verifyResult = await api.verifyPayment(token, {
-              razorpayOrderId: response.razorpay_order_id,
-              razorpayPaymentId: response.razorpay_payment_id,
-              razorpaySignature: response.razorpay_signature,
-            });
-
-            if (verifyResult.success) {
-              setMessage(`Congratulations! Course "${course.title}" unlocked successfully. Welcome to the safari! 🌴`);
-              loadDashboardData();
-            } else {
-              setError("Payment verification failed. Please contact Simba support.");
-            }
-          } catch (err) {
-            console.error("Verification error:", err);
-            setError("Signature validation failed. Admin notification sent.");
-          } finally {
-            setActionLoading(null);
-          }
-        },
-        prefill: {
+        referenceNumber: orderData.paymentSessionId,
+        customer: {
           name: user.name,
           email: user.email,
-          contact: user.phone ?? "",
+          phone: user.phone ?? undefined,
         },
-        theme: {
-          color: "#8AC926", // Simba primary green
-        },
-      };
-
-      const rzp = new (window as any).Razorpay(options);
-      rzp.on("payment.failed", function (response: any) {
-        setError(`Payment failed: ${response.error.description}`);
       });
-      rzp.open();
 
-    } catch (err) {
-      console.error("Order creation failed:", err);
-      setError(err instanceof Error ? err.message : "Failed to initiate payment gateway.");
+      setActionLoading("verify");
+      const verifyResult = await api.verifyPayment(token, {
+        paymentSessionId: payment.payments_session_id,
+        paymentId: payment.payment_id,
+        signature: payment.signature,
+      });
+
+      if (verifyResult.success) {
+        setMessage(`Congratulations! Course "${course.title}" unlocked successfully. Welcome to the safari! 🌴`);
+        loadDashboardData();
+      } else {
+        setError("Payment verification failed. Please contact Simba support.");
+      }
+    } catch (err: unknown) {
+      const code = (err as { code?: string })?.code;
+      if (code === "widget_closed") {
+        setError("Payment was cancelled.");
+      } else {
+        setError(err instanceof Error ? err.message : "Failed to initiate payment gateway.");
+      }
     } finally {
       setActionLoading(null);
     }
@@ -555,7 +520,7 @@ export default function StudentDashboardPage() {
                                     setSelectedCourseId(c.id);
                                     setActiveTab("materials");
                                   }}
-                                  className="text-xs font-black text-[#52b788] hover:underline flex items-center gap-0.5 pt-1 cursor-pointer"
+                                  className="text-xs font-black text-[#52b788] hover:underline inline-arrow pt-1 cursor-pointer"
                                 >
                                   View worksheets <ChevronRight className="w-3.5 h-3.5" />
                                 </button>
@@ -698,7 +663,8 @@ export default function StudentDashboardPage() {
                           />
                         </div>
                         <div className="flex gap-2">
-                          <select
+                          <PortalSelect
+                            size="sm"
                             value={libraryCategory}
                             onChange={(e) => setLibraryCategory(e.target.value)}
                             className="rounded-xl bg-slate-50 border border-slate-200 px-3 py-2 text-xs outline-none focus:border-[#52b788] focus:bg-white transition font-bold text-slate-600"
@@ -707,7 +673,7 @@ export default function StudentDashboardPage() {
                             {storyBookCategories.map((c) => (
                               <option key={c} value={c}>{c}</option>
                             ))}
-                          </select>
+                          </PortalSelect>
                         </div>
                       </div>
 
@@ -728,16 +694,17 @@ export default function StudentDashboardPage() {
                                 {b.author && <p className="text-2xs text-slate-600 font-semibold">Author: {b.author}</p>}
                               </div>
 
-                              <div className="border-t border-slate-100 pt-3 flex items-center justify-between">
-                                <span className="text-3xs text-slate-400 font-semibold">Simba Library</span>
-                                <a
-                                  href={b.fileUrl}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="px-3.5 py-2 rounded-2xl bg-[#ff9f1c] hover:bg-[#ffb703] text-white font-sans font-black text-2xs transition shadow-md shadow-[#ff9f1c]/10 flex items-center gap-1 cursor-pointer"
-                                >
-                                  Read Book 📖
-                                </a>
+                              <div className="border-t border-slate-100 pt-3 flex flex-col gap-2">
+                                <span className="text-3xs text-slate-400 font-semibold">Simba Library · view & print only</span>
+                                {token && (
+                                  <StoryBookActions
+                                    bookId={b.id}
+                                    token={token}
+                                    role="STUDENT"
+                                    title={b.title}
+                                    variant="student"
+                                  />
+                                )}
                               </div>
                             </div>
                           ))
@@ -780,7 +747,7 @@ export default function StudentDashboardPage() {
                                 successfulPayments.map((p) => (
                                   <tr key={p.id} className="border-b border-slate-100 hover:bg-slate-50/40 transition">
                                     <td className="py-4 font-black text-[#2d6a4f] tracking-wider">
-                                      {p.razorpayPaymentId ?? "Verification Success"}
+                                      {p.gatewayPaymentId ?? "Verification Success"}
                                     </td>
                                     <td className="py-4 font-bold text-slate-800">
                                       {p.course?.title ?? "General Academy Fee"}
