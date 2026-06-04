@@ -93,7 +93,7 @@ model Material {
   uploadedBy  User?   @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
 }
 
-// ── Payment / Razorpay ──────────────────────────────────────────────
+// ── Payment (Zoho Payments) ─────────────────────────────────────────
 enum PaymentStatus {
   PENDING
   SUCCESS
@@ -106,9 +106,9 @@ model Payment {
   amount           Float
   currency         String        @default("INR")
   status           PaymentStatus @default(PENDING)
-  razorpayOrderId  String?       @unique
-  razorpayPaymentId String?      @unique
-  razorpaySignature String?
+  paymentSessionId  String?      @unique
+  gatewayPaymentId  String?      @unique
+  paymentSignature  String?
   userId           String
   courseId         String?
   createdAt        DateTime      @default(now())
@@ -183,12 +183,19 @@ model Task {
 }
 
 // ── Story Books (Children Library) ──────────────────────────────────
+enum LibraryAudience {
+  STUDENT
+  TEACHER
+  BOTH
+}
+
 model StoryBook {
-  id          String   @id @default(cuid())
+  id          String           @id @default(cuid())
   title       String
   author      String?
-  category    String   // Fairy Tales, Phonics, Bedtime Stories, etc.
-  fileUrl     String   // Uploaded PDF file URL
+  category    String           // Fairy Tales, Phonics, Bedtime Stories, etc.
+  fileUrl     String           // Storage path or public URL (serve via /api/library)
   fileSize    Int?
-  createdAt   DateTime @default(now())
+  audience    LibraryAudience  @default(BOTH)
+  createdAt   DateTime         @default(now())
 }
