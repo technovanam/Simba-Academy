@@ -7,19 +7,50 @@ import {
   createTestimonialSchema,
   approveTestimonialSchema,
   createGallerySchema,
+  updateGallerySchema,
   createTaskSchema,
   approveTaskSchema,
   createStoryBookSchema,
 } from "../config/schemas.js";
+import { env } from "../config/env.js";
 import { AppError } from "../utils/errors.js";
-import { deleteFileFromWebDAV } from "../services/webdav.js";
+import { removeStoredFile, removeStoredFiles } from "../services/removeStoredFile.js";
 import { sendEmail } from "../services/email.js";
 import adminUserRoutes from "./admin-users.js";
+import { fetchGooglePlaceReviews, isGoogleReviewsConfigured } from "../services/googleReviews.js";
+import {
+  buildGoogleBusinessAuthUrl,
+  exchangeGoogleBusinessCode,
+  getGbpRateLimitHint,
+  isBusinessProfileConfigured,
+} from "../services/googleBusinessProfile.js";
 
 
 const router = Router();
 
-// All routes in this file require ADMIN role
+// Google redirects here after sign-in — no admin JWT on this request
+router.get("/google-reviews/oauth-callback", async (req, res, next) => {
+  try {
+    const code = typeof req.query.code === "string" ? req.query.code : "";
+    if (!code) {
+      throw new AppError("Missing OAuth code", 400);
+    }
+    const tokens = await exchangeGoogleBusinessCode(code);
+    res
+      .type("html")
+      .send(
+        `<html><body style="font-family:sans-serif;padding:2rem;max-width:640px">` +
+          `<h1>Google Business connected</h1>` +
+          `<p>Add this line to <code>backend/.env</code> and restart the server:</p>` +
+          `<pre style="background:#f1f5f9;padding:1rem;border-radius:8px;overflow:auto">GOOGLE_BUSINESS_REFRESH_TOKEN=${tokens.refreshToken}</pre>` +
+          `<p>Then open Admin → Parent Reviews → Refresh Google.</p></body></html>`
+      );
+  } catch (err) {
+    next(err);
+  }
+});
+
+// All routes below require ADMIN role
 router.use(authenticate, authorize("ADMIN"));
 router.use(adminUserRoutes);
 
@@ -72,6 +103,25 @@ router.patch(
   }
 );
 
+// ── Delete Material (DB + storage) ───────────────────────────────────
+router.delete("/materials/:id", async (req, res, next) => {
+  try {
+    const material = await prisma.material.findUnique({
+      where: { id: String(req.params.id) },
+    });
+    if (!material) {
+      throw new AppError("Material not found", 404);
+    }
+
+    await removeStoredFile(material.fileUrl);
+    await prisma.material.delete({ where: { id: material.id } });
+
+    res.json({ message: "Material permanently deleted" });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // ═════════════════════════════════════════════════════════════════════
 //  TESTIMONIALS
 // ═════════════════════════════════════════════════════════════════════
@@ -83,6 +133,108 @@ router.post("/testimonials", validate(createTestimonialSchema), async (req, res,
       data: { ...req.body, isApproved: true },
     });
     res.status(201).json(testimonial);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── Google Business OAuth (one-time connect for full review text) ───
+router.get("/google-reviews/auth-url", async (_req, res, next) => {
+  try {
+    if (!env.GOOGLE_OAUTH_CLIENT_ID || !env.GOOGLE_OAUTH_CLIENT_SECRET) {
+      return res.json({
+        configured: false,
+        message:
+          "Set GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET in backend .env (Google Cloud OAuth client).",
+      });
+    }
+    res.json({ url: buildGoogleBusinessAuthUrl() });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── Google Reviews status (admin test / setup) ─────────────────────
+router.get("/google-reviews/status", async (_req, res, next) => {
+  try {
+    if (!isGoogleReviewsConfigured()) {
+      return res.json({
+        configured: false,
+        fetchMode: "none",
+        message: isBusinessProfileConfigured()
+          ? "Google Business OAuth incomplete. Use Connect Google Business or set GOOGLE_BUSINESS_REFRESH_TOKEN."
+          : "Set GOOGLE_BUSINESS_REFRESH_TOKEN (recommended for review text) or GOOGLE_PLACES_API_KEY + GOOGLE_PLACE_IDS.",
+      });
+    }
+    const meta: { fromSnapshot?: boolean; syncedAt?: string; syncBlocked?: string } = {};
+    const result = await fetchGooglePlaceReviews(false, meta);
+    let hint: string | undefined;
+    if (meta.syncBlocked) {
+      hint = meta.syncBlocked;
+    } else if (meta.fromSnapshot && meta.syncedAt) {
+      hint = `Showing saved reviews (synced ${new Date(meta.syncedAt).toLocaleString("en-IN")}). Click Sync from Google to update.`;
+    } else if (result.reviews.length === 0 && isBusinessProfileConfigured()) {
+      hint = "No saved reviews yet. Click Sync from Google once (wait 15+ minutes between syncs to avoid rate limits).";
+    }
+    const rateHint = getGbpRateLimitHint();
+    if (rateHint && result.reviews.length === 0) {
+      hint = rateHint;
+    }
+    if (result.fetchMode === "oauth_pending") {
+      hint =
+        "OAuth Client ID and secret are saved. Click Connect Google Business, sign in, then paste GOOGLE_BUSINESS_REFRESH_TOKEN into backend .env and restart.";
+    }
+    if (result.fetchMode === "places" && result.reviews.length === 0 && (result.totalRatings ?? 0) > 0) {
+      hint =
+        "Only star ratings loaded. Connect Google Business (OAuth) to load full written feedback from all locations.";
+    }
+    if (result.fetchMode === "business_profile" && result.reviews.length === 0 && !meta.fromSnapshot) {
+      hint =
+        "Google Business is connected. Click Sync from Google once (wait 15+ min between syncs if rate-limited).";
+    }
+    res.json({
+      ...result,
+      configured: true,
+      hint,
+      syncedAt: meta.syncedAt,
+      fromSnapshot: meta.fromSnapshot,
+      syncBlocked: meta.syncBlocked,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/google-reviews/sync", async (_req, res, next) => {
+  try {
+    if (!isGoogleReviewsConfigured()) {
+      return res.json({
+        configured: false,
+        fetchMode: "none",
+        reviews: [],
+        locations: [],
+        message: "Google reviews not configured.",
+      });
+    }
+    const meta: { fromSnapshot?: boolean; syncedAt?: string; syncBlocked?: string; synced?: boolean } = {};
+    const result = await fetchGooglePlaceReviews(true, meta);
+    let hint: string | undefined;
+    if (meta.syncBlocked) {
+      hint = meta.syncBlocked;
+    } else if (meta.synced && result.reviews.length > 0) {
+      hint = `Synced ${result.reviews.length} review(s) from Google.`;
+    } else if (result.fetchMode === "business_profile") {
+      hint = "Sync finished but no reviews returned. Check Google Business APIs or wait for rate limit to clear.";
+    }
+    res.json({
+      ...result,
+      configured: true,
+      hint,
+      synced: meta.synced === true,
+      fromSnapshot: meta.fromSnapshot === true,
+      syncBlocked: meta.syncBlocked,
+      syncedAt: meta.syncedAt ?? (meta.synced ? new Date().toISOString() : undefined),
+    });
   } catch (err) {
     next(err);
   }
@@ -153,6 +305,38 @@ router.get("/gallery", async (_req, res, next) => {
   }
 });
 
+// ── Update Gallery Item ─────────────────────────────────────────────
+router.patch(
+  "/gallery/:id",
+  validate(updateGallerySchema),
+  async (req, res, next) => {
+    try {
+      const id = String(req.params.id);
+      const existing = await prisma.gallery.findUnique({ where: { id } });
+      if (!existing) {
+        throw new AppError("Gallery item not found", 404);
+      }
+
+      const imageUrl = req.body.imageUrl as string | undefined;
+      const updated = await prisma.gallery.update({
+        where: { id },
+        data: {
+          ...(req.body.title !== undefined ? { title: req.body.title || null } : {}),
+          ...(imageUrl ? { imageUrl } : {}),
+        },
+      });
+
+      if (imageUrl && existing.imageUrl && imageUrl !== existing.imageUrl) {
+        await removeStoredFile(existing.imageUrl);
+      }
+
+      res.json(updated);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
 // ── Delete Gallery Item ─────────────────────────────────────────────
 router.delete("/gallery/:id", async (req, res, next) => {
   try {
@@ -162,13 +346,7 @@ router.delete("/gallery/:id", async (req, res, next) => {
     }
 
     await prisma.gallery.delete({ where: { id: String(req.params.id) } });
-
-    // Clean up from cPanel WebDAV storage asynchronously
-    if (item.imageUrl) {
-      deleteFileFromWebDAV(item.imageUrl).catch((err) =>
-        console.error("Failed to delete gallery item from cPanel WebDAV:", err)
-      );
-    }
+    await removeStoredFile(item.imageUrl);
 
     res.json({ message: "Gallery item deleted" });
   } catch (err) {
@@ -272,11 +450,19 @@ router.post("/tasks", validate(createTaskSchema), async (req, res, next) => {
       throw new AppError("Teacher not found", 404);
     }
 
+    const due = new Date(dueDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    due.setHours(0, 0, 0, 0);
+    if (due.getTime() < today.getTime()) {
+      throw new AppError("Due date cannot be in the past", 400);
+    }
+
     const task = await prisma.task.create({
       data: {
-        title,
-        description,
-        dueDate: dueDate ? new Date(dueDate) : null,
+        title: title.trim(),
+        description: description?.trim() || null,
+        dueDate: due,
         teacherId,
         status: "PENDING",
       },
@@ -382,7 +568,13 @@ router.patch("/tasks/:id/approve", validate(approveTaskSchema), async (req, res,
 // ── Delete Task Assignment ──────────────────────────────────────────
 router.delete("/tasks/:id", async (req, res, next) => {
   try {
-    await prisma.task.delete({ where: { id: String(req.params.id) } });
+    const task = await prisma.task.findUnique({ where: { id: String(req.params.id) } });
+    if (!task) {
+      throw new AppError("Task not found", 404);
+    }
+
+    await removeStoredFile(task.proofUrl);
+    await prisma.task.delete({ where: { id: task.id } });
     res.json({ message: "Task assignment deleted successfully" });
   } catch (err) {
     next(err);
@@ -425,14 +617,8 @@ router.delete("/books/:id", async (req, res, next) => {
       throw new AppError("Story book not found", 404);
     }
 
+    await removeStoredFile(book.fileUrl);
     await prisma.storyBook.delete({ where: { id: String(req.params.id) } });
-
-    // Clean up from cPanel WebDAV storage asynchronously
-    if (book.fileUrl) {
-      deleteFileFromWebDAV(book.fileUrl).catch((err) =>
-        console.error("Failed to delete story book from cPanel WebDAV:", err)
-      );
-    }
 
     res.json({ message: "Story book deleted successfully" });
   } catch (err) {
