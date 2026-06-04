@@ -22,7 +22,10 @@ import {
   type StoryBook,
   type Task,
   type Testimonial,
-  type DashboardStats
+  type DashboardStats,
+  type GoogleLocationSummary,
+  type GoogleReviewsStatusResponse,
+  type PublicReview,
 } from "../lib/api";
 import { clearSession, getToken, getUser } from "../lib/auth";
 import {
@@ -56,9 +59,21 @@ import {
   PlusCircle,
   ChevronRight,
   CheckCircle2,
-  Activity
+  Activity,
+  Eye,
+  Download,
+  Phone,
+  MapPin,
 } from "lucide-react";
 import { AdminPeoplePanel } from "../components/AdminPeoplePanel";
+import { AdminPaymentsPanel } from "../components/AdminPaymentsPanel";
+import { RecentPaymentCard, sortPaymentsNewestFirst } from "../components/RecentPaymentCard";
+import { StoryBookActions } from "../components/StoryBookActions";
+import { GalleryItemActions } from "../components/GalleryItemActions";
+import { PortalSelect } from "../components/PortalSelect";
+import { LIBRARY_AUDIENCE_OPTIONS, audienceLabel } from "../lib/library";
+import { resolveStorageUrl } from "../lib/storage";
+import { isDateTodayOrFuture, localDateInputMin } from "../lib/dates";
 import { ModalCloseButton } from "../components/ModalCloseButton";
 import { AdminPageBody, AdminPageHeader, AdminPageShell } from "../components/AdminPageShell";
 import {
@@ -120,6 +135,16 @@ export default function AdminDashboardPage() {
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [franchiseInquiries, setFranchiseInquiries] = useState<FranchiseInquiry[]>([]);
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+  const [googleReviews, setGoogleReviews] = useState<PublicReview[]>([]);
+  const [googleLocations, setGoogleLocations] = useState<GoogleLocationSummary[]>([]);
+  const [googleReviewsMeta, setGoogleReviewsMeta] = useState<{
+    configured: boolean;
+    hint?: string;
+    rating?: number;
+    totalRatings?: number;
+    placeName?: string;
+    fetchMode?: "business_profile" | "places" | "oauth_pending" | "none";
+  }>({ configured: false });
   const [gallery, setGallery] = useState<GalleryItem[]>([]);
 
   // Loading & Feedback States
@@ -170,13 +195,16 @@ export default function AdminDashboardPage() {
     }
   }, [error, message]);
 
-  const [paymentSearch, setPaymentSearch] = useState("");
   const [courseSearch, setCourseSearch] = useState("");
   const [taskSearch, setTaskSearch] = useState("");
   const [taskStatusFilter, setTaskStatusFilter] = useState("ALL");
   const [taskTeacherFilter, setTaskTeacherFilter] = useState("ALL");
   const [bookSearch, setBookSearch] = useState("");
   const [inquirySearch, setInquirySearch] = useState("");
+  const [leadView, setLeadView] = useState<{
+    kind: "admission" | "franchise";
+    item: Inquiry | FranchiseInquiry;
+  } | null>(null);
 
   const [courseForm, setCourseForm] = useState({ id: "", title: "", description: "", level: "Playgroup", price: "" as string | number, imageUrl: "", isEditing: false });
   const [showCourseForm, setShowCourseForm] = useState(false);
@@ -184,12 +212,19 @@ export default function AdminDashboardPage() {
   const [taskForm, setTaskForm] = useState({ title: "", description: "", dueDate: "", teacherId: "" });
   const [showTaskForm, setShowTaskForm] = useState(false);
 
-  const [bookForm, setBookForm] = useState({ title: "", author: "", category: "Fairy Tales", fileUrl: "" });
+  const [bookForm, setBookForm] = useState({
+    title: "",
+    author: "",
+    category: "Fairy Tales",
+    audience: "BOTH" as "STUDENT" | "TEACHER" | "BOTH",
+  });
   const [showBookForm, setShowBookForm] = useState(false);
 
   const [galleryForm, setGalleryForm] = useState({ title: "" });
   const [galleryImageFile, setGalleryImageFile] = useState<File | null>(null);
   const [showGalleryForm, setShowGalleryForm] = useState(false);
+  const [editingGallery, setEditingGallery] = useState<GalleryItem | null>(null);
+  const [gallerySearch, setGallerySearch] = useState("");
 
   const [testimonialForm, setTestimonialForm] = useState({ name: "", content: "", rating: 5 });
   const [showTestimonialForm, setShowTestimonialForm] = useState(false);
@@ -220,22 +255,51 @@ export default function AdminDashboardPage() {
 
     try {
       if (tab === "overview") {
-        const [dashboardStats, allPayments, allInquiries, allTasks, allFranchises] = await Promise.all([
-          api.getDashboard(token),
-          api.getPayments(token),
-          api.getInquiries(token),
-          api.getTasks(token),
-          api.getFranchiseInquiries(token),
-        ]);
-        setStats(dashboardStats);
-        setPayments(allPayments);
-        setInquiries(allInquiries);
-        setTasks(allTasks);
-        setFranchiseInquiries(allFranchises);
-      } else if (tab === "users" || tab === "teachers") {
+        const [dashboardStats, paymentsResult, inquiriesResult, tasksResult, franchisesResult] =
+          await Promise.allSettled([
+            api.getDashboard(token),
+            api.getPayments(token),
+            api.getInquiries(token),
+            api.getTasks(token),
+            api.getFranchiseInquiries(token),
+          ]);
+
+        if (dashboardStats.status !== "fulfilled") {
+          throw dashboardStats.reason;
+        }
+        setStats(dashboardStats.value);
+
+        if (paymentsResult.status === "fulfilled") {
+          setPayments(paymentsResult.value);
+        } else {
+          console.error("Failed to load payments:", paymentsResult.reason);
+          setError(
+            paymentsResult.reason instanceof ApiError
+              ? paymentsResult.reason.message
+              : "Failed to load payment records."
+          );
+        }
+
+        if (inquiriesResult.status === "fulfilled") {
+          setInquiries(inquiriesResult.value);
+        }
+        if (tasksResult.status === "fulfilled") {
+          setTasks(tasksResult.value);
+        }
+        if (franchisesResult.status === "fulfilled") {
+          setFranchiseInquiries(franchisesResult.value);
+        }
+      } else if (tab === "users") {
         setLoading(false);
         const allUsers = await api.getUsers(token);
         setUsers(allUsers);
+        return;
+      } else if (tab === "payments") {
+        setLoading(false);
+        return;
+      } else if (tab === "teachers") {
+        // AdminPeoplePanel loads via GET /api/admin/teachers
+        setLoading(false);
         return;
       } else if (tab === "materials") {
         const [allMaterials, allCourses, allTasks] = await Promise.all([
@@ -264,8 +328,29 @@ export default function AdminDashboardPage() {
         setInquiries(allInquiries);
         setFranchiseInquiries(allFranchises);
       } else if (tab === "reviews") {
-        const allTestimonials = await api.getTestimonials();
+        const allTestimonials = await api.getAdminTestimonials(token);
         setTestimonials(allTestimonials);
+        try {
+          const googleStatus = await api.getGoogleReviewsStatus(token);
+          setGoogleReviews(googleStatus.reviews ?? []);
+          setGoogleLocations(googleStatus.locations ?? []);
+          setGoogleReviewsMeta({
+            configured: googleStatus.configured,
+            hint: googleStatus.hint,
+            rating: googleStatus.rating,
+            totalRatings: googleStatus.totalRatings,
+            placeName: googleStatus.placeName,
+            fetchMode: googleStatus.fetchMode,
+          });
+        } catch {
+          setGoogleReviews([]);
+          setGoogleLocations([]);
+          setGoogleReviewsMeta({
+            configured: true,
+            fetchMode: "business_profile",
+            hint: "Click Sync from Google to load reviews (max once every 15 minutes).",
+          });
+        }
       } else if (tab === "gallery") {
         const allGallery = await api.getGallery();
         setGallery(allGallery);
@@ -429,6 +514,20 @@ export default function AdminDashboardPage() {
   }
 
   // ── MATERIAL APPROVAL ACTIONS ────────────────────────────────────────
+  async function handleDeleteMaterial(materialId: string) {
+    if (!token || !window.confirm("Permanently delete this material and its file from storage?")) return;
+    setActionLoading(`material-delete-${materialId}`);
+    try {
+      await api.deleteMaterial(token, materialId);
+      setMaterials((prev) => prev.filter((m) => m.id !== materialId));
+      setMessage("Learning material permanently deleted.");
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Failed to delete material.");
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
   async function handleApproveMaterial(materialId: string, approve: boolean) {
     if (!token) return;
     setActionLoading(`material-approve-${materialId}`);
@@ -458,12 +557,20 @@ export default function AdminDashboardPage() {
       setError("Please enter the task title.");
       return;
     }
+    if (!taskForm.dueDate) {
+      setError("Please choose a due date.");
+      return;
+    }
+    if (!isDateTodayOrFuture(taskForm.dueDate)) {
+      setError("Due date cannot be in the past.");
+      return;
+    }
 
     try {
       const created = await api.createTask(token, {
         title: taskForm.title,
         description: taskForm.description,
-        dueDate: taskForm.dueDate ? new Date(taskForm.dueDate).toISOString() : null,
+        dueDate: new Date(`${taskForm.dueDate}T12:00:00`).toISOString(),
         teacherId: taskForm.teacherId,
       });
       setTasks((prev) => [created, ...prev]);
@@ -493,7 +600,11 @@ export default function AdminDashboardPage() {
   }
 
   async function handleDeleteTask(taskId: string) {
-    if (!token || !window.confirm("Are you sure you want to delete this task assignment?")) return;
+    if (
+      !token ||
+      !window.confirm("Permanently delete this task and any proof file from storage?")
+    )
+      return;
     setActionLoading(`task-delete-${taskId}`);
     try {
       await api.deleteTask(token, taskId);
@@ -517,29 +628,34 @@ export default function AdminDashboardPage() {
       setError("Please enter the story book title.");
       return;
     }
-    if (!bookFile && !bookForm.fileUrl) {
-      setError("Please select a storybook file to upload or enter an external document URL.");
+    if (!bookFile) {
+      setError("Please choose a PDF, PPT, or DOC file to upload.");
       return;
     }
     setActionLoading("book-save");
 
     try {
-      let finalFileUrl = bookForm.fileUrl;
-      if (bookFile) {
-        // Upload the file first to cPanel
-        const uploadResponse = await api.uploadRaw(token, bookFile);
-        finalFileUrl = uploadResponse.url;
+      const uploadResponse = await api.uploadRaw(token, bookFile);
+      if (!uploadResponse.verified) {
+        throw new ApiError("Story book file could not be verified on storage.", 500);
       }
+      const finalFileUrl = uploadResponse.url;
 
       const created = await api.createStoryBook(token, {
         title: bookForm.title,
         author: bookForm.author || null,
         category: bookForm.category,
         fileUrl: finalFileUrl,
+        fileSize: bookFile?.size ?? null,
+        audience: bookForm.audience,
       });
       setBooks((prev) => [created, ...prev]);
-      setMessage("Story Book added successfully to cPanel library.");
-      setBookForm({ title: "", author: "", category: "Fairy Tales", fileUrl: "" });
+      setMessage(
+        uploadResponse.storage === "webdav"
+          ? "Story book saved to cPanel storage and published to selected portals."
+          : "Story book saved to server storage and published to selected portals."
+      );
+      setBookForm({ title: "", author: "", category: "Fairy Tales", audience: "BOTH" });
       setBookFile(null);
       setShowBookForm(false);
     } catch (err) {
@@ -571,6 +687,11 @@ export default function AdminDashboardPage() {
     try {
       await api.markInquiryRead(token, inquiryId);
       setInquiries((prev) => prev.map((i) => (i.id === inquiryId ? { ...i, isRead: true } : i)));
+      setLeadView((v) =>
+        v?.kind === "admission" && v.item.id === inquiryId
+          ? { ...v, item: { ...v.item, isRead: true } }
+          : v
+      );
       setMessage("Inquiry marked as read.");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Failed to update inquiry.");
@@ -585,6 +706,11 @@ export default function AdminDashboardPage() {
     try {
       await api.markFranchiseRead(token, franchiseId);
       setFranchiseInquiries((prev) => prev.map((f) => (f.id === franchiseId ? { ...f, isRead: true } : f)));
+      setLeadView((v) =>
+        v?.kind === "franchise" && v.item.id === franchiseId
+          ? { ...v, item: { ...v.item, isRead: true } }
+          : v
+      );
       setMessage("Franchise inquiry marked as read.");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Failed to update inquiry.");
@@ -594,38 +720,74 @@ export default function AdminDashboardPage() {
   }
 
   // ── MARKETING (GALLERY / TESTIMONIALS) ACTIONS ───────────────────────
-  async function handleAddGallery(e: React.FormEvent) {
+  function closeGalleryForm() {
+    setShowGalleryForm(false);
+    setEditingGallery(null);
+    setGalleryForm({ title: "" });
+    setGalleryImageFile(null);
+  }
+
+  function openGalleryUpload() {
+    setEditingGallery(null);
+    setGalleryForm({ title: "" });
+    setGalleryImageFile(null);
+    setShowGalleryForm(true);
+  }
+
+  function openGalleryEdit(item: GalleryItem) {
+    setEditingGallery(item);
+    setGalleryForm({ title: item.title ?? "" });
+    setGalleryImageFile(null);
+    setShowGalleryForm(true);
+  }
+
+  async function handleSaveGallery(e: React.FormEvent) {
     e.preventDefault();
     if (!token) return;
     setActionLoading("gallery-save");
     setError("");
     setMessage("");
 
-    if (!galleryImageFile) {
+    if (!editingGallery && !galleryImageFile) {
       setError("Please choose an image to upload.");
       setActionLoading(null);
       return;
     }
-    if (!galleryImageFile.type.startsWith("image/")) {
+    if (galleryImageFile && !galleryImageFile.type.startsWith("image/")) {
       setError("Only image files are allowed (JPEG, PNG, WebP, or GIF).");
       setActionLoading(null);
       return;
     }
 
     try {
-      const uploadResponse = await api.uploadRaw(token, galleryImageFile);
-      const created = await api.createGalleryItem(token, {
-        title: galleryForm.title.trim() || undefined,
-        imageUrl: uploadResponse.url,
-        type: "IMAGE",
-      });
-      setGallery((prev) => [created, ...prev]);
-      setMessage("Gallery photo uploaded successfully.");
-      setGalleryForm({ title: "" });
-      setGalleryImageFile(null);
-      setShowGalleryForm(false);
+      let imageUrl: string | undefined;
+      if (galleryImageFile) {
+        const uploadResponse = await api.uploadRaw(token, galleryImageFile);
+        if (!uploadResponse.verified) {
+          throw new ApiError("File upload could not be verified on storage.", 500);
+        }
+        imageUrl = uploadResponse.url;
+      }
+
+      if (editingGallery) {
+        const updated = await api.updateGalleryItem(token, editingGallery.id, {
+          title: galleryForm.title.trim() || undefined,
+          ...(imageUrl ? { imageUrl } : {}),
+        });
+        setGallery((prev) => prev.map((g) => (g.id === updated.id ? updated : g)));
+        setMessage(imageUrl ? "Gallery photo updated (new image)." : "Gallery title updated.");
+      } else {
+        const created = await api.createGalleryItem(token, {
+          title: galleryForm.title.trim() || undefined,
+          imageUrl: imageUrl!,
+          type: "IMAGE",
+        });
+        setGallery((prev) => [created, ...prev]);
+        setMessage("Gallery photo published.");
+      }
+      closeGalleryForm();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to upload gallery photo.");
+      setError(err instanceof ApiError ? err.message : "Failed to save gallery photo.");
     } finally {
       setActionLoading(null);
     }
@@ -701,17 +863,8 @@ export default function AdminDashboardPage() {
 
   const teachersList = users.filter((u) => u.role === "TEACHER");
 
-  const filteredPayments = payments.filter((p) => {
-    return (
-      (p.user?.name ?? "").toLowerCase().includes(paymentSearch.toLowerCase()) ||
-      (p.user?.email ?? "").toLowerCase().includes(paymentSearch.toLowerCase()) ||
-      (p.razorpayPaymentId ?? "").toLowerCase().includes(paymentSearch.toLowerCase())
-    );
-  });
-
-  const displayedPayments = [...filteredPayments]
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .slice(0, 4);
+  const recentPaymentsTop = sortPaymentsNewestFirst(payments).slice(0, 2);
+  const recentPaymentsList = sortPaymentsNewestFirst(payments).slice(0, 3);
 
   const filteredCourses = courses.filter((c) =>
     c.title.toLowerCase().includes(courseSearch.toLowerCase())
@@ -754,7 +907,14 @@ export default function AdminDashboardPage() {
     taskTeacherFilter,
     tasks.length,
   ]);
+  const filteredGallery = gallery.filter(
+    (g) =>
+      (g.title ?? "").toLowerCase().includes(gallerySearch.toLowerCase()) ||
+      g.type.toLowerCase().includes(gallerySearch.toLowerCase())
+  );
+
   const bookPagination = useAdminPagination(filteredBooks, [bookSearch, books.length]);
+  const galleryPagination = useAdminPagination(filteredGallery, [gallerySearch, gallery.length]);
   const inquiryPagination = useAdminPagination(filteredInquiries, [
     inquirySearch,
     inquirySubTab,
@@ -860,6 +1020,7 @@ export default function AdminDashboardPage() {
             {[
               { id: "overview", label: "Dashboard", icon: Layers },
               { id: "users", label: "Registered Users", icon: Users },
+              { id: "payments", label: "Payments", icon: CreditCard },
               { id: "teachers", label: "Teacher Management", icon: UserPlus },
               { id: "materials", label: "Approve Uploads", icon: FileCheck2 },
               { id: "tasks", label: "Assign Tasks", icon: Calendar },
@@ -983,10 +1144,10 @@ export default function AdminDashboardPage() {
             </div>
           )}
 
-          {loading && activeTab !== "users" && activeTab !== "teachers" ? (
+          {loading && activeTab !== "users" && activeTab !== "teachers" && activeTab !== "payments" ? (
             <div className="flex flex-col items-center justify-center py-20 gap-3">
               <Loader2 className="w-10 h-10 animate-spin text-[#8AC926]" />
-              <p className="font-bold text-[#8AC926] mt-2">Synchronizing data from cPanel server...</p>
+              <p className="font-bold text-[#8AC926] mt-2">Loading dashboard data…</p>
             </div>
           ) : (
             <div className="space-y-5 animate-fade-in flex-1 flex flex-col overflow-hidden">
@@ -1040,7 +1201,7 @@ export default function AdminDashboardPage() {
                           <button
                             type="button"
                             onClick={() => goToTab("users")}
-                            className="text-[9px] font-extrabold uppercase tracking-widest text-green-700 hover:underline flex items-center gap-1"
+                            className="text-[9px] font-extrabold uppercase tracking-widest text-green-700 hover:underline inline-arrow"
                           >
                             Manage Users <ChevronRight className="w-2.5 h-2.5" />
                           </button>
@@ -1054,7 +1215,7 @@ export default function AdminDashboardPage() {
                       <div className="bg-[#EEF4FF] border border-blue-100 rounded-2xl p-5 relative overflow-hidden text-slate-800 select-none flex flex-col justify-between min-h-[170px] h-full shrink-0">
                         <div>
                           <div className="flex justify-between items-center mb-3">
-                            <span className="font-bold tracking-wider text-[10px] uppercase text-blue-800">Razorpay Revenue</span>
+                            <span className="font-bold tracking-wider text-[10px] uppercase text-blue-800">Zoho Payments Revenue</span>
                             <div className="p-1.5 bg-blue-100 rounded-xl border border-blue-200">
                               <CreditCard className="w-3.5 h-3.5 text-[#1364F1]" />
                             </div>
@@ -1062,38 +1223,36 @@ export default function AdminDashboardPage() {
 
                           <div className="space-y-2">
                             <div className="space-y-1">
-                              <span className="text-[9px] font-bold text-blue-600/80 tracking-widest block uppercase">Total tracked</span>
-                              <h3 className="text-2xl font-bold text-slate-800 leading-none tracking-tight">
-                                ₹{stats.revenue.toLocaleString("en-IN")}
-                              </h3>
+                              <span className="text-[9px] font-bold text-blue-600/80 tracking-widest block uppercase">Recent Payments</span>
+                              <h4 className="font-bold text-xs uppercase leading-tight tracking-wider text-slate-800">Enrollment Payments</h4>
                             </div>
 
-                            <div className="bg-white rounded-xl p-2.5 border border-blue-100 flex items-center gap-2">
-                              <div className="w-7 h-7 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center shrink-0">
-                                <Check className="w-3.5 h-3.5 text-emerald-600" />
-                              </div>
-                              <span className="text-[9px] font-bold text-slate-600 leading-tight uppercase tracking-wider">
-                                {stats.payments} successful enrollments verified
-                              </span>
+                            <div className="space-y-1.5">
+                              {recentPaymentsTop.length === 0 ? (
+                                <div className="bg-white rounded-xl p-2.5 border border-blue-100 text-xs text-center text-slate-600 font-semibold">
+                                  No payments yet.
+                                </div>
+                              ) : (
+                                recentPaymentsTop.map((p) => (
+                                  <RecentPaymentCard key={p.id} payment={p} theme="blue" compact />
+                                ))
+                              )}
                             </div>
                           </div>
                         </div>
 
-                        <div className="flex justify-between items-center border-t border-blue-100 pt-2 mt-2">
+                        <div className="flex justify-between items-center border-t border-blue-100 pt-2 mt-2 gap-2">
                           <button
                             type="button"
-                            onClick={() => {
-                              goToTab("overview");
-                              requestAnimationFrame(() => {
-                                document.getElementById("recent-transactions")?.scrollIntoView({ behavior: "smooth", block: "start" });
-                              });
-                            }}
-                            className="text-[9px] font-extrabold uppercase tracking-widest text-blue-700 hover:underline flex items-center gap-1"
+                            onClick={() => goToTab("payments")}
+                            className="text-[9px] font-extrabold uppercase tracking-widest text-blue-700 hover:underline inline-arrow shrink-0"
                           >
-                            View Payments <ChevronRight className="w-2.5 h-2.5" />
+                            Manage Payments <ChevronRight className="w-2.5 h-2.5" />
                           </button>
-                          <span className="text-[9px] font-extrabold text-slate-500">
-                            Paid: {stats.payments}
+                          <span className="text-[9px] font-extrabold text-slate-500 text-right leading-tight">
+                            <span className="text-emerald-700">₹{stats.revenue.toLocaleString("en-IN")}</span>
+                            {" · "}
+                            {payments.length} total record{payments.length === 1 ? "" : "s"}
                           </span>
                         </div>
                       </div>
@@ -1114,7 +1273,7 @@ export default function AdminDashboardPage() {
                               <h4 className="font-bold text-xs uppercase leading-tight tracking-wider text-slate-800">Teacher Assignments</h4>
                             </div>
 
-                            <div className="space-y-1.5 max-h-[110px] overflow-y-auto pr-1">
+                            <div className="space-y-1.5">
                               {tasks.length === 0 ? (
                                 <div className="bg-white rounded-xl p-3 border border-violet-100 text-xs text-center text-slate-600 font-semibold">
                                   No recent tasks assigned.
@@ -1122,7 +1281,7 @@ export default function AdminDashboardPage() {
                               ) : (
                                 [...tasks]
                                   .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-                                  .slice(0, 3)
+                                  .slice(0, 2)
                                   .map((task) => (
                                     <div key={task.id} className="bg-white rounded-xl p-2.5 border border-violet-100 text-xs flex flex-col gap-1">
                                       <div className="flex justify-between items-start gap-1">
@@ -1161,7 +1320,7 @@ export default function AdminDashboardPage() {
                           <button
                             type="button"
                             onClick={() => goToTab("tasks")}
-                            className="text-[9px] font-extrabold uppercase tracking-widest text-violet-700 hover:underline flex items-center gap-1"
+                            className="text-[9px] font-extrabold uppercase tracking-widest text-violet-700 hover:underline inline-arrow"
                           >
                             Manage Tasks <ChevronRight className="w-2.5 h-2.5" />
                           </button>
@@ -1179,64 +1338,33 @@ export default function AdminDashboardPage() {
                     {/* Left & Middle Column Workspace (Main Content - 2/3 Width) */}
                     <div className="lg:col-span-2 flex flex-col min-h-0">
                       {/* Financial Audit Logs Table Card */}
-                      <div id="recent-transactions" className="bg-white rounded-2xl p-5 border border-slate-200 flex-1 flex flex-col overflow-hidden">
+                      <div id="recent-transactions" className="bg-white rounded-2xl p-5 border border-slate-200 flex-1 flex flex-col">
                         <div className="flex flex-wrap justify-between items-center gap-4 mb-4">
                           <div>
-                            <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Recent Transactions Log</h3>
-                            <p className="text-[9px] text-slate-600 font-semibold tracking-wider uppercase mt-0.5">Real-time payment audit tracker</p>
+                            <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Recent Payments</h3>
+                            <p className="text-[9px] text-slate-600 font-semibold tracking-wider uppercase mt-0.5">
+                              Latest enrollment transactions
+                            </p>
                           </div>
+                          <button
+                            type="button"
+                            onClick={() => goToTab("payments")}
+                            className="text-[9px] font-extrabold uppercase tracking-widest text-blue-700 hover:underline inline-arrow"
+                          >
+                            View all <ChevronRight className="w-2.5 h-2.5" />
+                          </button>
                         </div>
 
-                        <div className="overflow-y-auto flex-1">
-                          <table className="w-full text-left text-xs border-collapse">
-                            <thead>
-                              <tr className="border-b border-slate-200 text-slate-600 font-bold">
-                                <th className="pb-3">Payer Details</th>
-                                <th className="pb-3">Amount</th>
-                                <th className="pb-3">Status</th>
-                                <th className="pb-3">Date</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {displayedPayments.length === 0 ? (
-                                <tr>
-                                  <td colSpan={4} className="text-center py-6 font-semibold text-slate-600">
-                                    No payment records matched your search.
-                                  </td>
-                                </tr>
-                              ) : (
-                                displayedPayments.map((p) => (
-                                  <tr key={p.id} className="border-b border-slate-100 hover:bg-slate-50/40 transition">
-                                    <td className="py-2.5">
-                                      <p className="font-bold text-slate-800">{p.user?.name}</p>
-                                      <p className="text-2xs text-slate-600 font-medium">{p.user?.email}</p>
-                                    </td>
-                                    <td className="py-2.5 font-bold text-emerald-600">
-                                      ₹{p.amount.toFixed(2)}
-                                    </td>
-                                    <td className="py-2.5">
-                                      <span className={`px-2 py-0.5 rounded-md text-4xs font-extrabold uppercase border ${
-                                        p.status === "SUCCESS"
-                                          ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
-                                          : p.status === "PENDING"
-                                          ? "bg-amber-500/10 text-amber-600 border-amber-500/20"
-                                          : "bg-rose-500/10 text-rose-600 border-rose-500/20"
-                                      }`}>
-                                        {p.status}
-                                      </span>
-                                    </td>
-                                    <td className="py-2.5 text-2xs text-slate-600">
-                                      {new Date(p.createdAt).toLocaleDateString("en-IN", {
-                                        year: "numeric",
-                                        month: "short",
-                                        day: "numeric"
-                                      })}
-                                    </td>
-                                  </tr>
-                                ))
-                              )}
-                            </tbody>
-                          </table>
+                        <div className="space-y-1.5 flex-1">
+                          {recentPaymentsList.length === 0 ? (
+                            <div className="bg-slate-50 rounded-xl p-6 border border-slate-200 text-xs text-center text-slate-600 font-semibold">
+                              No payments recorded yet.
+                            </div>
+                          ) : (
+                            recentPaymentsList.map((p) => (
+                              <RecentPaymentCard key={p.id} payment={p} theme="slate" />
+                            ))
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1254,10 +1382,6 @@ export default function AdminDashboardPage() {
 
                           {/* Metrics — flat row style (matches admission leads) */}
                           <div className="grid grid-cols-1 gap-2">
-                            <div className="p-2.5 bg-[#8AC926]/5 border border-[#8AC926]/15 rounded-xl flex items-center justify-between">
-                              <span className="text-[8px] font-bold text-slate-600 uppercase tracking-wider">Total Courses</span>
-                              <span className="text-lg font-bold text-[#8AC926] leading-none">{courses.length}</span>
-                            </div>
                             <div className="p-2.5 bg-[#FF9F1C]/5 border border-[#FF9F1C]/15 rounded-xl flex items-center justify-between">
                               <span className="text-[8px] font-bold text-slate-600 uppercase tracking-wider">Total Materials</span>
                               <span className="text-lg font-bold text-[#FF9F1C] leading-none">{stats?.materials ?? 0}</span>
@@ -1294,6 +1418,10 @@ export default function AdminDashboardPage() {
                   onNotify={setMessage}
                   onError={setError}
                 />
+              )}
+
+              {activeTab === "payments" && token && (
+                <AdminPaymentsPanel token={token} onError={setError} />
               )}
 
               {activeTab === "teachers" && token && (
@@ -1348,7 +1476,7 @@ export default function AdminDashboardPage() {
                       filteredCourses.map((c) => (
                         <div key={c.id} className="bg-white rounded-2xl border border-slate-200 shadow-md overflow-hidden flex flex-col">
                           {c.imageUrl && (
-                            <img src={c.imageUrl} alt={c.title} className="w-full h-32 object-cover" />
+                            <img src={resolveStorageUrl(c.imageUrl)} alt={c.title} className="w-full h-32 object-cover" />
                           )}
                           <div className="p-5 flex-1 flex flex-col">
                             <div className="flex justify-between items-start gap-2 mb-2">
@@ -1404,11 +1532,11 @@ export default function AdminDashboardPage() {
                         <form onSubmit={handleCourseSubmit} noValidate className="space-y-4">
                           <input required placeholder="Course title" value={courseForm.title} onChange={(e) => setCourseForm({ ...courseForm, title: e.target.value })} className="w-full rounded-xl border border-slate-200 px-4 py-3 text-xs outline-none focus:border-[#8AC926]" />
                           <textarea placeholder="Description" value={courseForm.description} onChange={(e) => setCourseForm({ ...courseForm, description: e.target.value })} className="w-full rounded-xl border border-slate-200 px-4 py-3 text-xs outline-none focus:border-[#8AC926] min-h-[80px]" />
-                          <select value={courseForm.level} onChange={(e) => setCourseForm({ ...courseForm, level: e.target.value })} className="w-full rounded-xl border border-slate-200 px-4 py-3 text-xs outline-none focus:border-[#8AC926]">
+                          <PortalSelect value={courseForm.level} onChange={(e) => setCourseForm({ ...courseForm, level: e.target.value })} className="rounded-xl border border-slate-200 px-4 py-3 text-xs outline-none focus:border-[#8AC926]">
                             {["Daycare", "Playgroup", "Pre-KG", "LKG", "UKG", "Phonics", "Handwriting", "Spoken English", "Nursery", "All"].map((l) => (
                               <option key={l} value={l}>{l}</option>
                             ))}
-                          </select>
+                          </PortalSelect>
                           <input required type="number" placeholder="Tuition fee (INR)" value={courseForm.price} onChange={(e) => setCourseForm({ ...courseForm, price: e.target.value })} className="w-full rounded-xl border border-slate-200 px-4 py-3 text-xs outline-none focus:border-[#8AC926]" />
                           <input type="file" accept="image/*" onChange={(e) => setCourseImageFile(e.target.files?.[0] ?? null)} className="w-full text-xs" />
                           <button type="submit" disabled={actionLoading === "course-save"} className="w-full py-3 rounded-xl bg-[#8AC926] text-white font-bold text-xs uppercase disabled:opacity-60">
@@ -1563,9 +1691,21 @@ export default function AdminDashboardPage() {
                                           )}
                                         </button>
                                       )}
+                                      <button
+                                        type="button"
+                                        disabled={actionLoading === `task-delete-${m.id}`}
+                                        onClick={() => handleDeleteTask(m.id)}
+                                        className="px-2.5 py-1 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 font-bold text-2xs flex items-center gap-1 transition disabled:opacity-50 cursor-pointer"
+                                      >
+                                        {actionLoading === `task-delete-${m.id}` ? (
+                                          <Loader2 className="w-3 h-3 animate-spin" />
+                                        ) : (
+                                          "Delete"
+                                        )}
+                                      </button>
                                     </div>
                                   ) : (
-                                    <div className="flex justify-end gap-2">
+                                    <div className="flex justify-end gap-2 flex-wrap">
                                       {!m.isApproved ? (
                                         <button
                                           disabled={actionLoading === `material-approve-${m.id}`}
@@ -1591,6 +1731,18 @@ export default function AdminDashboardPage() {
                                           )}
                                         </button>
                                       )}
+                                      <button
+                                        type="button"
+                                        disabled={actionLoading === `material-delete-${m.id}`}
+                                        onClick={() => handleDeleteMaterial(m.id)}
+                                        className="px-2.5 py-1 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 font-bold text-2xs flex items-center gap-1 transition disabled:opacity-50 cursor-pointer"
+                                      >
+                                        {actionLoading === `material-delete-${m.id}` ? (
+                                          <Loader2 className="w-3 h-3 animate-spin" />
+                                        ) : (
+                                          "Delete"
+                                        )}
+                                      </button>
                                     </div>
                                   )}
                                 </td>
@@ -1640,27 +1792,29 @@ export default function AdminDashboardPage() {
                           <div className="grid grid-cols-2 gap-4">
                             <div>
                               <label className="block text-slate-700 font-bold mb-1.5">Category Type</label>
-                              <select
+                              <PortalSelect
                                 value={materialForm.type}
                                 onChange={(e) => setMaterialForm({ ...materialForm, type: e.target.value as any })}
-                                className="w-full rounded-xl bg-white border border-slate-200 px-4 py-2.5 text-slate-900 outline-none focus:border-[#8AC926] transition" ><option value="PDF" className="bg-white text-slate-800">PDF Document</option>
+                                className="rounded-xl bg-white border border-slate-200 px-4 py-2.5 text-slate-900 outline-none focus:border-[#8AC926] transition"
+                              >
+                                <option value="PDF" className="bg-white text-slate-800">PDF Document</option>
                                 <option value="PPT" className="bg-white text-slate-800">PPT Presentation</option>
-                              </select>
+                              </PortalSelect>
                             </div>
 
                             <div>
                               <label className="block text-slate-700 font-bold mb-1.5">Associate Course</label>
-                              <select
+                              <PortalSelect
                                 value={materialForm.courseId}
                                 onChange={(e) => setMaterialForm({ ...materialForm, courseId: e.target.value })}
-                                className="w-full rounded-xl bg-white border border-slate-200 px-4 py-2.5 text-slate-900 outline-none focus:border-[#8AC926] transition"
+                                className="rounded-xl bg-white border border-slate-200 px-4 py-2.5 text-slate-900 outline-none focus:border-[#8AC926] transition"
                               >
                                 {courses.map((course) => (
                                   <option key={course.id} value={course.id} className="bg-white text-slate-800">
                                     {course.title} ({course.level})
                                   </option>
                                 ))}
-                              </select>
+                              </PortalSelect>
                             </div>
                           </div>
 
@@ -1815,15 +1969,17 @@ export default function AdminDashboardPage() {
                         <form onSubmit={handleAssignTask} noValidate className="space-y-4 text-xs">
                           <div>
                             <label className="block text-slate-700 font-bold mb-1.5">Select Teacher</label>
-                            <select
+                            <PortalSelect
                               required
                               value={taskForm.teacherId}
                               onChange={(e) => setTaskForm({ ...taskForm, teacherId: e.target.value })}
-                              className="w-full rounded-xl bg-white border border-slate-200 px-4 py-2.5 text-slate-900 outline-none focus:border-[#8AC926] transition" ><option value="" className="bg-white text-slate-800">-- Choose a Teacher --</option>
+                              className="rounded-xl bg-white border border-slate-200 px-4 py-2.5 text-slate-900 outline-none focus:border-[#8AC926] transition"
+                            >
+                              <option value="" className="bg-white text-slate-800">-- Choose a Teacher --</option>
                               {teachersList.map((t) => (
                                 <option key={t.id} value={t.id} className="bg-white text-slate-800">{t.name} ({t.email})</option>
                               ))}
-                            </select>
+                            </PortalSelect>
                           </div>
 
                           <div>
@@ -1853,10 +2009,12 @@ export default function AdminDashboardPage() {
                             <input
                               type="date"
                               required
+                              min={localDateInputMin()}
                               value={taskForm.dueDate}
                               onChange={(e) => setTaskForm({ ...taskForm, dueDate: e.target.value })}
                               className="w-full rounded-xl bg-white border border-slate-200 px-4 py-2.5 text-slate-900 outline-none focus:border-[#8AC926] transition"
                             />
+                            <p className="text-[10px] text-slate-500 font-medium mt-1">Today or a future date only.</p>
                           </div>
 
                           <button type="submit" className="w-full py-3 rounded-xl bg-[#8AC926] text-white font-sans font-bold text-xs tracking-wider uppercase hover:bg-[#78B020] transition shadow-md shadow-[#8AC926]/10">
@@ -1907,6 +2065,9 @@ export default function AdminDashboardPage() {
                               <span className="px-2 py-0.5 rounded-md bg-[#8AC926]/15 text-[#6B9E1A] text-4xs font-extrabold uppercase border border-[#8AC926]/30 shrink-0">
                                 {b.category}
                               </span>
+                              <span className="px-2 py-0.5 rounded-md bg-violet-50 text-violet-700 text-4xs font-extrabold uppercase border border-violet-200 shrink-0">
+                                {audienceLabel(b.audience ?? "BOTH")}
+                              </span>
                             </div>
                             <p className="font-bold text-sm text-slate-800">{b.title}</p>
                             {b.author && (
@@ -1914,14 +2075,15 @@ export default function AdminDashboardPage() {
                             )}
                           </div>
                           <div className="flex flex-wrap items-center gap-2 shrink-0">
-                            <a
-                              href={b.fileUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="px-3 py-1.5 rounded-lg bg-[#8AC926]/10 border border-[#8AC926]/30 text-[#6B9E1A] hover:bg-[#8AC926]/20 text-2xs font-bold flex items-center gap-1"
-                            >
-                              <ExternalLink className="w-3 h-3" /> Read PDF
-                            </a>
+                            {token && (
+                              <StoryBookActions
+                                bookId={b.id}
+                                token={token}
+                                role="ADMIN"
+                                title={b.title}
+                                variant="admin"
+                              />
+                            )}
                             <button
                               type="button"
                               disabled={actionLoading === `book-delete-${b.id}`}
@@ -1981,15 +2143,38 @@ export default function AdminDashboardPage() {
 
                           <div>
                             <label className="block text-slate-700 font-bold mb-1.5">Book Category</label>
-                            <select
+                            <PortalSelect
                               value={bookForm.category}
                               onChange={(e) => setBookForm({ ...bookForm, category: e.target.value })}
-                              className="w-full rounded-xl bg-white border border-slate-200 px-4 py-2.5 text-slate-900 outline-none focus:border-[#8AC926] transition"
+                              className="rounded-xl bg-white border border-slate-200 px-4 py-2.5 text-slate-900 outline-none focus:border-[#8AC926] transition"
                             >
                               {["Fairy Tales", "Phonics Books", "Bedtime Stories", "Animal Stories", "Picture Books", "Educational"].map((cat) => (
                                 <option key={cat} value={cat} className="bg-white text-slate-800">{cat}</option>
                               ))}
-                            </select>
+                            </PortalSelect>
+                          </div>
+
+                          <div>
+                            <label className="block text-slate-700 font-bold mb-1.5">Show in portal</label>
+                            <PortalSelect
+                              value={bookForm.audience}
+                              onChange={(e) =>
+                                setBookForm({
+                                  ...bookForm,
+                                  audience: e.target.value as "STUDENT" | "TEACHER" | "BOTH",
+                                })
+                              }
+                              className="rounded-xl bg-white border border-slate-200 px-4 py-2.5 text-slate-900 outline-none focus:border-[#8AC926] transition"
+                            >
+                              {LIBRARY_AUDIENCE_OPTIONS.map((opt) => (
+                                <option key={opt.id} value={opt.id}>
+                                  {opt.label}
+                                </option>
+                              ))}
+                            </PortalSelect>
+                            <p className="text-3xs text-slate-500 mt-1 font-medium">
+                              Teachers and students can view and print only. Only admins can download files.
+                            </p>
                           </div>
 
                           <div>
@@ -1998,10 +2183,12 @@ export default function AdminDashboardPage() {
                               <label className="w-full border-2 border-dashed border-slate-200 rounded-xl p-4 bg-[#F8FAFC] flex flex-col items-center justify-center cursor-pointer hover:bg-[#8AC926]/5 transition">
                                 <Loader2 className={`w-8 h-8 text-[#8AC926] ${actionLoading === "book-save" ? "animate-spin" : ""}`} />
                                 <span className="font-bold text-[#8AC926] mt-2 text-2xs">
-                                  {bookFile ? bookFile.name : (bookForm.fileUrl ? "Book document is already set" : "Choose PDF/PPT file from computer")}
+                                  {bookFile ? bookFile.name : "Choose PDF/PPT/DOC file from computer"}
                                 </span>
                                 <span className="text-3xs text-slate-650 mt-1">
-                                  {bookFile ? `(${(bookFile.size / 1024 / 1024).toFixed(2)} MB)` : "* Will upload directly to secure cPanel Web Disk."}
+                                  {bookFile
+                                    ? `(${(bookFile.size / 1024 / 1024).toFixed(2)} MB)`
+                                    : "Uploads directly to secure cPanel storage."}
                                 </span>
                                 <input
                                   type="file"
@@ -2010,17 +2197,6 @@ export default function AdminDashboardPage() {
                                   onChange={(e) => setBookFile(e.target.files?.[0] ?? null)}
                                 />
                               </label>
-                              
-                              <div className="flex flex-col mt-1">
-                                <span className="text-3xs font-extrabold text-slate-600 uppercase mb-1.5">Or paste an external document link instead</span>
-                                <input
-                                  type="text"
-                                  placeholder="https://simbapreschool.in/simba/lion_and_mouse.pdf"
-                                  value={bookForm.fileUrl}
-                                  onChange={(e) => setBookForm({ ...bookForm, fileUrl: e.target.value })}
-                                  className="w-full rounded-xl bg-white border border-slate-200 px-4 py-2 text-slate-900 outline-none focus:border-[#8AC926] placeholder-slate-400 transition text-xs"
-                                />
-                              </div>
                             </div>
                           </div>
 
@@ -2078,7 +2254,28 @@ export default function AdminDashboardPage() {
                           : `inquiry-read-${item.id}`;
 
                         return (
-                          <div key={item.id} className={adminListRowClass}>
+                          <div
+                            key={item.id}
+                            className={`${adminListRowClass} cursor-pointer hover:border-[#8AC926]/50 hover:bg-[#8AC926]/5 transition`}
+                            onClick={() =>
+                              setLeadView({
+                                kind: isFranchise ? "franchise" : "admission",
+                                item,
+                              })
+                            }
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                setLeadView({
+                                  kind: isFranchise ? "franchise" : "admission",
+                                  item,
+                                });
+                              }
+                            }}
+                            role="button"
+                            tabIndex={0}
+                            aria-label={`View ${isFranchise ? "franchise" : "admission"} lead from ${item.name}`}
+                          >
                             <div className="flex-1 min-w-[180px]">
                               <div className="flex flex-wrap items-center gap-2 mb-1">
                                 <span
@@ -2121,7 +2318,20 @@ export default function AdminDashboardPage() {
                                 })}
                               </p>
                             </div>
-                            <div className="flex flex-wrap items-center gap-2 shrink-0">
+                            <div className="flex flex-wrap items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+                              <button
+                                type="button"
+                                title="View full details"
+                                onClick={() =>
+                                  setLeadView({
+                                    kind: isFranchise ? "franchise" : "admission",
+                                    item,
+                                  })
+                                }
+                                className="px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100 text-2xs font-bold flex items-center gap-1"
+                              >
+                                <Eye className="w-3 h-3" /> View
+                              </button>
                               {!item.isRead && (
                                 <button
                                   type="button"
@@ -2156,6 +2366,138 @@ export default function AdminDashboardPage() {
                       />
                     </AdminRecordList>
                   )}
+
+                  {leadView && (
+                    <div
+                      className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4"
+                      onClick={() => setLeadView(null)}
+                    >
+                      <div
+                        className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl border border-slate-200 max-h-[90vh] overflow-y-auto relative"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <ModalCloseButton
+                          onClick={() => setLeadView(null)}
+                          className="absolute top-4 right-4 z-10"
+                        />
+                        <div className="flex flex-wrap items-center gap-2 mb-4 pr-10">
+                          <span
+                            className={`px-2 py-0.5 rounded-md text-4xs font-extrabold uppercase border ${
+                              leadView.kind === "franchise"
+                                ? "bg-purple-50 text-purple-700 border-purple-200"
+                                : "bg-blue-50 text-blue-700 border-blue-200"
+                            }`}
+                          >
+                            {leadView.kind === "franchise" ? "Franchise lead" : "Admission inquiry"}
+                          </span>
+                          <span
+                            className={`px-2 py-0.5 rounded-md text-4xs font-extrabold uppercase border ${
+                              leadView.item.isRead
+                                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                : "bg-amber-50 text-amber-700 border-amber-200"
+                            }`}
+                          >
+                            {leadView.item.isRead ? "Read" : "New"}
+                          </span>
+                        </div>
+
+                        <h3 className="font-sans text-xl font-extrabold text-slate-900 mb-4">
+                          {leadView.item.name}
+                        </h3>
+
+                        <dl className="space-y-3 text-sm">
+                          <div className="flex gap-3">
+                            <Mail className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+                            <div>
+                              <dt className="text-2xs font-bold text-slate-500 uppercase">Email</dt>
+                              <dd>
+                                <a
+                                  href={`mailto:${leadView.item.email}`}
+                                  className="text-[#4E8C52] font-semibold hover:underline break-all"
+                                >
+                                  {leadView.item.email}
+                                </a>
+                              </dd>
+                            </div>
+                          </div>
+                          <div className="flex gap-3">
+                            <Phone className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+                            <div>
+                              <dt className="text-2xs font-bold text-slate-500 uppercase">Phone</dt>
+                              <dd className="font-semibold text-slate-800">
+                                {leadView.item.phone ? (
+                                  <a href={`tel:${leadView.item.phone.replace(/\s/g, "")}`} className="text-[#4E8C52] hover:underline">
+                                    {leadView.item.phone}
+                                  </a>
+                                ) : (
+                                  "Not provided"
+                                )}
+                              </dd>
+                            </div>
+                          </div>
+                          {leadView.kind === "franchise" && (leadView.item as FranchiseInquiry).location && (
+                            <div className="flex gap-3">
+                              <MapPin className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+                              <div>
+                                <dt className="text-2xs font-bold text-slate-500 uppercase">Location</dt>
+                                <dd className="font-semibold text-slate-800">
+                                  {(leadView.item as FranchiseInquiry).location}
+                                </dd>
+                              </div>
+                            </div>
+                          )}
+                          <div>
+                            <dt className="text-2xs font-bold text-slate-500 uppercase mb-1">Message</dt>
+                            <dd className="rounded-xl bg-slate-50 border border-slate-200 px-4 py-3 text-slate-700 leading-relaxed whitespace-pre-wrap">
+                              {leadView.item.message?.trim() || "No message provided."}
+                            </dd>
+                          </div>
+                          <div>
+                            <dt className="text-2xs font-bold text-slate-500 uppercase">Submitted</dt>
+                            <dd className="font-semibold text-slate-700">
+                              {new Date(leadView.item.createdAt).toLocaleString("en-IN", {
+                                weekday: "short",
+                                month: "long",
+                                day: "numeric",
+                                year: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </dd>
+                          </div>
+                        </dl>
+
+                        <div className="flex flex-wrap gap-2 mt-6 pt-4 border-t border-slate-100">
+                          {!leadView.item.isRead && (
+                            <button
+                              type="button"
+                              disabled={
+                                actionLoading ===
+                                (leadView.kind === "franchise"
+                                  ? `franchise-read-${leadView.item.id}`
+                                  : `inquiry-read-${leadView.item.id}`)
+                              }
+                              onClick={() =>
+                                leadView.kind === "franchise"
+                                  ? handleMarkFranchiseRead(leadView.item.id)
+                                  : handleMarkInquiryRead(leadView.item.id)
+                              }
+                              className="flex-1 min-w-[120px] py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold text-xs hover:bg-emerald-100 disabled:opacity-50"
+                            >
+                              Mark as read
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => setLeadView(null)}
+                            className="flex-1 min-w-[120px] py-2.5 rounded-xl border border-slate-200 text-slate-800 font-bold text-xs hover:bg-slate-50"
+                          >
+                            Close
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   </AdminPageBody>
                 </AdminPageShell>
               )}
@@ -2165,77 +2507,263 @@ export default function AdminDashboardPage() {
                 <AdminPageShell>
                   <AdminPageHeader
                     title="Parent Reviews & Testimonials"
-                    description="Publish parent testimonials and feedback directly onto the website homepage."
+                    description="Connect Google Business to load full written feedback from every branch. Manual testimonials are added below."
                     actions={
-                      <button
-                        type="button"
-                        onClick={() => setShowTestimonialForm(true)}
-                        className="px-4 py-2 rounded-xl bg-[#8AC926] text-white font-sans font-bold text-xs tracking-wider flex items-center gap-2 hover:bg-[#78B020] transition shadow-md shadow-[#8AC926]/10 whitespace-nowrap"
-                      >
-                        <Plus className="w-4 h-4" /> Add Review
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            if (!token) return;
+                            try {
+                              const { url, message } = await api.getGoogleBusinessAuthUrl(token);
+                              if (message) {
+                                setError(message);
+                                return;
+                              }
+                              window.open(url, "_blank", "noopener,noreferrer");
+                              setMessage("Complete Google sign-in in the new tab, then paste the refresh token into backend .env.");
+                            } catch (err) {
+                              setError(err instanceof ApiError ? err.message : "Could not start Google connect.");
+                            }
+                          }}
+                          className="px-4 py-2 rounded-xl border border-blue-200 bg-blue-50 text-blue-800 font-sans font-bold text-xs tracking-wider hover:bg-blue-100 transition whitespace-nowrap"
+                        >
+                          Connect Google Business
+                        </button>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            if (!token) return;
+                            setActionLoading("google-refresh");
+                            setError("");
+                            try {
+                              const status = await api.syncGoogleReviews(token);
+                              setGoogleReviews(status.reviews ?? []);
+                              setGoogleLocations(status.locations ?? []);
+                              setGoogleReviewsMeta({
+                                configured: status.configured,
+                                hint: status.hint,
+                                rating: status.rating,
+                                totalRatings: status.totalRatings,
+                                placeName: status.placeName,
+                                fetchMode: status.fetchMode,
+                              });
+                              if (!status.configured) {
+                                setMessage(
+                                  status.message ??
+                                    "Add GOOGLE_PLACES_API_KEY and GOOGLE_PLACE_IDS in backend .env"
+                                );
+                              } else if (status.syncBlocked) {
+                                setError(status.syncBlocked);
+                              } else if (status.synced) {
+                                const withText = (status.reviews ?? []).filter(
+                                  (r) => r.content && r.content !== "—"
+                                ).length;
+                                setMessage(
+                                  `Synced ${status.reviews?.length ?? 0} Google review(s) from ${status.locations?.length ?? 0} location(s) (${withText} with written feedback).`
+                                );
+                              } else {
+                                setMessage(
+                                  status.hint ??
+                                    `Showing ${status.reviews?.length ?? 0} saved review(s).`
+                                );
+                              }
+                            } catch (err) {
+                              setError(err instanceof ApiError ? err.message : "Failed to refresh Google reviews.");
+                            } finally {
+                              setActionLoading(null);
+                            }
+                          }}
+                          disabled={actionLoading === "google-refresh"}
+                          className="px-4 py-2 rounded-xl border border-slate-200 bg-white text-slate-800 font-sans font-bold text-xs tracking-wider hover:bg-slate-50 transition whitespace-nowrap"
+                        >
+                          {actionLoading === "google-refresh" ? "Syncing…" : "Sync from Google"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowTestimonialForm(true)}
+                          className="px-4 py-2 rounded-xl bg-[#8AC926] text-white font-sans font-bold text-xs tracking-wider flex items-center gap-2 hover:bg-[#78B020] transition shadow-md shadow-[#8AC926]/10 whitespace-nowrap"
+                        >
+                          <Plus className="w-4 h-4" /> Add Review
+                        </button>
+                      </>
                     }
                   />
 
                   <AdminPageBody>
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-                      {testimonials.length === 0 ? (
-                        <div className="col-span-full bg-white rounded-2xl p-12 text-center text-sm font-semibold text-slate-600 border border-slate-200">
-                          No reviews currently registered.
+                    {/* ── Google Business reviews (all locations) ── */}
+                    <section className="mb-10">
+                      <div className="flex flex-wrap items-end justify-between gap-3 mb-4">
+                        <div>
+                          <h3 className="font-sans text-sm font-extrabold text-slate-900">Google Business reviews</h3>
+                          <p className="text-2xs text-slate-600 font-medium mt-0.5">
+                            {googleReviewsMeta.fetchMode === "business_profile"
+                              ? "Full review text from your Google Business account (all locations)"
+                              : googleReviewsMeta.fetchMode === "oauth_pending"
+                                ? "Finish Connect Google Business — refresh token not in .env yet"
+                                : "Places API mode — use Connect Google Business for written feedback"}
+                          </p>
+                        </div>
+                        {googleReviewsMeta.configured && googleReviewsMeta.rating != null && (
+                          <p className="text-xs font-bold text-slate-800">
+                            Overall{" "}
+                            <span className="text-[#FF9F1C]">★ {googleReviewsMeta.rating}</span>
+                            {googleReviewsMeta.totalRatings != null && (
+                              <span className="text-slate-600"> · {googleReviewsMeta.totalRatings} total ratings</span>
+                            )}
+                          </p>
+                        )}
+                      </div>
+
+                      {googleReviewsMeta.hint && (
+                        <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-2xs font-semibold text-amber-900">
+                          {googleReviewsMeta.hint}
+                        </div>
+                      )}
+
+                      {!googleReviewsMeta.configured ? (
+                        <div className="bg-white rounded-2xl p-8 text-center text-sm font-semibold text-slate-600 border border-slate-200">
+                          Google reviews not configured. Set GOOGLE_PLACES_API_KEY and GOOGLE_PLACE_IDS in backend .env, then click Refresh Google.
                         </div>
                       ) : (
-                        testimonials.map((t) => (
-                          <div key={t.id} className="bg-white rounded-2xl p-5 border border-slate-200 shadow-md flex flex-col justify-between hover:shadow-lg transition group/review">
-                            <div>
-                              <div className="flex justify-between items-center mb-3">
-                                <div className="flex text-[#FF9F1C] gap-0.5">
-                                  {Array.from({ length: t.rating }).map((_, idx) => (
-                                    <span key={idx}>★</span>
-                                  ))}
+                        <>
+                          {googleLocations.length > 0 && (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-5">
+                              {googleLocations.map((loc) => (
+                                <div
+                                  key={loc.placeId}
+                                  className="bg-white rounded-xl border border-slate-200 px-4 py-3 shadow-xs"
+                                >
+                                  <p className="font-bold text-2xs text-slate-900 truncate">{loc.placeName}</p>
+                                  <p className="text-3xs text-slate-600 mt-1 font-medium">
+                                    {loc.rating != null && (
+                                      <span className="text-[#FF9F1C] mr-1">★ {loc.rating}</span>
+                                    )}
+                                    {loc.totalRatings ?? 0} ratings · {loc.reviewsReturned} loaded here
+                                  </p>
                                 </div>
-                                <span className={`px-2 py-0.5 rounded-lg text-4xs font-extrabold uppercase border ${
-                                  t.isApproved 
-                                    ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" 
-                                    : "bg-amber-500/10 text-amber-400 border-amber-500/20 animate-pulse"
-                                }`}>
-                                  {t.isApproved ? "PUBLISHED" : "HIDDEN"}
-                                </span>
-                              </div>
-                              <p className="text-xs italic text-slate-700">"{t.content}"</p>
-                              <h5 className="font-sans font-bold text-xs text-[#8AC926] mt-3">— {t.name}</h5>
+                              ))}
                             </div>
+                          )}
 
-                            <div className="border-t border-slate-200 pt-4 mt-4 flex gap-2">
-                              {!t.isApproved && (
-                                <button
-                                  disabled={actionLoading === `testimonial-approve-${t.id}`}
-                                  onClick={() => handleApproveTestimonial(t.id, true)}
-                                  className="flex-1 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 font-bold text-2xs transition"
-                                >
-                                  Publish Review
-                                </button>
+                          {googleReviews.length === 0 ? (
+                            <div className="bg-white rounded-2xl p-8 text-center text-sm font-semibold text-slate-600 border border-slate-200">
+                              {googleReviewsMeta.fetchMode === "oauth_pending" ? (
+                                <>
+                                  OAuth is not finished. Click <strong>Connect Google Business</strong>, then add{" "}
+                                  <code className="text-2xs bg-slate-100 px-1 rounded">GOOGLE_BUSINESS_REFRESH_TOKEN</code> to backend .env.
+                                </>
+                              ) : googleReviewsMeta.fetchMode === "business_profile" ? (
+                                <>
+                                  No reviews loaded yet. Click <strong>Refresh Google</strong> once.
+                                  If you see a rate-limit message above, wait 5 minutes before trying again.
+                                </>
+                              ) : (
+                                <>
+                                  No written reviews yet for {googleLocations.length || "your"} location(s).
+                                  Connect Google Business or check Places API settings in backend .env.
+                                </>
                               )}
-                              {t.isApproved && (
-                                <button
-                                  disabled={actionLoading === `testimonial-approve-${t.id}`}
-                                  onClick={() => handleApproveTestimonial(t.id, false)}
-                                  className="flex-1 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100 font-bold text-2xs transition"
-                                >
-                                  Hide Review
-                                </button>
-                              )}
-                              <button
-                                disabled={actionLoading === `testimonial-delete-${t.id}`}
-                                onClick={() => handleDeleteTestimonial(t.id)}
-                                className="px-3 py-1.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 transition flex items-center justify-center"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
                             </div>
-                          </div>
-                        ))
+                          ) : (
+                            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+                              {googleReviews.map((r) => (
+                                <div
+                                  key={r.id}
+                                  className="bg-white rounded-2xl p-5 border border-blue-100 shadow-md flex flex-col gap-3"
+                                >
+                                  <div className="flex justify-between items-start gap-2">
+                                    <div className="flex text-[#FF9F1C] gap-0.5 text-sm">
+                                      {Array.from({ length: r.rating }).map((_, idx) => (
+                                        <span key={idx}>★</span>
+                                      ))}
+                                    </div>
+                                    <span className="px-2 py-0.5 rounded-lg text-4xs font-extrabold uppercase bg-blue-50 text-blue-800 border border-blue-200 shrink-0">
+                                      Google
+                                    </span>
+                                  </div>
+                                  <p className={`text-xs leading-relaxed ${r.content === "—" ? "text-slate-500 italic" : "italic text-slate-700"}`}>
+                                    {r.content === "—" ? "No written feedback (star rating only)" : `\u201C${r.content}\u201D`}
+                                  </p>
+                                  <div>
+                                    <h5 className="font-sans font-bold text-xs text-slate-900">— {r.name}</h5>
+                                    {r.placeName && (
+                                      <p className="text-3xs text-slate-600 font-semibold mt-1">{r.placeName}</p>
+                                    )}
+                                    {r.relativeTime && (
+                                      <p className="text-3xs text-slate-500 mt-0.5">{r.relativeTime}</p>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </>
                       )}
-                    </div>
+                    </section>
+
+                    {/* ── Manual testimonials (database) ── */}
+                    <section>
+                      <h3 className="font-sans text-sm font-extrabold text-slate-900 mb-4">Manual website testimonials</h3>
+                      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+                        {testimonials.length === 0 ? (
+                          <div className="col-span-full bg-white rounded-2xl p-8 text-center text-sm font-semibold text-slate-600 border border-slate-200">
+                            No manual testimonials yet. Use Add Review to create one.
+                          </div>
+                        ) : (
+                          testimonials.map((t) => (
+                            <div key={t.id} className="bg-white rounded-2xl p-5 border border-slate-200 shadow-md flex flex-col justify-between hover:shadow-lg transition group/review">
+                              <div>
+                                <div className="flex justify-between items-center mb-3">
+                                  <div className="flex text-[#FF9F1C] gap-0.5">
+                                    {Array.from({ length: t.rating }).map((_, idx) => (
+                                      <span key={idx}>★</span>
+                                    ))}
+                                  </div>
+                                  <span className={`px-2 py-0.5 rounded-lg text-4xs font-extrabold uppercase border ${
+                                    t.isApproved
+                                      ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                                      : "bg-amber-500/10 text-amber-400 border-amber-500/20 animate-pulse"
+                                  }`}>
+                                    {t.isApproved ? "PUBLISHED" : "HIDDEN"}
+                                  </span>
+                                </div>
+                                <p className="text-xs italic text-slate-700">&ldquo;{t.content}&rdquo;</p>
+                                <h5 className="font-sans font-bold text-xs text-[#8AC926] mt-3">— {t.name}</h5>
+                              </div>
+
+                              <div className="border-t border-slate-200 pt-4 mt-4 flex gap-2">
+                                {!t.isApproved && (
+                                  <button
+                                    disabled={actionLoading === `testimonial-approve-${t.id}`}
+                                    onClick={() => handleApproveTestimonial(t.id, true)}
+                                    className="flex-1 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 font-bold text-2xs transition"
+                                  >
+                                    Publish Review
+                                  </button>
+                                )}
+                                {t.isApproved && (
+                                  <button
+                                    disabled={actionLoading === `testimonial-approve-${t.id}`}
+                                    onClick={() => handleApproveTestimonial(t.id, false)}
+                                    className="flex-1 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100 font-bold text-2xs transition"
+                                  >
+                                    Hide Review
+                                  </button>
+                                )}
+                                <button
+                                  disabled={actionLoading === `testimonial-delete-${t.id}`}
+                                  onClick={() => handleDeleteTestimonial(t.id)}
+                                  className="px-3 py-1.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 transition flex items-center justify-center"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </section>
                   </AdminPageBody>
 
                   {showTestimonialForm && (
@@ -2256,15 +2784,15 @@ export default function AdminDashboardPage() {
                           </div>
                           <div>
                             <label className="block text-slate-700 font-bold mb-1.5">Rating Stars (1 to 5)</label>
-                            <select
-                              value={testimonialForm.rating}
+                            <PortalSelect
+                              value={String(testimonialForm.rating)}
                               onChange={(e) => setTestimonialForm({ ...testimonialForm, rating: Number(e.target.value) })}
-                              className="w-full rounded-xl bg-white border border-slate-200 px-4 py-2.5 text-slate-900 outline-none focus:border-[#8AC926] transition"
+                              className="rounded-xl bg-white border border-slate-200 px-4 py-2.5 text-slate-900 outline-none focus:border-[#8AC926] transition"
                             >
                               {[5, 4, 3, 2, 1].map((r) => (
                                 <option key={r} value={r} className="bg-white text-slate-800">{r} Stars</option>
                               ))}
-                            </select>
+                            </PortalSelect>
                           </div>
                           <div>
                             <label className="block text-slate-700 font-bold mb-1.5">Review Content</label>
@@ -2291,63 +2819,110 @@ export default function AdminDashboardPage() {
               {activeTab === "gallery" && (
                 <AdminPageShell>
                   <AdminPageHeader
-                    title="Academy Media Gallery"
-                    description="Add preschool pictures and activities to the public photo gallery."
+                    title="Academy Media Gallery (cPanel Storage)"
+                    description="Manage photos for the public gallery — view, print, download, edit, or remove."
                     actions={
-                      <button
-                        type="button"
-                        onClick={() => setShowGalleryForm(true)}
-                        className="px-4 py-2 rounded-xl bg-[#8AC926] text-white font-sans font-bold text-xs tracking-wider flex items-center gap-2 hover:bg-[#78B020] transition shadow-md shadow-[#8AC926]/10 whitespace-nowrap"
-                      >
-                        <Plus className="w-4 h-4" /> Upload Photo
-                      </button>
+                      <>
+                        <AdminSearchInput
+                          value={gallerySearch}
+                          onChange={setGallerySearch}
+                          placeholder="Search photos…"
+                          ariaLabel="Search gallery"
+                        />
+                        <button
+                          type="button"
+                          onClick={openGalleryUpload}
+                          className="px-4 py-2 rounded-xl bg-[#8AC926] text-white font-sans font-bold text-xs tracking-wider flex items-center gap-2 hover:bg-[#78B020] transition shadow-md shadow-[#8AC926]/10 whitespace-nowrap"
+                        >
+                          <Plus className="w-4 h-4" /> Upload Photo
+                        </button>
+                      </>
                     }
                   />
 
                   <AdminPageBody>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
-                      {gallery.length === 0 ? (
-                        <div className="col-span-full bg-white rounded-2xl p-12 text-center text-sm font-semibold text-slate-600 border border-slate-200">
-                          No images uploaded to the media gallery.
-                        </div>
-                      ) : (
-                        gallery.map((g) => (
-                          <div key={g.id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-md flex flex-col justify-between hover:shadow-lg transition group/gallery">
-                            <div className="relative">
-                              <img src={g.imageUrl} alt={g.title ?? ""} className="w-full h-32 object-cover group-hover/gallery:scale-105 transition duration-300" />
+                  {filteredGallery.length === 0 ? (
+                    <AdminListEmpty
+                      message={
+                        gallery.length === 0
+                          ? "No images uploaded to the media gallery."
+                          : "No gallery photos match your search."
+                      }
+                    />
+                  ) : (
+                    <AdminRecordList>
+                      {galleryPagination.paginatedItems.map((g) => (
+                        <div key={g.id} className={adminListRowClass}>
+                          <img
+                            src={resolveStorageUrl(g.imageUrl)}
+                            alt=""
+                            className="w-14 h-14 rounded-xl object-cover border border-slate-200 shrink-0"
+                          />
+                          <div className="flex-1 min-w-[180px]">
+                            <div className="flex flex-wrap items-center gap-2 mb-1">
+                              <span className="px-2 py-0.5 rounded-md bg-sky-50 text-sky-700 text-4xs font-extrabold uppercase border border-sky-200 shrink-0">
+                                {g.type}
+                              </span>
+                              <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-4xs font-extrabold uppercase border border-emerald-200 shrink-0">
+                                Public gallery
+                              </span>
                             </div>
-                            <div className="p-3 flex justify-between items-center gap-2 bg-white">
-                              <p className="text-xs font-bold text-slate-800 truncate flex-1">{g.title || "Academy Activity"}</p>
-                              <button
-                                disabled={actionLoading === `gallery-delete-${g.id}`}
-                                onClick={() => handleDeleteGallery(g.id)}
-                                className="text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 p-1 rounded-xl transition cursor-pointer"
-                              >
-                                {actionLoading === `gallery-delete-${g.id}` ? (
-                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                ) : (
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                )}
-                              </button>
-                            </div>
+                            <p className="font-bold text-sm text-slate-800">{g.title || "Academy Activity"}</p>
+                            {g.createdAt && (
+                              <p className="text-2xs text-slate-500 mt-0.5">
+                                {new Date(g.createdAt).toLocaleString("en-IN", {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                })}
+                              </p>
+                            )}
                           </div>
-                        ))
-                      )}
-                    </div>
+                          <div className="flex flex-wrap items-center gap-2 shrink-0">
+                            <GalleryItemActions
+                              imageUrl={g.imageUrl}
+                              title={g.title || "Academy Activity"}
+                              variant="admin"
+                              onEdit={() => openGalleryEdit(g)}
+                            />
+                            <button
+                              type="button"
+                              disabled={actionLoading === `gallery-delete-${g.id}`}
+                              onClick={() => handleDeleteGallery(g.id)}
+                              className="px-3 py-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 disabled:opacity-50 flex items-center justify-center"
+                              title="Delete photo"
+                            >
+                              {actionLoading === `gallery-delete-${g.id}` ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                <Trash2 className="w-3.5 h-3.5" />
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                      <AdminListPagination
+                        rangeStart={galleryPagination.rangeStart}
+                        rangeEnd={galleryPagination.rangeEnd}
+                        total={filteredGallery.length}
+                        safePage={galleryPagination.safePage}
+                        totalPages={galleryPagination.totalPages}
+                        pageNumbers={galleryPagination.pageNumbers}
+                        onPageChange={galleryPagination.setCurrentPage}
+                        itemLabel="photos"
+                      />
+                    </AdminRecordList>
+                  )}
                   </AdminPageBody>
 
                   {showGalleryForm && (
                     <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
                       <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl border border-slate-200 animate-scale-up relative">
-                        <ModalCloseButton
-                          onClick={() => {
-                            setShowGalleryForm(false);
-                            setGalleryImageFile(null);
-                          }}
-                          className="absolute top-4 right-4"
-                        />
-                        <h3 className="font-sans text-lg font-extrabold text-slate-900 mb-4 pr-10">Upload Gallery Photo</h3>
-                        <form onSubmit={handleAddGallery} noValidate className="space-y-4 text-xs">
+                        <ModalCloseButton onClick={closeGalleryForm} className="absolute top-4 right-4" />
+                        <h3 className="font-sans text-lg font-extrabold text-slate-900 mb-4 pr-10">
+                          {editingGallery ? "Edit Gallery Photo" : "Upload Gallery Photo"}
+                        </h3>
+                        <form onSubmit={handleSaveGallery} noValidate className="space-y-4 text-xs">
                           <div>
                             <label className="block text-slate-700 font-bold mb-1.5">Photo title (optional)</label>
                             <input
@@ -2359,20 +2934,26 @@ export default function AdminDashboardPage() {
                           </div>
 
                           <div>
-                            <label className="block text-slate-700 font-bold mb-1.5">Image file</label>
+                            <label className="block text-slate-700 font-bold mb-1.5">
+                              {editingGallery ? "Replace image (optional)" : "Image file"}
+                            </label>
                             <input
                               type="file"
                               accept="image/jpeg,image/png,image/webp,image/gif"
-                              required
+                              required={!editingGallery}
                               onChange={(e) => setGalleryImageFile(e.target.files?.[0] ?? null)}
                               className="w-full text-xs file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-[#8AC926]/10 file:text-[#4E8C52] file:font-bold"
                             />
                             <p className="text-[10px] text-slate-500 font-medium mt-1.5">
-                              JPEG, PNG, WebP, or GIF only — no videos.
+                              JPEG, PNG, WebP, or GIF. {editingGallery ? "Leave empty to keep the current photo." : "Uploaded to secure storage before publishing."}
                             </p>
-                            {galleryImageFile && (
+                            {(galleryImageFile || editingGallery) && (
                               <img
-                                src={URL.createObjectURL(galleryImageFile)}
+                                src={
+                                  galleryImageFile
+                                    ? URL.createObjectURL(galleryImageFile)
+                                    : resolveStorageUrl(editingGallery!.imageUrl)
+                                }
                                 alt="Preview"
                                 className="mt-3 w-full h-32 object-cover rounded-xl border border-slate-200"
                               />
@@ -2384,7 +2965,11 @@ export default function AdminDashboardPage() {
                             disabled={actionLoading === "gallery-save"}
                             className="w-full py-3 rounded-xl bg-[#8AC926] text-white font-sans font-bold text-xs tracking-wider uppercase hover:bg-[#78B020] transition shadow-md shadow-[#8AC926]/10 disabled:opacity-60"
                           >
-                            {actionLoading === "gallery-save" ? "Uploading…" : "Upload to Gallery"}
+                            {actionLoading === "gallery-save"
+                              ? "Saving…"
+                              : editingGallery
+                                ? "Save changes"
+                                : "Upload to Gallery"}
                           </button>
                         </form>
                       </div>
