@@ -9,7 +9,13 @@ interface PasswordInputProps {
   minLength?: number;
   className?: string;
   id?: string;
+  name?: string;
   autoComplete?: string;
+  readOnly?: boolean;
+  onFocus?: React.FocusEventHandler<HTMLInputElement>;
+  "data-lpignore"?: string;
+  "data-1p-ignore"?: string;
+  "data-bwignore"?: string;
 }
 
 export function PasswordInput({
@@ -18,9 +24,15 @@ export function PasswordInput({
   placeholder,
   required,
   minLength,
-  className = "w-full rounded-lg border-2 border-[#8AC926]/20 px-4 py-3 pr-12 bg-white outline-none focus:border-[#8AC926]",
+  className = "w-full rounded-xl border border-slate-200 px-4 py-3 pr-12 bg-white text-sm outline-none focus:border-[#8AC926]",
   id,
-  autoComplete = "current-password",
+  name,
+  autoComplete = "off",
+  readOnly,
+  onFocus,
+  "data-lpignore": dataLpignore,
+  "data-1p-ignore": data1pIgnore,
+  "data-bwignore": dataBwignore,
 }: PasswordInputProps) {
   const [visible, setVisible] = useState(false);
 
@@ -28,6 +40,7 @@ export function PasswordInput({
     <div className="relative">
       <input
         id={id}
+        name={name}
         required={required}
         minLength={minLength}
         type={visible ? "text" : "password"}
@@ -35,12 +48,17 @@ export function PasswordInput({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         autoComplete={autoComplete}
+        readOnly={readOnly}
+        onFocus={onFocus}
+        data-lpignore={dataLpignore}
+        data-1p-ignore={data1pIgnore}
+        data-bwignore={dataBwignore}
         className={className}
       />
       <button
         type="button"
         onClick={() => setVisible((v) => !v)}
-        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-[#5D4037]/60 hover:text-[#3E2723] transition-colors"
+        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 transition-colors"
         aria-label={visible ? "Hide password" : "Show password"}
         tabIndex={-1}
       >

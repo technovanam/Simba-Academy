@@ -118,11 +118,11 @@ function PillSelect<T extends string>({
         aria-label={ariaLabel}
         aria-expanded={open}
         aria-haspopup="listbox"
-        className="inline-flex items-center gap-1.5 pl-3.5 pr-2.5 py-2 rounded-full border border-[#8AC926] bg-white text-xs font-bold text-slate-800 hover:bg-[#8AC926]/5 transition min-w-[128px] max-w-[168px] justify-between"
+        className="inline-flex items-center gap-1.5 pl-3.5 pr-2.5 py-2 rounded-full border border-[#8AC926] bg-white text-xs font-bold text-slate-800 hover:bg-[#8AC926]/5 transition min-w-[128px] max-w-[168px] justify-between leading-none"
       >
-        <span className="truncate">{selected?.label}</span>
+        <span className="truncate leading-none">{selected?.label}</span>
         <ChevronDown
-          className={`w-3.5 h-3.5 text-slate-700 shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
+          className={`w-3.5 h-3.5 text-slate-700 shrink-0 block transition-transform ${open ? "rotate-180" : ""}`}
         />
       </button>
       {open && (
@@ -249,7 +249,11 @@ export function AdminPeoplePanel({
     try {
       await api.deleteUser(token, deleteTarget.id);
       setRecords((prev) => prev.filter((r) => r.id !== deleteTarget.id));
-      onNotify("User deleted successfully.");
+      onNotify(
+        mode === "teachers"
+          ? "Teacher permanently deleted from the database."
+          : "User permanently deleted from the database."
+      );
       setDeleteTarget(null);
     } catch (err) {
       onError(err instanceof ApiError ? err.message : "Failed to delete user.");
@@ -292,7 +296,14 @@ export function AdminPeoplePanel({
         phone: teacherForm.phone.trim() || undefined,
       });
       setRecords((prev) => [created, ...prev]);
-      onNotify("Teacher account created successfully.");
+      if (created.emailSent) {
+        onNotify(`Teacher created. Welcome email sent to ${created.email}.`);
+      } else {
+        onError(
+          created.emailWarning ??
+            `Teacher ${created.email} was created but the welcome email failed. Check backend terminal for TEMPORARY PASSWORD, or fix SMTP in .env.`
+        );
+      }
       setTeacherForm(emptyTeacherForm);
       setShowCreateTeacher(false);
     } catch (err) {
@@ -513,7 +524,7 @@ export function AdminPeoplePanel({
                   type="button"
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                   disabled={safePage <= 1}
-                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-2xs font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-40 disabled:pointer-events-none transition"
+                  className="inline-arrow px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-2xs font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-40 disabled:pointer-events-none transition"
                   aria-label="Previous page"
                 >
                   <ChevronLeft className="w-3.5 h-3.5" />
@@ -551,7 +562,7 @@ export function AdminPeoplePanel({
                   type="button"
                   onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                   disabled={safePage >= totalPages}
-                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-2xs font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-40 disabled:pointer-events-none transition"
+                  className="inline-arrow px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-2xs font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-40 disabled:pointer-events-none transition"
                   aria-label="Next page"
                 >
                   Next
@@ -572,7 +583,7 @@ export function AdminPeoplePanel({
         }}
         title="Create Teacher Account"
       >
-        <form onSubmit={handleCreateTeacher} noValidate className="space-y-4">
+        <form onSubmit={handleCreateTeacher} noValidate autoComplete="off" className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <input
               required
@@ -620,7 +631,7 @@ export function AdminPeoplePanel({
         onClose={() => setEditingTeacher(null)}
         title="Edit Teacher"
       >
-        <form onSubmit={handleSaveTeacherEdit} noValidate className="space-y-4">
+        <form onSubmit={handleSaveTeacherEdit} noValidate autoComplete="off" className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <input
               required
@@ -665,7 +676,7 @@ export function AdminPeoplePanel({
       <ConfirmDialog
         open={!!deleteTarget}
         title="Delete User?"
-        message="This action cannot be undone. The account will be deactivated and removed from the admin directory."
+        message="This permanently deletes the account from the database (and removes their uploaded files). This cannot be undone."
         confirmLabel="Delete User"
         loading={!!deleteTarget && actionLoading === `delete-${deleteTarget.id}`}
         onCancel={() => setDeleteTarget(null)}

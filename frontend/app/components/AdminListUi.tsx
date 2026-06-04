@@ -96,11 +96,11 @@ export function PillSelect<T extends string>({
         aria-label={ariaLabel}
         aria-expanded={open}
         aria-haspopup="listbox"
-        className="inline-flex items-center gap-1.5 pl-3.5 pr-2.5 py-2 rounded-full border border-[#8AC926] bg-white text-xs font-bold text-slate-800 hover:bg-[#8AC926]/5 transition min-w-[128px] max-w-[168px] justify-between"
+        className="inline-flex items-center gap-1.5 pl-3.5 pr-2.5 py-2 rounded-full border border-[#8AC926] bg-white text-xs font-bold text-slate-800 hover:bg-[#8AC926]/5 transition min-w-[128px] max-w-[168px] justify-between leading-none"
       >
-        <span className="truncate">{selected?.label}</span>
+        <span className="truncate leading-none">{selected?.label}</span>
         <ChevronDown
-          className={`w-3.5 h-3.5 text-slate-700 shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
+          className={`w-3.5 h-3.5 text-slate-700 shrink-0 block transition-transform ${open ? "rotate-180" : ""}`}
         />
       </button>
       {open && (
@@ -197,7 +197,7 @@ export function AdminListPagination({
           type="button"
           onClick={() => onPageChange(Math.max(1, safePage - 1))}
           disabled={safePage <= 1}
-          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-2xs font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-40 disabled:pointer-events-none transition"
+          className="inline-arrow px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-2xs font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-40 disabled:pointer-events-none transition"
           aria-label="Previous page"
         >
           <ChevronLeft className="w-3.5 h-3.5" />
@@ -230,7 +230,7 @@ export function AdminListPagination({
           type="button"
           onClick={() => onPageChange(Math.min(totalPages, safePage + 1))}
           disabled={safePage >= totalPages}
-          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-2xs font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-40 disabled:pointer-events-none transition"
+          className="inline-arrow px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-2xs font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-40 disabled:pointer-events-none transition"
           aria-label="Next page"
         >
           Next
