@@ -98,6 +98,7 @@ export const updateUserSchema = z.object({
 
 export const forgotPasswordSchema = z.object({
   email: z.string().email("Invalid email address"),
+  portal: z.enum(["student", "teacher", "admin"]).optional(),
 });
 
 export const resetPasswordSchema = z.object({
@@ -132,11 +133,28 @@ export const createGallerySchema = z.object({
   type: z.literal("IMAGE").default("IMAGE"),
 });
 
+export const updateGallerySchema = z.object({
+  title: z.string().optional(),
+  imageUrl: urlOrUploadPath.optional(),
+});
+
+function isDueDateTodayOrFuture(value: string): boolean {
+  const due = new Date(value);
+  if (Number.isNaN(due.getTime())) return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  due.setHours(0, 0, 0, 0);
+  return due.getTime() >= today.getTime();
+}
+
 // ── Task Assignment (Admin) ─────────────────────────────────────────
 export const createTaskSchema = z.object({
   title: z.string().min(2, "Title must be at least 2 characters"),
   description: z.string().optional(),
-  dueDate: z.string().optional().nullable(),
+  dueDate: z
+    .string()
+    .min(1, "Due date is required")
+    .refine(isDueDateTodayOrFuture, "Due date cannot be in the past"),
   teacherId: z.string(),
 });
 
@@ -152,6 +170,7 @@ export const createStoryBookSchema = z.object({
   category: z.string().min(2, "Category is required"),
   fileUrl: urlOrUploadPath,
   fileSize: z.number().optional().nullable(),
+  audience: z.enum(["STUDENT", "TEACHER", "BOTH"]).default("BOTH"),
 });
 
 // ── Task Proof Submission (Teacher) ─────────────────────────────────
