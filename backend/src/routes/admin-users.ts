@@ -10,8 +10,10 @@ import {
 } from "../config/schemas.js";
 import { AppError } from "../utils/errors.js";
 import { sendEmail, getTeacherWelcomeHtml, getPasswordResetHtml } from "../services/email.js";
+import { hardDeleteUserById } from "../services/hardDeleteUser.js";
 import { env } from "../config/env.js";
 import { generateEmployeeId, generateResetToken, generateTemporaryPassword } from "../utils/password.js";
+import { buildPasswordResetUrl } from "../utils/passwordResetUrl.js";
 
 const router = Router();
 
@@ -55,7 +57,7 @@ async function sendPasswordResetEmail(userId: string): Promise<void> {
     data: { token, userId: user.id, expiresAt },
   });
 
-  const resetUrl = `${env.FRONTEND_URL}/teacher/reset-password?token=${token}`;
+  const resetUrl = buildPasswordResetUrl(user.role, token);
   await sendEmail({
     to: user.email,
     subject: `Reset your ${env.PLATFORM_NAME} password`,
@@ -192,8 +194,9 @@ router.post("/teachers", validate(createTeacherSchema), async (req, res, next) =
       select: userListSelect,
     });
 
+    let emailSent = false;
     try {
-      await sendEmail({
+      emailSent = await sendEmail({
         to: teacher.email,
         subject: `Welcome to ${env.PLATFORM_NAME}`,
         html: getTeacherWelcomeHtml({
@@ -208,7 +211,19 @@ router.post("/teachers", validate(createTeacherSchema), async (req, res, next) =
       console.error("Failed to send teacher welcome email:", emailErr);
     }
 
-    res.status(201).json(teacher);
+    if (!emailSent && env.NODE_ENV === "development") {
+      console.warn(
+        `[Teacher created] ${teacher.email} — welcome email not sent. Temporary password is in the log above (TEMPORARY PASSWORD line).`
+      );
+    }
+
+    res.status(201).json({
+      ...teacher,
+      emailSent,
+      emailWarning: emailSent
+        ? undefined
+        : "Welcome email could not be sent. Fix SMTP settings (e.g. Brevo smtp-relay.brevo.com:587) or read the backend log for the temporary password.",
+    });
   } catch (err) {
     next(err);
   }
@@ -340,34 +355,11 @@ router.post("/users/:id/send-reset", async (req, res, next) => {
   }
 });
 
-// ── Soft Delete User ──────────────────────────────────────────────────
+// ── Hard Delete User (students / teachers — DB + uploaded files) ───────
 router.delete("/users/:id", async (req, res, next) => {
   try {
-    const user = await prisma.user.findFirst({
-      where: { id: String(req.params.id), isDeleted: false },
-    });
-    if (!user) {
-      throw new AppError("User not found", 404);
-    }
-
-    if (user.id === req.user!.userId) {
-      throw new AppError("Cannot delete your own account", 400);
-    }
-
-    await prisma.$transaction([
-      prisma.passwordResetToken.deleteMany({ where: { userId: user.id } }),
-      prisma.user.update({
-        where: { id: user.id },
-        data: {
-          isDeleted: true,
-          deletedAt: new Date(),
-          status: "DEACTIVATED",
-          email: `deleted_${user.id}_${user.email}`,
-        },
-      }),
-    ]);
-
-    res.json({ message: "User deleted successfully" });
+    await hardDeleteUserById(String(req.params.id), { forbidSelfId: req.user!.userId });
+    res.json({ message: "User permanently deleted" });
   } catch (err) {
     next(err);
   }
