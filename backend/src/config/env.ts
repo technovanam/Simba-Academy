@@ -28,9 +28,21 @@ export const env = {
   JWT_SECRET: envString("JWT_SECRET"),
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN ?? "7d",
 
-  // ── Razorpay ───────────────────────────────────────────────────
-  RAZORPAY_KEY_ID: envString("RAZORPAY_KEY_ID", "rzp_test_placeholder"),
-  RAZORPAY_KEY_SECRET: envString("RAZORPAY_KEY_SECRET", "placeholder"),
+  // ── Zoho Payments ───────────────────────────────────────────────
+  ZOHO_PAYMENTS_ACCOUNT_ID: envString("ZOHO_PAYMENTS_ACCOUNT_ID", "placeholder"),
+  ZOHO_PAYMENTS_API_KEY: envString("ZOHO_PAYMENTS_API_KEY", "placeholder"),
+  ZOHO_PAYMENTS_SIGNING_KEY: envString("ZOHO_PAYMENTS_SIGNING_KEY", "placeholder"),
+  ZOHO_PAYMENTS_CLIENT_ID: envString("ZOHO_PAYMENTS_CLIENT_ID", "placeholder"),
+  ZOHO_PAYMENTS_CLIENT_SECRET: envString("ZOHO_PAYMENTS_CLIENT_SECRET", "placeholder"),
+  ZOHO_PAYMENTS_REFRESH_TOKEN: envString("ZOHO_PAYMENTS_REFRESH_TOKEN", "placeholder"),
+  ZOHO_ACCOUNTS_URL: (process.env.ZOHO_ACCOUNTS_URL ?? "https://accounts.zoho.in").replace(/\/$/, ""),
+  ZOHO_PAYMENTS_API_URL: (process.env.ZOHO_PAYMENTS_API_URL ?? "https://payments.zoho.in/api/v1").replace(
+    /\/$/,
+    ""
+  ),
+  ZOHO_PAYMENTS_DOMAIN: process.env.ZOHO_PAYMENTS_DOMAIN ?? "IN",
+  ZOHO_PAYMENTS_TEST_MODE: process.env.ZOHO_PAYMENTS_TEST_MODE === "true",
+  ZOHO_PAYMENTS_PLACEHOLDER: process.env.ZOHO_PAYMENTS_PLACEHOLDER === "true",
 
   // ── Email (Nodemailer + Brevo) ─────────────────────────────────
   SMTP_HOST: process.env.SMTP_HOST ?? "smtp-relay.brevo.com",
@@ -67,4 +79,29 @@ export const env = {
   WEBDAV_USER: process.env.WEBDAV_USER ?? "simba@simbapreschool.in",
   WEBDAV_PASSWORD: process.env.WEBDAV_PASSWORD ?? "",
   WEBDAV_BASE_URL: process.env.WEBDAV_BASE_URL ?? "https://simbapreschool.in/simba",
+
+  // ── Google Reviews (Places API New) ─────────────────────────────
+  GOOGLE_PLACES_API_KEY: process.env.GOOGLE_PLACES_API_KEY ?? "",
+  /** Single location (legacy). Use GOOGLE_PLACE_IDS for all branches. */
+  GOOGLE_PLACE_ID: process.env.GOOGLE_PLACE_ID ?? "",
+  /** Comma-separated Place IDs for every Google Business location */
+  GOOGLE_PLACE_IDS: process.env.GOOGLE_PLACE_IDS ?? "",
+  /** Auto-find locations when GOOGLE_PLACE_IDS is empty, e.g. "Simba Preschool Salem" */
+  GOOGLE_PLACES_SEARCH_QUERY: process.env.GOOGLE_PLACES_SEARCH_QUERY ?? "",
+  GOOGLE_PLACES_NAME_FILTER: process.env.GOOGLE_PLACES_NAME_FILTER ?? "simba",
+  GOOGLE_PLACES_SEARCH_MAX: envInt("GOOGLE_PLACES_SEARCH_MAX", 20),
+  GOOGLE_REVIEWS_CACHE_MINUTES: envInt("GOOGLE_REVIEWS_CACHE_MINUTES", 60),
+  /** Min minutes between manual "Refresh Google" syncs (avoids API rate limits) */
+  GOOGLE_REVIEWS_SYNC_COOLDOWN_MINUTES: envInt("GOOGLE_REVIEWS_SYNC_COOLDOWN_MINUTES", 15),
+  /** After a quota/rate-limit error, block Google Business API calls (minutes) */
+  GOOGLE_GBP_RATE_LIMIT_COOLDOWN_MINUTES: envInt("GOOGLE_GBP_RATE_LIMIT_COOLDOWN_MINUTES", 30),
+
+  /** Google Business Profile OAuth — full review text from your account */
+  GOOGLE_OAUTH_CLIENT_ID: process.env.GOOGLE_OAUTH_CLIENT_ID ?? "",
+  GOOGLE_OAUTH_CLIENT_SECRET: process.env.GOOGLE_OAUTH_CLIENT_SECRET ?? "",
+  GOOGLE_OAUTH_REDIRECT_URI:
+    process.env.GOOGLE_OAUTH_REDIRECT_URI ??
+    "http://localhost:3001/api/admin/google-reviews/oauth-callback",
+  GOOGLE_BUSINESS_REFRESH_TOKEN: process.env.GOOGLE_BUSINESS_REFRESH_TOKEN ?? "",
+  GOOGLE_BUSINESS_ACCOUNT_ID: process.env.GOOGLE_BUSINESS_ACCOUNT_ID ?? "",
 } as const;
