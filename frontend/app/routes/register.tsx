@@ -1,12 +1,23 @@
-import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { useState } from "react";
+import { useNavigate } from "react-router";
 import type { Route } from "./+types/register";
-import { PageShell } from "../components/PageShell";
 import { PasswordInput } from "../components/PasswordInput";
+import {
+  AuthAlert,
+  AuthField,
+  AuthInlineLink,
+  AuthPageShell,
+  AuthSubmitButton,
+  authInputClass,
+} from "../components/AuthUi";
+import { Toast } from "../components/Toast";
 import { api, ApiError } from "../lib/api";
+import { openZohoCheckout } from "../lib/zohoCheckout";
 import { saveSession } from "../lib/auth";
-import { AlertCircle } from "lucide-react";
+import { STUDENT_PLATFORM_FEE_INR } from "../lib/constants";
+import { AlertCircle, Check, CreditCard, Shield } from "lucide-react";
 import { ModalCloseButton } from "../components/ModalCloseButton";
+import { AntiAutofillTrap, blockAutofillInputProps } from "../components/AntiAutofillTrap";
 
 export function meta({}: Route.MetaArgs) {
   return [{ title: "Student Sign Up | Simba Academy" }];
@@ -16,7 +27,6 @@ export default function RegisterPage() {
   const navigate = useNavigate();
   const [form, setForm] = useState({ name: "", email: "", password: "", phone: "" });
   const [error, setError] = useState("");
-  const [errorClosing, setErrorClosing] = useState(false);
   const [nameError, setNameError] = useState("");
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
@@ -26,61 +36,9 @@ export default function RegisterPage() {
   const [showSimulatedModal, setShowSimulatedModal] = useState(false);
   const [mockOrderData, setMockOrderData] = useState<{ orderId: string; amount: number; currency: string; key: string } | null>(null);
 
-  const triggerErrorClose = () => {
-    setErrorClosing(true);
-    setTimeout(() => {
-      setError("");
-      setErrorClosing(false);
-    }, 300);
-  };
-
-  useEffect(() => {
-    if (error || nameError || emailError || passwordError) {
-      const dismissTimer = setTimeout(() => {
-        if (error) triggerErrorClose();
-        setNameError("");
-        setEmailError("");
-        setPasswordError("");
-      }, 5000); // 5 seconds default for error Toast
-
-      const handleGlobalClick = () => {
-        if (error) triggerErrorClose();
-        setNameError("");
-        setEmailError("");
-        setPasswordError("");
-      };
-      
-      const registerTimer = setTimeout(() => {
-        window.addEventListener("click", handleGlobalClick);
-      }, 100);
-
-      return () => {
-        clearTimeout(dismissTimer);
-        clearTimeout(registerTimer);
-        window.removeEventListener("click", handleGlobalClick);
-      };
-    }
-  }, [error, nameError, emailError, passwordError]);
-
-  const loadScript = (src: string) => {
-    return new Promise<boolean>((resolve) => {
-      // Check if script is already present
-      if (document.querySelector(`script[src="${src}"]`)) {
-        resolve(true);
-        return;
-      }
-      const script = document.createElement("script");
-      script.src = src;
-      script.onload = () => resolve(true);
-      script.onerror = () => resolve(false);
-      document.body.appendChild(script);
-    });
-  };
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    setErrorClosing(false);
     setNameError("");
     setEmailError("");
     setPasswordError("");
@@ -131,78 +89,60 @@ export default function RegisterPage() {
       setStatusMessage("Creating secure order...");
       const orderData = await api.createPreRegisterOrder();
 
-      // 3. Check for Sandbox mode (placeholder key)
-      if (orderData.key === "rzp_test_placeholder") {
-        setMockOrderData(orderData);
+      if (orderData.isPlaceholder) {
+        setMockOrderData({
+          orderId: orderData.paymentSessionId,
+          amount: orderData.amount,
+          currency: orderData.currency,
+          key: orderData.apiKey,
+        });
         setShowSimulatedModal(true);
         setStatusMessage("Awaiting simulated payment...");
         return;
       }
 
-      // 4. Load Razorpay Checkout SDK
-      setStatusMessage("Loading payment gateway...");
-      const scriptLoaded = await loadScript("https://checkout.razorpay.com/v1/checkout.js");
-      if (!scriptLoaded) {
-        throw new Error("Razorpay Checkout SDK failed to load. Please check your internet connection.");
-      }
+      setStatusMessage("Opening Zoho Payments…");
+      try {
+        const payment = await openZohoCheckout({
+          session: orderData,
+          description: "Student Platform Registration Fee",
+          invoiceNumber: `REG-${Date.now()}`,
+          referenceNumber: orderData.paymentSessionId,
+          customer: {
+            name: form.name,
+            email: form.email,
+            phone: form.phone || undefined,
+          },
+        });
 
-      // 5. Open Razorpay Popup
-      setStatusMessage("Awaiting payment approval...");
-      const options = {
-        key: orderData.key,
-        amount: orderData.amount,
-        currency: orderData.currency,
-        name: "Simba Academy 🦁",
-        description: "Student Platform Registration Fee",
-        image: "/Simba Logo 2025.pdf.png",
-        order_id: orderData.orderId,
-        handler: async function (response: any) {
-          try {
-            setLoading(true);
-            setStatusMessage("Verifying payment and creating account...");
-            const verifyResult = await api.registerWithPayment({
-              name: form.name,
-              email: form.email,
-              password: form.password,
-              phone: form.phone || undefined,
-              razorpayOrderId: response.razorpay_order_id,
-              razorpayPaymentId: response.razorpay_payment_id,
-              razorpaySignature: response.razorpay_signature,
-            });
-
-            saveSession(verifyResult.token, verifyResult.user);
-            navigate("/student/dashboard");
-          } catch (err) {
-            console.error("Verification and registration error:", err);
-            setError(err instanceof ApiError ? err.message : "Payment verification and registration failed.");
-            setLoading(false);
-            setStatusMessage("");
-          }
-        },
-        prefill: {
+        setLoading(true);
+        setStatusMessage("Verifying payment and creating account...");
+        const verifyResult = await api.registerWithPayment({
           name: form.name,
           email: form.email,
-          contact: form.phone ?? "",
-        },
-        theme: {
-          color: "#8AC926",
-        },
-        modal: {
-          ondismiss: function() {
-            setError("Registration payment was cancelled.");
-            setLoading(false);
-            setStatusMessage("");
-          }
-        }
-      };
+          password: form.password,
+          phone: form.phone || undefined,
+          paymentSessionId: payment.payments_session_id,
+          paymentId: payment.payment_id,
+          signature: payment.signature,
+        });
 
-      const rzp = new (window as any).Razorpay(options);
-      rzp.on("payment.failed", function (response: any) {
-        setError(`Payment failed: ${response.error.description}`);
-        setLoading(false);
-        setStatusMessage("");
-      });
-      rzp.open();
+        saveSession(verifyResult.token, verifyResult.user);
+        navigate("/student/dashboard");
+      } catch (payErr: unknown) {
+        const code = (payErr as { code?: string })?.code;
+        if (code === "widget_closed") {
+          setError("Registration payment was cancelled.");
+        } else {
+          setError(
+            payErr instanceof ApiError
+              ? payErr.message
+              : payErr instanceof Error
+                ? payErr.message
+                : "Payment failed."
+          );
+        }
+      }
 
     } catch (err: any) {
       setError(err instanceof ApiError ? err.message : err.message || "Registration initialization failed.");
@@ -211,172 +151,212 @@ export default function RegisterPage() {
     }
   }
 
-  return (
-    <PageShell showFooter={false}>
-      <section className="max-w-md mx-auto px-6 py-12">
-        <div className="glass-panel rounded-lg p-8 shadow-xl">
-          <h1 className="font-sans text-3xl font-extrabold text-center mb-2">Student Sign Up</h1>
-          <p className="text-center text-sm text-[#5D4037] font-semibold mb-6">
-            Get platform access to start your learning journey
-          </p>
+  const feeLabel = `₹${STUDENT_PLATFORM_FEE_INR}`;
 
-          {/* Pricing Highlight Card */}
-          <div className="bg-[#8AC926]/10 border border-[#8AC926]/20 rounded-xl p-4 mb-6">
-            <div className="text-center">
-              <span className="text-xs font-bold text-[#4E8C52] uppercase tracking-wider block mb-1">Simba Platform Access</span>
-              <div className="flex justify-center items-baseline gap-1 text-slate-800">
-                <span className="text-3xl font-extrabold text-[#4E8C52]">₹120</span>
-                <span className="text-sm font-semibold text-slate-500">/ one-time</span>
+  return (
+    <>
+      <Toast message={error} variant="error" onDismiss={() => setError("")} />
+      <AuthPageShell maxWidth="max-w-4xl" portal="student">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-lg overflow-hidden max-h-[calc(100vh-2rem)] flex flex-col min-h-0">
+            <div className="grid lg:grid-cols-2 flex-1 min-h-0 overflow-hidden">
+              {/* Left — account details (second on mobile, first on desktop) */}
+              <div className="order-2 lg:order-1 p-5 sm:p-6 lg:p-8 flex flex-col border-b lg:border-b-0 lg:border-r border-slate-100 min-h-0 overflow-y-auto">
+                <div className="mb-4">
+                  <div className="flex items-center gap-3 mb-4">
+                    <img src="/favicon.png" alt="" className="w-11 h-11 object-contain" />
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-[#c77a00] bg-[#FF9F1C]/10 border border-[#FF9F1C]/25 px-2 py-0.5 rounded-full">
+                        Student sign up
+                      </span>
+                      <h1 className="text-lg font-extrabold text-slate-900 mt-1">Create your account</h1>
+                    </div>
+                  </div>
+                  <p className="text-sm text-[#c77a00]/90 font-medium">
+                    Enter your details to unlock the student platform.
+                  </p>
+                </div>
+
+                {statusMessage && loading && (
+                  <AuthAlert variant="info" message={statusMessage} portal="student" />
+                )}
+
+                <form
+                  onSubmit={handleSubmit}
+                  noValidate
+                  autoComplete="off"
+                  data-autofill="block"
+                  className="relative space-y-3 flex-1"
+                >
+                  <AntiAutofillTrap />
+                  <AuthField label="Full name" error={nameError} portal="student">
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder="Your name"
+                        {...blockAutofillInputProps}
+                        value={form.name}
+                        onChange={(e) => {
+                          setForm({ ...form, name: e.target.value });
+                          if (nameError) setNameError("");
+                        }}
+                        className={authInputClass(!!nameError, "student")}
+                      />
+                      {nameError && (
+                        <AlertCircle className="w-4 h-4 text-red-500 absolute right-3 top-1/2 -translate-y-1/2" />
+                      )}
+                    </div>
+                  </AuthField>
+
+                  <AuthField label="Email" error={emailError} portal="student">
+                    <div className="relative">
+                      <input
+                        type="text"
+                        inputMode="email"
+                        placeholder="you@example.com"
+                        {...blockAutofillInputProps}
+                        value={form.email}
+                        onChange={(e) => {
+                          setForm({ ...form, email: e.target.value });
+                          if (emailError) setEmailError("");
+                        }}
+                        className={authInputClass(!!emailError, "student")}
+                      />
+                      {emailError && (
+                        <AlertCircle className="w-4 h-4 text-red-500 absolute right-3 top-1/2 -translate-y-1/2" />
+                      )}
+                    </div>
+                  </AuthField>
+
+                  <AuthField label="Phone (optional)" portal="student">
+                    <input
+                      type="tel"
+                      placeholder="+91 …"
+                      {...blockAutofillInputProps}
+                      value={form.phone}
+                      onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                      className={authInputClass(false, "student")}
+                    />
+                  </AuthField>
+
+                  <AuthField label="Password" error={passwordError} portal="student">
+                    <PasswordInput
+                      value={form.password}
+                      onChange={(password) => {
+                        setForm({ ...form, password });
+                        if (passwordError) setPasswordError("");
+                      }}
+                      autoComplete="one-time-code"
+                      readOnly
+                      onFocus={(e) => e.target.removeAttribute("readonly")}
+                      data-lpignore="true"
+                      data-1p-ignore="true"
+                      data-bwignore="true"
+                      placeholder="At least 6 characters"
+                      className={authInputClass(!!passwordError, "student") + " pr-12"}
+                    />
+                  </AuthField>
+
+                  <div className="lg:hidden pt-1 space-y-3">
+                    <AuthSubmitButton
+                      portal="student"
+                      loading={loading}
+                      loadingText={statusMessage || "Processing…"}
+                    >
+                      Pay {feeLabel} & sign up
+                    </AuthSubmitButton>
+                    <p className="text-center text-xs text-slate-500 font-medium">
+                      Already registered?{" "}
+                      <AuthInlineLink to="/login" portal="student">
+                        Sign in
+                      </AuthInlineLink>
+                    </p>
+                  </div>
+                </form>
               </div>
-            </div>
-            <div className="mt-3.5 space-y-1.5 text-xs text-[#5D4037] font-semibold">
-              <div className="flex items-center gap-2">
-                <span className="text-[#8AC926] text-sm">✓</span> Unlimited access to Storybook Library
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-[#8AC926] text-sm">✓</span> Interactive Student Activity Log
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-[#8AC926] text-sm">✓</span> Student Dashboard & Progress Tracking
+
+              {/* Right — payment summary (first on mobile, second on desktop) */}
+              <div className="order-1 lg:order-2 p-5 sm:p-6 lg:p-8 bg-gradient-to-br from-[#FF9F1C]/8 via-white to-slate-50 flex flex-col justify-between border-b lg:border-b-0 border-slate-100 min-h-0 overflow-y-auto">
+                <div>
+                  <div className="flex items-center gap-2 text-[#c77a00] mb-4">
+                    <CreditCard className="w-5 h-5 text-[#FF9F1C]" />
+                    <span className="text-xs font-bold uppercase tracking-widest">Payment</span>
+                  </div>
+
+                  <p className="text-sm font-semibold text-[#c77a00] mb-1">Platform access fee</p>
+                  <div className="flex items-baseline gap-2 mb-1">
+                    <span className="text-4xl lg:text-5xl font-extrabold text-[#c77a00] tracking-tight">
+                      {feeLabel}
+                    </span>
+                    <span className="text-sm font-semibold text-slate-500">one-time</span>
+                  </div>
+                  <p className="text-xs text-slate-500 font-medium mb-5">
+                    Secure checkout via Zoho Payments after you submit the form.
+                  </p>
+
+                  <ul className="space-y-2">
+                    {[
+                      "Unlimited storybook library",
+                      "Student dashboard & progress",
+                      "Course materials when enrolled",
+                      "Activity log & learning tools",
+                    ].map((item) => (
+                      <li key={item} className="flex items-start gap-2.5 text-sm text-slate-700 font-medium">
+                        <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#FF9F1C]/15">
+                          <Check className="w-3 h-3 text-[#c77a00]" strokeWidth={3} />
+                        </span>
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="mt-5 space-y-3 shrink-0">
+                  <div className="rounded-xl border border-slate-200 bg-white/80 p-4 space-y-2 text-sm">
+                    <div className="flex justify-between font-medium text-slate-600">
+                      <span>Registration fee</span>
+                      <span className="text-slate-900 font-bold">{feeLabel}</span>
+                    </div>
+                    <div className="flex justify-between font-medium text-slate-600">
+                      <span>GST</span>
+                      <span className="text-slate-500">Included</span>
+                    </div>
+                    <div className="border-t border-dashed border-slate-200 pt-2 flex justify-between items-baseline">
+                      <span className="font-bold text-slate-800">Total to pay</span>
+                      <span className="text-2xl font-extrabold text-[#c77a00]">{feeLabel}</span>
+                    </div>
+                  </div>
+
+                  <div className="hidden lg:block space-y-3">
+                    <AuthSubmitButton
+                      portal="student"
+                      loading={loading}
+                      loadingText={statusMessage || "Processing…"}
+                    >
+                      Pay {feeLabel} & sign up
+                    </AuthSubmitButton>
+                    <p className="text-center text-xs text-slate-500 font-medium">
+                      Already registered?{" "}
+                      <AuthInlineLink to="/login" portal="student">
+                        Sign in
+                      </AuthInlineLink>
+                    </p>
+                  </div>
+
+                  <p className="flex items-center justify-center gap-1.5 text-[10px] text-slate-400 font-semibold">
+                    <Shield className="w-3.5 h-3.5" />
+                    Encrypted payment · Simba Preschool
+                  </p>
+                </div>
               </div>
             </div>
           </div>
-
-          {error && (
-            <div className={`fixed top-6 right-6 z-50 max-w-sm w-full bg-white/80 backdrop-blur-lg border border-white/40 rounded-2xl shadow-xl overflow-hidden flex text-left ${errorClosing ? 'animate-toast-out' : 'animate-toast-in'}`}>
-              <div className="w-2 bg-red-500 flex-shrink-0" />
-              <div className="p-4 flex gap-3.5 items-start w-full">
-                <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-                <div className="flex-1">
-                  <h4 className="text-sm font-bold text-slate-800 leading-tight">Error</h4>
-                  <p className="text-xs text-slate-500 font-medium mt-1">{error}</p>
-                  <span className="text-[10px] text-slate-400 font-semibold mt-2 block">
-                    {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                </div>
-                <ModalCloseButton
-                  size="sm"
-                  className="shrink-0"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    triggerErrorClose();
-                  }}
-                />
-              </div>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} noValidate className="space-y-5">
-            <div>
-              <label className={`block text-sm font-bold mb-2 transition-colors ${nameError ? "text-red-500" : ""}`}>Full Name</label>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={form.name}
-                  onChange={(e) => {
-                    setForm({ ...form, name: e.target.value });
-                    if (nameError) setNameError("");
-                  }}
-                  className={`w-full rounded-lg border px-4 py-3 pr-10 bg-white outline-none transition-all ${
-                    nameError 
-                      ? "border-red-500 focus:border-red-500 shadow-xs shadow-red-100 text-red-900 placeholder-red-300" 
-                      : "border-[#8AC926]/20 focus:border-[#8AC926]"
-                  }`}
-                />
-                {nameError && (
-                  <AlertCircle className="w-5 h-5 text-red-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                )}
-              </div>
-              {nameError && (
-                <p className="mt-1.5 text-xs text-red-500 font-semibold text-left">{nameError}</p>
-              )}
-            </div>
-            <div>
-              <label className={`block text-sm font-bold mb-2 transition-colors ${emailError ? "text-red-500" : ""}`}>Email</label>
-              <div className="relative">
-                <input
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => {
-                    setForm({ ...form, email: e.target.value });
-                    if (emailError) setEmailError("");
-                  }}
-                  className={`w-full rounded-lg border px-4 py-3 pr-10 bg-white outline-none transition-all ${
-                    emailError 
-                      ? "border-red-500 focus:border-red-500 shadow-xs shadow-red-100 text-red-900 placeholder-red-300" 
-                      : "border-[#8AC926]/20 focus:border-[#8AC926]"
-                  }`}
-                />
-                {emailError && (
-                  <AlertCircle className="w-5 h-5 text-red-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                )}
-              </div>
-              {emailError && (
-                <p className="mt-1.5 text-xs text-red-500 font-semibold text-left">{emailError}</p>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-bold mb-2">Phone (Optional)</label>
-              <input
-                type="text"
-                value={form.phone}
-                onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                className="w-full rounded-lg border-2 border-[#8AC926]/20 px-4 py-3 bg-white outline-none focus:border-[#8AC926]"
-              />
-            </div>
-            <div>
-              <label className={`block text-sm font-bold mb-2 transition-colors ${passwordError ? "text-red-500" : ""}`}>Password</label>
-              <div className="relative">
-                <PasswordInput
-                  value={form.password}
-                  onChange={(password) => {
-                    setForm({ ...form, password });
-                    if (passwordError) setPasswordError("");
-                  }}
-                  autoComplete="new-password"
-                  className={`w-full rounded-lg border px-4 py-3 pr-12 bg-white outline-none transition-all ${
-                    passwordError 
-                      ? "border-red-500 focus:border-red-500 shadow-xs shadow-red-100 text-red-900 placeholder-red-300" 
-                      : "border-[#8AC926]/20 focus:border-[#8AC926]"
-                  }`}
-                />
-                {passwordError && (
-                  <AlertCircle className="w-5 h-5 text-red-500 absolute right-10 top-1/2 -translate-y-1/2 pointer-events-none" />
-                )}
-              </div>
-              {passwordError && (
-                <p className="mt-1.5 text-xs text-red-500 font-semibold text-left">{passwordError}</p>
-              )}
-            </div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 rounded-md bg-[#8AC926] hover:bg-[#78B020] text-white font-sans font-extrabold disabled:opacity-60 cursor-pointer transition-colors shadow-md flex items-center justify-center min-h-[48px]"
-            >
-              {loading ? (
-                <div className="flex items-center gap-2">
-                  <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                  <span>{statusMessage || "Processing..."}</span>
-                </div>
-              ) : (
-                "Pay ₹120 & Sign Up"
-              )}
-            </button>
-          </form>
-
-          <p className="text-center text-sm mt-6 font-semibold text-[#5D4037]">
-            Already have an account? <Link to="/login" className="text-[#4E8C52] font-extrabold hover:underline">Login</Link>
-          </p>
-        </div>
-      </section>
+      </AuthPageShell>
 
       {/* Simulated Sandbox Payment Modal */}
       {showSimulatedModal && mockOrderData && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-2xl p-6 max-w-sm w-full text-center relative overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl p-6 max-w-sm w-full text-center relative overflow-hidden">
+            <div className="absolute top-0 inset-x-0 h-1 bg-[#FF9F1C]" />
             <ModalCloseButton
               className="absolute top-3 right-3"
               onClick={() => {
@@ -385,21 +365,19 @@ export default function RegisterPage() {
                 setStatusMessage("");
               }}
             />
-            {/* Header Design */}
-            <div className="absolute top-0 inset-x-0 h-1.5 bg-[#8AC926]" />
-            
-            <div className="mx-auto w-12 h-12 bg-[#8AC926]/10 rounded-full flex items-center justify-center text-xl mb-4">
+
+            <div className="mx-auto w-12 h-12 bg-[#FF9F1C]/10 rounded-full flex items-center justify-center text-xl mb-4 mt-2">
               🦁
             </div>
 
             <h3 className="text-lg font-bold text-slate-800 mb-1">Simba Sandbox Checkout</h3>
-            <p className="text-xs font-semibold text-slate-400 mb-4 uppercase tracking-wider">Razorpay Developer Simulation</p>
+            <p className="text-xs font-semibold text-slate-400 mb-4 uppercase tracking-wider">Zoho Payments Sandbox Simulation</p>
             
             <p className="text-xs text-slate-500 font-medium mb-6 leading-relaxed bg-slate-50 border border-slate-100 rounded-lg p-3">
-              We detected <code className="bg-slate-200 px-1 py-0.5 rounded text-amber-600 font-mono text-[10px]">rzp_test_placeholder</code> keys. You can simulate the payment completion below.
+              Zoho credentials are not configured. You can simulate payment completion below for local testing.
             </p>
 
-            <div className="bg-[#8AC926]/5 rounded-xl p-4 border border-[#8AC926]/10 mb-6 text-left space-y-2">
+            <div className="bg-[#FF9F1C]/5 rounded-xl p-4 border border-[#FF9F1C]/10 mb-6 text-left space-y-2">
               <div className="flex justify-between text-xs font-semibold text-slate-500">
                 <span>Description:</span>
                 <span className="text-slate-800 font-bold">Platform Access Fee</span>
@@ -408,9 +386,9 @@ export default function RegisterPage() {
                 <span>Order ID:</span>
                 <span className="text-slate-800 font-mono truncate max-w-[160px] font-bold">{mockOrderData.orderId}</span>
               </div>
-              <div className="border-t border-dashed border-[#8AC926]/20 my-2 pt-2 flex justify-between items-baseline">
+              <div className="border-t border-dashed border-[#FF9F1C]/20 my-2 pt-2 flex justify-between items-baseline">
                 <span className="text-xs font-bold text-slate-700">Total Amount:</span>
-                <span className="text-xl font-extrabold text-[#4E8C52]">₹{(mockOrderData.amount / 100).toFixed(2)}</span>
+                <span className="text-xl font-extrabold text-[#c77a00]">₹{(mockOrderData.amount / 100).toFixed(2)}</span>
               </div>
             </div>
 
@@ -427,9 +405,9 @@ export default function RegisterPage() {
                       email: form.email,
                       password: form.password,
                       phone: form.phone || undefined,
-                      razorpayOrderId: mockOrderData.orderId,
-                      razorpayPaymentId: `pay_mock_${Date.now()}`,
-                      razorpaySignature: `sig_mock_${Date.now()}`,
+                      paymentSessionId: mockOrderData.orderId,
+                      paymentId: `pay_mock_${Date.now()}`,
+                      signature: `sig_mock_${Date.now()}`,
                     });
 
                     saveSession(verifyResult.token, verifyResult.user);
@@ -441,7 +419,7 @@ export default function RegisterPage() {
                     setStatusMessage("");
                   }
                 }}
-                className="w-full py-2.5 rounded-lg bg-[#8AC926] hover:bg-[#78B020] text-white font-sans font-extrabold transition-colors shadow-md text-sm cursor-pointer"
+                className="w-full py-2.5 rounded-lg bg-[#FF9F1C] hover:bg-[#e88f0a] text-white font-sans font-extrabold transition-colors shadow-md text-sm cursor-pointer"
               >
                 Simulate Successful Payment
               </button>
@@ -462,6 +440,6 @@ export default function RegisterPage() {
           </div>
         </div>
       )}
-    </PageShell>
+    </>
   );
 }
