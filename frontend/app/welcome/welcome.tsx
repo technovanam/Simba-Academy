@@ -1,5 +1,6 @@
 import { Link } from "react-router";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { api, type PublicReview } from "../lib/api";
 import { 
   Palette, 
   Leaf, 
@@ -61,9 +62,68 @@ interface Outpost {
   mapY: string;
 }
 
+function StarRating({ rating }: { rating: number }) {
+  return (
+    <div className="flex justify-center gap-0.5 mb-4" aria-label={`${rating} out of 5 stars`}>
+      {[1, 2, 3, 4, 5].map((n) => (
+        <span key={n} className={n <= rating ? "text-[#FF9F1C]" : "text-[#E0E0E0]"}>
+          ★
+        </span>
+      ))}
+    </div>
+  );
+}
+
+const FALLBACK_REVIEW: PublicReview = {
+  id: "fallback",
+  name: "Mama Sarah Jenkins",
+  content:
+    "Simba Academy is a magical oasis. Our daughter joins the Little Leopards ridge and comes home reciting nature poems, glowing with social coordination, and carrying gorgeous finger-painted monstera leaves. The rangers are warm, certified educators who truly respect early childhood magic.",
+  rating: 5,
+  source: "manual",
+};
+
 export function Welcome() {
   const [isMascotHovered, setIsMascotHovered] = useState(false);
   const [activeOutpost, setActiveOutpost] = useState<string>("turtles");
+  const [publicReviews, setPublicReviews] = useState<PublicReview[]>([]);
+  const [activeReviewIndex, setActiveReviewIndex] = useState(0);
+  const [googleMeta, setGoogleMeta] = useState<{
+    configured: boolean;
+    rating?: number;
+    totalRatings?: number;
+    placeName?: string;
+    locationCount?: number;
+  }>({ configured: false });
+
+  useEffect(() => {
+    api
+      .getPublicReviews()
+      .then((data) => {
+        setPublicReviews(data.reviews);
+        setGoogleMeta(data.google);
+        setActiveReviewIndex(0);
+      })
+      .catch(() => {
+        setPublicReviews([]);
+      });
+  }, []);
+
+  const displayReviews =
+    publicReviews.filter((r) => r.content && r.content !== "—").length > 0
+      ? publicReviews.filter((r) => r.content && r.content !== "—")
+      : publicReviews.length > 0
+        ? publicReviews
+        : [FALLBACK_REVIEW];
+  const activeReview = displayReviews[activeReviewIndex] ?? displayReviews[0];
+
+  useEffect(() => {
+    if (displayReviews.length <= 1) return;
+    const timer = window.setInterval(() => {
+      setActiveReviewIndex((i) => (i + 1) % displayReviews.length);
+    }, 8000);
+    return () => window.clearInterval(timer);
+  }, [displayReviews.length]);
 
   // Outpost Details for Interactive Map
   const outposts: Outpost[] = [
@@ -713,6 +773,16 @@ export function Welcome() {
           <span className="text-xs uppercase font-sans font-extrabold text-[#FF9F1C] tracking-widest mt-4">Campfire stories</span>
         </div>
 
+        {googleMeta.configured && googleMeta.rating != null && (
+          <p className="text-sm font-bold text-[#5D4037] mb-6">
+            {googleMeta.placeName && <span>{googleMeta.placeName} · </span>}
+            <span className="text-[#FF9F1C]">★ {googleMeta.rating.toFixed(1)}</span>
+            {googleMeta.totalRatings != null && (
+              <span> ({googleMeta.totalRatings} Google reviews)</span>
+            )}
+          </p>
+        )}
+
         {/* Testimonial glass placard */}
         <div className="glass-panel rounded-lg p-10 md:p-14 shadow-2xl max-w-4xl mx-auto relative overflow-hidden">
           <div className="absolute top-0 left-0 w-24 h-24 bg-[#FF9F1C]/5 rounded-lg pointer-events-none"></div>
@@ -724,19 +794,55 @@ export function Welcome() {
             <Quote className="w-12 h-12 fill-current" />
           </div>
 
+          <StarRating rating={activeReview.rating} />
+
           <p className="text-lg sm:text-xl italic text-[#3E2723] font-semibold leading-relaxed mb-8 relative z-10">
-            "Simba Academy is a magical oasis. Our daughter joins the 'Little Leopards' ridge and comes home reciting nature poems, glowing with social coordination, and carrying gorgeous finger-painted monstera leaves. The rangers are warm, certified educators who truly respect early childhood magic."
+            &ldquo;{activeReview.content}&rdquo;
           </p>
           
           <div className="flex items-center justify-center gap-4 relative z-10">
-            <div className="w-14 h-14 rounded-full bg-[#8AC926]/20 border-2 border-[#8AC926] flex items-center justify-center shadow-md">
-              <Heart className="w-6 h-6 text-[#8AC926] fill-[#8AC926]" />
-            </div>
+            {activeReview.profilePhotoUrl ? (
+              <img
+                src={activeReview.profilePhotoUrl}
+                alt=""
+                className="w-14 h-14 rounded-full border-2 border-[#8AC926] object-cover shadow-md"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <div className="w-14 h-14 rounded-full bg-[#8AC926]/20 border-2 border-[#8AC926] flex items-center justify-center shadow-md">
+                <Heart className="w-6 h-6 text-[#8AC926] fill-[#8AC926]" />
+              </div>
+            )}
             <div className="text-left">
-              <h5 className="font-sans text-base font-extrabold text-[#3E2723]">Mama Sarah Jenkins</h5>
-              <p className="text-xs text-[#5D4037] font-extrabold tracking-wide">Proud Parent of Lily (Age 2.5)</p>
+              <h5 className="font-sans text-base font-extrabold text-[#3E2723]">{activeReview.name}</h5>
+              <p className="text-xs text-[#5D4037] font-extrabold tracking-wide">
+                {activeReview.source === "google"
+                  ? [
+                      activeReview.placeName,
+                      activeReview.relativeTime,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ") || "Google Review"
+                  : "Simba Academy Parent"}
+              </p>
             </div>
           </div>
+
+          {displayReviews.length > 1 && (
+            <div className="flex justify-center gap-2 mt-8 relative z-10">
+              {displayReviews.map((r, idx) => (
+                <button
+                  key={r.id}
+                  type="button"
+                  aria-label={`Show review ${idx + 1}`}
+                  onClick={() => setActiveReviewIndex(idx)}
+                  className={`w-2.5 h-2.5 rounded-full transition ${
+                    idx === activeReviewIndex ? "bg-[#FF9F1C] scale-110" : "bg-[#8AC926]/40"
+                  }`}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </section>
 

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { Route } from "./+types/gallery";
 import { PageShell } from "../components/PageShell";
 import { api, type GalleryItem } from "../lib/api";
+import { resolveStorageUrl } from "../lib/storage";
 import { ImageIcon } from "lucide-react";
 
 export function meta({}: Route.MetaArgs) {
@@ -41,7 +42,7 @@ export default function GalleryPage() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {items.filter((item) => item.type === "IMAGE").map((item) => (
               <div key={item.id} className="glass-panel rounded-lg overflow-hidden">
-                <img src={item.imageUrl} alt={item.title ?? "Gallery"} className="w-full h-56 object-cover" />
+                <img src={resolveStorageUrl(item.imageUrl)} alt={item.title ?? "Gallery"} className="w-full h-56 object-cover" />
                 {item.title && <p className="p-4 font-bold text-sm">{item.title}</p>}
               </div>
             ))}
