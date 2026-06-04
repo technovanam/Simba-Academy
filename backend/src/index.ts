@@ -19,6 +19,7 @@ import courseRoutes from "./routes/courses.js";
 import adminRoutes from "./routes/admin.js";
 import publicRoutes from "./routes/public.js";
 import teacherRoutes from "./routes/teacher.js";
+import libraryRoutes from "./routes/library.js";
 import { prisma } from "./config/database.js";
 import { ensureDefaultAdmin } from "./config/seedAdmin.js";
 
@@ -118,6 +119,7 @@ app.use("/api/courses", courseRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/public", publicRoutes);
 app.use("/api/teacher", teacherRoutes);
+app.use("/api/library", libraryRoutes);
 
 
 // ── Health Check ─────────────────────────────────────────────────────
@@ -149,6 +151,16 @@ const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
   // Multer file size error
   if (err.code === "LIMIT_FILE_SIZE") {
     res.status(400).json({ error: "File too large" });
+    return;
+  }
+
+  // Prisma: DB columns out of sync with schema (e.g. after Zoho migration)
+  const prismaCode = (err as { code?: string }).code;
+  if (prismaCode === "P2022") {
+    res.status(500).json({
+      error:
+        "Database schema is out of date. On the server run: npm run db:migrate-payments (or apply scripts/rename-payment-columns.sql).",
+    });
     return;
   }
 
