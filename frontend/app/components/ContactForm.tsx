@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api, ApiError } from "../lib/api";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { ModalCloseButton } from "./ModalCloseButton";
+import { PortalSelect } from "./PortalSelect";
 
 interface ContactFormProps {
   defaultType?: "Preschool" | "Franchise";
@@ -174,13 +175,14 @@ export function ContactForm({ defaultType = "Preschool" }: ContactFormProps) {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} noValidate className="glass-panel rounded-lg p-8 space-y-5 shadow-xl">
+      <form onSubmit={handleSubmit} noValidate autoComplete="off" className="glass-panel rounded-lg p-8 space-y-5 shadow-xl">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div>
             <label className={`block text-sm font-bold mb-2 transition-colors ${nameError ? "text-red-500" : ""}`}>Name *</label>
             <div className="relative">
               <input
                 type="text"
+                autoComplete="off"
                 value={form.name}
                 onChange={(e) => {
                   setForm({ ...form, name: e.target.value });
@@ -205,6 +207,7 @@ export function ContactForm({ defaultType = "Preschool" }: ContactFormProps) {
             <div className="relative">
               <input
                 type="email"
+                autoComplete="off"
                 value={form.email}
                 onChange={(e) => {
                   setForm({ ...form, email: e.target.value });
@@ -230,7 +233,8 @@ export function ContactForm({ defaultType = "Preschool" }: ContactFormProps) {
           <div>
             <label className="block text-sm font-bold mb-2">Phone</label>
             <input
-              type="text"
+              type="tel"
+              autoComplete="off"
               value={form.phone}
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
               className="w-full rounded-lg border-2 border-[#8AC926]/20 px-4 py-3 bg-white focus:border-[#8AC926] outline-none"
@@ -238,16 +242,16 @@ export function ContactForm({ defaultType = "Preschool" }: ContactFormProps) {
           </div>
           <div>
             <label className="block text-sm font-bold mb-2">Inquiry Type *</label>
-            <select
+            <PortalSelect
               value={form.inquiryType}
               onChange={(e) =>
                 setForm({ ...form, inquiryType: e.target.value as "Preschool" | "Franchise" })
               }
-              className="w-full rounded-lg border-2 border-[#8AC926]/20 px-4 py-3 bg-white focus:border-[#8AC926] outline-none"
+              className="rounded-lg border-2 border-[#8AC926]/20 px-4 py-3 bg-white focus:border-[#8AC926] outline-none"
             >
               <option value="Preschool">Preschool</option>
               <option value="Franchise">Franchise</option>
-            </select>
+            </PortalSelect>
           </div>
         </div>
 
@@ -256,6 +260,7 @@ export function ContactForm({ defaultType = "Preschool" }: ContactFormProps) {
           <div className="relative">
             <textarea
               rows={5}
+              autoComplete="off"
               value={form.message}
               onChange={(e) => {
                 setForm({ ...form, message: e.target.value });

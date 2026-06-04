@@ -170,13 +170,14 @@ export function FranchiseForm() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} noValidate className="glass-panel rounded-lg p-8 space-y-5 shadow-xl">
+      <form onSubmit={handleSubmit} noValidate autoComplete="off" className="glass-panel rounded-lg p-8 space-y-5 shadow-xl">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div>
             <label className={`block text-sm font-bold mb-2 transition-colors ${nameError ? "text-red-500" : ""}`}>Name *</label>
             <div className="relative">
               <input
                 type="text"
+                autoComplete="off"
                 value={form.name}
                 onChange={(e) => {
                   setForm({ ...form, name: e.target.value });
@@ -201,6 +202,7 @@ export function FranchiseForm() {
             <div className="relative">
               <input
                 type="email"
+                autoComplete="off"
                 value={form.email}
                 onChange={(e) => {
                   setForm({ ...form, email: e.target.value });
@@ -227,7 +229,8 @@ export function FranchiseForm() {
             <label className={`block text-sm font-bold mb-2 transition-colors ${phoneError ? "text-red-500" : ""}`}>Phone *</label>
             <div className="relative">
               <input
-                type="text"
+                type="tel"
+                autoComplete="off"
                 value={form.phone}
                 onChange={(e) => {
                   setForm({ ...form, phone: e.target.value });
@@ -251,6 +254,7 @@ export function FranchiseForm() {
             <label className="block text-sm font-bold mb-2">Preferred Location</label>
             <input
               type="text"
+              autoComplete="off"
               value={form.location}
               onChange={(e) => setForm({ ...form, location: e.target.value })}
               className="w-full rounded-lg border-2 border-[#8AC926]/20 px-4 py-3 bg-white focus:border-[#8AC926] outline-none"
@@ -262,6 +266,7 @@ export function FranchiseForm() {
           <label className="block text-sm font-bold mb-2">Message</label>
           <textarea
             rows={4}
+            autoComplete="off"
             value={form.message}
             onChange={(e) => setForm({ ...form, message: e.target.value })}
             className="w-full rounded-lg border-2 border-[#8AC926]/20 px-4 py-3 bg-white focus:border-[#8AC926] outline-none resize-none"
