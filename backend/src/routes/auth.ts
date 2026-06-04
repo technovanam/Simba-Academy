@@ -18,6 +18,13 @@ import { verifyPayment } from "../services/payment.js";
 import { sendEmail, getPaymentSuccessHtml, getPasswordResetHtml } from "../services/email.js";
 import { assertAccountCanAuthenticate } from "../utils/userAccess.js";
 import { generateResetToken } from "../utils/password.js";
+import { buildPasswordResetUrl } from "../utils/passwordResetUrl.js";
+
+const PORTAL_ROLE = {
+  student: "STUDENT",
+  teacher: "TEACHER",
+  admin: "ADMIN",
+} as const;
 
 const router = Router();
 
@@ -135,9 +142,12 @@ router.get("/profile", authenticate, async (req, res, next) => {
 // ── Register With Payment (Public) ───────────────────────────────────
 router.post("/register-with-payment", authLimiter, async (req, res, next) => {
   try {
-    const { name, email, password, phone, razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body;
+    const paymentSessionId = req.body.paymentSessionId ?? req.body.razorpayOrderId;
+    const paymentId = req.body.paymentId ?? req.body.razorpayPaymentId;
+    const signature = req.body.signature ?? req.body.razorpaySignature;
+    const { name, email, password, phone } = req.body;
 
-    if (!name || !email || !password || !razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
+    if (!name || !email || !password || !paymentSessionId || !paymentId || !signature) {
       throw new AppError("Missing registration or payment verification fields", 400);
     }
 
@@ -148,11 +158,11 @@ router.post("/register-with-payment", authLimiter, async (req, res, next) => {
       throw new AppError("Email already registered", 409);
     }
 
-    // 2. Verify Razorpay payment signature
+    // 2. Verify Zoho Payments signature
     const isValid = verifyPayment({
-      orderId: razorpayOrderId,
-      paymentId: razorpayPaymentId,
-      signature: razorpaySignature,
+      orderId: paymentSessionId,
+      paymentId,
+      signature,
     });
 
     if (!isValid) {
@@ -169,10 +179,10 @@ router.post("/register-with-payment", authLimiter, async (req, res, next) => {
 
       const payment = await tx.payment.create({
         data: {
-          amount: 120, // Platform registration fee
-          razorpayOrderId,
-          razorpayPaymentId,
-          razorpaySignature,
+          amount: 130, // Platform registration fee
+          paymentSessionId,
+          gatewayPaymentId: paymentId,
+          paymentSignature: signature,
           userId: user.id,
           courseId: null,
           status: "SUCCESS",
@@ -239,6 +249,12 @@ router.post("/forgot-password", authLimiter, validate(forgotPasswordSchema), asy
       return;
     }
 
+    const portal = req.body.portal as keyof typeof PORTAL_ROLE | undefined;
+    if (portal && user.role !== PORTAL_ROLE[portal]) {
+      res.json({ message: genericMessage });
+      return;
+    }
+
     try {
       assertAccountCanAuthenticate(user);
     } catch {
@@ -254,7 +270,7 @@ router.post("/forgot-password", authLimiter, validate(forgotPasswordSchema), asy
       data: { token, userId: user.id, expiresAt },
     });
 
-    const resetUrl = `${env.FRONTEND_URL}/teacher/reset-password?token=${token}`;
+    const resetUrl = buildPasswordResetUrl(user.role, token);
 
     try {
       await sendEmail({
