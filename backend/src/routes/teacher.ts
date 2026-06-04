@@ -12,6 +12,19 @@ const router = Router();
 // Require logged-in user with role TEACHER
 router.use(authenticate, authorize("TEACHER"));
 
+// ── Story library (teacher + both audience) ───────────────────────────
+router.get("/books", async (_req, res, next) => {
+  try {
+    const books = await prisma.storyBook.findMany({
+      where: { audience: { in: ["TEACHER", "BOTH"] } },
+      orderBy: { createdAt: "desc" },
+    });
+    res.json(books);
+  } catch (err) {
+    next(err);
+  }
+});
+
 // ── List Tasks Assigned to Current Teacher ───────────────────────────
 router.get("/tasks", async (req, res, next) => {
   try {
