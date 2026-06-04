@@ -1,67 +1,51 @@
-import crypto from "node:crypto";
-import Razorpay from "razorpay";
-import { env } from "../config/env.js";
+import {
+  createPaymentSession,
+  verifyPaymentSignature,
+  type CreatePaymentSessionParams,
+  type VerifyPaymentParams,
+} from "./zohoPayments.js";
 
-const razorpay = new Razorpay({
-  key_id: env.RAZORPAY_KEY_ID,
-  key_secret: env.RAZORPAY_KEY_SECRET,
-});
-
-export interface CreateOrderParams {
-  amount: number; // in paise (1 INR = 100 paise)
+/** @deprecated Use createPaymentSession — kept for route compatibility */
+export async function createOrder(params: {
+  amount: number;
   currency?: string;
   receipt?: string;
   notes?: Record<string, string>;
+  description?: string;
+}) {
+  const amountInr = params.amount / 100;
+  const session = await createPaymentSession({
+    amountInr,
+    currency: params.currency,
+    description: params.description ?? "Simba Academy payment",
+    referenceNumber: params.receipt,
+    meta: params.notes
+      ? Object.entries(params.notes).slice(0, 5).map(([key, value]) => ({
+          key: key.slice(0, 20),
+          value: value.slice(0, 500),
+        }))
+      : undefined,
+  });
+
+  return {
+    id: session.paymentsSessionId,
+    amount: Math.round(session.amount * 100),
+    amountInr: session.amount,
+    amountString: session.amountString,
+    currency: session.currency,
+  };
 }
 
-export interface VerifyPaymentParams {
+export function verifyPayment(params: {
   orderId: string;
   paymentId: string;
   signature: string;
-}
-
-/**
- * Creates a Razorpay order.
- */
-export async function createOrder({ amount, currency = "INR", receipt, notes }: CreateOrderParams) {
-  if (env.RAZORPAY_KEY_ID === "rzp_test_placeholder") {
-    return {
-      id: `order_mock_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-      amount,
-      currency,
-      receipt,
-      status: "created",
-      notes,
-    };
-  }
-  const order = await razorpay.orders.create({
-    amount,
-    currency,
-    receipt,
-    notes,
+}) {
+  return verifyPaymentSignature({
+    paymentSessionId: params.orderId,
+    paymentId: params.paymentId,
+    signature: params.signature,
   });
-  return order;
 }
 
-/**
- * Verifies a Razorpay payment signature.
- */
-export function verifyPayment({ orderId, paymentId, signature }: VerifyPaymentParams): boolean {
-  if (orderId && orderId.startsWith("order_mock_")) {
-    return true;
-  }
-  const expectedSignature = crypto
-    .createHmac("sha256", env.RAZORPAY_KEY_SECRET)
-    .update(`${orderId}|${paymentId}`)
-    .digest("hex");
-  return expectedSignature === signature;
-}
-
-
-/**
- * Fetches payment details from Razorpay.
- */
-export async function fetchPayment(paymentId: string) {
-  const payment = await razorpay.payments.fetch(paymentId);
-  return payment;
-}
+export type { CreatePaymentSessionParams, VerifyPaymentParams };
