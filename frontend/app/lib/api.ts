@@ -55,7 +55,7 @@ export const api = {
     }),
 
   createPreRegisterOrder: () =>
-    request<{ orderId: string; amount: number; currency: string; key: string }>("/api/payments/create-pre-register-order", {
+    request<ZohoPaymentSessionResponse>("/api/payments/create-pre-register-order", {
       method: "POST",
     }),
 
@@ -64,9 +64,9 @@ export const api = {
     email: string;
     password: string;
     phone?: string;
-    razorpayOrderId: string;
-    razorpayPaymentId: string;
-    razorpaySignature: string;
+    paymentSessionId: string;
+    paymentId: string;
+    signature: string;
   }) =>
     request<{ user: AuthUser; token: string }>("/api/auth/register-with-payment", {
       method: "POST",
@@ -111,7 +111,24 @@ export const api = {
 
   getGallery: () => request<GalleryItem[]>("/api/public/gallery"),
 
+  /** Approved reviews only — homepage / public site */
   getTestimonials: () => request<Testimonial[]>("/api/public/testimonials"),
+
+  /** Google + approved manual reviews for the website */
+  getPublicReviews: () => request<PublicReviewsResponse>("/api/public/reviews"),
+
+  getGoogleReviewsStatus: (token: string) =>
+    request<GoogleReviewsStatusResponse>("/api/admin/google-reviews/status", {}, token),
+
+  syncGoogleReviews: (token: string) =>
+    request<GoogleReviewsStatusResponse>("/api/admin/google-reviews/sync", { method: "POST" }, token),
+
+  getGoogleBusinessAuthUrl: (token: string) =>
+    request<{ url: string; message?: string }>("/api/admin/google-reviews/auth-url", {}, token),
+
+  /** All reviews including pending — admin Parent Reviews tab */
+  getAdminTestimonials: (token: string) =>
+    request<Testimonial[]>("/api/admin/testimonials", {}, token),
 
   getDashboard: (token: string) =>
     request<DashboardStats>("/api/admin/dashboard", {}, token),
@@ -129,7 +146,7 @@ export const api = {
     token: string,
     body: { firstName: string; lastName: string; email: string; phone?: string }
   ) =>
-    request<AuthUser>("/api/admin/teachers", {
+    request<AuthUser & { emailSent?: boolean; emailWarning?: string }>("/api/admin/teachers", {
       method: "POST",
       body: JSON.stringify(body),
     }, token),
@@ -201,10 +218,10 @@ export const api = {
   deleteUser: (token: string, id: string) =>
     request<{ message: string }>(`/api/admin/users/${id}`, { method: "DELETE" }, token),
 
-  forgotPassword: (email: string) =>
+  forgotPassword: (email: string, portal?: "student" | "teacher" | "admin") =>
     request<{ message: string }>("/api/auth/forgot-password", {
       method: "POST",
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({ email, ...(portal ? { portal } : {}) }),
     }),
 
   resetPassword: (body: { token: string; password: string }) =>
@@ -224,6 +241,9 @@ export const api = {
 
   getMaterials: (token: string) =>
     request<Material[]>("/api/admin/materials", {}, token),
+
+  deleteMaterial: (token: string, id: string) =>
+    request<{ message: string }>(`/api/admin/materials/${id}`, { method: "DELETE" }, token),
 
   approveMaterial: (token: string, id: string, isApproved: boolean) =>
     request<Material>(`/api/admin/materials/${id}/approve`, {
@@ -270,7 +290,23 @@ export const api = {
   getStoryBooks: (token: string) =>
     request<StoryBook[]>("/api/admin/books", {}, token),
 
-  createStoryBook: (token: string, body: { title: string; author?: string | null; category: string; fileUrl: string; fileSize?: number | null }) =>
+  getLibraryStoryBooks: (token: string) =>
+    request<StoryBook[]>("/api/library/storybooks", {}, token),
+
+  getTeacherStoryBooks: (token: string) =>
+    request<StoryBook[]>("/api/teacher/books", {}, token),
+
+  createStoryBook: (
+    token: string,
+    body: {
+      title: string;
+      author?: string | null;
+      category: string;
+      fileUrl: string;
+      fileSize?: number | null;
+      audience?: "STUDENT" | "TEACHER" | "BOTH";
+    }
+  ) =>
     request<StoryBook>("/api/admin/books", {
       method: "POST",
       body: JSON.stringify(body),
@@ -285,6 +321,16 @@ export const api = {
   createGalleryItem: (token: string, body: { title?: string; imageUrl: string; type?: string }) =>
     request<GalleryItem>("/api/admin/gallery", {
       method: "POST",
+      body: JSON.stringify(body),
+    }, token),
+
+  updateGalleryItem: (
+    token: string,
+    id: string,
+    body: { title?: string; imageUrl?: string }
+  ) =>
+    request<GalleryItem>(`/api/admin/gallery/${id}`, {
+      method: "PATCH",
       body: JSON.stringify(body),
     }, token),
 
@@ -309,7 +355,7 @@ export const api = {
   uploadRaw: (token: string, file: File) => {
     const formData = new FormData();
     formData.append("file", file);
-    return request<{ url: string }>("/api/storage/upload-raw", {
+    return request<{ url: string; storage: "webdav" | "local"; verified: boolean }>("/api/storage/upload-raw", {
       method: "POST",
       body: formData,
     }, token);
@@ -350,14 +396,14 @@ export const api = {
     request<Material[]>("/api/storage/materials", {}, token),
 
   createOrder: (token: string, body: { amount?: number; courseId?: string }) =>
-    request<{ orderId: string; amount: number; currency: string; key: string }>("/api/payments/create-order", {
+    request<ZohoPaymentSessionResponse>("/api/payments/create-order", {
       method: "POST",
       body: JSON.stringify(body),
     }, token),
 
   verifyPayment: (
     token: string,
-    body: { razorpayOrderId: string; razorpayPaymentId: string; razorpaySignature: string }
+    body: { paymentSessionId: string; paymentId: string; signature: string }
   ) =>
     request<{ success: boolean; payment: Payment }>("/api/payments/verify", {
       method: "POST",
@@ -367,8 +413,8 @@ export const api = {
   getStudentPayments: (token: string) =>
     request<Payment[]>("/api/payments/history", {}, token),
 
-  getPublicStoryBooks: () =>
-    request<StoryBook[]>("/api/public/books"),
+  getPublicStoryBooks: (token: string) =>
+    request<StoryBook[]>("/api/library/storybooks", {}, token),
 };
 
 export type AccountStatus = "ACTIVE" | "DEACTIVATED";
@@ -406,6 +452,7 @@ export interface GalleryItem {
   title?: string | null;
   imageUrl: string;
   type: string;
+  createdAt?: string;
 }
 
 export interface Testimonial {
@@ -414,6 +461,60 @@ export interface Testimonial {
   content: string;
   rating: number;
   isApproved?: boolean;
+}
+
+export type PublicReviewSource = "google" | "manual";
+
+export interface PublicReview {
+  id: string;
+  name: string;
+  content: string;
+  rating: number;
+  source: PublicReviewSource;
+  relativeTime?: string;
+  profilePhotoUrl?: string;
+  placeName?: string;
+  placeId?: string;
+}
+
+export interface GoogleLocationSummary {
+  placeId: string;
+  placeName: string;
+  rating?: number;
+  totalRatings?: number;
+  reviewsReturned: number;
+}
+
+export interface PublicReviewsResponse {
+  reviews: PublicReview[];
+  google: {
+    configured: boolean;
+    fetchMode?: "business_profile" | "places" | "oauth_pending" | "none";
+    rating?: number;
+    totalRatings?: number;
+    placeName?: string;
+    count: number;
+    locationCount?: number;
+    locations?: GoogleLocationSummary[];
+  };
+}
+
+export interface GoogleReviewsStatusResponse {
+  configured: boolean;
+  fetchMode?: "business_profile" | "places" | "oauth_pending" | "none";
+  message?: string;
+  hint?: string;
+  synced?: boolean;
+  fromSnapshot?: boolean;
+  syncBlocked?: string;
+  syncedAt?: string;
+  reviews?: Array<
+    PublicReview & { placeId?: string; placeName?: string }
+  >;
+  rating?: number;
+  totalRatings?: number;
+  placeName?: string;
+  locations?: GoogleLocationSummary[];
 }
 
 export interface DashboardStats {
@@ -463,13 +564,27 @@ export interface Material {
   uploadedBy?: { name: string; email: string } | null;
 }
 
+export interface ZohoPaymentSessionResponse {
+  paymentSessionId: string;
+  orderId: string;
+  amount: number;
+  amountInr: number;
+  amountString: string;
+  currency: string;
+  accountId: string;
+  apiKey: string;
+  domain: string;
+  isTestMode?: boolean;
+  isPlaceholder?: boolean;
+}
+
 export interface Payment {
   id: string;
   amount: number;
   currency: string;
   status: string;
-  razorpayOrderId?: string | null;
-  razorpayPaymentId?: string | null;
+  paymentSessionId?: string | null;
+  gatewayPaymentId?: string | null;
   userId: string;
   courseId?: string | null;
   createdAt: string;
@@ -498,5 +613,6 @@ export interface StoryBook {
   category: string;
   fileUrl: string;
   fileSize?: number | null;
+  audience?: "STUDENT" | "TEACHER" | "BOTH";
   createdAt: string;
 }
