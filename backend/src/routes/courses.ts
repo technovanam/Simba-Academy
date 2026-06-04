@@ -4,7 +4,7 @@ import { validate } from "../middleware/validate.js";
 import { authenticate, authorize } from "../middleware/auth.js";
 import { createCourseSchema, updateCourseSchema } from "../config/schemas.js";
 import { AppError } from "../utils/errors.js";
-import { deleteFileFromWebDAV } from "../services/webdav.js";
+import { removeStoredFile, removeStoredFiles } from "../services/removeStoredFile.js";
 
 
 const router = Router();
@@ -122,14 +122,13 @@ router.delete(
         throw new AppError("Course not found", 404);
       }
 
-      await prisma.course.delete({ where: { id: String(req.params.id) } });
-
-      // Clean up from cPanel WebDAV storage asynchronously
-      if (course.imageUrl) {
-        deleteFileFromWebDAV(course.imageUrl).catch((err) =>
-          console.error("Failed to delete course cover from cPanel WebDAV:", err)
-        );
-      }
+      const materials = await prisma.material.findMany({
+        where: { courseId: course.id },
+        select: { fileUrl: true },
+      });
+      await removeStoredFiles(materials.map((m) => m.fileUrl));
+      await removeStoredFile(course.imageUrl);
+      await prisma.course.delete({ where: { id: course.id } });
 
       res.json({ message: "Course deleted successfully" });
     } catch (err) {
