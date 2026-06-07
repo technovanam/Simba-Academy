@@ -19,7 +19,7 @@ export const apiLimiter = rateLimit({
  */
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  limit: 10, // 10 attempts per window
+  limit: process.env.NODE_ENV === "development" ? 1000 : 10,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
@@ -30,6 +30,17 @@ export const authLimiter = rateLimit({
 /**
  * Strict rate limiter for contact/inquiry endpoints.
  */
+/** Email availability checks — prevent enumeration spam */
+export const emailCheckLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: process.env.NODE_ENV === "development" ? 1000 : 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error: "Too many email checks, please try again later.",
+  },
+});
+
 export const contactLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   limit: 5, // 5 inquiries per hour

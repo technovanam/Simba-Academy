@@ -5,16 +5,18 @@ import { prisma } from "../config/database.js";
 import { env } from "../config/env.js";
 import {
   registerSchema,
+  registerWithPaymentSchema,
   loginSchema,
+  checkEmailSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
   changePasswordSchema,
 } from "../config/schemas.js";
 import { validate } from "../middleware/validate.js";
-import { authLimiter } from "../middleware/rateLimiter.js";
+import { authLimiter, emailCheckLimiter } from "../middleware/rateLimiter.js";
 import { authenticate } from "../middleware/auth.js";
 import { AppError } from "../utils/errors.js";
-import { verifyPayment } from "../services/payment.js";
+import { verifyPaymentWithFallback } from "../services/payment.js";
 import { sendEmail, getPaymentSuccessHtml, getPasswordResetHtml } from "../services/email.js";
 import { assertAccountCanAuthenticate } from "../utils/userAccess.js";
 import { generateResetToken } from "../utils/password.js";
@@ -31,7 +33,14 @@ const router = Router();
 // ── Register ─────────────────────────────────────────────────────────
 router.post("/register", authLimiter, validate(registerSchema), async (req, res, next) => {
   try {
-    const { name, email, password, phone } = req.body;
+    if (env.PAYMENTS_ENABLED) {
+      throw new AppError(
+        "Student registration requires payment. Complete checkout and use register-with-payment.",
+        403
+      );
+    }
+
+    const { name, email, password, phone, studentClass } = req.body;
 
     const normalizedEmail = email.toLowerCase().trim();
     const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } });
@@ -41,8 +50,24 @@ router.post("/register", authLimiter, validate(registerSchema), async (req, res,
 
     const hashedPassword = await bcrypt.hash(password, 12);
     const user = await prisma.user.create({
-      data: { name, email: normalizedEmail, password: hashedPassword, phone, role: "STUDENT", status: "ACTIVE" },
-      select: { id: true, name: true, email: true, role: true, mustChangePassword: true, status: true },
+      data: {
+        name,
+        email: normalizedEmail,
+        password: hashedPassword,
+        phone,
+        studentClass: studentClass ?? null,
+        role: "STUDENT",
+        status: "ACTIVE",
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        studentClass: true,
+        mustChangePassword: true,
+        status: true,
+      },
     });
 
     const token = jwt.sign(
@@ -89,6 +114,14 @@ router.post("/login", authLimiter, validate(loginSchema), async (req, res, next)
       throw new AppError("Invalid email or password", 401);
     }
 
+    const portal = req.body.portal as keyof typeof PORTAL_ROLE | undefined;
+    if (portal) {
+      const expectedRole = PORTAL_ROLE[portal];
+      if (user.role !== expectedRole) {
+        throw new AppError("Invalid email or password", 401);
+      }
+    }
+
     const token = jwt.sign(
       { userId: user.id, email: user.email, role: user.role },
       env.JWT_SECRET,
@@ -122,6 +155,8 @@ router.get("/profile", authenticate, async (req, res, next) => {
         email: true,
         role: true,
         phone: true,
+        studentClass: true,
+        employeeId: true,
         mustChangePassword: true,
         status: true,
         createdAt: true,
@@ -140,16 +175,16 @@ router.get("/profile", authenticate, async (req, res, next) => {
 });
 
 // ── Register With Payment (Public) ───────────────────────────────────
-router.post("/register-with-payment", authLimiter, async (req, res, next) => {
+router.post(
+  "/register-with-payment",
+  authLimiter,
+  validate(registerWithPaymentSchema),
+  async (req, res, next) => {
   try {
     const paymentSessionId = req.body.paymentSessionId ?? req.body.razorpayOrderId;
     const paymentId = req.body.paymentId ?? req.body.razorpayPaymentId;
     const signature = req.body.signature ?? req.body.razorpaySignature;
-    const { name, email, password, phone } = req.body;
-
-    if (!name || !email || !password || !paymentSessionId || !paymentId || !signature) {
-      throw new AppError("Missing registration or payment verification fields", 400);
-    }
+    const { name, email, password, phone, studentClass } = req.body;
 
     // 1. Verify email is not taken
     const normalizedEmail = email.toLowerCase().trim();
@@ -158,28 +193,39 @@ router.post("/register-with-payment", authLimiter, async (req, res, next) => {
       throw new AppError("Email already registered", 409);
     }
 
-    // 2. Verify Zoho Payments signature
-    const isValid = verifyPayment({
+    // 2. Verify Zoho Payments (signature, then session status fallback)
+    const isValid = await verifyPaymentWithFallback({
       orderId: paymentSessionId,
       paymentId,
       signature,
     });
 
     if (!isValid) {
-      throw new AppError("Payment signature verification failed", 400);
+      throw new AppError(
+        "Payment could not be verified. If money was debited, contact Simba Academy with your payment reference.",
+        400
+      );
     }
 
     // 3. Create User and Payment inside a Prisma Transaction
     const hashedPassword = await bcrypt.hash(password, 12);
     const result = await prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
-        data: { name, email: normalizedEmail, password: hashedPassword, phone, role: "STUDENT", status: "ACTIVE" },
-        select: { id: true, name: true, email: true, role: true },
+        data: {
+          name,
+          email: normalizedEmail,
+          password: hashedPassword,
+          phone,
+          studentClass,
+          role: "STUDENT",
+          status: "ACTIVE",
+        },
+        select: { id: true, name: true, email: true, role: true, studentClass: true },
       });
 
       const payment = await tx.payment.create({
         data: {
-          amount: 130, // Platform registration fee
+          amount: env.STUDENT_REGISTRATION_FEE_INR,
           paymentSessionId,
           gatewayPaymentId: paymentId,
           paymentSignature: signature,
@@ -221,13 +267,9 @@ router.post("/register-with-payment", authLimiter, async (req, res, next) => {
 });
 
 // ── Check Email Availability (Public) ───────────────────────────────
-router.post("/check-email", async (req, res, next) => {
+router.post("/check-email", emailCheckLimiter, validate(checkEmailSchema), async (req, res, next) => {
   try {
-    const { email } = req.body;
-    if (!email) {
-      throw new AppError("Email is required", 400);
-    }
-    const normalizedEmail = String(email).toLowerCase().trim();
+    const normalizedEmail = req.body.email.toLowerCase().trim();
     const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } });
     res.json({ available: !existing || existing.isDeleted });
   } catch (err) {
@@ -364,6 +406,11 @@ router.post("/change-password", authenticate, validate(changePasswordSchema), as
   } catch (err) {
     next(err);
   }
+});
+
+// ── Logout (stateless JWT — client clears token) ─────────────────────
+router.post("/logout", authenticate, (_req, res) => {
+  res.json({ message: "Logged out successfully" });
 });
 
 export default router;
