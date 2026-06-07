@@ -1,0 +1,8 @@
+---
+# cPanel Git Version Control — auto-deploy backend on "Deploy HEAD Commit"
+# Adjust paths if your clone lives elsewhere on the server.
+deployment:
+  tasks:
+    - export NODE_ENV=production
+    - cd backend && /usr/local/bin/npm install
+    - /usr/local/bin/npm run deploy:cpanel
