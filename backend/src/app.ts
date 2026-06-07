@@ -1,12 +1,14 @@
 import "./instrument.js";
 import { Sentry } from "./instrument.js";
-import cors from "cors";
 import type { ErrorRequestHandler, Express, RequestHandler } from "express";
-import express from "express";
 import jwt from "jsonwebtoken";
-import helmet from "./utils/helmetMiddleware.js";
-import morgan from "morgan";
 import path from "node:path";
+import { cjsImport } from "./utils/cjsImport.js";
+import helmet from "./utils/helmetMiddleware.js";
+
+const express = cjsImport<typeof import("express")>("express");
+const cors = cjsImport<typeof import("cors")>("cors");
+const morgan = cjsImport<typeof import("morgan")>("morgan");
 import { env } from "./config/env.js";
 import { apiLimiter } from "./middleware/rateLimiter.js";
 import { AppError, ValidationError } from "./utils/errors.js";

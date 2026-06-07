@@ -1,11 +1,6 @@
-import { createRequire } from "node:module";
 import type { RequestHandler } from "express";
+import { cjsImport } from "./cjsImport.js";
 
-const require = createRequire(import.meta.url);
-
-type HelmetFactory = (options?: Record<string, unknown>) => RequestHandler;
-
-/** CJS require avoids ESM/default-export type issues on Vercel's TypeScript check. */
-const helmet = require("helmet") as HelmetFactory;
+const helmet = cjsImport<(options?: Record<string, unknown>) => RequestHandler>("helmet");
 
 export default helmet;

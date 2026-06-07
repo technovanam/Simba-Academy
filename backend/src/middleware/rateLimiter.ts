@@ -1,5 +1,16 @@
-import rateLimit from "express-rate-limit";
+import type { RequestHandler } from "express";
 import { env } from "../config/env.js";
+import { cjsImport } from "../utils/cjsImport.js";
+
+interface RateLimitOptions {
+  windowMs?: number;
+  limit?: number;
+  standardHeaders?: boolean;
+  legacyHeaders?: boolean;
+  message?: { error: string };
+}
+
+const rateLimit = cjsImport<(options: RateLimitOptions) => RequestHandler>("express-rate-limit");
 
 /**
  * General API rate limiter.

@@ -1,8 +1,36 @@
-import multer from "multer";
-import path from "node:path";
+import type { Request, RequestHandler } from "express";
 import fs from "node:fs";
+import path from "node:path";
 import { env } from "../config/env.js";
 import { AppError } from "../utils/errors.js";
+import { cjsImport } from "../utils/cjsImport.js";
+
+type FileFilterCallback = (error: Error | null, acceptFile?: boolean) => void;
+
+interface MulterModule {
+  diskStorage: (options: {
+    destination: (
+      req: Request,
+      file: Express.Multer.File,
+      cb: (err: Error | null, dest: string) => void
+    ) => void;
+    filename: (
+      req: Request,
+      file: Express.Multer.File,
+      cb: (err: Error | null, name: string) => void
+    ) => void;
+  }) => unknown;
+  (options: {
+    storage: unknown;
+    fileFilter: (req: Request, file: Express.Multer.File, cb: FileFilterCallback) => void;
+    limits: { fileSize: number };
+  }): {
+    single: (field: string) => RequestHandler;
+    array: (field: string, maxCount?: number) => RequestHandler;
+  };
+}
+
+const multer = cjsImport<MulterModule>("multer");
 
 // Ensure storage directory exists
 const storagePath = path.resolve(env.STORAGE_PATH);
@@ -37,7 +65,7 @@ const ALLOWED_MIMES = [
 function fileFilter(
   _req: Express.Request,
   file: Express.Multer.File,
-  cb: multer.FileFilterCallback
+  cb: FileFilterCallback
 ) {
   if (ALLOWED_MIMES.includes(file.mimetype)) {
     cb(null, true);
