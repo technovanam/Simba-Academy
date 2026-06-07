@@ -8,7 +8,7 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "esModuleInterop": true,
-    "verbatimModuleSyntax": true,
+    "allowSyntheticDefaultImports": true,
     "noEmit": false,
     "resolveJsonModule": true,
     "skipLibCheck": true,

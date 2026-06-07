@@ -3,7 +3,7 @@ import { Sentry } from "./instrument.js";
 import cors from "cors";
 import type { ErrorRequestHandler, Express, RequestHandler } from "express";
 import express from "express";
-import helmet from "helmet";
+import { default as helmet } from "helmet";
 import jwt from "jsonwebtoken";
 import morgan from "morgan";
 import path from "node:path";
