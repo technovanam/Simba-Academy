@@ -1,6 +1,7 @@
 // ── Generator & Datasource ──────────────────────────────────────────
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
@@ -28,6 +29,8 @@ model User {
   lastName           String?
   role               Role          @default(STUDENT)
   phone              String?
+  /** Student class for story books & materials — Playgroup, Pre-KG, LKG, UKG */
+  studentClass       String?
   employeeId         String?       @unique
   status             AccountStatus @default(ACTIVE)
   mustChangePassword Boolean       @default(false)
@@ -42,6 +45,8 @@ model User {
   sentInquiries       Inquiry[]
   tasks               Task[]              @relation("TeacherTasks")
   passwordResetTokens PasswordResetToken[]
+  notifications        StudentNotification[]
+  teacherNotifications TeacherNotification[]
 }
 
 model PasswordResetToken {
@@ -71,8 +76,9 @@ model Course {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  materials Material[]
-  payments  Payment[]
+  materials    Material[]
+  payments     Payment[]
+  lessonPlans  LessonPlan[]
 }
 
 // ── Material (PDF / PPT / Resources) ────────────────────────────────
@@ -179,7 +185,24 @@ model Task {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  teacher     User     @relation("TeacherTasks", fields: [teacherId], references: [id], onDelete: Cascade)
+  teacher       User                  @relation("TeacherTasks", fields: [teacherId], references: [id], onDelete: Cascade)
+  notifications TeacherNotification[]
+}
+
+// ── Lesson Plans (Admin creates, teachers view) ───────────────────────
+model LessonPlan {
+  id              String    @id @default(cuid())
+  title           String
+  courseId        String?
+  planDate        DateTime?
+  content         String    @db.Text
+  materialsNeeded String?   @db.Text
+  isPublished     Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  course        Course?               @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  notifications TeacherNotification[]
 }
 
 // ── Story Books (Children Library) ──────────────────────────────────
@@ -198,4 +221,47 @@ model StoryBook {
   fileSize    Int?
   audience    LibraryAudience  @default(BOTH)
   createdAt   DateTime         @default(now())
+
+  studentNotifications StudentNotification[]
+  teacherNotifications TeacherNotification[]
+}
+
+// ── Student in-app notifications ───────────────────────────────────
+model StudentNotification {
+  id          String   @id @default(cuid())
+  userId      String
+  type        String   @default("STORY_BOOK")
+  title       String
+  message     String   @db.Text
+  storyBookId String?
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  storyBook StoryBook? @relation(fields: [storyBookId], references: [id], onDelete: SetNull)
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+}
+
+// ── Teacher in-app notifications ───────────────────────────────────
+model TeacherNotification {
+  id           String   @id @default(cuid())
+  userId       String
+  type         String   @default("STORY_BOOK")
+  title        String
+  message      String   @db.Text
+  storyBookId  String?
+  taskId       String?
+  lessonPlanId String?
+  isRead       Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  storyBook  StoryBook?  @relation(fields: [storyBookId], references: [id], onDelete: SetNull)
+  task       Task?       @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  lessonPlan LessonPlan? @relation(fields: [lessonPlanId], references: [id], onDelete: SetNull)
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
 }
