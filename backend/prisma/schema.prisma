@@ -1,4 +1,3 @@
-// ── Generator & Datasource ──────────────────────────────────────────
 generator client {
   provider      = "prisma-client-js"
   binaryTargets = ["native", "rhel-openssl-3.0.x"]
@@ -8,161 +7,24 @@ datasource db {
   provider = "mysql"
 }
 
-// ── User ────────────────────────────────────────────────────────────
-enum Role {
-  ADMIN
-  TEACHER
-  STUDENT
-}
-
-enum AccountStatus {
-  ACTIVE
-  DEACTIVATED
-}
-
-model User {
-  id                 String        @id @default(cuid())
-  email              String        @unique
-  password           String
-  name               String
-  firstName          String?
-  lastName           String?
-  role               Role          @default(STUDENT)
-  phone              String?
-  /** Student class for story books & materials — Playgroup, Pre-KG, LKG, UKG */
-  studentClass       String?
-  employeeId         String?       @unique
-  status             AccountStatus @default(ACTIVE)
-  mustChangePassword Boolean       @default(false)
-  isDeleted          Boolean       @default(false)
-  deletedAt          DateTime?
-  createdBy          String?
-  createdAt          DateTime      @default(now())
-  updatedAt          DateTime      @updatedAt
-
-  payments            Payment[]
-  uploadedFiles       Material[]
-  sentInquiries       Inquiry[]
-  tasks               Task[]              @relation("TeacherTasks")
-  passwordResetTokens PasswordResetToken[]
-  notifications        StudentNotification[]
-  teacherNotifications TeacherNotification[]
-}
-
-model PasswordResetToken {
-  id        String    @id @default(cuid())
-  token     String    @unique
-  userId    String
-  expiresAt DateTime
-  usedAt    DateTime?
-  createdAt DateTime  @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([expiresAt])
-}
-
-// ── Course ──────────────────────────────────────────────────────────
-model Course {
-  id          String   @id @default(cuid())
+model course {
+  id          String       @id
   title       String
-  slug        String   @unique
+  slug        String       @unique(map: "Course_slug_key")
   description String?
-  level       String   // Playgroup, LKG, UKG, etc.
+  level       String
   price       Float?
   imageUrl    String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  materials    Material[]
-  payments     Payment[]
-  lessonPlans  LessonPlan[]
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime
+  lessonplan  lessonplan[]
+  material    material[]
+  payment     payment[]
 }
 
-// ── Material (PDF / PPT / Resources) ────────────────────────────────
-model Material {
-  id           String   @id @default(cuid())
-  title        String
-  description  String?
-  type         String   // PDF, PPT, VIDEO, IMAGE, DOC
-  fileUrl      String
-  fileSize     Int?
-  isApproved   Boolean  @default(false)
-  courseId     String
-  uploadedById String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  course      Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  uploadedBy  User?   @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
-}
-
-// ── Payment (Zoho Payments) ─────────────────────────────────────────
-enum PaymentStatus {
-  PENDING
-  SUCCESS
-  FAILED
-  REFUNDED
-}
-
-model Payment {
-  id               String        @id @default(cuid())
-  amount           Float
-  currency         String        @default("INR")
-  status           PaymentStatus @default(PENDING)
-  paymentSessionId  String?      @unique
-  gatewayPaymentId  String?      @unique
-  paymentSignature  String?
-  userId           String
-  courseId         String?
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
-
-  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course Course? @relation(fields: [courseId], references: [id], onDelete: SetNull)
-}
-
-// ── Contact / Inquiry ───────────────────────────────────────────────
-model Inquiry {
-  id        String   @id @default(cuid())
-  name      String
-  email     String
-  phone     String?
-  message   String
-  isRead    Boolean  @default(false)
-  repliedAt DateTime?
-  userId    String?
-  createdAt DateTime @default(now())
-
-  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
-}
-
-// ── Testimonial ─────────────────────────────────────────────────────
-model Testimonial {
-  id         String   @id @default(cuid())
-  name       String
-  content    String
-  rating     Int      @default(5)
-  isApproved Boolean  @default(false)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-}
-
-// ── Gallery / Media ─────────────────────────────────────────────────
-model Gallery {
-  id        String   @id @default(cuid())
-  title     String?
-  imageUrl  String
-  type      String   @default("IMAGE") // IMAGE, VIDEO
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-}
-
-// ── Franchise Inquiry ───────────────────────────────────────────────
-model FranchiseInquiry {
-  id        String   @id @default(cuid())
+model franchiseinquiry {
+  id        String   @id
   name      String
   email     String
   phone     String
@@ -172,96 +34,224 @@ model FranchiseInquiry {
   createdAt DateTime @default(now())
 }
 
-// ── Teacher Tasks (Assigned by Admin) ───────────────────────────────
-model Task {
-  id          String   @id @default(cuid())
+model gallery {
+  id        String   @id
+  title     String?
+  imageUrl  String
+  type      String   @default("IMAGE")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model inquiry {
+  id        String    @id
+  name      String
+  email     String
+  phone     String?
+  message   String
+  isRead    Boolean   @default(false)
+  repliedAt DateTime?
+  userId    String?
+  createdAt DateTime  @default(now())
+  user      user?     @relation(fields: [userId], references: [id], map: "Inquiry_userId_fkey")
+
+  @@index([userId], map: "Inquiry_userId_fkey")
+}
+
+model lessonplan {
+  id                  String                @id
+  title               String
+  courseId            String?
+  planDate            DateTime?
+  content             String                @db.Text
+  materialsNeeded     String?               @db.Text
+  isPublished         Boolean               @default(true)
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime
+  course              course?               @relation(fields: [courseId], references: [id], map: "LessonPlan_courseId_fkey")
+  teachernotification teachernotification[]
+
+  @@index([courseId], map: "LessonPlan_courseId_fkey")
+}
+
+model material {
+  id           String   @id
+  title        String
+  description  String?
+  type         String
+  fileUrl      String
+  fileSize     Int?
+  isApproved   Boolean  @default(false)
+  courseId     String
+  uploadedById String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime
+  course       course   @relation(fields: [courseId], references: [id], onDelete: Cascade, map: "Material_courseId_fkey")
+  user         user?    @relation(fields: [uploadedById], references: [id], map: "Material_uploadedById_fkey")
+
+  @@index([courseId], map: "Material_courseId_fkey")
+  @@index([uploadedById], map: "Material_uploadedById_fkey")
+}
+
+model passwordresettoken {
+  id        String    @id
+  token     String    @unique(map: "PasswordResetToken_token_key")
+  userId    String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      user      @relation(fields: [userId], references: [id], onDelete: Cascade, map: "PasswordResetToken_userId_fkey")
+
+  @@index([expiresAt], map: "PasswordResetToken_expiresAt_idx")
+  @@index([userId], map: "PasswordResetToken_userId_idx")
+}
+
+model payment {
+  id               String         @id
+  amount           Float
+  currency         String         @default("INR")
+  status           payment_status @default(PENDING)
+  paymentSessionId String?        @unique(map: "Payment_paymentSessionId_key")
+  gatewayPaymentId String?        @unique(map: "Payment_gatewayPaymentId_key")
+  paymentSignature String?
+  userId           String
+  courseId         String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime
+  course           course?        @relation(fields: [courseId], references: [id], map: "Payment_courseId_fkey")
+  user             user           @relation(fields: [userId], references: [id], onDelete: Cascade, map: "Payment_userId_fkey")
+
+  @@index([courseId], map: "Payment_courseId_fkey")
+  @@index([userId], map: "Payment_userId_fkey")
+}
+
+model storybook {
+  id                  String                @id
+  title               String
+  author              String?
+  category            String
+  fileUrl             String
+  fileSize            Int?
+  createdAt           DateTime              @default(now())
+  audience            storybook_audience    @default(BOTH)
+  studentnotification studentnotification[]
+  teachernotification teachernotification[]
+}
+
+model studentnotification {
+  id          String     @id
+  userId      String
+  type        String     @default("STORY_BOOK")
   title       String
-  description String?
-  dueDate     DateTime?
-  status      String   @default("PENDING") // PENDING, COMPLETED, APPROVED, REJECTED
-  proofUrl    String?
-  proofDesc   String?
-  teacherId   String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  message     String     @db.Text
+  storyBookId String?
+  isRead      Boolean    @default(false)
+  createdAt   DateTime   @default(now())
+  storybook   storybook? @relation(fields: [storyBookId], references: [id], map: "StudentNotification_storyBookId_fkey")
+  user        user       @relation(fields: [userId], references: [id], onDelete: Cascade, map: "StudentNotification_userId_fkey")
 
-  teacher       User                  @relation("TeacherTasks", fields: [teacherId], references: [id], onDelete: Cascade)
-  notifications TeacherNotification[]
+  @@index([storyBookId], map: "StudentNotification_storyBookId_fkey")
+  @@index([userId, createdAt], map: "StudentNotification_userId_createdAt_idx")
+  @@index([userId, isRead], map: "StudentNotification_userId_isRead_idx")
 }
 
-// ── Lesson Plans (Admin creates, teachers view) ───────────────────────
-model LessonPlan {
-  id              String    @id @default(cuid())
-  title           String
-  courseId        String?
-  planDate        DateTime?
-  content         String    @db.Text
-  materialsNeeded String?   @db.Text
-  isPublished     Boolean   @default(true)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+model task {
+  id                  String                @id
+  title               String
+  description         String?
+  dueDate             DateTime?
+  status              String                @default("PENDING")
+  proofUrl            String?
+  proofDesc           String?
+  teacherId           String
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime
+  user                user                  @relation(fields: [teacherId], references: [id], onDelete: Cascade, map: "Task_teacherId_fkey")
+  teachernotification teachernotification[]
 
-  course        Course?               @relation(fields: [courseId], references: [id], onDelete: SetNull)
-  notifications TeacherNotification[]
+  @@index([teacherId], map: "Task_teacherId_fkey")
 }
 
-// ── Story Books (Children Library) ──────────────────────────────────
-enum LibraryAudience {
+model teachernotification {
+  id           String      @id
+  userId       String
+  type         String      @default("STORY_BOOK")
+  title        String
+  message      String      @db.Text
+  storyBookId  String?
+  taskId       String?
+  lessonPlanId String?
+  isRead       Boolean     @default(false)
+  createdAt    DateTime    @default(now())
+  lessonplan   lessonplan? @relation(fields: [lessonPlanId], references: [id], map: "TeacherNotification_lessonPlanId_fkey")
+  storybook    storybook?  @relation(fields: [storyBookId], references: [id], map: "TeacherNotification_storyBookId_fkey")
+  task         task?       @relation(fields: [taskId], references: [id], map: "TeacherNotification_taskId_fkey")
+  user         user        @relation(fields: [userId], references: [id], onDelete: Cascade, map: "TeacherNotification_userId_fkey")
+
+  @@index([lessonPlanId], map: "TeacherNotification_lessonPlanId_fkey")
+  @@index([storyBookId], map: "TeacherNotification_storyBookId_fkey")
+  @@index([taskId], map: "TeacherNotification_taskId_fkey")
+  @@index([userId, createdAt], map: "TeacherNotification_userId_createdAt_idx")
+  @@index([userId, isRead], map: "TeacherNotification_userId_isRead_idx")
+}
+
+model testimonial {
+  id         String   @id
+  name       String
+  content    String
+  rating     Int      @default(5)
+  isApproved Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime
+}
+
+model user {
+  id                  String                @id
+  email               String                @unique(map: "User_email_key")
+  password            String
+  name                String
+  role                user_role             @default(STUDENT)
+  phone               String?
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime
+  createdBy           String?
+  deletedAt           DateTime?
+  employeeId          String?               @unique(map: "User_employeeId_key")
+  firstName           String?
+  isDeleted           Boolean               @default(false)
+  lastName            String?
+  mustChangePassword  Boolean               @default(false)
+  status              user_status           @default(ACTIVE)
+  studentClass        String?
+  inquiry             inquiry[]
+  material            material[]
+  passwordresettoken  passwordresettoken[]
+  payment             payment[]
+  studentnotification studentnotification[]
+  task                task[]
+  teachernotification teachernotification[]
+}
+
+enum payment_status {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+enum user_role {
+  ADMIN
+  TEACHER
+  STUDENT
+}
+
+enum storybook_audience {
   STUDENT
   TEACHER
   BOTH
 }
 
-model StoryBook {
-  id          String           @id @default(cuid())
-  title       String
-  author      String?
-  category    String           // Fairy Tales, Phonics, Bedtime Stories, etc.
-  fileUrl     String           // Storage path or public URL (serve via /api/library)
-  fileSize    Int?
-  audience    LibraryAudience  @default(BOTH)
-  createdAt   DateTime         @default(now())
-
-  studentNotifications StudentNotification[]
-  teacherNotifications TeacherNotification[]
-}
-
-// ── Student in-app notifications ───────────────────────────────────
-model StudentNotification {
-  id          String   @id @default(cuid())
-  userId      String
-  type        String   @default("STORY_BOOK")
-  title       String
-  message     String   @db.Text
-  storyBookId String?
-  isRead      Boolean  @default(false)
-  createdAt   DateTime @default(now())
-
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  storyBook StoryBook? @relation(fields: [storyBookId], references: [id], onDelete: SetNull)
-
-  @@index([userId, isRead])
-  @@index([userId, createdAt])
-}
-
-// ── Teacher in-app notifications ───────────────────────────────────
-model TeacherNotification {
-  id           String   @id @default(cuid())
-  userId       String
-  type         String   @default("STORY_BOOK")
-  title        String
-  message      String   @db.Text
-  storyBookId  String?
-  taskId       String?
-  lessonPlanId String?
-  isRead       Boolean  @default(false)
-  createdAt    DateTime @default(now())
-
-  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  storyBook  StoryBook?  @relation(fields: [storyBookId], references: [id], onDelete: SetNull)
-  task       Task?       @relation(fields: [taskId], references: [id], onDelete: SetNull)
-  lessonPlan LessonPlan? @relation(fields: [lessonPlanId], references: [id], onDelete: SetNull)
-
-  @@index([userId, isRead])
-  @@index([userId, createdAt])
+enum user_status {
+  ACTIVE
+  DEACTIVATED
 }

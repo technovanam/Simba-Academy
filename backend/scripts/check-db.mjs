@@ -3,52 +3,69 @@ import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { PrismaClient } from "@prisma/client";
 
 const url = process.env.DATABASE_URL;
-const placeholders = ["YOUR_DB_PASSWORD", "simbapre_DBUSER"];
+const placeholders = ["YOUR_DB_PASSWORD", "YOUR_PASSWORD", "simbapre_DBUSER"];
 
 if (!url || placeholders.some((p) => url.includes(p))) {
   console.error(
-    "❌ Set DATABASE_URL in backend/.env with your cPanel MySQL/MariaDB credentials.\n" +
-      "   Example: mysql://simbapre_school:your_password@localhost:3306/simbapre_simbaacademy"
+    "❌ Set DATABASE_URL in backend/.env\n" +
+      "   Example: mysql://avnadmin:password@mysql-XXXX.h.aivencloud.com:22462/defaultdb?ssl-mode=REQUIRED"
   );
   process.exit(1);
 }
 
 function parseDatabaseUrl(urlStr) {
-  const url = new URL(urlStr);
-  const host = url.hostname;
-  const port = url.port ? parseInt(url.port, 10) : 3306;
-  const user = decodeURIComponent(url.username);
-  const password = decodeURIComponent(url.password);
-  const database = url.pathname.startsWith('/') ? url.pathname.slice(1) : url.pathname;
-  return { host, port, user, password, database };
+  const parsed = new URL(urlStr);
+  const sslParam =
+    parsed.searchParams.get("ssl") ??
+    parsed.searchParams.get("sslmode") ??
+    parsed.searchParams.get("ssl-mode");
+  const sslAccept = parsed.searchParams.get("sslaccept");
+  const useSsl =
+    sslParam === "true" ||
+    sslParam === "require" ||
+    sslParam === "REQUIRED" ||
+    sslParam === "1" ||
+    sslAccept === "strict" ||
+    sslAccept === "true";
+  const sslVerify = parsed.searchParams.get("sslVerify") === "true";
+
+  return {
+    host: parsed.hostname,
+    port: parsed.port ? parseInt(parsed.port, 10) : 3306,
+    user: decodeURIComponent(parsed.username),
+    password: decodeURIComponent(parsed.password),
+    database: parsed.pathname.startsWith("/") ? parsed.pathname.slice(1) : parsed.pathname,
+    ssl: useSsl ? { rejectUnauthorized: sslVerify } : false,
+    allowPublicKeyRetrieval: parsed.searchParams.get("allowPublicKeyRetrieval") !== "false",
+  };
 }
 
 const dbConfig = parseDatabaseUrl(url);
 
 const adapter = new PrismaMariaDb({
-  host: dbConfig.host,
-  port: dbConfig.port,
-  user: dbConfig.user,
-  password: dbConfig.password,
-  database: dbConfig.database,
+  ...dbConfig,
   connectionLimit: 1,
+  connectTimeout: 30_000,
 });
 
 const prisma = new PrismaClient({ adapter });
 
 try {
-  await prisma.$queryRaw`SELECT 1`;
-  console.log("✅ Connected to cPanel MySQL/MariaDB (simbapre_simbaacademy)");
+  const rows = await prisma.$queryRaw`SELECT 1 AS ok`;
+  const dbName = dbConfig.database;
+  const host = `${dbConfig.host}:${dbConfig.port}`;
+  console.log(`✅ Connected to MySQL (${dbName} @ ${host})`);
+  console.log("   Query result:", rows);
   process.exit(0);
 } catch (err) {
-  const message = err instanceof Error ? err.message : String(err);
-  console.error("❌ Database connection failed:", message);
+  const cause = err?.cause?.cause ?? err?.cause?.message ?? err?.message ?? String(err);
+  console.error("❌ Database connection failed:", cause);
   console.error(
-    "\nCheck in cPanel:\n" +
-      "  • User exists with prefix simbapre_ and is added to simbapre_simbaacademy\n" +
-      "  • Password in DATABASE_URL is correct (URL-encode special chars)\n" +
-      "  • Host is localhost on the server, or your server hostname for remote dev\n" +
-      "  • Remote MySQL/MariaDB is enabled if connecting from your local PC"
+    "\nCheck:\n" +
+      "  • DATABASE_URL password is correct in backend/.env\n" +
+      "  • Aiven firewall allows your IP (or 0.0.0.0/0)\n" +
+      "  • URL includes ?ssl-mode=REQUIRED for Aiven\n" +
+      "  • Port 22462 reachable: Test-NetConnection HOST -Port 22462"
   );
   process.exit(1);
 } finally {
