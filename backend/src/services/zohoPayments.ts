@@ -51,12 +51,18 @@ interface OAuthTokenCache {
 let tokenCache: OAuthTokenCache | null = null;
 
 function isPlaceholderMode(): boolean {
-  return (
-    env.ZOHO_PAYMENTS_PLACEHOLDER ||
+  if (!env.PAYMENTS_ENABLED) return true;
+  if (env.ZOHO_PAYMENTS_PLACEHOLDER) return true;
+
+  const missingCredentials =
+    !env.ZOHO_PAYMENTS_ACCOUNT_ID ||
+    env.ZOHO_PAYMENTS_ACCOUNT_ID === "placeholder" ||
+    !env.ZOHO_PAYMENTS_API_KEY ||
     env.ZOHO_PAYMENTS_API_KEY === "placeholder" ||
     !env.ZOHO_PAYMENTS_REFRESH_TOKEN ||
-    env.ZOHO_PAYMENTS_REFRESH_TOKEN === "placeholder"
-  );
+    env.ZOHO_PAYMENTS_REFRESH_TOKEN === "placeholder";
+
+  return missingCredentials;
 }
 
 async function getOAuthAccessToken(): Promise<string> {

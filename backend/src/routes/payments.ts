@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { prisma } from "../config/database.js";
+import { env } from "../config/env.js";
 import { authenticate } from "../middleware/auth.js";
 import { createOrder, verifyPayment } from "../services/payment.js";
 import { getZohoCheckoutConfig } from "../services/zohoPayments.js";
@@ -183,7 +184,7 @@ router.get("/:id", authenticate, async (req, res, next) => {
 // ── Create Pre-Register Order (Public) ────────────────────────────────
 router.post("/create-pre-register-order", async (req, res, next) => {
   try {
-    const flatAmount = 130;
+    const flatAmount = env.STUDENT_REGISTRATION_FEE_INR;
 
     const order = await createOrder({
       amount: Math.round(flatAmount * 100),
