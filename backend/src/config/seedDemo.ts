@@ -6,6 +6,12 @@ import { env } from "./env.js";
 
 const DEMO_PASSWORD = process.env.DEMO_SEED_PASSWORD ?? "Simba@Demo2026";
 
+const DEMO_STUDENT = {
+  email: "demo.student@simbapreschool.in",
+  name: "Demo Student",
+  studentClass: "LKG",
+} as const;
+
 const TEACHERS = [
   {
     email: "priya.teacher@simbapreschool.in",
@@ -38,6 +44,52 @@ function ensureDemoUploadFiles(): void {
       fs.writeFileSync(full, placeholder);
     }
   }
+}
+
+async function upsertStudent() {
+  const hashed = await bcrypt.hash(DEMO_PASSWORD, 12);
+  const email = DEMO_STUDENT.email.toLowerCase();
+  const existing = await prisma.user.findUnique({ where: { email } });
+  const user =
+    existing ?
+      await prisma.user.update({
+        where: { email },
+        data: {
+          name: DEMO_STUDENT.name,
+          studentClass: DEMO_STUDENT.studentClass,
+          role: "STUDENT",
+          status: "ACTIVE",
+          isDeleted: false,
+        },
+      })
+    : await prisma.user.create({
+        data: {
+          email,
+          password: hashed,
+          name: DEMO_STUDENT.name,
+          studentClass: DEMO_STUDENT.studentClass,
+          role: "STUDENT",
+          status: "ACTIVE",
+        },
+      });
+
+  const fee = env.STUDENT_REGISTRATION_FEE_INR ?? 120;
+  const paid = await prisma.payment.findFirst({
+    where: { userId: user.id, status: "SUCCESS" },
+  });
+  if (!paid) {
+    await prisma.payment.create({
+      data: {
+        userId: user.id,
+        amount: fee,
+        currency: "INR",
+        status: "SUCCESS",
+        paymentSessionId: `demo-seed-${user.id}`,
+        gatewayPaymentId: `demo-gateway-${user.id}`,
+      },
+    });
+  }
+  return user;
 }
 
 async function upsertTeacher(teacher: (typeof TEACHERS)[number]) {
@@ -74,6 +126,8 @@ async function upsertTeacher(teacher: (typeof TEACHERS)[number]) {
 
 export async function seedDemoData(): Promise<void> {
   ensureDemoUploadFiles();
+
+  await upsertStudent();
 
   const teachers = [];
   for (const t of TEACHERS) {
@@ -229,14 +283,16 @@ export async function seedDemoData(): Promise<void> {
   }
 
   console.log("\n✅ Demo seed complete\n");
-  console.log("Teachers (password for all):", DEMO_PASSWORD);
+  console.log("Demo accounts (password for all):", DEMO_PASSWORD);
+  console.log(`  • Student: ${DEMO_STUDENT.email} (${DEMO_STUDENT.studentClass})`);
   for (const t of TEACHERS) {
-    console.log(`  • ${t.email}`);
+    console.log(`  • Teacher: ${t.email}`);
   }
   console.log("\nAdmin portal checks:");
   console.log("  • Assign Tasks — due date cannot be in the past");
   console.log("  • Approve Uploads — 2 pending materials + 1 task proof");
   console.log("  • Admissions Leads — 2 admissions + 2 franchise inquiries");
+  console.log(`  • Student login: http://localhost:5173/login`);
   console.log(`  • Teacher login: http://localhost:5173/teacher/login\n`);
 }
 
