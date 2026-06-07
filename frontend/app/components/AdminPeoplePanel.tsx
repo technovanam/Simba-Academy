@@ -8,6 +8,7 @@ import {
   type UserListFilter,
   type UserListSort,
 } from "../lib/api";
+import { isActionBusy } from "../lib/actionGuard";
 import { AdminModal } from "./AdminModal";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { AccountStatusBadge } from "./AccountStatusBadge";
@@ -227,6 +228,7 @@ export function AdminPeoplePanel({
   }, [currentPage, totalPages]);
 
   async function handleToggleStatus(user: AuthUser) {
+    if (isActionBusy(actionLoading)) return;
     const next: AccountStatus = user.status === "ACTIVE" ? "DEACTIVATED" : "ACTIVE";
     setActionLoading(`status-${user.id}`);
     try {
@@ -244,7 +246,7 @@ export function AdminPeoplePanel({
   }
 
   async function handleDeleteConfirmed() {
-    if (!deleteTarget) return;
+    if (!deleteTarget || isActionBusy(actionLoading)) return;
     setActionLoading(`delete-${deleteTarget.id}`);
     try {
       await api.deleteUser(token, deleteTarget.id);
@@ -263,6 +265,7 @@ export function AdminPeoplePanel({
   }
 
   async function handleSendReset(user: AuthUser) {
+    if (isActionBusy(actionLoading)) return;
     setActionLoading(`reset-${user.id}`);
     try {
       if (mode === "teachers") {
@@ -280,6 +283,7 @@ export function AdminPeoplePanel({
 
   async function handleCreateTeacher(e: React.FormEvent) {
     e.preventDefault();
+    if (isActionBusy(actionLoading)) return;
     if (!teacherForm.firstName.trim() || !teacherForm.lastName.trim()) {
       onError("Please enter first and last name.");
       return;
@@ -288,6 +292,7 @@ export function AdminPeoplePanel({
       onError("Please enter the teacher's email address.");
       return;
     }
+    setActionLoading("teacher-create");
     try {
       const created = await api.createTeacher(token, {
         firstName: teacherForm.firstName.trim(),
@@ -308,6 +313,8 @@ export function AdminPeoplePanel({
       setShowCreateTeacher(false);
     } catch (err) {
       onError(err instanceof ApiError ? err.message : "Failed to create teacher.");
+    } finally {
+      setActionLoading(null);
     }
   }
 
@@ -323,7 +330,8 @@ export function AdminPeoplePanel({
 
   async function handleSaveTeacherEdit(e: React.FormEvent) {
     e.preventDefault();
-    if (!editingTeacher) return;
+    if (!editingTeacher || isActionBusy(actionLoading)) return;
+    setActionLoading("teacher-save");
     try {
       const updated = await api.updateTeacher(token, editingTeacher.id, {
         firstName: editForm.firstName.trim(),
@@ -336,6 +344,8 @@ export function AdminPeoplePanel({
       setEditingTeacher(null);
     } catch (err) {
       onError(err instanceof ApiError ? err.message : "Failed to update teacher.");
+    } finally {
+      setActionLoading(null);
     }
   }
 

@@ -24,15 +24,19 @@ export function buildPageNumbers(current: number, total: number): (number | "ell
   return pages;
 }
 
-export function useAdminPagination<T>(items: T[], deps: unknown[] = []) {
+export function useAdminPagination<T>(
+  items: T[],
+  deps: unknown[] = [],
+  pageSize: number = ADMIN_LIST_PAGE_SIZE
+) {
   const [currentPage, setCurrentPage] = useState(1);
-  const totalPages = Math.max(1, Math.ceil(items.length / ADMIN_LIST_PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
   const safePage = Math.min(currentPage, totalPages);
-  const pageStart = (safePage - 1) * ADMIN_LIST_PAGE_SIZE;
-  const paginatedItems = items.slice(pageStart, pageStart + ADMIN_LIST_PAGE_SIZE);
+  const pageStart = (safePage - 1) * pageSize;
+  const paginatedItems = items.slice(pageStart, pageStart + pageSize);
   const pageNumbers = buildPageNumbers(safePage, totalPages);
   const rangeStart = items.length === 0 ? 0 : pageStart + 1;
-  const rangeEnd = Math.min(pageStart + ADMIN_LIST_PAGE_SIZE, items.length);
+  const rangeEnd = Math.min(pageStart + pageSize, items.length);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -55,17 +59,33 @@ export function useAdminPagination<T>(items: T[], deps: unknown[] = []) {
   };
 }
 
+const PILL_ACCENT = {
+  green: {
+    border: "border-[#8AC926]",
+    hover: "hover:bg-[#8AC926]/5",
+    active: "bg-[#8AC926]/15 text-[#5a8218]",
+  },
+  orange: {
+    border: "border-[#FF9F1C]",
+    hover: "hover:bg-[#FF9F1C]/5",
+    active: "bg-[#FF9F1C]/15 text-[#c77a00]",
+  },
+} as const;
+
 export function PillSelect<T extends string>({
   value,
   options,
   onChange,
   ariaLabel,
+  accent = "green",
 }: {
   value: T;
   options: { id: T; label: string }[];
   onChange: (id: T) => void;
   ariaLabel: string;
+  accent?: keyof typeof PILL_ACCENT;
 }) {
+  const tone = PILL_ACCENT[accent];
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const selected = options.find((o) => o.id === value);
@@ -96,7 +116,7 @@ export function PillSelect<T extends string>({
         aria-label={ariaLabel}
         aria-expanded={open}
         aria-haspopup="listbox"
-        className="inline-flex items-center gap-1.5 pl-3.5 pr-2.5 py-2 rounded-full border border-[#8AC926] bg-white text-xs font-bold text-slate-800 hover:bg-[#8AC926]/5 transition min-w-[128px] max-w-[168px] justify-between leading-none"
+        className={`inline-flex items-center gap-1.5 pl-3.5 pr-2.5 py-2 rounded-full border ${tone.border} bg-white text-xs font-bold text-slate-800 ${tone.hover} transition min-w-[128px] max-w-[168px] justify-between leading-none`}
       >
         <span className="truncate leading-none">{selected?.label}</span>
         <ChevronDown
@@ -118,9 +138,7 @@ export function PillSelect<T extends string>({
                   setOpen(false);
                 }}
                 className={`w-full text-left px-3.5 py-2.5 text-xs font-bold transition ${
-                  o.id === value
-                    ? "bg-[#8AC926]/15 text-[#5a8218]"
-                    : "text-slate-700 hover:bg-slate-50"
+                  o.id === value ? tone.active : "text-slate-700 hover:bg-slate-50"
                 }`}
               >
                 {o.label}

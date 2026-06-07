@@ -10,7 +10,7 @@ import {
   adminListRowClass,
   useAdminPagination,
 } from "./AdminListUi";
-import { CreditCard, Eye, Loader2 } from "lucide-react";
+import { CreditCard, Eye, IndianRupee, Loader2, Receipt } from "lucide-react";
 import { ModalCloseButton } from "./ModalCloseButton";
 import { sortPaymentsNewestFirst } from "./RecentPaymentCard";
 
@@ -103,16 +103,26 @@ export function AdminPaymentsPanel({ token, onError }: AdminPaymentsPanelProps) 
       />
 
       <AdminPageBody>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
-          <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl">
-            <p className="text-[9px] font-bold text-blue-700 uppercase tracking-wider">Total records</p>
-            <p className="text-2xl font-extrabold text-slate-900 mt-1">{payments.length}</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+          <div className="px-4 py-2.5 bg-blue-50 border border-blue-100 rounded-xl flex items-center gap-3">
+            <div className="p-1.5 bg-white rounded-lg border border-blue-100 shrink-0">
+              <Receipt className="w-4 h-4 text-blue-600" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[9px] font-bold text-blue-700 uppercase tracking-wider leading-none">Total records</p>
+              <p className="text-xl font-extrabold text-slate-900 mt-0.5 leading-tight">{payments.length}</p>
+            </div>
           </div>
-          <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl">
-            <p className="text-[9px] font-bold text-emerald-700 uppercase tracking-wider">Successful revenue</p>
-            <p className="text-2xl font-extrabold text-emerald-700 mt-1">
-              ₹{successTotal.toLocaleString("en-IN")}
-            </p>
+          <div className="px-4 py-2.5 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center gap-3">
+            <div className="p-1.5 bg-white rounded-lg border border-emerald-100 shrink-0">
+              <IndianRupee className="w-4 h-4 text-emerald-600" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[9px] font-bold text-emerald-700 uppercase tracking-wider leading-none">Successful revenue</p>
+              <p className="text-xl font-extrabold text-emerald-700 mt-0.5 leading-tight">
+                ₹{successTotal.toLocaleString("en-IN")}
+              </p>
+            </div>
           </div>
         </div>
 
