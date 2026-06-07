@@ -16,8 +16,8 @@ Deploy **two separate Vercel projects** from the same Git repo.
 3. Add env vars from [backend/.env.vercel.example](backend/.env.vercel.example)
 4. Deploy → note URL e.g. `https://simba-api.vercel.app`
 5. Test: `curl https://YOUR-BACKEND.vercel.app/api/health` (must return JSON, not 404)
-6. Enable **Remote MySQL** on cPanel (`%` host) — Vercel cannot use `localhost`
-7. Run once from your PC: `npx prisma db push` with remote `DATABASE_URL`
+6. Set **`DATABASE_URL`** to your **Aiven MySQL** Service URI (`?ssl-mode=REQUIRED`). In Aiven → **Firewall** → allow **`0.0.0.0/0`** so Vercel can connect.
+7. Run once (home WiFi or mobile hotspot if college blocks DB ports): from `backend/`, `npx prisma db push`, then `npx tsx src/config/seedAdmin.ts`
 
 ### 2. Frontend second
 
@@ -59,5 +59,5 @@ Open frontend URL → login, contact form, admin.
 ## Important for temp hosting
 
 - **Uploads:** set `USE_WEBDAV=true` on backend so files go to cPanel Web Disk (Vercel disk is ephemeral)
-- **Database:** stays on cPanel MySQL — remote connection required
+- **Database:** use **Aiven MySQL** (or cPanel with Remote MySQL `%`) — not `localhost` on Vercel
 - **Not for long-term production** — use cPanel deploy ([backend/DEPLOY-CPANEL.md](backend/DEPLOY-CPANEL.md)) when ready
