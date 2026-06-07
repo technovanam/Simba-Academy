@@ -11,6 +11,18 @@ export class ApiError extends Error {
   }
 }
 
+/** Prefer field-level validation messages over generic "Validation failed". */
+export function formatApiError(err: unknown, fallback: string): string {
+  if (err instanceof ApiError) {
+    if (err.errors) {
+      const messages = Object.values(err.errors).flat();
+      if (messages.length > 0) return messages.join(" ");
+    }
+    return err.message;
+  }
+  return fallback;
+}
+
 async function request<T>(
   path: string,
   options: RequestInit = {},
@@ -42,13 +54,23 @@ async function request<T>(
 export const api = {
   health: () => request<{ status: string }>("/api/health"),
 
-  register: (body: { name: string; email: string; password: string; phone?: string }) =>
+  register: (body: {
+    name: string;
+    email: string;
+    password: string;
+    phone?: string;
+    studentClass?: string;
+  }) =>
     request<{ user: AuthUser; token: string }>("/api/auth/register", {
       method: "POST",
       body: JSON.stringify(body),
     }),
 
-  login: (body: { email: string; password: string }) =>
+  login: (body: {
+    email: string;
+    password: string;
+    portal?: "student" | "teacher" | "admin";
+  }) =>
     request<{ user: AuthUser; token: string }>("/api/auth/login", {
       method: "POST",
       body: JSON.stringify(body),
@@ -64,6 +86,7 @@ export const api = {
     email: string;
     password: string;
     phone?: string;
+    studentClass: string;
     paymentSessionId: string;
     paymentId: string;
     signature: string;
@@ -296,6 +319,48 @@ export const api = {
   getTeacherStoryBooks: (token: string) =>
     request<StoryBook[]>("/api/teacher/books", {}, token),
 
+  getLessonPlans: (token: string) =>
+    request<LessonPlan[]>("/api/admin/lesson-plans", {}, token),
+
+  createLessonPlan: (
+    token: string,
+    body: {
+      title: string;
+      courseId?: string | null;
+      planDate?: string | null;
+      content: string;
+      materialsNeeded?: string | null;
+      isPublished?: boolean;
+    }
+  ) =>
+    request<LessonPlan>("/api/admin/lesson-plans", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }, token),
+
+  updateLessonPlan: (
+    token: string,
+    id: string,
+    body: Partial<{
+      title: string;
+      courseId: string | null;
+      planDate: string | null;
+      content: string;
+      materialsNeeded: string | null;
+      isPublished: boolean;
+    }>
+  ) =>
+    request<LessonPlan>(`/api/admin/lesson-plans/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }, token),
+
+  deleteLessonPlan: (token: string, id: string) =>
+    request<{ message: string }>(`/api/admin/lesson-plans/${id}`, { method: "DELETE" }, token),
+
+  getTeacherLessonPlans: (token: string) =>
+    request<LessonPlan[]>("/api/teacher/lesson-plans", {}, token),
+
   createStoryBook: (
     token: string,
     body: {
@@ -415,6 +480,30 @@ export const api = {
 
   getPublicStoryBooks: (token: string) =>
     request<StoryBook[]>("/api/library/storybooks", {}, token),
+
+  getStudentNotifications: (token: string) =>
+    request<StudentNotification[]>("/api/student/notifications", {}, token),
+
+  getStudentNotificationUnreadCount: (token: string) =>
+    request<{ count: number }>("/api/student/notifications/unread-count", {}, token),
+
+  markStudentNotificationRead: (token: string, id: string) =>
+    request<StudentNotification>(`/api/student/notifications/${id}/read`, { method: "PATCH" }, token),
+
+  markAllStudentNotificationsRead: (token: string) =>
+    request<{ message: string }>("/api/student/notifications/read-all", { method: "PATCH" }, token),
+
+  getTeacherNotifications: (token: string) =>
+    request<TeacherNotification[]>("/api/teacher/notifications", {}, token),
+
+  getTeacherNotificationUnreadCount: (token: string) =>
+    request<{ count: number }>("/api/teacher/notifications/unread-count", {}, token),
+
+  markTeacherNotificationRead: (token: string, id: string) =>
+    request<TeacherNotification>(`/api/teacher/notifications/${id}/read`, { method: "PATCH" }, token),
+
+  markAllTeacherNotificationsRead: (token: string) =>
+    request<{ message: string }>("/api/teacher/notifications/read-all", { method: "PATCH" }, token),
 };
 
 export type AccountStatus = "ACTIVE" | "DEACTIVATED";
@@ -430,6 +519,7 @@ export interface AuthUser {
   email: string;
   role: "ADMIN" | "TEACHER" | "STUDENT";
   phone?: string | null;
+  studentClass?: string | null;
   employeeId?: string | null;
   status?: AccountStatus;
   mustChangePassword?: boolean;
@@ -615,4 +705,43 @@ export interface StoryBook {
   fileSize?: number | null;
   audience?: "STUDENT" | "TEACHER" | "BOTH";
   createdAt: string;
+}
+
+export interface StudentNotification {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  storyBookId?: string | null;
+  isRead: boolean;
+  createdAt: string;
+  storyBook?: Pick<StoryBook, "id" | "title" | "category" | "author"> | null;
+}
+
+export interface TeacherNotification {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  storyBookId?: string | null;
+  taskId?: string | null;
+  lessonPlanId?: string | null;
+  isRead: boolean;
+  createdAt: string;
+  storyBook?: Pick<StoryBook, "id" | "title" | "category" | "author"> | null;
+  task?: Pick<Task, "id" | "title" | "status"> | null;
+  lessonPlan?: Pick<LessonPlan, "id" | "title" | "planDate"> | null;
+}
+
+export interface LessonPlan {
+  id: string;
+  title: string;
+  courseId?: string | null;
+  planDate?: string | null;
+  content: string;
+  materialsNeeded?: string | null;
+  isPublished: boolean;
+  createdAt: string;
+  updatedAt: string;
+  course?: { title: string; level?: string } | null;
 }

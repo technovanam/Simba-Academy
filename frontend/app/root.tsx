@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
   isRouteErrorResponse,
   Links,
@@ -9,6 +10,7 @@ import {
 
 import type { Route } from "./+types/root";
 import { FormAutofillBlocker } from "./components/FormAutofillBlocker";
+import { captureClientError, initMonitoring } from "./lib/monitoring";
 import "./app.css";
 
 export const links: Route.LinksFunction = () => [
@@ -31,7 +33,7 @@ export const links: Route.LinksFunction = () => [
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" autoComplete="off">
+    <html lang="en">
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -49,6 +51,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  useEffect(() => {
+    initMonitoring();
+  }, []);
+
   return (
     <>
       <FormAutofillBlocker />
@@ -68,9 +74,12 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
       error.status === 404
         ? "The requested page could not be found."
         : error.statusText || details;
-  } else if (import.meta.env.DEV && error && error instanceof Error) {
-    details = error.message;
-    stack = error.stack;
+  } else if (error && error instanceof Error) {
+    captureClientError(error);
+    if (import.meta.env.DEV) {
+      details = error.message;
+      stack = error.stack;
+    }
   }
 
   return (
