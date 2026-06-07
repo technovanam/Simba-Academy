@@ -35,7 +35,7 @@ function deleteFile(filename: string): void {
 router.post(
   "/upload",
   authenticate,
-  authorize("ADMIN", "TEACHER"),
+  authorize("ADMIN"),
   upload.single("file"),
   async (req, res, next) => {
     let uploadedFilename: string | undefined;
@@ -208,8 +208,8 @@ router.get("/materials", optionalAuthenticate, async (req, res, next) => {
     if (courseId) where.courseId = courseId as string;
     if (type) where.type = type as string;
 
-    // Students only see approved materials
-    if (!req.user || req.user.role === "STUDENT") {
+    // Students and teachers only see approved materials (teachers upload task proof, not course files)
+    if (!req.user || req.user.role === "STUDENT" || req.user.role === "TEACHER") {
       where.isApproved = true;
     }
 
@@ -243,7 +243,10 @@ router.get("/materials/:id", optionalAuthenticate, async (req, res, next) => {
       throw new AppError("Material not found", 404);
     }
 
-    if (!material.isApproved && (!req.user || req.user.role === "STUDENT")) {
+    if (
+      !material.isApproved &&
+      (!req.user || req.user.role === "STUDENT" || req.user.role === "TEACHER")
+    ) {
       throw new AppError("Material not available", 404);
     }
 
@@ -257,7 +260,7 @@ router.get("/materials/:id", optionalAuthenticate, async (req, res, next) => {
 router.delete(
   "/materials/:id",
   authenticate,
-  authorize("ADMIN", "TEACHER"),
+  authorize("ADMIN"),
   async (req, res, next) => {
     try {
       const material = await prisma.material.findUnique({
@@ -266,11 +269,6 @@ router.delete(
 
       if (!material) {
         throw new AppError("Material not found", 404);
-      }
-
-      // Teachers can only delete their own uploads
-      if (req.user!.role === "TEACHER" && material.uploadedById !== req.user!.userId) {
-        throw new AppError("You can only delete your own uploads", 403);
       }
 
       await removeStoredFile(material.fileUrl);

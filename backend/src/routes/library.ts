@@ -13,8 +13,21 @@ const libraryRoles = authorize("ADMIN", "TEACHER", "STUDENT");
 router.get("/storybooks", authenticate, libraryRoles, async (req, res, next) => {
   try {
     const role = req.user!.role as Role;
+    const audienceWhere = audienceFilterForRole(role);
+
+    let classWhere: { category?: string } = {};
+    if (role === "STUDENT") {
+      const user = await prisma.user.findUnique({
+        where: { id: req.user!.userId },
+        select: { studentClass: true },
+      });
+      if (user?.studentClass) {
+        classWhere = { category: user.studentClass };
+      }
+    }
+
     const books = await prisma.storyBook.findMany({
-      where: audienceFilterForRole(role),
+      where: { ...audienceWhere, ...classWhere },
       orderBy: { createdAt: "desc" },
     });
     res.json(books);
