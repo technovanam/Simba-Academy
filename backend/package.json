@@ -8,7 +8,8 @@
   },
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc",
+    "build": "prisma generate && tsc",
+    "postinstall": "prisma generate",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
     "db:generate": "prisma generate",
@@ -30,11 +31,11 @@
     "db:seed": "tsx src/config/seedAdmin.ts",
     "db:seed:demo": "tsx src/config/seedDemo.ts",
     "db:purge-teachers": "node scripts/purge-teachers.mjs",
-    "production": "npm run build && prisma generate && prisma db push && npm start",
-    "deploy:cpanel": "npm run build && prisma generate && prisma db push",
+    "production": "npm run build && prisma db push && npm start",
+    "deploy:cpanel": "npm run build && prisma db push",
     "deploy:pack": "node scripts/cpanel-pack.mjs",
     "deploy:cpanel:start": "node dist/index.js",
-    "deploy:vercel": "npm run build && prisma generate"
+    "deploy:vercel": "npm run build"
   },
   "dependencies": {
     "@prisma/adapter-mariadb": "^7.8.0",

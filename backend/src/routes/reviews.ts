@@ -1,4 +1,5 @@
 import { Router } from "express";
+import type { Testimonial } from "@prisma/client";
 import { prisma } from "../config/database.js";
 import { fetchGooglePlaceReviews, isGoogleReviewsConfigured } from "../services/googleReviews.js";
 
@@ -56,7 +57,7 @@ router.get("/", async (_req, res, next) => {
       placeId: r.placeId,
     }));
 
-    const manualReviews: PublicReviewDto[] = manual.map((t) => ({
+    const manualReviews: PublicReviewDto[] = manual.map((t: Testimonial) => ({
       id: t.id,
       name: t.name,
       content: t.content,

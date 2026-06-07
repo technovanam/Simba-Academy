@@ -126,7 +126,7 @@ router.delete(
         where: { courseId: course.id },
         select: { fileUrl: true },
       });
-      await removeStoredFiles(materials.map((m) => m.fileUrl));
+      await removeStoredFiles(materials.map((m: { fileUrl: string }) => m.fileUrl));
       await removeStoredFile(course.imageUrl);
       await prisma.course.delete({ where: { id: course.id } });
 

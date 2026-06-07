@@ -38,7 +38,7 @@ export async function notifyStudentsOfNewStoryBook(book: StoryBook): Promise<num
   const message = `"${book.title}"${authorSuffix} was added to your ${book.category} library.`;
 
   await prisma.studentNotification.createMany({
-    data: students.map((student) => ({
+    data: students.map((student: Recipient) => ({
       userId: student.id,
       type: "STORY_BOOK",
       title: "New story book available",
@@ -88,7 +88,7 @@ export async function notifyTeachersOfNewStoryBook(book: StoryBook): Promise<num
   const message = `"${book.title}"${authorSuffix} (${book.category}) was added to the story library.`;
 
   await prisma.teacherNotification.createMany({
-    data: teachers.map((teacher) => ({
+    data: teachers.map((teacher: Recipient) => ({
       userId: teacher.id,
       type: "STORY_BOOK",
       title: "New story book in library",
@@ -218,7 +218,7 @@ export async function notifyTeachersOfNewLessonPlan(
   const message = `New lesson plan published: "${plan.title}".`;
 
   await prisma.teacherNotification.createMany({
-    data: teachers.map((teacher) => ({
+    data: teachers.map((teacher: Recipient) => ({
       userId: teacher.id,
       type: "LESSON_PLAN",
       title: "New lesson plan published",

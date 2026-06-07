@@ -1,4 +1,5 @@
 import { Router } from "express";
+import type { Prisma } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { prisma } from "../config/database.js";
@@ -209,7 +210,7 @@ router.post(
 
     // 3. Create User and Payment inside a Prisma Transaction
     const hashedPassword = await bcrypt.hash(password, 12);
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const user = await tx.user.create({
         data: {
           name,
