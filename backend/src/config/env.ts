@@ -42,7 +42,13 @@ export const env = {
   ),
   ZOHO_PAYMENTS_DOMAIN: process.env.ZOHO_PAYMENTS_DOMAIN ?? "IN",
   ZOHO_PAYMENTS_TEST_MODE: process.env.ZOHO_PAYMENTS_TEST_MODE === "true",
-  ZOHO_PAYMENTS_PLACEHOLDER: process.env.ZOHO_PAYMENTS_PLACEHOLDER === "true",
+  ZOHO_PAYMENTS_PLACEHOLDER:
+    process.env.ZOHO_PAYMENTS_PLACEHOLDER === "true" ||
+    (process.env.NODE_ENV !== "production" && process.env.ZOHO_PAYMENTS_PLACEHOLDER !== "false"),
+  /** When false, skip Zoho entirely — registration and enrollment work without payment. */
+  PAYMENTS_ENABLED: process.env.PAYMENTS_ENABLED === "true",
+  /** One-time student platform registration fee (INR) */
+  STUDENT_REGISTRATION_FEE_INR: envInt("STUDENT_REGISTRATION_FEE_INR", 120),
 
   // ── Email (Nodemailer + Brevo) ─────────────────────────────────
   SMTP_HOST: process.env.SMTP_HOST ?? "smtp-relay.brevo.com",
@@ -57,6 +63,8 @@ export const env = {
 
   // ── Domains (CORS) ─────────────────────────────────────────────
   ALLOWED_ORIGINS: (process.env.ALLOWED_ORIGINS ?? "http://localhost:5173,http://localhost:3000,https://www.simbapreschool.in,https://simbapreschool.in").split(",").map(s => s.trim()),
+  /** Allow any *.vercel.app origin (useful for temporary Vercel hosting). */
+  ALLOW_VERCEL_PREVIEWS: process.env.ALLOW_VERCEL_PREVIEWS === "true",
 
   // ── Storage (Web Disk) ─────────────────────────────────────────
   STORAGE_PATH: envString("STORAGE_PATH", "public_html/simba"),
@@ -90,11 +98,14 @@ export const env = {
   GOOGLE_PLACES_SEARCH_QUERY: process.env.GOOGLE_PLACES_SEARCH_QUERY ?? "",
   GOOGLE_PLACES_NAME_FILTER: process.env.GOOGLE_PLACES_NAME_FILTER ?? "simba",
   GOOGLE_PLACES_SEARCH_MAX: envInt("GOOGLE_PLACES_SEARCH_MAX", 20),
-  GOOGLE_REVIEWS_CACHE_MINUTES: envInt("GOOGLE_REVIEWS_CACHE_MINUTES", 60),
-  /** Min minutes between manual "Refresh Google" syncs (avoids API rate limits) */
+  /** In-memory cache TTL (minutes) when live fetch is enabled. */
+  GOOGLE_REVIEWS_CACHE_MINUTES: envInt("GOOGLE_REVIEWS_CACHE_MINUTES", 15),
+  /** Min minutes between manual "Refresh now" syncs (protects Google API quota). */
   GOOGLE_REVIEWS_SYNC_COOLDOWN_MINUTES: envInt("GOOGLE_REVIEWS_SYNC_COOLDOWN_MINUTES", 15),
-  /** After a quota/rate-limit error, block Google Business API calls (minutes) */
+  /** After a Google quota error, pause GBP calls (minutes). Minimum 30 enforced on quota errors. */
   GOOGLE_GBP_RATE_LIMIT_COOLDOWN_MINUTES: envInt("GOOGLE_GBP_RATE_LIMIT_COOLDOWN_MINUTES", 30),
+  /** false = serve saved snapshot (safe). true = call Google on every page load (hits quota fast). */
+  GOOGLE_REVIEWS_LIVE_FETCH: process.env.GOOGLE_REVIEWS_LIVE_FETCH === "true",
 
   /** Google Business Profile OAuth — full review text from your account */
   GOOGLE_OAUTH_CLIENT_ID: process.env.GOOGLE_OAUTH_CLIENT_ID ?? "",

@@ -9,17 +9,37 @@ const urlOrUploadPath = z
     "Must be a valid URL or upload path"
   );
 
+export const STUDENT_CLASS_LEVELS = ["Playgroup", "Pre-KG", "LKG", "UKG"] as const;
+export type StudentClassLevel = (typeof STUDENT_CLASS_LEVELS)[number];
+
 // ── Auth ────────────────────────────────────────────────────────────
 export const registerSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Invalid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
   phone: z.string().optional(),
+  studentClass: z.enum(STUDENT_CLASS_LEVELS).optional(),
+});
+
+export const registerWithPaymentSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  phone: z.string().optional(),
+  studentClass: z.enum(STUDENT_CLASS_LEVELS, { message: "Please select your child's class" }),
+  paymentSessionId: z.string().min(1),
+  paymentId: z.string().min(1),
+  signature: z.string().min(1),
 });
 
 export const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(1, "Password is required"),
+  portal: z.enum(["student", "teacher", "admin"]).optional(),
+});
+
+export const checkEmailSchema = z.object({
+  email: z.string().email("Invalid email address"),
 });
 
 // ── Contact / Inquiry ───────────────────────────────────────────────
@@ -163,11 +183,23 @@ export const approveTaskSchema = z.object({
   proofDesc: z.string().optional(),
 });
 
+// ── Lesson Plan (Admin) ───────────────────────────────────────────
+export const createLessonPlanSchema = z.object({
+  title: z.string().min(2, "Title must be at least 2 characters"),
+  courseId: z.string().optional().nullable(),
+  planDate: z.string().optional().nullable(),
+  content: z.string().min(10, "Lesson plan content must be at least 10 characters"),
+  materialsNeeded: z.string().optional().nullable(),
+  isPublished: z.boolean().optional(),
+});
+
+export const updateLessonPlanSchema = createLessonPlanSchema.partial();
+
 // ── Story Book (Admin) ──────────────────────────────────────────────
 export const createStoryBookSchema = z.object({
   title: z.string().min(2, "Title must be at least 2 characters"),
   author: z.string().optional().nullable(),
-  category: z.string().min(2, "Category is required"),
+  category: z.enum(STUDENT_CLASS_LEVELS, { message: "Class category is required" }),
   fileUrl: urlOrUploadPath,
   fileSize: z.number().optional().nullable(),
   audience: z.enum(["STUDENT", "TEACHER", "BOTH"]).default("BOTH"),
