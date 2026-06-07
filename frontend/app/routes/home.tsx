@@ -5,10 +5,24 @@ import { AuthPageShell } from "../components/AuthUi";
 import { GraduationCap, Shield, Users } from "lucide-react";
 import { getDashboardPath, getUser } from "../lib/auth";
 
+const SITE_URL = "https://www.simbapreschool.in";
+
 export function meta({}: Route.MetaArgs) {
+  const title = "Simba Academy | Preschool Learning Portal";
+  const description =
+    "Sign in to Simba Academy — the student, teacher, and admin portal for Simba Preschool.";
   return [
-    { title: "Simba Academy | Sign In" },
-    { name: "description", content: "Sign in to the Simba Academy student, teacher, or admin portal." },
+    { title },
+    { name: "description", content: description },
+    { property: "og:type", content: "website" },
+    { property: "og:url", content: SITE_URL },
+    { property: "og:title", content: title },
+    { property: "og:description", content: description },
+    { property: "og:site_name", content: "Simba Academy" },
+    { property: "og:image", content: `${SITE_URL}/apple-touch-icon.png` },
+    { name: "twitter:card", content: "summary" },
+    { name: "twitter:title", content: title },
+    { name: "twitter:description", content: description },
   ];
 }
 

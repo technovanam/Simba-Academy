@@ -1,6 +1,7 @@
 import { Link } from "react-router";
 import { useEffect, useState, type ReactNode } from "react";
 import { api, type PublicReview } from "../lib/api";
+import { GoogleReviewCard } from "../components/GoogleReviewCard";
 import { 
   Palette, 
   Leaf, 
@@ -97,16 +98,20 @@ export function Welcome() {
   }>({ configured: false });
 
   useEffect(() => {
-    api
-      .getPublicReviews()
-      .then((data) => {
-        setPublicReviews(data.reviews);
-        setGoogleMeta(data.google);
-        setActiveReviewIndex(0);
-      })
-      .catch(() => {
-        setPublicReviews([]);
-      });
+    const loadReviews = () => {
+      api
+        .getPublicReviews()
+        .then((data) => {
+          setPublicReviews(data.reviews);
+          setGoogleMeta(data.google);
+        })
+        .catch(() => {
+          setPublicReviews([]);
+        });
+    };
+    loadReviews();
+    const timer = window.setInterval(loadReviews, 5 * 60_000);
+    return () => window.clearInterval(timer);
   }, []);
 
   const displayReviews =
@@ -844,6 +849,22 @@ export function Welcome() {
             </div>
           )}
         </div>
+
+        {displayReviews.length > 0 && displayReviews[0]?.id !== "fallback" && (
+          <div className="mt-14 max-w-5xl mx-auto text-left">
+            <h3 className="text-center font-sans text-lg font-extrabold text-[#3E2723] mb-2">
+              What parents say on Google
+            </h3>
+            <p className="text-center text-xs text-[#5D4037] font-semibold mb-6">
+              {displayReviews.length} review{displayReviews.length === 1 ? "" : "s"} with written feedback
+            </p>
+            <div className="grid md:grid-cols-2 gap-4 max-h-[70vh] overflow-y-auto pr-1">
+              {displayReviews.map((r) => (
+                <GoogleReviewCard key={r.id} review={r} />
+              ))}
+            </div>
+          </div>
+        )}
       </section>
 
       {/* Premium Trust Accreditations */}
