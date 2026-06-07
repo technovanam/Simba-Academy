@@ -16,8 +16,13 @@ function parseDatabaseUrl(urlStr: string) {
 
   // Optional query flags, e.g. ?ssl=true&allowPublicKeyRetrieval=true
   const sslParam = url.searchParams.get("ssl") ?? url.searchParams.get("sslmode");
+  const sslAccept = url.searchParams.get("sslaccept");
   const useSsl =
-    sslParam === "true" || sslParam === "require" || sslParam === "1";
+    sslParam === "true" ||
+    sslParam === "require" ||
+    sslParam === "1" ||
+    sslAccept === "strict" ||
+    sslAccept === "true";
   const allowPublicKeyRetrieval =
     url.searchParams.get("allowPublicKeyRetrieval") !== "false";
 
