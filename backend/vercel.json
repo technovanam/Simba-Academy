@@ -2,9 +2,20 @@
   "version": 2,
   "installCommand": "npm install",
   "buildCommand": "npm run build && npx prisma generate",
-  "rewrites": [{ "source": "/(.*)", "destination": "/api" }],
+  "builds": [
+    {
+      "src": "api/handler.ts",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "api/handler.ts"
+    }
+  ],
   "functions": {
-    "api/index.ts": {
+    "api/handler.ts": {
       "maxDuration": 60,
       "includeFiles": "dist/**"
     }
