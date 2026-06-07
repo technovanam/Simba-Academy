@@ -6,6 +6,7 @@ export type AdminTab =
   | "courses"
   | "materials"
   | "tasks"
+  | "planner"
   | "books"
   | "inquiries"
   | "reviews"
@@ -20,6 +21,7 @@ export const ADMIN_TAB_SECTIONS: Record<AdminTab, string> = {
   courses: "courses",
   materials: "materials",
   tasks: "tasks",
+  planner: "planner",
   books: "books",
   inquiries: "inquiries",
   reviews: "reviews",
@@ -58,6 +60,7 @@ export function adminTabTitle(tab: AdminTab): string {
     courses: "Courses",
     materials: "Approve Uploads",
     tasks: "Assign Tasks",
+    planner: "Lesson Planner",
     books: "Story Library",
     inquiries: "Admissions Leads",
     reviews: "Parent Reviews",
