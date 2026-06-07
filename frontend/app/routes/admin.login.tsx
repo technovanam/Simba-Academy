@@ -58,7 +58,7 @@ export default function AdminLoginPage() {
 
     setLoading(true);
     try {
-      const { user, token } = await api.login({ email, password });
+      const { user, token } = await api.login({ email, password, portal: "admin" });
       if (user.role !== "ADMIN") {
         throw new ApiError("This portal is for administrators only", 403);
       }

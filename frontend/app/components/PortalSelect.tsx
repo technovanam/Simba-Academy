@@ -8,13 +8,13 @@ const sizeClass: Record<PortalSelectSize, string> = {
 };
 
 export function PortalSelect({
-  size = "md",
+  uiSize = "md",
   className = "",
   children,
   ...props
-}: SelectHTMLAttributes<HTMLSelectElement> & { size?: PortalSelectSize }) {
+}: SelectHTMLAttributes<HTMLSelectElement> & { uiSize?: PortalSelectSize }) {
   return (
-    <select className={`${sizeClass[size]} ${className}`.trim()} {...props}>
+    <select className={`${sizeClass[uiSize]} ${className}`.trim()} {...props}>
       {children}
     </select>
   );

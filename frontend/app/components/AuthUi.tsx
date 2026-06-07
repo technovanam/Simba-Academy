@@ -1,6 +1,48 @@
 import { useEffect, type ReactNode } from "react";
 import { Link } from "react-router";
 import { AlertCircle, Check, LayoutGrid, Loader2 } from "lucide-react";
+import { STUDENT_AUTH_BG_DESKTOP, STUDENT_AUTH_BG_MOBILE } from "../lib/constants";
+
+const studentAuthBgImgClass =
+  "absolute inset-0 h-full w-full object-cover object-center pointer-events-none select-none";
+
+/** Student auth content wrapper — no outer box; sits on jungle background */
+export const studentAuthCardClass = "overflow-hidden";
+
+/** Uniform height for student login inputs and submit button */
+export const studentAuthControlClass = "h-12 w-full rounded-lg box-border text-sm";
+
+/**
+ * Fixed field column width on parchment (must match Tailwind classes below).
+ * Mobile: 200px · Desktop (lg+): 320px · Height: 48px (h-12)
+ */
+export const STUDENT_AUTH_FIELD_WIDTH_MOBILE_PX = 200;
+export const STUDENT_AUTH_FIELD_WIDTH_DESKTOP_PX = 320;
+
+const studentAuthFieldWidthClass = "w-full max-w-[200px] lg:max-w-[320px] mx-auto";
+
+/** Login form — fixed-width field column centered on parchment */
+export const studentParchmentFormClass = studentAuthFieldWidthClass;
+
+/** Sign-up form — same fixed width as login */
+export const studentRegisterFormClass = studentAuthFieldWidthClass;
+
+export function StudentParchmentHeading({ children }: { children: ReactNode }) {
+  return (
+    <h2 className="text-center text-lg font-extrabold text-[#c77a00] tracking-tight mb-1 [@media(max-height:480px)]:text-base [@media(max-height:400px)]:text-[15px] [@media(max-height:400px)]:mb-0.5">
+      {children}
+    </h2>
+  );
+}
+
+export type StudentParchmentVariant = "login" | "register";
+
+const studentParchmentSlots: Record<StudentParchmentVariant, string> = {
+  login:
+    "left-[14%] right-[14%] top-[22%] bottom-[8%] lg:left-[20%] lg:right-[20%] lg:top-[36%] lg:bottom-[9%]",
+  register:
+    "left-[13%] right-[13%] top-[24%] bottom-[11%] lg:left-[19%] lg:right-[19%] lg:top-[36%] lg:bottom-[13%]",
+};
 
 export type AuthPortal = "student" | "teacher" | "admin";
 
@@ -99,7 +141,7 @@ export function AuthBackButton({ portal }: { portal?: AuthPortal }) {
   return (
     <Link
       to="/"
-      className="fixed top-4 right-4 z-50 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-slate-200 text-sm font-bold text-slate-700 hover:bg-slate-50 hover:border-slate-300 shadow-md transition-colors"
+      className="fixed top-4 right-4 z-50 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold shadow-md transition-colors bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300"
     >
       <LayoutGrid className={`w-4 h-4 ${iconClass}`} strokeWidth={2} />
       Portals
@@ -111,6 +153,8 @@ interface AuthPageShellProps {
   children: ReactNode;
   maxWidth?: string;
   portal?: AuthPortal;
+  /** Align form inside the parchment zone of the student jungle background */
+  parchmentFit?: boolean | StudentParchmentVariant;
 }
 
 /** Full-viewport auth wrapper — no document scroll */
@@ -118,7 +162,10 @@ export function AuthPageShell({
   children,
   maxWidth = "max-w-md",
   portal = "student",
+  parchmentFit = false,
 }: AuthPageShellProps) {
+  const parchmentVariant: StudentParchmentVariant | null =
+    parchmentFit === "register" ? "register" : parchmentFit ? "login" : null;
   useEffect(() => {
     const prev = document.documentElement.style.overflow;
     document.documentElement.style.overflow = "hidden";
@@ -128,29 +175,80 @@ export function AuthPageShell({
   }, []);
 
   const theme = PORTAL_META[portal];
+  const isStudentJungle = portal === "student" && Boolean(parchmentFit);
 
   return (
-    <div className="h-screen overflow-hidden bg-slate-100 font-sans relative">
-      <div
-        className={`absolute -top-24 -right-24 w-72 h-72 rounded-full blur-3xl pointer-events-none ${theme.shellTop}`}
-      />
-      <div
-        className={`absolute -bottom-24 -left-24 w-72 h-72 rounded-full blur-3xl pointer-events-none ${theme.shellBottom}`}
-      />
+    <div
+      className={`h-screen overflow-hidden font-sans relative ${
+        isStudentJungle ? "bg-[#1b4332]" : "bg-slate-100"
+      }`}
+    >
+      {isStudentJungle ? (
+        <>
+          <img
+            src={STUDENT_AUTH_BG_MOBILE}
+            alt=""
+            className={`${studentAuthBgImgClass} lg:hidden`}
+            aria-hidden
+            fetchPriority="high"
+          />
+          <img
+            src={STUDENT_AUTH_BG_DESKTOP}
+            alt=""
+            className={`${studentAuthBgImgClass} hidden lg:block`}
+            aria-hidden
+            fetchPriority="high"
+          />
+        </>
+      ) : (
+        <>
+          <div
+            className={`absolute -top-24 -right-24 w-72 h-72 rounded-full blur-3xl pointer-events-none ${theme.shellTop}`}
+          />
+          <div
+            className={`absolute -bottom-24 -left-24 w-72 h-72 rounded-full blur-3xl pointer-events-none ${theme.shellBottom}`}
+          />
+        </>
+      )}
       <AuthBackButton portal={portal} />
-      <div className="h-full flex items-center justify-center p-4 sm:p-6 min-h-0">
-        <div className={`w-full ${maxWidth} max-h-full min-h-0`}>{children}</div>
-      </div>
+      {isStudentJungle && parchmentVariant ? (
+        <div
+          className={`absolute z-10 min-h-0 overflow-hidden ${
+            parchmentVariant === "register" ? "translate-y-[1%] lg:translate-y-[6%]" : ""
+          } ${studentParchmentSlots[parchmentVariant]}`}
+        >
+          <div
+            className={`h-full w-full flex flex-col items-stretch justify-center min-h-0 ${
+              parchmentVariant === "register"
+                ? studentRegisterFormClass
+                : studentParchmentFormClass
+            } [@media(max-height:560px)]:[&_input]:!h-10 [@media(max-height:560px)]:[&_button]:!h-10 [@media(max-height:480px)]:[&_input]:!h-9 [@media(max-height:480px)]:[&_button]:!h-9 [@media(max-height:400px)]:[&_input]:!h-8 [@media(max-height:400px)]:[&_button]:!h-8 [@media(max-height:560px)]:[&_.h-12]:!h-10 [@media(max-height:480px)]:[&_.h-12]:!h-9 [@media(max-height:400px)]:[&_.h-12]:!h-8`}
+          >
+            {children}
+          </div>
+        </div>
+      ) : (
+        <div className="relative z-10 h-full flex items-center justify-center min-h-0 px-4 sm:px-6">
+          <div className={`w-full ${maxWidth} max-h-full min-h-0`}>{children}</div>
+        </div>
+      )}
     </div>
   );
 }
 
-export function authInputClass(hasError: boolean, portal: AuthPortal = "student") {
+export function authInputClass(
+  hasError: boolean,
+  portal: AuthPortal = "student",
+  compact = false
+) {
   const focus = PORTAL_META[portal].focusRing;
-  return `w-full rounded-xl border px-4 py-3.5 text-base text-slate-800 outline-none transition-all placeholder:text-slate-400 ${
+  const size = compact
+    ? "w-full rounded-xl px-3.5 py-2.5 text-sm"
+    : "w-full rounded-xl px-4 py-3.5 text-base";
+  return `${size} border text-slate-800 outline-none transition-all placeholder:text-slate-400 ${
     hasError
       ? "border-red-400 bg-red-50/50 focus:border-red-500 pr-10"
-      : `border-slate-200 bg-white ${focus}`
+      : `border-slate-200 bg-slate-50/80 focus:bg-white ${focus}`
   }`;
 }
 
@@ -158,8 +256,11 @@ export function portalLinkClass(portal: AuthPortal) {
   return `${PORTAL_META[portal].linkClass} text-sm font-bold hover:underline`;
 }
 
-export function portalButtonClass(portal: AuthPortal) {
-  return `w-full py-3.5 rounded-xl text-white font-bold text-base tracking-wide transition-colors shadow-md disabled:opacity-60 disabled:cursor-not-allowed ${PORTAL_META[portal].buttonClass}`;
+export function portalButtonClass(portal: AuthPortal, compact = false) {
+  const shape = compact
+    ? "w-full py-3 rounded-xl text-sm"
+    : "w-full py-3.5 rounded-xl text-base";
+  return `${shape} text-white font-bold tracking-wide transition-colors shadow-md shadow-black/5 disabled:opacity-60 disabled:cursor-not-allowed ${PORTAL_META[portal].buttonClass}`;
 }
 
 /** Same-portal helper link (form area — not a footer bar) */
@@ -187,36 +288,153 @@ interface AuthLayoutProps {
   subtitle?: string;
   children: ReactNode;
   wide?: boolean;
+  /** Fit form inside the parchment area; hides duplicate header (title is on the background art) */
+  parchmentFit?: boolean;
 }
 
-export function AuthLayout({ portal, title, subtitle, children, wide }: AuthLayoutProps) {
+export function AuthLayout({
+  portal,
+  title,
+  subtitle,
+  children,
+  wide,
+  parchmentFit = false,
+}: AuthLayoutProps) {
   const meta = PORTAL_META[portal];
+  const isStudentParchment = portal === "student" && parchmentFit;
+
+  const cardClass =
+    "bg-white rounded-2xl border border-slate-200 shadow-lg overflow-hidden max-h-full flex flex-col min-h-0 w-full";
 
   return (
-    <AuthPageShell maxWidth={wide ? "max-w-lg" : "max-w-md"} portal={portal}>
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-lg overflow-hidden max-h-full flex flex-col min-h-0">
-        <div className="p-6 sm:p-8 overflow-y-auto min-h-0 flex-1">
-          <div className="flex flex-col items-center text-center mb-6">
-            <img
-              src="/favicon.png"
-              alt="Simba Preschool"
-              className="w-12 h-12 object-contain mb-2"
-            />
-            <span
-              className={`text-xs font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border mb-2 ${meta.badgeClass}`}
-            >
-              {meta.label}
-            </span>
-            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">{title}</h1>
-            {subtitle && (
-              <p className={`text-base font-medium mt-1.5 max-w-xs leading-snug ${meta.subtitleClass}`}>
-                {subtitle}
-              </p>
-            )}
-          </div>
+    <AuthPageShell
+      maxWidth={wide ? "max-w-lg" : "max-w-md"}
+      portal={portal}
+      parchmentFit={isStudentParchment}
+    >
+      <div className={cardClass}>
+        <div className={isStudentParchment ? "w-full" : "p-6 sm:p-8 overflow-y-auto min-h-0 flex-1"}>
+          {!isStudentParchment && (
+            <div className="flex flex-col items-center text-center mb-6">
+              <img
+                src="/favicon.png"
+                alt="Simba Preschool"
+                className="w-12 h-12 object-contain mb-2"
+              />
+              <span
+                className={`text-xs font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border mb-2 ${meta.badgeClass}`}
+              >
+                {meta.label}
+              </span>
+              <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">{title}</h1>
+              {subtitle && (
+                <p className={`text-base font-medium mt-1.5 max-w-xs leading-snug ${meta.subtitleClass}`}>
+                  {subtitle}
+                </p>
+              )}
+            </div>
+          )}
 
           {children}
         </div>
+      </div>
+    </AuthPageShell>
+  );
+}
+
+export type AuthSplitHighlight = {
+  icon: ReactNode;
+  title: string;
+  description?: string;
+};
+
+interface AuthSplitLayoutProps {
+  portal: AuthPortal;
+  title: string;
+  subtitle?: string;
+  highlights?: AuthSplitHighlight[];
+  sideFooter?: ReactNode;
+  children: ReactNode;
+}
+
+/** Single-card two-column auth — branding left, form right, inside one panel. */
+export function AuthSplitLayout({
+  portal,
+  title,
+  subtitle,
+  highlights = [],
+  sideFooter,
+  children,
+}: AuthSplitLayoutProps) {
+  const meta = PORTAL_META[portal];
+
+  return (
+    <AuthPageShell maxWidth="max-w-[52rem]" portal={portal}>
+      <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xl shadow-slate-300/25 overflow-hidden flex flex-col lg:flex-row max-h-[calc(100vh-2.5rem)] min-h-0">
+        {/* Left panel */}
+        <aside className="relative lg:w-[38%] shrink-0 overflow-hidden bg-gradient-to-b from-[#ffb347] via-[#FF9F1C] to-[#e88f0a] text-white">
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute top-0 right-0 w-40 h-40 rounded-full bg-white/15 blur-3xl" />
+            <div className="absolute bottom-0 left-0 w-52 h-52 rounded-full bg-[#c77a00]/20 blur-3xl" />
+          </div>
+
+          <div className="relative z-10 p-7 sm:p-8 lg:p-9 flex flex-col gap-6 lg:min-h-full lg:justify-center">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-white/95 flex items-center justify-center shadow-sm shrink-0">
+                <img src="/favicon.png" alt="" className="w-8 h-8 object-contain" />
+              </div>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/70">Simba Academy</p>
+                <p className="text-sm font-bold text-white">{meta.label}</p>
+              </div>
+            </div>
+
+            <div className="space-y-2.5">
+              <h1 className="text-2xl font-extrabold leading-snug tracking-tight">
+                Join Simba Academy
+              </h1>
+              {subtitle ? (
+                <p className="text-sm text-white/85 font-medium leading-relaxed">{subtitle}</p>
+              ) : null}
+            </div>
+
+            {highlights.length > 0 ? (
+              <ul className="space-y-2.5">
+                {highlights.map((item, i) => (
+                  <li
+                    key={i}
+                    className="flex items-center gap-3 rounded-xl bg-white/10 border border-white/15 px-3.5 py-2.5"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center shrink-0">
+                      {item.icon}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-sm leading-tight">{item.title}</p>
+                      {item.description ? (
+                        <p className="text-[11px] text-white/75 font-medium mt-0.5 leading-snug">{item.description}</p>
+                      ) : null}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+
+            {sideFooter ? <div className="mt-auto pt-1">{sideFooter}</div> : null}
+          </div>
+        </aside>
+
+        {/* Right — form */}
+        <main className="flex-1 min-w-0 overflow-y-auto lg:border-l border-slate-100 bg-gradient-to-b from-white to-slate-50/80">
+          <div className="p-7 sm:p-8 lg:p-9 lg:flex lg:flex-col lg:justify-center min-h-full">
+            <div className="mb-6 pb-5 border-b border-slate-100">
+              <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">{title}</h2>
+              <p className="text-sm text-slate-500 font-medium mt-1">
+                Enter your details below. Fields marked with your class help personalize story books.
+              </p>
+            </div>
+            {children}
+          </div>
+        </main>
       </div>
     </AuthPageShell>
   );
@@ -266,14 +484,26 @@ interface AuthFieldProps {
   children: ReactNode;
   hint?: ReactNode;
   portal?: AuthPortal;
+  /** Softer sentence-case labels (signup split card) */
+  softLabel?: boolean;
 }
 
-export function AuthField({ label, error, children, hint, portal = "student" }: AuthFieldProps) {
+export function AuthField({
+  label,
+  error,
+  children,
+  hint,
+  portal = "student",
+  softLabel = false,
+}: AuthFieldProps) {
   const labelColor = error ? "text-red-600" : PORTAL_META[portal].labelClass;
+  const labelClass = softLabel
+    ? `block text-xs font-semibold mb-1.5 ${error ? "text-red-600" : "text-slate-700"}`
+    : `block font-bold uppercase tracking-wide text-sm mb-2 ${labelColor}`;
 
   return (
-    <div>
-      <label className={`block text-sm font-bold uppercase tracking-wide mb-2 ${labelColor}`}>
+    <div className="w-full">
+      <label className={labelClass}>
         {label}
       </label>
       {children}
@@ -287,6 +517,9 @@ interface AuthSubmitButtonProps {
   portal: AuthPortal;
   loading?: boolean;
   loadingText?: string;
+  /** When false, keep button label visible while disabled — no spinner or text swap */
+  showLoadingState?: boolean;
+  compact?: boolean;
   children: ReactNode;
 }
 
@@ -294,18 +527,20 @@ export function AuthSubmitButton({
   portal,
   loading,
   loadingText = "Please wait…",
+  showLoadingState = true,
+  compact = false,
   children,
 }: AuthSubmitButtonProps) {
   return (
     <button
       type="submit"
       disabled={loading}
-      className={`${portalButtonClass(portal)} flex items-center justify-center gap-2 min-h-[48px]`}
+      className={`${portalButtonClass(portal, compact)} flex items-center justify-center gap-2 ${compact ? "min-h-[44px]" : "min-h-[48px]"}`}
     >
-      {loading ? (
+      {loading && showLoadingState ? (
         <>
           <Loader2 className="w-4 h-4 animate-spin" />
-          {loadingText}
+          {loadingText ? <span>{loadingText}</span> : null}
         </>
       ) : (
         children

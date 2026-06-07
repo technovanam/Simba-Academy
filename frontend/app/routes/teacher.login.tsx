@@ -58,7 +58,7 @@ export default function TeacherLoginPage() {
 
     setLoading(true);
     try {
-      const { user, token } = await api.login({ email, password });
+      const { user, token } = await api.login({ email, password, portal: "teacher" });
       if (user.role !== "TEACHER") {
         throw new ApiError("This portal is for teachers only", 403);
       }

@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { api, ApiError } from "../lib/api";
-import { AlertCircle, CheckCircle2 } from "lucide-react";
-import { ModalCloseButton } from "./ModalCloseButton";
+import { AlertCircle } from "lucide-react";
+import { Toast } from "./Toast";
 
 export function FranchiseForm() {
   const [form, setForm] = useState({
@@ -13,67 +13,19 @@ export function FranchiseForm() {
   });
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [error, setError] = useState("");
-  const [errorClosing, setErrorClosing] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
-  const [successClosing, setSuccessClosing] = useState(false);
   
   // Field errors
   const [nameError, setNameError] = useState("");
   const [emailError, setEmailError] = useState("");
   const [phoneError, setPhoneError] = useState("");
 
-  const triggerErrorClose = () => {
-    setErrorClosing(true);
-    setTimeout(() => {
-      setError("");
-      setErrorClosing(false);
-    }, 300);
-  };
-
-  const triggerSuccessClose = () => {
-    setSuccessClosing(true);
-    setTimeout(() => {
-      setSuccessMessage("");
-      setSuccessClosing(false);
-    }, 300);
-  };
-
-  useEffect(() => {
-    if (error || successMessage || nameError || emailError || phoneError) {
-      const dismissTimer = setTimeout(() => {
-        if (error) triggerErrorClose();
-        if (successMessage) triggerSuccessClose();
-        setNameError("");
-        setEmailError("");
-        setPhoneError("");
-      }, 3000);
-
-      const handleGlobalClick = () => {
-        if (error) triggerErrorClose();
-        if (successMessage) triggerSuccessClose();
-        setNameError("");
-        setEmailError("");
-        setPhoneError("");
-      };
-      
-      const registerTimer = setTimeout(() => {
-        window.addEventListener("click", handleGlobalClick);
-      }, 100);
-
-      return () => {
-        clearTimeout(dismissTimer);
-        clearTimeout(registerTimer);
-        window.removeEventListener("click", handleGlobalClick);
-      };
-    }
-  }, [error, successMessage, nameError, emailError, phoneError]);
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (status === "loading") return;
+
     setError("");
-    setErrorClosing(false);
     setSuccessMessage("");
-    setSuccessClosing(false);
     setNameError("");
     setEmailError("");
     setPhoneError("");
@@ -115,60 +67,15 @@ export function FranchiseForm() {
     } catch (err) {
       setStatus("error");
       setError(err instanceof ApiError ? err.message : "Failed to submit franchise inquiry");
+    } finally {
+      setStatus("idle");
     }
   }
 
   return (
     <div className="relative">
-      {/* Toast Alert Card for Error */}
-      {error && (
-        <div className={`fixed top-6 right-6 z-50 max-w-sm w-full bg-white/80 backdrop-blur-lg border border-white/40 rounded-2xl shadow-xl overflow-hidden flex text-left ${errorClosing ? 'animate-toast-out' : 'animate-toast-in'}`}>
-          <div className="w-2 bg-red-500 flex-shrink-0" />
-          <div className="p-4 flex gap-3.5 items-start w-full">
-            <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <h4 className="text-sm font-bold text-slate-800 leading-tight">Error</h4>
-              <p className="text-xs text-slate-500 font-medium mt-1">{error}</p>
-              <span className="text-[10px] text-slate-400 font-semibold mt-2 block">
-                {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </span>
-            </div>
-            <ModalCloseButton
-              size="sm"
-              className="shrink-0"
-              onClick={(e) => {
-                e.stopPropagation();
-                triggerErrorClose();
-              }}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Toast Alert Card for Success */}
-      {successMessage && (
-        <div className={`fixed top-6 right-6 z-50 max-w-sm w-full bg-white/80 backdrop-blur-lg border border-white/40 rounded-2xl shadow-xl overflow-hidden flex text-left ${successClosing ? 'animate-toast-out' : 'animate-toast-in'}`}>
-          <div className="w-2 bg-emerald-500 flex-shrink-0" />
-          <div className="p-4 flex gap-3.5 items-start w-full">
-            <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <h4 className="text-sm font-bold text-slate-800 leading-tight">Success</h4>
-              <p className="text-xs text-slate-500 font-medium mt-1">{successMessage}</p>
-              <span className="text-[10px] text-slate-400 font-semibold mt-2 block">
-                {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </span>
-            </div>
-            <ModalCloseButton
-              size="sm"
-              className="shrink-0"
-              onClick={(e) => {
-                e.stopPropagation();
-                triggerSuccessClose();
-              }}
-            />
-          </div>
-        </div>
-      )}
+      <Toast message={error} variant="error" onDismiss={() => setError("")} />
+      <Toast message={successMessage} variant="success" onDismiss={() => setSuccessMessage("")} />
 
       <form onSubmit={handleSubmit} noValidate autoComplete="off" className="glass-panel rounded-lg p-8 space-y-5 shadow-xl">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
