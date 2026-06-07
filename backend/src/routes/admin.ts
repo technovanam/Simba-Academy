@@ -11,11 +11,20 @@ import {
   createTaskSchema,
   approveTaskSchema,
   createStoryBookSchema,
+  createLessonPlanSchema,
+  updateLessonPlanSchema,
 } from "../config/schemas.js";
 import { env } from "../config/env.js";
 import { AppError } from "../utils/errors.js";
 import { removeStoredFile, removeStoredFiles } from "../services/removeStoredFile.js";
 import { sendEmail } from "../services/email.js";
+import {
+  notifyStudentsOfNewStoryBook,
+  notifyTeachersOfNewStoryBook,
+  notifyTeacherOfNewTask,
+  notifyTeacherOfTaskReview,
+  notifyTeachersOfNewLessonPlan,
+} from "../services/portalNotifications.js";
 import adminUserRoutes from "./admin-users.js";
 import { fetchGooglePlaceReviews, isGoogleReviewsConfigured } from "../services/googleReviews.js";
 import {
@@ -24,7 +33,7 @@ import {
   getGbpRateLimitHint,
   isBusinessProfileConfigured,
 } from "../services/googleBusinessProfile.js";
-
+import { persistGbpAccountId } from "../services/googleBusinessProfileState.js";
 
 const router = Router();
 
@@ -36,14 +45,35 @@ router.get("/google-reviews/oauth-callback", async (req, res, next) => {
       throw new AppError("Missing OAuth code", 400);
     }
     const tokens = await exchangeGoogleBusinessCode(code);
+
+    let accountBlock = "";
+    try {
+      const accRes = await fetch("https://mybusinessaccountmanagement.googleapis.com/v1/accounts", {
+        headers: { Authorization: `Bearer ${tokens.accessToken}` },
+      });
+      const accData = (await accRes.json()) as { accounts?: { name?: string }[] };
+      const accountName = accData.accounts?.[0]?.name;
+      if (accountName) {
+        const accountId = accountName.replace(/^accounts\//, "");
+        persistGbpAccountId(accountId);
+        accountBlock =
+          `<p>Also add (saves API quota on every sync):</p>` +
+          `<pre style="background:#f1f5f9;padding:1rem;border-radius:8px;overflow:auto">GOOGLE_BUSINESS_ACCOUNT_ID=${accountId}</pre>`;
+      }
+    } catch {
+      accountBlock =
+          `<p>Could not auto-detect account ID. After quota clears run: <code>npm run google:list-business-account</code></p>`;
+    }
+
     res
       .type("html")
       .send(
         `<html><body style="font-family:sans-serif;padding:2rem;max-width:640px">` +
           `<h1>Google Business connected</h1>` +
-          `<p>Add this line to <code>backend/.env</code> and restart the server:</p>` +
+          `<p>Add to <code>backend/.env</code> and restart the server:</p>` +
           `<pre style="background:#f1f5f9;padding:1rem;border-radius:8px;overflow:auto">GOOGLE_BUSINESS_REFRESH_TOKEN=${tokens.refreshToken}</pre>` +
-          `<p>Then open Admin → Parent Reviews → Refresh Google.</p></body></html>`
+          accountBlock +
+          `<p>Wait 30 minutes if you were rate-limited, then Admin → Parent Reviews → <strong>Refresh now</strong> once.</p></body></html>`
       );
   } catch (err) {
     next(err);
@@ -166,15 +196,17 @@ router.get("/google-reviews/status", async (_req, res, next) => {
           : "Set GOOGLE_BUSINESS_REFRESH_TOKEN (recommended for review text) or GOOGLE_PLACES_API_KEY + GOOGLE_PLACE_IDS.",
       });
     }
-    const meta: { fromSnapshot?: boolean; syncedAt?: string; syncBlocked?: string } = {};
+    const meta: { fromSnapshot?: boolean; syncedAt?: string; syncBlocked?: string; fetchedAt?: string } = {};
     const result = await fetchGooglePlaceReviews(false, meta);
     let hint: string | undefined;
     if (meta.syncBlocked) {
       hint = meta.syncBlocked;
     } else if (meta.fromSnapshot && meta.syncedAt) {
-      hint = `Showing saved reviews (synced ${new Date(meta.syncedAt).toLocaleString("en-IN")}). Click Sync from Google to update.`;
+      hint = `Google API unavailable — showing last saved reviews (${new Date(meta.syncedAt).toLocaleString("en-IN")}).`;
+    } else if (meta.fetchedAt && !meta.fromSnapshot) {
+      hint = `Live from Google · updated ${new Date(meta.fetchedAt).toLocaleString("en-IN")}`;
     } else if (result.reviews.length === 0 && isBusinessProfileConfigured()) {
-      hint = "No saved reviews yet. Click Sync from Google once (wait 15+ minutes between syncs to avoid rate limits).";
+      hint = "No reviews returned yet. Connect Google Business OAuth for full written feedback.";
     }
     const rateHint = getGbpRateLimitHint();
     if (rateHint && result.reviews.length === 0) {
@@ -189,16 +221,17 @@ router.get("/google-reviews/status", async (_req, res, next) => {
         "Only star ratings loaded. Connect Google Business (OAuth) to load full written feedback from all locations.";
     }
     if (result.fetchMode === "business_profile" && result.reviews.length === 0 && !meta.fromSnapshot) {
-      hint =
-        "Google Business is connected. Click Sync from Google once (wait 15+ min between syncs if rate-limited).";
+      hint = "Google Business is connected but no written reviews were returned for your locations.";
     }
     res.json({
       ...result,
       configured: true,
       hint,
       syncedAt: meta.syncedAt,
+      fetchedAt: meta.fetchedAt,
       fromSnapshot: meta.fromSnapshot,
       syncBlocked: meta.syncBlocked,
+      liveFetch: env.GOOGLE_REVIEWS_LIVE_FETCH,
     });
   } catch (err) {
     next(err);
@@ -466,39 +499,13 @@ router.post("/tasks", validate(createTaskSchema), async (req, res, next) => {
         teacherId,
         status: "PENDING",
       },
-      include: { teacher: { select: { name: true, email: true } } },
+      include: { teacher: { select: { id: true, name: true, email: true } } },
     });
 
-    // Send email alert to teacher
     try {
-      await sendEmail({
-        to: teacher.email,
-        subject: `New Task Assigned: ${title}`,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f9f9f9; border-radius: 8px; border: 1px solid #ddd;">
-            <div style="background: #8AC926; padding: 15px; border-radius: 6px 6px 0 0; text-align: center;">
-              <h2 style="color: white; margin: 0;">New Task Assigned</h2>
-            </div>
-            <div style="padding: 20px;">
-              <p>Hello <strong>${teacher.name}</strong>,</p>
-              <p>An administrator has assigned you a new task:</p>
-              <table style="width: 100%; border-collapse: collapse; margin: 15px 0;">
-                <tr><td style="padding: 8px; font-weight: bold; width: 120px;">Title:</td><td style="padding: 8px;">${title}</td></tr>
-                <tr><td style="padding: 8px; font-weight: bold;">Description:</td><td style="padding: 8px;">${description || "N/A"}</td></tr>
-                <tr><td style="padding: 8px; font-weight: bold;">Due Date:</td><td style="padding: 8px;">${dueDate ? new Date(dueDate).toLocaleDateString("en-IN", { day: 'numeric', month: 'long', year: 'numeric' }) : "N/A"}</td></tr>
-              </table>
-              <br/>
-              <p style="text-align: center;">
-                <a href="https://www.simbapreschool.in/login" style="background: #FF9F1C; color: white; padding: 10px 20px; text-decoration: none; font-weight: bold; border-radius: 6px; display: inline-block;">Log In to Portal</a>
-              </p>
-            </div>
-            <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;"/>
-            <p style="color: #666; font-size: 11px; text-align: center;">Simba Academy - Academic Coordinator Notifications</p>
-          </div>
-        `,
-      });
-    } catch (emailErr) {
-      console.error("Failed to send task assignment notification email to teacher:", emailErr);
+      await notifyTeacherOfNewTask(teacher, task);
+    } catch (notifyErr) {
+      console.error("Failed to notify teacher of new task:", notifyErr);
     }
 
     res.status(201).json(task);
@@ -512,7 +519,7 @@ router.patch("/tasks/:id/approve", validate(approveTaskSchema), async (req, res,
   try {
     const task = await prisma.task.findUnique({
       where: { id: String(req.params.id) },
-      include: { teacher: { select: { name: true, email: true } } },
+      include: { teacher: { select: { id: true, name: true, email: true } } },
     });
     if (!task) {
       throw new AppError("Task not found", 404);
@@ -524,39 +531,18 @@ router.patch("/tasks/:id/approve", validate(approveTaskSchema), async (req, res,
         status: req.body.status,
         proofDesc: req.body.proofDesc || task.proofDesc,
       },
-      include: { teacher: { select: { name: true, email: true } } },
+      include: { teacher: { select: { id: true, name: true, email: true } } },
     });
 
-    // Send email alert to teacher
     try {
-      await sendEmail({
-        to: task.teacher.email,
-        subject: `Task Review Update: ${task.title} [${req.body.status}]`,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f9f9f9; border-radius: 8px; border: 1px solid #ddd;">
-            <div style="background: ${req.body.status === "APPROVED" ? "#10B981" : "#EF4444"}; padding: 15px; border-radius: 6px 6px 0 0; text-align: center;">
-              <h2 style="color: white; margin: 0;">Task Reviewed</h2>
-            </div>
-            <div style="padding: 20px;">
-              <p>Hello <strong>${task.teacher.name}</strong>,</p>
-              <p>Your task proof submission for <strong>${task.title}</strong> has been reviewed by the administrator.</p>
-              <table style="width: 100%; border-collapse: collapse; margin: 15px 0;">
-                <tr><td style="padding: 8px; font-weight: bold; width: 120px;">Task:</td><td style="padding: 8px;">${task.title}</td></tr>
-                <tr><td style="padding: 8px; font-weight: bold;">Status:</td><td style="padding: 8px; font-weight: bold; color: ${req.body.status === "APPROVED" ? "#10B981" : "#EF4444"};">${req.body.status}</td></tr>
-                <tr><td style="padding: 8px; font-weight: bold;">Feedback:</td><td style="padding: 8px; font-style: italic;">"${req.body.proofDesc || "No feedback provided."}"</td></tr>
-              </table>
-              <br/>
-              <p style="text-align: center;">
-                <a href="https://www.simbapreschool.in/login" style="background: #FF9F1C; color: white; padding: 10px 20px; text-decoration: none; font-weight: bold; border-radius: 6px; display: inline-block;">Log In to Portal</a>
-              </p>
-            </div>
-            <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;"/>
-            <p style="color: #666; font-size: 11px; text-align: center;">Simba Academy - Academic Coordinator Notifications</p>
-          </div>
-        `,
-      });
-    } catch (emailErr) {
-      console.error("Failed to send task review notification email to teacher:", emailErr);
+      await notifyTeacherOfTaskReview(
+        task.teacher,
+        task,
+        req.body.status,
+        req.body.proofDesc || task.proofDesc
+      );
+    } catch (notifyErr) {
+      console.error("Failed to notify teacher of task review:", notifyErr);
     }
 
     res.json(updated);
@@ -576,6 +562,106 @@ router.delete("/tasks/:id", async (req, res, next) => {
     await removeStoredFile(task.proofUrl);
     await prisma.task.delete({ where: { id: task.id } });
     res.json({ message: "Task assignment deleted successfully" });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ═════════════════════════════════════════════════════════════════════
+//  LESSON PLANS
+// ═════════════════════════════════════════════════════════════════════
+
+router.get("/lesson-plans", async (_req, res, next) => {
+  try {
+    const plans = await prisma.lessonPlan.findMany({
+      orderBy: [{ planDate: "desc" }, { createdAt: "desc" }],
+      include: { course: { select: { title: true, level: true } } },
+    });
+    res.json(plans);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/lesson-plans", validate(createLessonPlanSchema), async (req, res, next) => {
+  try {
+    const { title, courseId, planDate, content, materialsNeeded, isPublished } = req.body;
+    const plan = await prisma.lessonPlan.create({
+      data: {
+        title,
+        courseId: courseId || null,
+        planDate: planDate ? new Date(planDate) : null,
+        content,
+        materialsNeeded: materialsNeeded || null,
+        isPublished: isPublished ?? true,
+      },
+      include: { course: { select: { title: true, level: true } } },
+    });
+
+    if (plan.isPublished) {
+      try {
+        const notified = await notifyTeachersOfNewLessonPlan(plan);
+        if (notified > 0) {
+          console.log(`Lesson plan "${plan.title}": notified ${notified} teacher(s).`);
+        }
+      } catch (notifyErr) {
+        console.error("Failed to notify teachers of new lesson plan:", notifyErr);
+      }
+    }
+
+    res.status(201).json(plan);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.patch("/lesson-plans/:id", validate(updateLessonPlanSchema), async (req, res, next) => {
+  try {
+    const existing = await prisma.lessonPlan.findUnique({ where: { id: String(req.params.id) } });
+    if (!existing) {
+      throw new AppError("Lesson plan not found", 404);
+    }
+
+    const { title, courseId, planDate, content, materialsNeeded, isPublished } = req.body;
+    const plan = await prisma.lessonPlan.update({
+      where: { id: String(req.params.id) },
+      data: {
+        ...(title !== undefined && { title }),
+        ...(courseId !== undefined && { courseId: courseId || null }),
+        ...(planDate !== undefined && { planDate: planDate ? new Date(planDate) : null }),
+        ...(content !== undefined && { content }),
+        ...(materialsNeeded !== undefined && { materialsNeeded: materialsNeeded || null }),
+        ...(isPublished !== undefined && { isPublished }),
+      },
+      include: { course: { select: { title: true, level: true } } },
+    });
+
+    const becamePublished = plan.isPublished && !existing.isPublished;
+    if (becamePublished) {
+      try {
+        const notified = await notifyTeachersOfNewLessonPlan(plan);
+        if (notified > 0) {
+          console.log(`Lesson plan "${plan.title}" published: notified ${notified} teacher(s).`);
+        }
+      } catch (notifyErr) {
+        console.error("Failed to notify teachers of published lesson plan:", notifyErr);
+      }
+    }
+
+    res.json(plan);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.delete("/lesson-plans/:id", async (req, res, next) => {
+  try {
+    const existing = await prisma.lessonPlan.findUnique({ where: { id: String(req.params.id) } });
+    if (!existing) {
+      throw new AppError("Lesson plan not found", 404);
+    }
+    await prisma.lessonPlan.delete({ where: { id: String(req.params.id) } });
+    res.json({ message: "Lesson plan deleted successfully" });
   } catch (err) {
     next(err);
   }
@@ -603,6 +689,22 @@ router.post("/books", validate(createStoryBookSchema), async (req, res, next) =>
     const book = await prisma.storyBook.create({
       data: req.body,
     });
+
+    try {
+      const [studentCount, teacherCount] = await Promise.all([
+        notifyStudentsOfNewStoryBook(book),
+        notifyTeachersOfNewStoryBook(book),
+      ]);
+      if (studentCount > 0) {
+        console.log(`Story book "${book.title}": notified ${studentCount} student(s).`);
+      }
+      if (teacherCount > 0) {
+        console.log(`Story book "${book.title}": notified ${teacherCount} teacher(s).`);
+      }
+    } catch (notifyErr) {
+      console.error("Failed to create portal notifications for story book:", notifyErr);
+    }
+
     res.status(201).json(book);
   } catch (err) {
     next(err);
