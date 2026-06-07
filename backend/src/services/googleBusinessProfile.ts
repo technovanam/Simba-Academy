@@ -157,7 +157,7 @@ function assertNotRateLimited(): void {
 }
 
 export function markGbpRateLimited(): void {
-  const minutes = Math.max(5, env.GOOGLE_GBP_RATE_LIMIT_COOLDOWN_MINUTES);
+  const minutes = Math.max(30, env.GOOGLE_GBP_RATE_LIMIT_COOLDOWN_MINUTES);
   gbpRateLimitedUntil = Date.now() + minutes * 60_000;
   persistGbpRateLimitUntil(gbpRateLimitedUntil);
   console.warn(
@@ -169,6 +169,12 @@ async function resolveAccountId(token: string): Promise<string> {
   const configured = env.GOOGLE_BUSINESS_ACCOUNT_ID.trim();
   if (configured) {
     return configured.replace(/^accounts\//, "");
+  }
+
+  const persisted = getPersistedGbpAccountId();
+  if (persisted) {
+    cachedGbpAccountId = persisted;
+    return persisted;
   }
 
   if (cachedGbpAccountId) {

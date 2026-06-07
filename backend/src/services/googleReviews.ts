@@ -338,11 +338,118 @@ export type GoogleReviewsLoadMeta = {
   syncBlocked?: string;
   /** true only when a new snapshot was written from Google this request */
   synced?: boolean;
+  /** ISO timestamp when live data was fetched from Google this request */
+  fetchedAt?: string;
 };
 
+function applyCache(result: GoogleReviewsResult): GoogleReviewsResult {
+  cache = {
+    reviews: result.reviews,
+    locations: result.locations,
+    rating: result.rating,
+    totalRatings: result.totalRatings,
+    placeName: result.placeName,
+    fetchedAt: Date.now(),
+    fetchMode: result.fetchMode,
+  };
+  return result;
+}
+
+function fallbackFromSnapshot(
+  snapshot: GoogleReviewsSnapshot | null,
+  meta?: GoogleReviewsLoadMeta,
+  blockHint?: string
+): GoogleReviewsResult | null {
+  if (!snapshot) return null;
+  if (meta) {
+    meta.fromSnapshot = true;
+    meta.syncedAt = snapshot.syncedAt;
+    if (blockHint) meta.syncBlocked = blockHint;
+  }
+  return snapshotToResult(snapshot);
+}
+
+async function pullLiveGoogleReviews(meta?: GoogleReviewsLoadMeta): Promise<GoogleReviewsResult> {
+  const snapshot = loadGoogleReviewsSnapshot();
+  let result: GoogleReviewsResult;
+
+  if (isBusinessProfileConfigured()) {
+    try {
+      const gbp = await fetchGoogleBusinessProfileReviews();
+      result = { ...gbp, configured: true };
+      const saved = saveGoogleReviewsSnapshot(result);
+      if (meta) {
+        meta.synced = true;
+        meta.syncedAt = saved.syncedAt;
+        meta.fromSnapshot = false;
+        meta.fetchedAt = new Date().toISOString();
+      }
+      console.log(`[Google Reviews] Live fetch: ${result.reviews.length} review(s) with feedback`);
+      return applyCache(result);
+    } catch (err) {
+      console.error("[Google Business Profile] live fetch failed:", err);
+      const msg = err instanceof Error ? err.message : String(err);
+      if (/quota|rate|429/i.test(msg)) {
+        markGbpRateLimited();
+      }
+      const blockHint = getGbpRateLimitHint() ?? msg;
+      const placesFallback = await fetchFromPlacesApi().catch(() => null);
+      if (placesFallback && placesFallback.reviews.length > 0) {
+        result = placesFallback;
+        saveGoogleReviewsSnapshot(result);
+        if (meta) {
+          meta.synced = true;
+          meta.fromSnapshot = false;
+          meta.fetchedAt = new Date().toISOString();
+        }
+        return applyCache(result);
+      }
+      const fromDisk = fallbackFromSnapshot(snapshot, meta, blockHint);
+      if (fromDisk) return fromDisk;
+      if (meta) {
+        meta.synced = false;
+        meta.syncBlocked = blockHint;
+      }
+      return applyCache({
+        reviews: [],
+        locations: [],
+        configured: true,
+        fetchMode: "business_profile",
+      });
+    }
+  }
+
+  try {
+    result = await fetchFromPlacesApi();
+    if (result.reviews.length > 0) {
+      const saved = saveGoogleReviewsSnapshot(result);
+      if (meta) {
+        meta.synced = true;
+        meta.syncedAt = saved.syncedAt;
+        meta.fromSnapshot = false;
+        meta.fetchedAt = new Date().toISOString();
+      }
+    } else if (meta) {
+      meta.fetchedAt = new Date().toISOString();
+      meta.fromSnapshot = false;
+    }
+    return applyCache(result);
+  } catch (err) {
+    console.error("[Google Places] live fetch failed:", err);
+    const fromDisk = fallbackFromSnapshot(snapshot, meta, err instanceof Error ? err.message : String(err));
+    if (fromDisk) return fromDisk;
+    return applyCache({
+      reviews: [],
+      locations: [],
+      configured: true,
+      fetchMode: "places",
+    });
+  }
+}
+
 /**
- * force=false: serve saved snapshot (homepage + admin view). No Google API.
- * force=true: sync from Google once, save snapshot (admin "Refresh Google" only).
+ * Default: serve saved snapshot (no Google API calls — avoids quota errors).
+ * force=true or GOOGLE_REVIEWS_LIVE_FETCH=true: call Google (use sparingly).
  */
 export async function fetchGooglePlaceReviews(
   force = false,
@@ -357,17 +464,38 @@ export async function fetchGooglePlaceReviews(
   }
 
   const snapshot = loadGoogleReviewsSnapshot();
+  const shouldCallGoogle = force || env.GOOGLE_REVIEWS_LIVE_FETCH;
 
-  if (!force) {
-    if (snapshot) {
+  if (!shouldCallGoogle) {
+    const fromDisk = fallbackFromSnapshot(snapshot, meta);
+    if (fromDisk) return fromDisk;
+    return { reviews: [], locations: [], configured: true, fetchMode: "business_profile" };
+  }
+
+  const rateHint = getGbpRateLimitHint();
+  if (rateHint) {
+    const fromDisk = fallbackFromSnapshot(snapshot, meta, rateHint);
+    if (fromDisk) return fromDisk;
+    if (meta) meta.syncBlocked = rateHint;
+    return { reviews: [], locations: [], configured: true, fetchMode: "business_profile" };
+  }
+
+  if (force && snapshot && env.GOOGLE_REVIEWS_SYNC_COOLDOWN_MINUTES > 0) {
+    const ageMin = snapshotAgeMinutes(snapshot);
+    const cooldown = env.GOOGLE_REVIEWS_SYNC_COOLDOWN_MINUTES;
+    if (ageMin < cooldown) {
       if (meta) {
-        meta.fromSnapshot = true;
-        meta.syncedAt = snapshot.syncedAt;
+        meta.syncBlocked = `Last sync was ${ageMin} minute(s) ago. Wait ${cooldown - ageMin} more minute(s), then click Refresh now.`;
       }
-      return snapshotToResult(snapshot);
+      const fromDisk = fallbackFromSnapshot(snapshot, meta);
+      if (fromDisk) return fromDisk;
     }
+  }
+
+  if (!force && env.GOOGLE_REVIEWS_CACHE_MINUTES > 0) {
     const ttlMs = env.GOOGLE_REVIEWS_CACHE_MINUTES * 60 * 1000;
     if (cache && Date.now() - cache.fetchedAt < ttlMs) {
+      if (meta) meta.fetchedAt = new Date(cache.fetchedAt).toISOString();
       return {
         reviews: cache.reviews,
         locations: cache.locations,
@@ -378,95 +506,7 @@ export async function fetchGooglePlaceReviews(
         fetchMode: cache.fetchMode,
       };
     }
-    return { reviews: [], locations: [], configured: true, fetchMode: "business_profile" };
   }
 
-  if (snapshot) {
-    const ageMin = snapshotAgeMinutes(snapshot);
-    const cooldown = env.GOOGLE_REVIEWS_SYNC_COOLDOWN_MINUTES;
-    if (ageMin < cooldown) {
-      if (meta) {
-        meta.fromSnapshot = true;
-        meta.syncedAt = snapshot.syncedAt;
-        meta.syncBlocked = `Last sync was ${ageMin} minute(s) ago. Wait ${cooldown - ageMin} more minute(s) before syncing again (or set GOOGLE_REVIEWS_SYNC_COOLDOWN_MINUTES=0 in .env).`;
-      }
-      return snapshotToResult(snapshot);
-    }
-  }
-
-  const rateHint = getGbpRateLimitHint();
-  if (rateHint) {
-    if (snapshot) {
-      if (meta) {
-        meta.fromSnapshot = true;
-        meta.syncedAt = snapshot.syncedAt;
-        meta.syncBlocked = rateHint;
-      }
-      return snapshotToResult(snapshot);
-    }
-    return { reviews: [], locations: [], configured: true, fetchMode: "business_profile" };
-  }
-
-  let result: GoogleReviewsResult;
-
-  if (isBusinessProfileConfigured()) {
-    try {
-      const gbp = await fetchGoogleBusinessProfileReviews();
-      result = { ...gbp, configured: true };
-      const saved = saveGoogleReviewsSnapshot(result);
-      if (meta) {
-        meta.synced = true;
-        meta.syncedAt = saved.syncedAt;
-        meta.fromSnapshot = false;
-      }
-      console.log(`[Google Reviews] Synced ${result.reviews.length} reviews to data/google-reviews-snapshot.json`);
-    } catch (err) {
-      console.error("[Google Business Profile] fetch failed:", err);
-      const msg = err instanceof Error ? err.message : String(err);
-      if (/quota|rate|429/i.test(msg)) {
-        markGbpRateLimited();
-      }
-      const blockHint = getGbpRateLimitHint() ?? msg;
-      if (snapshot) {
-        if (meta) {
-          meta.fromSnapshot = true;
-          meta.syncedAt = snapshot.syncedAt;
-          meta.synced = false;
-          meta.syncBlocked = blockHint;
-        }
-        return snapshotToResult(snapshot);
-      }
-      if (meta) {
-        meta.synced = false;
-        meta.syncBlocked = blockHint;
-      }
-      result = {
-        reviews: [],
-        locations: [],
-        configured: true,
-        fetchMode: "business_profile",
-      };
-    }
-  } else {
-    result = await fetchFromPlacesApi();
-    if (result.reviews.length > 0) {
-      const saved = saveGoogleReviewsSnapshot(result);
-      if (meta) {
-        meta.synced = true;
-        meta.syncedAt = saved.syncedAt;
-      }
-    }
-  }
-
-  cache = {
-    reviews: result.reviews,
-    locations: result.locations,
-    rating: result.rating,
-    totalRatings: result.totalRatings,
-    placeName: result.placeName,
-    fetchedAt: Date.now(),
-    fetchMode: result.fetchMode,
-  };
-
-  return result;
+  return pullLiveGoogleReviews(meta);
 }

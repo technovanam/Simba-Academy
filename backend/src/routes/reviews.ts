@@ -34,9 +34,10 @@ router.get("/", async (_req, res, next) => {
       configured: false,
       fetchMode: "none",
     };
+    const googleMeta: { fetchedAt?: string; fromSnapshot?: boolean } = {};
     if (isGoogleReviewsConfigured()) {
       try {
-        googleResult = await fetchGooglePlaceReviews();
+        googleResult = await fetchGooglePlaceReviews(false, googleMeta);
       } catch (err) {
         console.error("Google reviews fetch failed:", err);
         googleResult = { reviews: [], locations: [], configured: true, fetchMode: "none" };
@@ -76,6 +77,8 @@ router.get("/", async (_req, res, next) => {
         count: googleReviews.length,
         locationCount: googleResult.locations.length,
         locations: googleResult.locations,
+        fetchedAt: googleMeta.fetchedAt,
+        fromSnapshot: googleMeta.fromSnapshot,
       },
     });
   } catch (err) {
