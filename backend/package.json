@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
@@ -11,7 +14,8 @@
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:check": "node scripts/check-db.mjs",
-    "db:migrate-payments": "node scripts/migrate-payment-columns.mjs",
+    "db:migrate-payments": "node scripts/migrate-schema.mjs",
+    "db:migrate-schema": "node scripts/migrate-schema.mjs",
     "db:verify-admin": "node scripts/verify-admin-data.mjs",
     "db:migrate-storybook-audience": "node scripts/migrate-storybook-audience.mjs",
     "storage:check": "node scripts/check-storage.mjs",
@@ -20,16 +24,22 @@
     "google:connect-business": "node scripts/print-google-business-auth-url.mjs",
     "google:list-business-account": "node scripts/google-list-business-account.mjs",
     "google:sync-reviews": "npx tsx scripts/google-sync-reviews.mjs",
+    "reviews:report": "npx tsx scripts/reviews-report.mjs",
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
     "db:seed": "tsx src/config/seedAdmin.ts",
     "db:seed:demo": "tsx src/config/seedDemo.ts",
     "db:purge-teachers": "node scripts/purge-teachers.mjs",
-    "production": "npm run build && prisma generate && prisma db push && npm start"
+    "production": "npm run build && prisma generate && prisma db push && npm start",
+    "deploy:cpanel": "npm run build && prisma generate && prisma db push",
+    "deploy:pack": "node scripts/cpanel-pack.mjs",
+    "deploy:cpanel:start": "node dist/index.js",
+    "deploy:vercel": "npm run build && prisma generate"
   },
   "dependencies": {
     "@prisma/adapter-mariadb": "^7.8.0",
     "@prisma/client": "^7.8.0",
+    "@sentry/node": "^10.56.0",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "dotenv": "^17.4.2",
@@ -41,6 +51,8 @@
     "morgan": "^1.10.0",
     "multer": "^2.1.1",
     "nodemailer": "^8.0.10",
+    "prisma": "^7.8.0",
+    "serverless-http": "^3.2.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
@@ -52,8 +64,8 @@
     "@types/multer": "^2.1.0",
     "@types/node": "^22",
     "@types/nodemailer": "^8.0.0",
+    "@vercel/node": "^5.3.0",
     "pm2": "^7.0.1",
-    "prisma": "^7.8.0",
     "tsx": "^4.19.0",
     "typescript": "^5.5.0"
   }
