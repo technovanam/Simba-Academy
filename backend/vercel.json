@@ -6,7 +6,7 @@
     { "source": "/(.*)", "destination": "/api/handler" }
   ],
   "functions": {
-    "api/handler.ts": {
+    "api/handler.js": {
       "maxDuration": 60,
       "includeFiles": "dist/**"
     }

@@ -1,21 +1,15 @@
 import "dotenv/config";
 import { createRequire } from "node:module";
-import type { Handler } from "@vercel/node";
-import type { Express } from "express";
 import { app, initApp } from "../dist/app.js";
 
 const require = createRequire(import.meta.url);
+const serverless = require("serverless-http");
 
-type ServerlessHttp = (
-  application: Express,
-  options?: { binary?: string[] }
-) => Handler;
+/** @type {import("serverless-http").Handler | undefined} */
+let wrapped;
 
-const serverless = require("serverless-http") as ServerlessHttp;
-
-let wrapped: Handler | undefined;
-
-export const vercelHandler: Handler = async (req, res) => {
+/** @param {import("http").IncomingMessage} req @param {import("http").ServerResponse} res */
+export default async function handler(req, res) {
   await initApp();
   if (!wrapped) {
     wrapped = serverless(app, {
@@ -29,6 +23,4 @@ export const vercelHandler: Handler = async (req, res) => {
     });
   }
   return wrapped(req, res);
-};
-
-export default vercelHandler;
+}
