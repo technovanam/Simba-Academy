@@ -11,6 +11,7 @@ Thumbs.db
 .env
 .env.*
 !.env.example
+.vercel/
 
 # ── Dependencies ────────────────────────────────────────────────────
 node_modules/
@@ -22,6 +23,7 @@ frontend/.react-router/
 # ── Backend (Express) ───────────────────────────────────────────────
 backend/dist/
 backend/data/
+backend/deploy/
 
 # ── Build / Output ──────────────────────────────────────────────────
 dist/
@@ -37,6 +39,9 @@ pnpm-debug.log*
 # ── Testing ─────────────────────────────────────────────────────────
 coverage/
 .nyc_output/
+playwright-report/
+test-results/
+.playwright/
 
 # ── Uploads ─────────────────────────────────────────────────────────
 uploads/
