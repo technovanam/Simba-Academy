@@ -35,11 +35,13 @@ export const env = {
   ZOHO_PAYMENTS_CLIENT_ID: envString("ZOHO_PAYMENTS_CLIENT_ID", "placeholder"),
   ZOHO_PAYMENTS_CLIENT_SECRET: envString("ZOHO_PAYMENTS_CLIENT_SECRET", "placeholder"),
   ZOHO_PAYMENTS_REFRESH_TOKEN: envString("ZOHO_PAYMENTS_REFRESH_TOKEN", "placeholder"),
-  ZOHO_ACCOUNTS_URL: (process.env.ZOHO_ACCOUNTS_URL ?? "https://accounts.zoho.in").replace(/\/$/, ""),
-  ZOHO_PAYMENTS_API_URL: (process.env.ZOHO_PAYMENTS_API_URL ?? "https://payments.zoho.in/api/v1").replace(
+  ZOHO_ACCOUNTS_URL: (process.env.ZOHO_ACCOUNTS_URL ?? "https://accounts.zoho.in").replace(
     /\/$/,
     ""
   ),
+  ZOHO_PAYMENTS_API_URL: (
+    process.env.ZOHO_PAYMENTS_API_URL ?? "https://payments.zoho.in/api/v1"
+  ).replace(/\/$/, ""),
   ZOHO_PAYMENTS_DOMAIN: process.env.ZOHO_PAYMENTS_DOMAIN ?? "IN",
   ZOHO_PAYMENTS_TEST_MODE: process.env.ZOHO_PAYMENTS_TEST_MODE === "true",
   ZOHO_PAYMENTS_PLACEHOLDER:
@@ -48,26 +50,27 @@ export const env = {
   /** When false, skip Zoho entirely — registration and enrollment work without payment. */
   PAYMENTS_ENABLED: process.env.PAYMENTS_ENABLED === "true",
   /** One-time student platform registration fee (INR) */
-  STUDENT_REGISTRATION_FEE_INR: envInt("STUDENT_REGISTRATION_FEE_INR", 120),
+  STUDENT_REGISTRATION_FEE_INR: envInt("STUDENT_REGISTRATION_FEE_INR", 1),
 
-  // ── Email (Nodemailer + Brevo) ─────────────────────────────────
-  SMTP_HOST: process.env.SMTP_HOST ?? "smtp-relay.brevo.com",
-  SMTP_PORT: envInt("SMTP_PORT", 587),
-  SMTP_USER: envString("SMTP_USER", "placeholder@email.com"),
-  SMTP_PASS: envString("SMTP_PASS", "placeholder"),
-  EMAIL_FROM: process.env.EMAIL_FROM ?? "noreply@simbapreschool.in",
-  EMAIL_TO: process.env.EMAIL_TO ?? "info@simbapreschool.in",
+  // ── Email (Resend API) ─────────────────────────────────────────
+  RESEND_API_KEY: envString("RESEND_API_KEY", "re_xxxxxxxxx"),
+  EMAIL_FROM: process.env.EMAIL_FROM ?? "contact@simbapreschool.in",
+  EMAIL_TO: process.env.EMAIL_TO ?? "contact@simbapreschool.in",
   PLATFORM_NAME: process.env.PLATFORM_NAME ?? "Simba Academy",
   FRONTEND_URL: (process.env.FRONTEND_URL ?? "http://localhost:5173").replace(/\/$/, ""),
   PASSWORD_RESET_EXPIRES_MINUTES: envInt("PASSWORD_RESET_EXPIRES_MINUTES", 30),
 
   // ── Domains (CORS) ─────────────────────────────────────────────
-  ALLOWED_ORIGINS: (process.env.ALLOWED_ORIGINS ?? "http://localhost:5173,http://localhost:3000,https://www.simbapreschool.in,https://simbapreschool.in").split(",").map(s => s.trim()),
-  /** Allow any *.vercel.app origin (useful for temporary Vercel hosting). */
-  ALLOW_VERCEL_PREVIEWS: process.env.ALLOW_VERCEL_PREVIEWS === "true",
+  ALLOWED_ORIGINS: (
+    process.env.ALLOWED_ORIGINS ??
+    "http://localhost:5173,http://localhost:3000,https://www.simbapreschool.in,https://simbapreschool.in"
+  )
+    .split(",")
+    .map((s) => s.trim()),
 
-  // ── Storage (Web Disk) ─────────────────────────────────────────
-  STORAGE_PATH: envString("STORAGE_PATH", "public_html/simba"),
+  // ── Storage (local uploads dir on the server) ───────────────────
+  /** e.g. "uploads" or "/home1/simapre/uploads" on cPanel */
+  STORAGE_PATH: envString("STORAGE_PATH", "uploads"),
   MAX_FILE_SIZE: envInt("MAX_FILE_SIZE", 50 * 1024 * 1024), // 50 MB
 
   // ── Rate Limiting ──────────────────────────────────────────────
@@ -81,12 +84,16 @@ export const env = {
   DEFAULT_ADMIN_PASSWORD: process.env.DEFAULT_ADMIN_PASSWORD,
   SYNC_DEFAULT_ADMIN_PASSWORD: process.env.SYNC_DEFAULT_ADMIN_PASSWORD === "true",
 
-  // ── Web Disk / WebDAV (cPanel Storage) ──────────────────────────
+  // ── Web Disk / WebDAV (optional — only when API runs off-server) ─
+  /** Prefer USE_WEBDAV=false when the API runs on cPanel and writes to STORAGE_PATH directly. */
   USE_WEBDAV: process.env.USE_WEBDAV === "true",
-  WEBDAV_URL: process.env.WEBDAV_URL ?? "https://simbapreschool.in:2078",
+  WEBDAV_URL: process.env.WEBDAV_URL ?? "https://webdisk.simbapreschool.in",
   WEBDAV_USER: process.env.WEBDAV_USER ?? "simba@simbapreschool.in",
   WEBDAV_PASSWORD: process.env.WEBDAV_PASSWORD ?? "",
-  WEBDAV_BASE_URL: process.env.WEBDAV_BASE_URL ?? "https://simbapreschool.in/simba",
+  /** Public URL prefix for files stored via WebDAV (optional). */
+  WEBDAV_BASE_URL: process.env.WEBDAV_BASE_URL ?? "https://simbapreschool.in/uploads",
+  /** Remote folder on WebDAV home, e.g. uploads → /home1/simapre/uploads */
+  WEBDAV_REMOTE_PATH: process.env.WEBDAV_REMOTE_PATH ?? "uploads",
 
   // ── Google Reviews (Places API New) ─────────────────────────────
   GOOGLE_PLACES_API_KEY: process.env.GOOGLE_PLACES_API_KEY ?? "",
@@ -115,4 +122,9 @@ export const env = {
     "http://localhost:3001/api/admin/google-reviews/oauth-callback",
   GOOGLE_BUSINESS_REFRESH_TOKEN: process.env.GOOGLE_BUSINESS_REFRESH_TOKEN ?? "",
   GOOGLE_BUSINESS_ACCOUNT_ID: process.env.GOOGLE_BUSINESS_ACCOUNT_ID ?? "",
+  BRANCH_ID_1: process.env.BRANCH_ID_1 ?? "",
+  BRANCH_ID_2: process.env.BRANCH_ID_2 ?? "",
+  BRANCH_ID_3: process.env.BRANCH_ID_3 ?? "",
+  BRANCH_ID_4: process.env.BRANCH_ID_4 ?? "",
+  BRANCH_ID_5: process.env.BRANCH_ID_5 ?? "",
 } as const;
