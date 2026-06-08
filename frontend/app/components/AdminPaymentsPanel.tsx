@@ -158,7 +158,7 @@ export function AdminPaymentsPanel({ token, onError }: AdminPaymentsPanelProps) 
                 <div className="p-2 bg-blue-50 rounded-xl border border-blue-100 shrink-0">
                   <CreditCard className="w-5 h-5 text-blue-600" />
                 </div>
-                <div className="flex-1 min-w-[180px]">
+                <div className="flex-1 min-w-0">
                   <p className="font-bold text-sm text-slate-800">{p.user?.name ?? "Unknown payer"}</p>
                   <p className="text-2xs text-slate-600 font-medium">{p.user?.email ?? "—"}</p>
                   {p.course?.title && (

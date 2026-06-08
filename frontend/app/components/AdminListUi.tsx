@@ -4,10 +4,14 @@ import { ChevronDown, ChevronLeft, ChevronRight, Search } from "lucide-react";
 export const ADMIN_LIST_PAGE_SIZE = 5;
 
 export const adminListContainerClass =
-  "bg-white rounded-2xl border border-slate-200 px-2 sm:px-3 pt-2.5 sm:pt-3 pb-2 sm:pb-3 space-y-1.5";
+  "bg-white rounded-2xl border border-slate-200 px-2 sm:px-3 pt-2.5 sm:pt-3 pb-2 sm:pb-3 space-y-1.5 w-full min-w-0 max-w-full overflow-hidden";
 
 export const adminListRowClass =
-  "flex flex-wrap items-center gap-3 sm:gap-4 px-4 py-3 rounded-xl border border-slate-100 hover:bg-slate-50/80 transition-colors";
+  "flex flex-wrap items-center gap-3 sm:gap-4 px-3 sm:px-4 py-3 rounded-xl border border-slate-100 hover:bg-slate-50/80 transition-colors min-w-0 w-full";
+
+/** Stack row content on phones; inline from sm+ (story books, approvals, etc.) */
+export const adminListRowStackClass =
+  "flex flex-col sm:flex-row sm:items-center items-stretch gap-3 sm:gap-4 px-3 sm:px-4 py-3.5 rounded-xl border border-slate-100 hover:bg-slate-50/80 transition-colors min-w-0 w-full";
 
 export function buildPageNumbers(current: number, total: number): (number | "ellipsis")[] {
   if (total <= 1) return total === 1 ? [1] : [];
@@ -109,14 +113,14 @@ export function PillSelect<T extends string>({
   }, [open]);
 
   return (
-    <div ref={ref} className="relative shrink-0">
+    <div ref={ref} className="relative w-full min-w-0 sm:w-auto sm:shrink-0">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-label={ariaLabel}
         aria-expanded={open}
         aria-haspopup="listbox"
-        className={`inline-flex items-center gap-1.5 pl-3.5 pr-2.5 py-2 rounded-full border ${tone.border} bg-white text-xs font-bold text-slate-800 ${tone.hover} transition min-w-[128px] max-w-[168px] justify-between leading-none`}
+        className={`inline-flex items-center gap-1.5 pl-3.5 pr-2.5 py-2 rounded-full border ${tone.border} bg-white text-xs font-bold text-slate-800 ${tone.hover} transition w-full sm:w-auto sm:min-w-[128px] sm:max-w-[168px] justify-between leading-none`}
       >
         <span className="truncate leading-none">{selected?.label}</span>
         <ChevronDown
@@ -163,7 +167,7 @@ export function AdminSearchInput({
   ariaLabel: string;
 }) {
   return (
-    <div className="relative w-[220px] sm:w-[260px]">
+    <div className="relative w-full min-w-0 sm:w-[260px] max-w-full">
       <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
       <input
         placeholder={placeholder}

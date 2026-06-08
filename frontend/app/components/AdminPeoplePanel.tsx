@@ -13,6 +13,7 @@ import { AdminModal } from "./AdminModal";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { AccountStatusBadge } from "./AccountStatusBadge";
 import { AdminPageBody, AdminPageHeader, AdminPageShell } from "./AdminPageShell";
+import { adminListContainerClass, adminListRowStackClass } from "./AdminListUi";
 import {
   ChevronDown,
   ChevronLeft,
@@ -223,6 +224,12 @@ export function AdminPeoplePanel({
   const rangeStart = records.length === 0 ? 0 : pageStart + 1;
   const rangeEnd = Math.min(pageStart + PAGE_SIZE, records.length);
 
+  const isCreatingTeacher = actionLoading === "teacher-create";
+  const isTeacherFormReady =
+    teacherForm.firstName.trim().length > 0 &&
+    teacherForm.lastName.trim().length > 0 &&
+    teacherForm.email.trim().length > 0;
+
   useEffect(() => {
     if (currentPage > totalPages) setCurrentPage(totalPages);
   }, [currentPage, totalPages]);
@@ -306,7 +313,7 @@ export function AdminPeoplePanel({
       } else {
         onError(
           created.emailWarning ??
-            `Teacher ${created.email} was created but the welcome email failed. Check backend terminal for TEMPORARY PASSWORD, or fix SMTP in .env.`
+            `Teacher ${created.email} was created but the welcome email failed. Check backend terminal for TEMPORARY PASSWORD, or check Resend API key in .env.`
         );
       }
       setTeacherForm(emptyTeacherForm);
@@ -362,7 +369,7 @@ export function AdminPeoplePanel({
         }
         actions={
           <>
-            <div className="relative w-[220px] sm:w-[260px]">
+            <div className="relative w-full min-w-0 sm:w-[260px] max-w-full">
               <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 placeholder="Search name, email, phone…"
@@ -411,13 +418,10 @@ export function AdminPeoplePanel({
           No accounts match your search or filters.
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-slate-200 px-2 sm:px-3 pt-2.5 sm:pt-3 pb-2 sm:pb-3 space-y-1.5">
+        <div className={adminListContainerClass}>
           {paginatedRecords.map((u) => (
-            <div
-              key={u.id}
-              className="flex flex-wrap items-center gap-3 sm:gap-4 px-4 py-3 rounded-xl border border-slate-100 hover:bg-slate-50/80 transition-colors"
-            >
-              <div className="flex-1 min-w-[180px]">
+            <div key={u.id} className={adminListRowStackClass}>
+              <div className="flex-1 min-w-0 w-full space-y-0.5">
                 <div className="flex flex-wrap items-center gap-2 mb-1">
                   <span
                     className={`px-2 py-0.5 rounded-md text-4xs font-extrabold uppercase border shrink-0 ${
@@ -432,26 +436,24 @@ export function AdminPeoplePanel({
                   </span>
                   <AccountStatusBadge status={u.status ?? "ACTIVE"} />
                 </div>
-                <p className="font-bold text-sm text-slate-800">{u.name}</p>
-                <p className="text-2xs text-slate-600 font-medium">{u.email}</p>
-                {(u.phone || u.employeeId) && (
-                  <p className="text-2xs text-slate-500 mt-0.5 flex flex-wrap items-center gap-2">
-                    {u.phone && (
-                      <span className="inline-flex items-center gap-1">
-                        <Phone className="w-3 h-3" /> {u.phone}
-                      </span>
-                    )}
-                    {u.employeeId && <span>ID: {u.employeeId}</span>}
+                <p className="font-bold text-sm text-slate-800 break-words">{u.name}</p>
+                <p className="text-2xs text-slate-600 font-medium break-all">{u.email}</p>
+                {u.phone ? (
+                  <p className="text-2xs text-slate-500 inline-flex items-center gap-1 break-all">
+                    <Phone className="w-3 h-3 shrink-0" /> {u.phone}
                   </p>
-                )}
+                ) : null}
+                {u.employeeId ? (
+                  <p className="text-2xs text-slate-500 break-all">ID: {u.employeeId}</p>
+                ) : null}
               </div>
 
-              <div className="flex flex-wrap items-center gap-2 shrink-0">
+              <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full sm:w-auto sm:justify-end shrink-0 pt-2 sm:pt-0 border-t border-slate-100 sm:border-0">
                 <button
                   type="button"
                   disabled={u.id === currentUserId || actionLoading === `status-${u.id}`}
                   onClick={() => handleToggleStatus(u)}
-                  className={`px-3 py-1.5 rounded-lg font-bold text-2xs transition flex items-center gap-1 border ${
+                  className={`w-full sm:w-auto justify-center px-3 py-2 sm:py-1.5 rounded-lg font-bold text-2xs transition flex items-center gap-1 border ${
                     u.status === "ACTIVE"
                       ? "bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100 disabled:opacity-50"
                       : "bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100"
@@ -476,7 +478,7 @@ export function AdminPeoplePanel({
                     disabled={actionLoading === `reset-${u.id}` || u.status !== "ACTIVE"}
                     onClick={() => handleSendReset(u)}
                     title="Send password reset email"
-                    className="px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100 text-2xs font-bold flex items-center gap-1 disabled:opacity-50"
+                    className="w-full sm:w-auto justify-center px-3 py-2 sm:py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100 text-2xs font-bold flex items-center gap-1 disabled:opacity-50"
                   >
                     {actionLoading === `reset-${u.id}` ? (
                       <Loader2 className="w-3 h-3 animate-spin" />
@@ -492,7 +494,7 @@ export function AdminPeoplePanel({
                   <button
                     type="button"
                     onClick={() => openEditTeacher(u)}
-                    className="px-3 py-1.5 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 flex items-center justify-center"
+                    className="w-full sm:w-auto px-3 py-2 sm:py-1.5 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 flex items-center justify-center"
                     title="Edit teacher"
                   >
                     <Pencil className="w-3.5 h-3.5" />
@@ -503,7 +505,7 @@ export function AdminPeoplePanel({
                   type="button"
                   disabled={u.id === currentUserId || actionLoading === `delete-${u.id}`}
                   onClick={() => setDeleteTarget(u)}
-                  className="px-3 py-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 disabled:opacity-50 flex items-center justify-center"
+                  className="w-full sm:w-auto px-3 py-2 sm:py-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 disabled:opacity-50 flex items-center justify-center"
                   title="Delete account"
                 >
                   {actionLoading === `delete-${u.id}` ? (
@@ -588,6 +590,7 @@ export function AdminPeoplePanel({
       <AdminModal
         open={showCreateTeacher}
         onClose={() => {
+          if (isCreatingTeacher) return;
           setShowCreateTeacher(false);
           setTeacherForm(emptyTeacherForm);
         }}
@@ -625,13 +628,21 @@ export function AdminPeoplePanel({
             className="w-full rounded-xl bg-white border border-slate-200 px-4 py-3 text-xs text-slate-900 outline-none focus:border-[#8AC926]"
           />
           <p className="text-2xs text-slate-500 font-medium">
-            A secure temporary password will be generated automatically and emailed to the teacher via Brevo.
+            A secure temporary password will be generated automatically and emailed to the teacher via Resend.
           </p>
           <button
             type="submit"
-            className="w-full py-3 rounded-xl bg-[#8AC926] text-white font-sans font-bold text-xs tracking-wider uppercase hover:bg-[#78B020] transition"
+            disabled={isCreatingTeacher || !isTeacherFormReady}
+            className="w-full py-3 rounded-xl bg-[#8AC926] text-white font-sans font-bold text-xs tracking-wider uppercase hover:bg-[#78B020] transition disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            Create Teacher Account
+            {isCreatingTeacher ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Creating...
+              </>
+            ) : (
+              "Create Teacher Account"
+            )}
           </button>
         </form>
       </AdminModal>

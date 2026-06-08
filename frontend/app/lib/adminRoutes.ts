@@ -62,7 +62,7 @@ export function adminTabTitle(tab: AdminTab): string {
     tasks: "Assign Tasks",
     planner: "Lesson Planner",
     books: "Story Library",
-    inquiries: "Admissions Leads",
+    inquiries: "General Enquiry",
     reviews: "Parent Reviews",
     gallery: "Media Gallery",
   };

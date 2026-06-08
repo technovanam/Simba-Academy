@@ -1,13 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
-import {
-  Calendar,
-  ChevronRight,
-  CreditCard,
-  ExternalLink,
-  TrendingUp,
-  Users,
-} from "lucide-react";
+import { Calendar, ChevronRight, CreditCard, ExternalLink, TrendingUp, Users } from "lucide-react";
 import {
   api,
   ApiError,
@@ -110,7 +103,7 @@ export function AdminOverviewPage() {
 
   return (
     <>
-      <div className="flex flex-wrap justify-between items-center gap-4 border-b border-slate-100 pb-3 mb-5 select-none">
+      <div className="flex flex-wrap justify-between items-center gap-4 border-b border-slate-100 pb-3 mb-5 select-none w-full min-w-0">
         <div>
           <h2 className="text-lg font-bold text-slate-900 tracking-wide uppercase">
             Simba Academy Workspace
@@ -132,8 +125,8 @@ export function AdminOverviewPage() {
         </div>
       </div>
 
-      <div className="space-y-5 animate-fade-in flex-1 flex flex-col overflow-hidden">
-        <div className="space-y-5 animate-fade-in flex-1 flex flex-col overflow-hidden">
+      <div className="space-y-5 animate-fade-in flex-1 flex flex-col min-h-0 w-full min-w-0 max-w-full pb-6 lg:pb-8">
+        <div className="space-y-5 animate-fade-in flex flex-col w-full min-w-0 max-w-full">
           {/* Three Main Metric Cards (Matched Height & Side-by-Side) */}
           {stats && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
@@ -339,13 +332,13 @@ export function AdminOverviewPage() {
           )}
 
           {/* Split Workspace Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch flex-1 min-h-0">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 items-stretch">
             {/* Left & Middle Column Workspace (Main Content - 2/3 Width) */}
-            <div className="lg:col-span-2 flex flex-col min-h-0">
+            <div className="lg:col-span-2 flex flex-col">
               {/* Financial Audit Logs Table Card */}
               <div
                 id="recent-transactions"
-                className="bg-white rounded-2xl p-5 border border-slate-200 flex-1 flex flex-col"
+                className="bg-white rounded-2xl p-5 border border-slate-200 flex flex-col"
               >
                 <div className="flex flex-wrap justify-between items-center gap-4 mb-4">
                   <div>
@@ -380,9 +373,9 @@ export function AdminOverviewPage() {
             </div>
 
             {/* Right Auxiliary Column (Today's Actions & Analytics - 1/3 Width) */}
-            <div className="flex flex-col min-h-0">
+            <div className="flex flex-col">
               {/* Academy Stats & Analytics Card */}
-              <div className="bg-white rounded-2xl p-5 border border-slate-200 flex-1 flex flex-col justify-between overflow-y-auto">
+              <div className="bg-white rounded-2xl p-5 border border-slate-200 flex flex-col">
                 <div className="space-y-5">
                   {/* Header */}
                   <div className="flex items-center justify-between pb-2 border-b border-slate-100">
@@ -420,7 +413,7 @@ export function AdminOverviewPage() {
                     </div>
                     <div className="p-2.5 bg-[#8AC926]/5 border border-[#8AC926]/15 rounded-xl flex items-center justify-between">
                       <span className="text-[8px] font-bold text-slate-600 uppercase tracking-wider">
-                        Total Student Enquiries
+                        Total General Enquiries
                       </span>
                       <span className="text-lg font-bold text-[#8AC926] leading-none">
                         {inquiries.length}
@@ -444,4 +437,3 @@ export function AdminOverviewPage() {
     </>
   );
 }
-
