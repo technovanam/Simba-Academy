@@ -1,7 +1,7 @@
 import { Router } from "express";
 import type { Testimonial } from "@prisma/client";
 import { prisma } from "../config/database.js";
-import { fetchGooglePlaceReviews, isGoogleReviewsConfigured } from "../services/googleReviews.js";
+import { isGoogleReviewsConfigured } from "../services/googleReviews.js";
 
 const router = Router();
 
@@ -29,32 +29,24 @@ router.get("/", async (_req, res, next) => {
       orderBy: { createdAt: "desc" },
     });
 
-    let googleResult: Awaited<ReturnType<typeof fetchGooglePlaceReviews>> = {
-      reviews: [],
-      locations: [],
-      configured: false,
-      fetchMode: "none",
-    };
-    const googleMeta: { fetchedAt?: string; fromSnapshot?: boolean } = {};
-    if (isGoogleReviewsConfigured()) {
-      try {
-        googleResult = await fetchGooglePlaceReviews(false, googleMeta);
-      } catch (err) {
-        console.error("Google reviews fetch failed:", err);
-        googleResult = { reviews: [], locations: [], configured: true, fetchMode: "none" };
-      }
-    }
+    const googleDbReviews = await prisma.googleReview.findMany({
+      orderBy: { updateTime: "desc" },
+    });
 
-    const googleReviews: PublicReviewDto[] = googleResult.reviews.map((r) => ({
-      id: r.id,
-      name: r.name,
-      content: r.content,
+    const googleReviews: PublicReviewDto[] = googleDbReviews.map((r) => ({
+      id: r.reviewId,
+      name: r.reviewerName,
+      content: r.comment,
       rating: r.rating,
       source: "google" as const,
-      relativeTime: r.relativeTime,
-      profilePhotoUrl: r.profilePhotoUrl,
-      placeName: r.placeName,
-      placeId: r.placeId,
+      relativeTime: r.updateTime.toLocaleDateString("en-IN", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      }),
+      profilePhotoUrl: r.reviewerPhotoUrl || undefined,
+      placeName: "Simba Preschool",
+      placeId: r.locationId,
     }));
 
     const manualReviews: PublicReviewDto[] = manual.map((t: Testimonial) => ({
@@ -67,19 +59,39 @@ router.get("/", async (_req, res, next) => {
 
     const reviews = [...googleReviews, ...manualReviews];
 
+    const googleCount = googleDbReviews.length;
+    const avgRating = googleCount > 0
+      ? Math.round((googleDbReviews.reduce((sum, r) => sum + r.rating, 0) / googleCount) * 10) / 10
+      : 5;
+
+    const uniqueLocations = Array.from(new Set(googleDbReviews.map((r) => r.locationId)));
+    const locations = uniqueLocations.map((locId) => ({
+      placeId: locId,
+      placeName: `Simba Preschool (${locId})`,
+      rating: avgRating,
+      totalRatings: googleCount,
+      reviewsReturned: googleDbReviews.filter((r) => r.locationId === locId).length,
+    }));
+
+    const latestReview = await prisma.googleReview.findFirst({
+      orderBy: { updatedAt: "desc" },
+      select: { updatedAt: true },
+    });
+    const fetchedAt = latestReview?.updatedAt.toISOString();
+
     res.json({
       reviews,
       google: {
-        configured: googleResult.configured,
-        fetchMode: googleResult.fetchMode,
-        rating: googleResult.rating,
-        totalRatings: googleResult.totalRatings,
-        placeName: googleResult.placeName,
+        configured: isGoogleReviewsConfigured(),
+        fetchMode: "business_profile",
+        rating: avgRating,
+        totalRatings: googleCount || undefined,
+        placeName: "Simba Preschool",
         count: googleReviews.length,
-        locationCount: googleResult.locations.length,
-        locations: googleResult.locations,
-        fetchedAt: googleMeta.fetchedAt,
-        fromSnapshot: googleMeta.fromSnapshot,
+        locationCount: uniqueLocations.length,
+        locations,
+        fetchedAt,
+        fromSnapshot: false,
       },
     });
   } catch (err) {
@@ -89,11 +101,36 @@ router.get("/", async (_req, res, next) => {
 
 router.get("/google", async (_req, res, next) => {
   try {
-    const result = await fetchGooglePlaceReviews();
-    res.json(result);
+    const googleDbReviews = await prisma.googleReview.findMany({
+      orderBy: { updateTime: "desc" },
+    });
+    
+    const count = googleDbReviews.length;
+    const avgRating = count > 0
+      ? Math.round((googleDbReviews.reduce((sum, r) => sum + r.rating, 0) / count) * 10) / 10
+      : 5;
+
+    const uniqueLocations = Array.from(new Set(googleDbReviews.map((r) => r.locationId)));
+    const locations = uniqueLocations.map((locId) => ({
+      placeId: locId,
+      placeName: `Simba Preschool (${locId})`,
+      rating: avgRating,
+      totalRatings: count,
+      reviewsReturned: googleDbReviews.filter((r) => r.locationId === locId).length,
+    }));
+
+    res.json({
+      reviews: googleDbReviews,
+      locations,
+      rating: avgRating,
+      totalRatings: count,
+      configured: isGoogleReviewsConfigured(),
+      fetchMode: "business_profile",
+    });
   } catch (err) {
     next(err);
   }
 });
 
 export default router;
+

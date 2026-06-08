@@ -4,7 +4,7 @@ import { authenticate, authorize } from "../middleware/auth.js";
 import { validate } from "../middleware/validate.js";
 import { submitTaskProofSchema } from "../config/schemas.js";
 import { AppError } from "../utils/errors.js";
-import { sendEmail } from "../services/email.js";
+import { sendEmail, getTaskCompletionAdminHtml } from "../services/email.js";
 import { env } from "../config/env.js";
 
 const router = Router();
@@ -208,16 +208,13 @@ router.patch("/tasks/:id/proof", validate(submitTaskProofSchema), async (req, re
         await sendEmail({
           to: admin.email,
           subject: `Task Completed by Teacher: ${task.title}`,
-          html: `
-            <h3>Task Completion Proof Submitted</h3>
-            <p>Teacher <strong>${task.teacher.name}</strong> has submitted proof for the task:</p>
-            <p><strong>Title:</strong> ${task.title}</p>
-            <p><strong>Description:</strong> ${task.description || "N/A"}</p>
-            <p><strong>Proof Comments:</strong> ${proofDesc}</p>
-            <p><strong>Proof File:</strong> <a href="${absoluteProofUrl}" target="_blank">View Proof File</a></p>
-            <br/>
-            <p>Please log in to the Admin Dashboard to review and approve/reject this proof.</p>
-          `,
+          html: getTaskCompletionAdminHtml({
+            teacherName: task.teacher.name,
+            taskTitle: task.title,
+            taskDescription: task.description ?? undefined,
+            proofComments: proofDesc,
+            proofUrl: absoluteProofUrl,
+          }),
         });
       }
     } catch (emailErr) {

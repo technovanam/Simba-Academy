@@ -16,16 +16,21 @@ function checkoutPayload(session: {
   amountString?: string;
   currency: string;
 }) {
-  const zoho = getZohoCheckoutConfig();
-  return {
+  const base = {
     paymentSessionId: session.id,
     orderId: session.id,
     amount: session.amount,
     amountInr: session.amountInr ?? session.amount / 100,
     amountString: session.amountString ?? ((session.amountInr ?? session.amount / 100).toFixed(2)),
     currency: session.currency,
-    ...zoho,
   };
+
+  const zoho = getZohoCheckoutConfig();
+  if (zoho.isPlaceholder) {
+    return { ...base, isPlaceholder: true };
+  }
+
+  return { ...base, ...zoho };
 }
 
 // ── Create Order (authenticated) ────────────────────────────────────

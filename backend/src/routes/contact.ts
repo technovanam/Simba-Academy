@@ -3,88 +3,115 @@ import { prisma } from "../config/database.js";
 import { validate } from "../middleware/validate.js";
 import { contactLimiter } from "../middleware/rateLimiter.js";
 import { inquirySchema, franchiseInquirySchema } from "../config/schemas.js";
-import { sendEmail, getInquiryAutoReplyHtml, getAdminInquiryHtml } from "../services/email.js";
+import {
+  sendEmail,
+  getInquiryAutoReplyHtml,
+  getFranchiseAutoReplyHtml,
+  getAdminInquiryHtml,
+} from "../services/email.js";
 import { env } from "../config/env.js";
 import { authenticate, authorize, optionalAuthenticate } from "../middleware/auth.js";
 
 const router = Router();
 
 // ── Submit General Inquiry ──────────────────────────────────────────
-router.post("/inquiry", contactLimiter, optionalAuthenticate, validate(inquirySchema), async (req, res, next) => {
-  try {
-    const { name, email, phone, message, inquiryType } = req.body;
-    const userId = req.user?.userId ?? null;
-    const fullMessage = inquiryType ? `[${inquiryType}] ${message}` : message;
-
-    // Save to database
-    await prisma.inquiry.create({
-      data: { name, email, phone, message: fullMessage, userId },
-    });
-
-    // Send auto-reply to the inquirer
+router.post(
+  "/inquiry",
+  contactLimiter,
+  optionalAuthenticate,
+  validate(inquirySchema),
+  async (req, res, next) => {
     try {
-      await sendEmail({
-        to: email,
-        subject: "Thank you for contacting Simba Academy",
-        html: getInquiryAutoReplyHtml(name),
-      });
-    } catch {
-      console.error("Failed to send auto-reply email");
-    }
+      const { name, email, phone, message, inquiryType } = req.body;
+      const userId = req.user?.userId ?? null;
+      const fullMessage = inquiryType ? `[${inquiryType}] ${message}` : message;
 
-    // Notify admin
-    try {
-      await sendEmail({
-        to: env.EMAIL_TO,
-        subject: `New Inquiry from ${name} - Simba Academy`,
-        html: getAdminInquiryHtml({ name, email, phone, message: fullMessage }),
+      // Save to database
+      await prisma.inquiry.create({
+        data: { name, email, phone, message: fullMessage, userId },
       });
-    } catch {
-      console.error("Failed to send admin notification email");
-    }
 
-    res.status(201).json({
-      message: "Your inquiry has been submitted successfully. We'll get back to you shortly!",
-    });
-  } catch (err) {
-    next(err);
+      // Send auto-reply to the inquirer
+      try {
+        await sendEmail({
+          to: email,
+          subject: "Thank you for contacting Simba Academy",
+          html: getInquiryAutoReplyHtml(name),
+        });
+      } catch {
+        console.error("Failed to send auto-reply email");
+      }
+
+      // Notify admin
+      try {
+        await sendEmail({
+          to: env.EMAIL_TO,
+          subject: `New Inquiry from ${name} - Simba Academy`,
+          html: getAdminInquiryHtml({ name, email, phone, message: fullMessage }),
+        });
+      } catch {
+        console.error("Failed to send admin notification email");
+      }
+
+      res.status(201).json({
+        message: "Your inquiry has been submitted successfully. We'll get back to you shortly!",
+      });
+    } catch (err) {
+      next(err);
+    }
   }
-});
+);
 
 // ── Submit Franchise Inquiry ────────────────────────────────────────
-router.post("/franchise", contactLimiter, validate(franchiseInquirySchema), async (req, res, next) => {
-  try {
-    const { name, email, phone, location, message } = req.body;
-
-    await prisma.franchiseInquiry.create({
-      data: { name, email, phone, location, message },
-    });
-
-    // Notify admin about franchise inquiry
+router.post(
+  "/franchise",
+  contactLimiter,
+  validate(franchiseInquirySchema),
+  async (req, res, next) => {
     try {
-      await sendEmail({
-        to: env.EMAIL_TO,
-        subject: `Franchise Inquiry from ${name} - Simba Academy`,
-        html: `
-          <h2>New Franchise Inquiry</h2>
-          <p><strong>Name:</strong> ${name}</p>
-          <p><strong>Email:</strong> ${email}</p>
-          <p><strong>Phone:</strong> ${phone}</p>
-          ${location ? `<p><strong>Location:</strong> ${location}</p>` : ""}
-          ${message ? `<p><strong>Message:</strong> ${message}</p>` : ""}
-        `,
-      });
-    } catch {
-      console.error("Failed to send franchise inquiry email");
-    }
+      const { name, email, phone, location, message } = req.body;
 
-    res.status(201).json({
-      message: "Thank you for your franchise interest! Our team will contact you soon.",
-    });
-  } catch (err) {
-    next(err);
+      await prisma.franchiseInquiry.create({
+        data: { name, email, phone, location, message },
+      });
+
+      // Send auto-reply confirmation to the franchise inquirer
+      try {
+        await sendEmail({
+          to: email,
+          subject: "Thank you for your interest in a Simba Academy Franchise",
+          html: getFranchiseAutoReplyHtml(name),
+        });
+      } catch {
+        console.error("Failed to send franchise auto-reply email");
+      }
+
+      // Notify admin about franchise inquiry
+      try {
+        await sendEmail({
+          to: env.EMAIL_TO,
+          subject: `Franchise Inquiry from ${name} - Simba Academy`,
+          html: getAdminInquiryHtml({
+            name,
+            email,
+            phone,
+            message: message ?? "Interested in Simba franchise opportunity.",
+            isFranchise: true,
+            location: location ?? "Not specified",
+          }),
+        });
+      } catch {
+        console.error("Failed to send franchise inquiry email");
+      }
+
+      res.status(201).json({
+        message: "Thank you for your franchise interest! Our team will contact you soon.",
+      });
+    } catch (err) {
+      next(err);
+    }
   }
-});
+);
 
 // ── Admin: List Inquiries ───────────────────────────────────────────
 router.get("/inquiries", authenticate, authorize("ADMIN"), async (req, res, next) => {

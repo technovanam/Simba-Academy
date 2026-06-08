@@ -222,7 +222,7 @@ router.post("/teachers", validate(createTeacherSchema), async (req, res, next) =
       emailSent,
       emailWarning: emailSent
         ? undefined
-        : "Welcome email could not be sent. Fix SMTP settings (e.g. Brevo smtp-relay.brevo.com:587) or read the backend log for the temporary password.",
+        : "Welcome email could not be sent. Fix Resend API settings or read the backend log for the temporary password.",
     });
   } catch (err) {
     next(err);

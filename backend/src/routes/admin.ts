@@ -26,7 +26,9 @@ import {
   notifyTeachersOfNewLessonPlan,
 } from "../services/portalNotifications.js";
 import adminUserRoutes from "./admin-users.js";
-import { fetchGooglePlaceReviews, isGoogleReviewsConfigured } from "../services/googleReviews.js";
+import gbpSyncRoutes from "./gbpSync.js";
+import { isGoogleReviewsConfigured } from "../services/googleReviews.js";
+import { syncGoogleBusinessReviews } from "../services/gbpSyncService.js";
 import {
   buildGoogleBusinessAuthUrl,
   exchangeGoogleBusinessCode,
@@ -83,6 +85,7 @@ router.get("/google-reviews/oauth-callback", async (req, res, next) => {
 // All routes below require ADMIN role
 router.use(authenticate, authorize("ADMIN"));
 router.use(adminUserRoutes);
+router.use("/gbp-sync", gbpSyncRoutes);
 
 // ═════════════════════════════════════════════════════════════════════
 //  MATERIALS (Approve/Reject)
@@ -196,42 +199,66 @@ router.get("/google-reviews/status", async (_req, res, next) => {
           : "Set GOOGLE_BUSINESS_REFRESH_TOKEN (recommended for review text) or GOOGLE_PLACES_API_KEY + GOOGLE_PLACE_IDS.",
       });
     }
-    const meta: { fromSnapshot?: boolean; syncedAt?: string; syncBlocked?: string; fetchedAt?: string } = {};
-    const result = await fetchGooglePlaceReviews(false, meta);
-    let hint: string | undefined;
-    if (meta.syncBlocked) {
-      hint = meta.syncBlocked;
-    } else if (meta.fromSnapshot && meta.syncedAt) {
-      hint = `Google API unavailable — showing last saved reviews (${new Date(meta.syncedAt).toLocaleString("en-IN")}).`;
-    } else if (meta.fetchedAt && !meta.fromSnapshot) {
-      hint = `Live from Google · updated ${new Date(meta.fetchedAt).toLocaleString("en-IN")}`;
-    } else if (result.reviews.length === 0 && isBusinessProfileConfigured()) {
-      hint = "No reviews returned yet. Connect Google Business OAuth for full written feedback.";
-    }
+
+    const googleDbReviews = await prisma.googleReview.findMany({
+      orderBy: { updateTime: "desc" },
+    });
+
+    const reviews = googleDbReviews.map((r) => ({
+      id: r.reviewId,
+      name: r.reviewerName,
+      content: r.comment,
+      rating: r.rating,
+      source: "google" as const,
+      relativeTime: r.updateTime.toLocaleDateString("en-IN", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      }),
+      profilePhotoUrl: r.reviewerPhotoUrl || undefined,
+      placeId: r.locationId,
+      placeName: `Simba Preschool (${r.locationId})`,
+    }));
+
+    const count = reviews.length;
+    const totalRatings = count;
+    const avgRating = count > 0
+      ? Math.round((googleDbReviews.reduce((sum, r) => sum + r.rating, 0) / count) * 10) / 10
+      : 5;
+
+    const uniqueLocations = Array.from(new Set(googleDbReviews.map((r) => r.locationId)));
+    const locations = uniqueLocations.map((locId) => ({
+      placeId: locId,
+      placeName: `Simba Preschool (${locId})`,
+      rating: avgRating,
+      totalRatings,
+      reviewsReturned: googleDbReviews.filter((r) => r.locationId === locId).length,
+    }));
+
+    const latestReview = await prisma.googleReview.findFirst({
+      orderBy: { updatedAt: "desc" },
+      select: { updatedAt: true },
+    });
+    const fetchedAt = latestReview?.updatedAt.toISOString();
+
     const rateHint = getGbpRateLimitHint();
-    if (rateHint && result.reviews.length === 0) {
-      hint = rateHint;
-    }
-    if (result.fetchMode === "oauth_pending") {
-      hint =
-        "OAuth Client ID and secret are saved. Click Connect Google Business, sign in, then paste GOOGLE_BUSINESS_REFRESH_TOKEN into backend .env and restart.";
-    }
-    if (result.fetchMode === "places" && result.reviews.length === 0 && (result.totalRatings ?? 0) > 0) {
-      hint =
-        "Only star ratings loaded. Connect Google Business (OAuth) to load full written feedback from all locations.";
-    }
-    if (result.fetchMode === "business_profile" && result.reviews.length === 0 && !meta.fromSnapshot) {
-      hint = "Google Business is connected but no written reviews were returned for your locations.";
-    }
+    let hint = rateHint || (fetchedAt
+      ? `Database Cache · last updated ${new Date(fetchedAt).toLocaleString("en-IN")}`
+      : "No reviews synced to database yet. Click Refresh now.");
+
     res.json({
-      ...result,
+      reviews,
+      locations,
+      rating: avgRating,
+      totalRatings: count || undefined,
+      placeName: "Simba Preschool",
       configured: true,
+      fetchMode: "business_profile",
       hint,
-      syncedAt: meta.syncedAt,
-      fetchedAt: meta.fetchedAt,
-      fromSnapshot: meta.fromSnapshot,
-      syncBlocked: meta.syncBlocked,
-      liveFetch: env.GOOGLE_REVIEWS_LIVE_FETCH,
+      syncedAt: fetchedAt,
+      fetchedAt,
+      fromSnapshot: false,
+      liveFetch: false,
     });
   } catch (err) {
     next(err);
@@ -249,24 +276,69 @@ router.post("/google-reviews/sync", async (_req, res, next) => {
         message: "Google reviews not configured.",
       });
     }
-    const meta: { fromSnapshot?: boolean; syncedAt?: string; syncBlocked?: string; synced?: boolean } = {};
-    const result = await fetchGooglePlaceReviews(true, meta);
-    let hint: string | undefined;
-    if (meta.syncBlocked) {
-      hint = meta.syncBlocked;
-    } else if (meta.synced && result.reviews.length > 0) {
-      hint = `Synced ${result.reviews.length} review(s) from Google.`;
-    } else if (result.fetchMode === "business_profile") {
-      hint = "Sync finished but no reviews returned. Check Google Business APIs or wait for rate limit to clear.";
-    }
+
+    const syncResult = await syncGoogleBusinessReviews();
+
+    const googleDbReviews = await prisma.googleReview.findMany({
+      orderBy: { updateTime: "desc" },
+    });
+
+    const reviews = googleDbReviews.map((r) => ({
+      id: r.reviewId,
+      name: r.reviewerName,
+      content: r.comment,
+      rating: r.rating,
+      source: "google" as const,
+      relativeTime: r.updateTime.toLocaleDateString("en-IN", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      }),
+      profilePhotoUrl: r.reviewerPhotoUrl || undefined,
+      placeId: r.locationId,
+      placeName: `Simba Preschool (${r.locationId})`,
+    }));
+
+    const count = reviews.length;
+    const totalRatings = count;
+    const avgRating = count > 0
+      ? Math.round((googleDbReviews.reduce((sum, r) => sum + r.rating, 0) / count) * 10) / 10
+      : 5;
+
+    const uniqueLocations = Array.from(new Set(googleDbReviews.map((r) => r.locationId)));
+    const locations = uniqueLocations.map((locId) => ({
+      placeId: locId,
+      placeName: `Simba Preschool (${locId})`,
+      rating: avgRating,
+      totalRatings,
+      reviewsReturned: googleDbReviews.filter((r) => r.locationId === locId).length,
+    }));
+
+    const latestReview = await prisma.googleReview.findFirst({
+      orderBy: { updatedAt: "desc" },
+      select: { updatedAt: true },
+    });
+    const syncedAt = latestReview?.updatedAt.toISOString();
+
+    let hint = syncResult.success
+      ? `Synced ${syncResult.syncedCount} review(s) from Google.`
+      : `Sync failed: ${syncResult.error}`;
+
+    const rateHint = getGbpRateLimitHint();
+    if (rateHint) hint = rateHint;
+
     res.json({
-      ...result,
+      reviews,
+      locations,
+      rating: avgRating,
+      totalRatings: count || undefined,
+      placeName: "Simba Preschool",
       configured: true,
+      fetchMode: "business_profile",
       hint,
-      synced: meta.synced === true,
-      fromSnapshot: meta.fromSnapshot === true,
-      syncBlocked: meta.syncBlocked,
-      syncedAt: meta.syncedAt ?? (meta.synced ? new Date().toISOString() : undefined),
+      synced: syncResult.success,
+      fromSnapshot: false,
+      syncedAt,
     });
   } catch (err) {
     next(err);
