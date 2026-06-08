@@ -165,7 +165,7 @@ export function markGbpRateLimited(): void {
   );
 }
 
-async function resolveAccountId(token: string): Promise<string> {
+export async function resolveAccountId(token: string): Promise<string> {
   const configured = env.GOOGLE_BUSINESS_ACCOUNT_ID.trim();
   if (configured) {
     return configured.replace(/^accounts\//, "");
@@ -207,13 +207,14 @@ async function resolveAccountId(token: string): Promise<string> {
   }
 }
 
-interface GbpLocation {
+export interface GbpLocation {
   name: string;
   title?: string;
   storefrontAddress?: { addressLines?: string[]; locality?: string };
 }
 
-async function listAllLocations(token: string, accountId: string): Promise<GbpLocation[]> {
+export async function listAllLocations(token: string, accountId: string): Promise<GbpLocation[]> {
+
   const locations: GbpLocation[] = [];
   let pageToken: string | undefined;
 

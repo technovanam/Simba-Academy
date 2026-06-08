@@ -510,3 +510,12 @@ export async function fetchGooglePlaceReviews(
 
   return pullLiveGoogleReviews(meta);
 }
+
+/** Pull reviews from configured Places API locations (for DB sync fallback). */
+export async function fetchConfiguredPlacesReviews(): Promise<GooglePlaceReview[]> {
+  if (!env.GOOGLE_PLACES_API_KEY) {
+    throw new AppError("GOOGLE_PLACES_API_KEY is not set", 503);
+  }
+  const result = await fetchFromPlacesApi();
+  return result.reviews;
+}

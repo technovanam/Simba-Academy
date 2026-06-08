@@ -13,6 +13,7 @@ const WEBDAV_URL = (process.env.WEBDAV_URL ?? "").replace(/\/$/, "");
 const WEBDAV_USER = process.env.WEBDAV_USER ?? "";
 const WEBDAV_PASSWORD = process.env.WEBDAV_PASSWORD ?? "";
 const WEBDAV_BASE_URL = (process.env.WEBDAV_BASE_URL ?? "").replace(/\/$/, "");
+const WEBDAV_REMOTE_PATH = (process.env.WEBDAV_REMOTE_PATH ?? "uploads").replace(/^\/+|\/+$/g, "");
 
 const agent = new https.Agent({ rejectUnauthorized: false });
 
@@ -45,6 +46,24 @@ async function checkLocal() {
   return { mode: "local", path: dir };
 }
 
+function getWebdavRemotePrefix() {
+  return WEBDAV_REMOTE_PATH ? `/${WEBDAV_REMOTE_PATH}` : "";
+}
+
+async function ensureWebdavPath(auth) {
+  const prefix = getWebdavRemotePrefix();
+  if (!prefix) return;
+  const segments = prefix.split("/").filter(Boolean);
+  let current = WEBDAV_URL;
+  for (const segment of segments) {
+    current = `${current}/${encodeURIComponent(segment)}`;
+    const mkcol = await webdavRequest(current, "MKCOL", { Authorization: auth });
+    if (![201, 405, 301, 302, 409].includes(mkcol.status) && (mkcol.status < 200 || mkcol.status >= 300)) {
+      throw new Error(`WebDAV MKCOL failed for ${current}: ${mkcol.status} ${mkcol.text}`);
+    }
+  }
+}
+
 async function checkWebdav() {
   if (!WEBDAV_PASSWORD) {
     throw new Error("USE_WEBDAV=true but WEBDAV_PASSWORD is empty");
@@ -52,7 +71,11 @@ async function checkWebdav() {
   const testName = `_storage-check-${Date.now()}.txt`;
   const payload = Buffer.from("simba-storage-check");
   const auth = "Basic " + Buffer.from(`${WEBDAV_USER}:${WEBDAV_PASSWORD}`).toString("base64");
-  const putUrl = `${WEBDAV_URL}/${encodeURIComponent(testName)}`;
+  await ensureWebdavPath(auth);
+  const prefix = getWebdavRemotePrefix();
+  const putUrl = prefix
+    ? `${WEBDAV_URL}${prefix}/${encodeURIComponent(testName)}`
+    : `${WEBDAV_URL}/${encodeURIComponent(testName)}`;
 
   const put = await webdavRequest(putUrl, "PUT", {
     Authorization: auth,
@@ -71,7 +94,7 @@ async function checkWebdav() {
 
   await webdavRequest(putUrl, "DELETE", { Authorization: auth });
 
-  const publicUrl = `${WEBDAV_BASE_URL}/${testName}`;
+  const publicUrl = `${WEBDAV_BASE_URL}/${encodeURIComponent(testName)}`;
   console.log(`OK WebDAV storage: ${WEBDAV_URL}`);
   console.log(`   Public base: ${WEBDAV_BASE_URL}`);
   return { mode: "webdav", publicBase: WEBDAV_BASE_URL, sampleUrlPattern: publicUrl };

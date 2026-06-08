@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import https from "node:https";
 import path from "node:path";
 import { env } from "../config/env.js";
-import { webdavAgent } from "./webdav.js";
+import { buildWebdavTargetUrl, webdavAgent } from "./webdav.js";
 
 function filenameFromUrl(fileUrl: string): string | null {
   try {
@@ -45,8 +45,7 @@ function fetchHttpsBuffer(url: string, useInsecureAgent: boolean): Promise<Buffe
 }
 
 function fetchWebDavBuffer(filename: string): Promise<Buffer> {
-  const webdavUrl = env.WEBDAV_URL.replace(/\/$/, "");
-  const targetUrl = `${webdavUrl}/${encodeURIComponent(filename)}`;
+  const targetUrl = buildWebdavTargetUrl(filename);
   const authHeader =
     "Basic " + Buffer.from(`${env.WEBDAV_USER}:${env.WEBDAV_PASSWORD}`).toString("base64");
 
