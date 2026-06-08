@@ -61,9 +61,9 @@ export default function Home() {
   }, [navigate]);
 
   return (
-    <AuthPageShell maxWidth="max-w-sm">
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-lg overflow-hidden">
-        <div className="p-8">
+    <AuthPageShell maxWidth="max-w-sm md:max-w-md">
+      <div className="w-full min-w-0 bg-white rounded-2xl border border-slate-200 shadow-lg overflow-hidden">
+        <div className="p-5 sm:p-8">
           <div className="flex flex-col items-center text-center mb-6">
             <img
               src="/favicon.png"

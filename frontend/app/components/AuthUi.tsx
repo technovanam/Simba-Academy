@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { Link } from "react-router";
 import { AlertCircle, Check, LayoutGrid, Loader2 } from "lucide-react";
 import { STUDENT_AUTH_BG_DESKTOP, STUDENT_AUTH_BG_MOBILE } from "../lib/constants";
@@ -141,7 +141,7 @@ export function AuthBackButton({ portal }: { portal?: AuthPortal }) {
   return (
     <Link
       to="/"
-      className="fixed top-4 right-4 z-50 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold shadow-md transition-colors bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300"
+      className="fixed top-[max(1rem,env(safe-area-inset-top))] right-[max(1rem,env(safe-area-inset-right))] z-50 inline-flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-sm font-bold shadow-md transition-colors bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300"
     >
       <LayoutGrid className={`w-4 h-4 ${iconClass}`} strokeWidth={2} />
       Portals
@@ -157,7 +157,31 @@ interface AuthPageShellProps {
   parchmentFit?: boolean | StudentParchmentVariant;
 }
 
-/** Full-viewport auth wrapper — no document scroll */
+/** Always-visible credit — pinned below scrollable auth content */
+function AuthTechnoVanamCredit({ jungle = false }: { jungle?: boolean }) {
+  return (
+    <footer
+      className={`shrink-0 relative z-30 w-full px-4 pt-2 pb-[max(0.625rem,env(safe-area-inset-bottom,0px))] text-center text-[11px] sm:text-xs font-sans font-extrabold pointer-events-auto select-none ${
+        jungle
+          ? "text-amber-100/90 drop-shadow-[0_1px_3px_rgba(0,0,0,0.45)]"
+          : "text-slate-500/80"
+      }`}
+    >
+      Developed & Maintained by{" "}
+      <a
+        href="https://technovanam.in"
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{ color: "#71d300" }}
+        className="hover:opacity-80 transition-opacity font-extrabold"
+      >
+        Techno Vanam
+      </a>
+    </footer>
+  );
+}
+
+/** Full-viewport auth wrapper — credit stays visible; content scrolls when needed */
 export function AuthPageShell({
   children,
   maxWidth = "max-w-md",
@@ -166,20 +190,13 @@ export function AuthPageShell({
 }: AuthPageShellProps) {
   const parchmentVariant: StudentParchmentVariant | null =
     parchmentFit === "register" ? "register" : parchmentFit ? "login" : null;
-  useEffect(() => {
-    const prev = document.documentElement.style.overflow;
-    document.documentElement.style.overflow = "hidden";
-    return () => {
-      document.documentElement.style.overflow = prev;
-    };
-  }, []);
 
   const theme = PORTAL_META[portal];
   const isStudentJungle = portal === "student" && Boolean(parchmentFit);
 
   return (
     <div
-      className={`h-screen overflow-hidden font-sans relative ${
+      className={`w-full max-w-full h-[100dvh] max-h-[100dvh] flex flex-col overflow-x-hidden overflow-hidden font-sans relative ${
         isStudentJungle ? "bg-[#1b4332]" : "bg-slate-100"
       }`}
     >
@@ -201,37 +218,42 @@ export function AuthPageShell({
           />
         </>
       ) : (
-        <>
+        <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden>
           <div
-            className={`absolute -top-24 -right-24 w-72 h-72 rounded-full blur-3xl pointer-events-none ${theme.shellTop}`}
+            className={`absolute -top-24 -right-24 w-72 h-72 rounded-full blur-3xl ${theme.shellTop}`}
           />
           <div
-            className={`absolute -bottom-24 -left-24 w-72 h-72 rounded-full blur-3xl pointer-events-none ${theme.shellBottom}`}
+            className={`absolute -bottom-24 -left-24 w-72 h-72 rounded-full blur-3xl ${theme.shellBottom}`}
           />
-        </>
+        </div>
       )}
       <AuthBackButton portal={portal} />
-      {isStudentJungle && parchmentVariant ? (
-        <div
-          className={`absolute z-10 min-h-0 overflow-hidden ${
-            parchmentVariant === "register" ? "translate-y-[1%] lg:translate-y-[6%]" : ""
-          } ${studentParchmentSlots[parchmentVariant]}`}
-        >
+      <div className="relative z-10 flex-1 min-h-0 w-full max-w-full flex flex-col overflow-hidden">
+        {isStudentJungle && parchmentVariant ? (
           <div
-            className={`h-full w-full flex flex-col items-stretch justify-center min-h-0 ${
-              parchmentVariant === "register"
-                ? studentRegisterFormClass
-                : studentParchmentFormClass
-            } [@media(max-height:560px)]:[&_input]:!h-10 [@media(max-height:560px)]:[&_button]:!h-10 [@media(max-height:480px)]:[&_input]:!h-9 [@media(max-height:480px)]:[&_button]:!h-9 [@media(max-height:400px)]:[&_input]:!h-8 [@media(max-height:400px)]:[&_button]:!h-8 [@media(max-height:560px)]:[&_.h-12]:!h-10 [@media(max-height:480px)]:[&_.h-12]:!h-9 [@media(max-height:400px)]:[&_.h-12]:!h-8`}
+            className={`absolute inset-0 min-h-0 overflow-hidden ${
+              parchmentVariant === "register" ? "translate-y-[1%] lg:translate-y-[6%]" : ""
+            } ${studentParchmentSlots[parchmentVariant]}`}
           >
-            {children}
+            <div
+              className={`h-full w-full flex flex-col items-stretch justify-center min-h-0 overflow-y-auto scrollbar-hide ${
+                parchmentVariant === "register"
+                  ? studentRegisterFormClass
+                  : studentParchmentFormClass
+              } [@media(max-height:560px)]:[&_input]:!h-10 [@media(max-height:560px)]:[&_button]:!h-10 [@media(max-height:480px)]:[&_input]:!h-9 [@media(max-height:480px)]:[&_button]:!h-9 [@media(max-height:400px)]:[&_input]:!h-8 [@media(max-height:400px)]:[&_button]:!h-8 [@media(max-height:560px)]:[&_.h-12]:!h-10 [@media(max-height:480px)]:[&_.h-12]:!h-9 [@media(max-height:400px)]:[&_.h-12]:!h-8`}
+            >
+              {children}
+            </div>
           </div>
-        </div>
-      ) : (
-        <div className="relative z-10 h-full flex items-center justify-center min-h-0 px-4 sm:px-6">
-          <div className={`w-full ${maxWidth} max-h-full min-h-0`}>{children}</div>
-        </div>
-      )}
+        ) : (
+          <div className="flex-1 min-h-0 w-full max-w-full portal-main-scroll overflow-y-auto overflow-x-hidden scrollbar-hide">
+            <div className="min-h-full w-full max-w-full flex items-center justify-center px-4 sm:px-6 md:px-8 py-6">
+              <div className={`w-full max-w-full mx-auto ${maxWidth} min-h-0 min-w-0 shrink-0`}>{children}</div>
+            </div>
+          </div>
+        )}
+      </div>
+      <AuthTechnoVanamCredit jungle={isStudentJungle} />
     </div>
   );
 }
@@ -353,7 +375,10 @@ interface AuthSplitLayoutProps {
   title: string;
   subtitle?: string;
   highlights?: AuthSplitHighlight[];
+  /** Desktop sidebar footer (e.g. fee card) */
   sideFooter?: ReactNode;
+  /** Compact mobile banner trailing content (e.g. fee amount) */
+  mobileSideFooter?: ReactNode;
   children: ReactNode;
 }
 
@@ -364,21 +389,52 @@ export function AuthSplitLayout({
   subtitle,
   highlights = [],
   sideFooter,
+  mobileSideFooter,
   children,
 }: AuthSplitLayoutProps) {
   const meta = PORTAL_META[portal];
 
   return (
     <AuthPageShell maxWidth="max-w-[52rem]" portal={portal}>
-      <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xl shadow-slate-300/25 overflow-hidden flex flex-col lg:flex-row max-h-[calc(100vh-2.5rem)] min-h-0">
-        {/* Left panel */}
-        <aside className="relative lg:w-[38%] shrink-0 overflow-hidden bg-gradient-to-b from-[#ffb347] via-[#FF9F1C] to-[#e88f0a] text-white">
+      <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-xl shadow-slate-300/25 overflow-hidden flex flex-col lg:flex-row min-h-0 w-full min-w-0 max-w-full">
+        {/* Mobile — branding + fee (no highlight cards) */}
+        <aside className="lg:hidden relative shrink-0 overflow-hidden bg-gradient-to-b from-[#ffb347] via-[#FF9F1C] to-[#e88f0a] text-white">
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-white/15 blur-2xl" />
+            <div className="absolute bottom-0 left-0 w-36 h-36 rounded-full bg-[#c77a00]/20 blur-2xl" />
+          </div>
+          <div className="relative z-10 px-4 py-5 sm:px-6 sm:py-6 flex flex-col gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-white/95 flex items-center justify-center shadow-sm shrink-0">
+                <img src="/favicon.png" alt="" className="w-7 h-7 sm:w-8 sm:h-8 object-contain" />
+              </div>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/70">Simba Academy</p>
+                <p className="text-sm font-bold text-white">{meta.label}</p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <h1 className="text-xl sm:text-2xl font-extrabold leading-snug tracking-tight">
+                Join Simba Academy
+              </h1>
+              {subtitle ? (
+                <p className="text-sm text-white/85 font-medium leading-relaxed">{subtitle}</p>
+              ) : null}
+            </div>
+
+            {mobileSideFooter ? <div>{mobileSideFooter}</div> : null}
+          </div>
+        </aside>
+
+        {/* Desktop — full branding sidebar */}
+        <aside className="hidden lg:flex relative lg:w-[38%] shrink-0 overflow-hidden bg-gradient-to-b from-[#ffb347] via-[#FF9F1C] to-[#e88f0a] text-white flex-col">
           <div className="absolute inset-0 pointer-events-none">
             <div className="absolute top-0 right-0 w-40 h-40 rounded-full bg-white/15 blur-3xl" />
             <div className="absolute bottom-0 left-0 w-52 h-52 rounded-full bg-[#c77a00]/20 blur-3xl" />
           </div>
 
-          <div className="relative z-10 p-7 sm:p-8 lg:p-9 flex flex-col gap-6 lg:min-h-full lg:justify-center">
+          <div className="relative z-10 p-7 sm:p-8 lg:p-9 flex flex-col gap-6 lg:min-h-full lg:justify-center w-full">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-2xl bg-white/95 flex items-center justify-center shadow-sm shrink-0">
                 <img src="/favicon.png" alt="" className="w-8 h-8 object-contain" />
@@ -423,10 +479,10 @@ export function AuthSplitLayout({
           </div>
         </aside>
 
-        {/* Right — form */}
+        {/* Form */}
         <main className="flex-1 min-w-0 overflow-y-auto lg:border-l border-slate-100 bg-gradient-to-b from-white to-slate-50/80">
-          <div className="p-7 sm:p-8 lg:p-9 lg:flex lg:flex-col lg:justify-center min-h-full">
-            <div className="mb-6 pb-5 border-b border-slate-100">
+          <div className="p-4 sm:p-7 lg:p-9 lg:flex lg:flex-col lg:justify-center min-h-full">
+            <div className="mb-4 lg:mb-6 pb-4 lg:pb-5 border-b border-slate-100 hidden lg:block">
               <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">{title}</h2>
               <p className="text-sm text-slate-500 font-medium mt-1">
                 Enter your details below. Fields marked with your class help personalize story books.

@@ -6,7 +6,10 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useNavigate,
+  useLocation,
 } from "react-router";
+import { getToken, getUser, clearSession } from "./lib/auth";
 
 import type { Route } from "./+types/root";
 import { FormAutofillBlocker } from "./components/FormAutofillBlocker";
@@ -36,7 +39,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
     <html lang="en">
       <head>
         <meta charSet="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1, viewport-fit=cover"
+        />
         <meta name="theme-color" content="#8AC926" />
         <Meta />
         <Links />
@@ -51,9 +57,76 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   useEffect(() => {
     initMonitoring();
   }, []);
+
+  useEffect(() => {
+    const TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
+    const LAST_ACTIVITY_KEY = "simba_last_activity";
+
+    // Set initial activity on mount if logged in
+    if (getToken()) {
+      if (!localStorage.getItem(LAST_ACTIVITY_KEY)) {
+        localStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString());
+      }
+    }
+
+    function handleActivity() {
+      if (getToken()) {
+        localStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString());
+      }
+    }
+
+    // List of events to listen to
+    const events = ["mousedown", "keydown", "mousemove", "scroll", "touchstart"];
+    events.forEach((event) => {
+      window.addEventListener(event, handleActivity, { passive: true });
+    });
+
+    // Check interval every 10 seconds
+    const interval = setInterval(() => {
+      const token = getToken();
+      if (!token) return;
+
+      const lastActivityStr = localStorage.getItem(LAST_ACTIVITY_KEY);
+      if (!lastActivityStr) {
+        localStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString());
+        return;
+      }
+
+      const lastActivity = Number(lastActivityStr);
+      const now = Date.now();
+
+      if (now - lastActivity > TIMEOUT_MS) {
+        const user = getUser();
+        const role = user?.role;
+
+        // Clear session
+        clearSession();
+        localStorage.removeItem(LAST_ACTIVITY_KEY);
+
+        // Redirect to appropriate login page
+        if (role === "ADMIN") {
+          navigate("/admin/login?expired=true");
+        } else if (role === "TEACHER") {
+          navigate("/teacher/login?expired=true");
+        } else {
+          navigate("/login?expired=true"); // Student
+        }
+      }
+    }, 10000);
+
+    return () => {
+      events.forEach((event) => {
+        window.removeEventListener(event, handleActivity);
+      });
+      clearInterval(interval);
+    };
+  }, [navigate]);
 
   return (
     <>

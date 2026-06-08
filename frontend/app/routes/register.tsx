@@ -16,11 +16,12 @@ import { useMockPaymentGateway } from "../lib/useMockPaymentGateway";
 import { getUser, saveSession } from "../lib/auth";
 import {
   PAYMENTS_ENABLED,
+  PAYMENTS_MOCK_MODE,
   STUDENT_CLASS_OPTIONS,
   STUDENT_PLATFORM_FEE_INR,
   type StudentClassLevel,
 } from "../lib/constants";
-import { AlertCircle, Book, BookOpen, CreditCard, GraduationCap } from "lucide-react";
+import { AlertCircle, CreditCard, FileText, Presentation } from "lucide-react";
 import { AntiAutofillTrap, blockAutofillInputProps } from "../components/AntiAutofillTrap";
 
 export function meta({}: Route.MetaArgs) {
@@ -159,8 +160,15 @@ export default function RegisterPage() {
   const inputClass = (hasError: boolean) => authInputClass(hasError, "student", true);
 
   const sideSubtitle = PAYMENTS_ENABLED
-    ? "Secure registration with a one-time platform fee."
-    : "Free access to course materials and story books.";
+    ? "One-time fee to unlock story books for your child's class."
+    : "Free access to PDF & PPT story books by class.";
+
+  const mobileFeeBanner = PAYMENTS_ENABLED ? (
+    <div className="rounded-xl bg-white/12 border border-white/20 px-3.5 py-2.5 flex items-center justify-between gap-3">
+      <p className="text-xs font-semibold text-white/85">Registration fee</p>
+      <p className="text-xl sm:text-2xl font-black text-white shrink-0">{feeLabel}</p>
+    </div>
+  ) : null;
 
   const feeFooter = PAYMENTS_ENABLED ? (
     <div className="rounded-2xl bg-white/12 border border-white/20 p-4 flex items-center justify-between gap-4">
@@ -170,7 +178,9 @@ export default function RegisterPage() {
         </div>
         <div className="min-w-0">
           <p className="text-xs font-semibold text-white/80">Registration fee</p>
-          <p className="text-[11px] text-white/65 font-medium mt-0.5">Zoho Payments · account created after pay</p>
+          <p className="text-[11px] text-white/65 font-medium mt-0.5">
+            {PAYMENTS_MOCK_MODE ? "Demo checkout" : "Zoho Payments"} · account created after pay
+          </p>
         </div>
       </div>
       <p className="text-2xl font-black text-white shrink-0">{feeLabel}</p>
@@ -179,27 +189,23 @@ export default function RegisterPage() {
 
   return (
     <>
-      {PAYMENTS_ENABLED ? mockModal : null}
+      {PAYMENTS_MOCK_MODE ? mockModal : null}
       <Toast message={error} variant="error" onDismiss={() => setError("")} />
       <AuthSplitLayout
         portal="student"
         title="Sign up"
         subtitle={sideSubtitle}
+        mobileSideFooter={mobileFeeBanner}
         highlights={[
           {
-            icon: <Book className="w-4 h-4 text-white" />,
-            title: "Story books",
-            description: "Browse by Playgroup, Pre-KG, LKG & UKG.",
+            icon: <FileText className="w-4 h-4 text-white" />,
+            title: "Story books (PDF)",
+            description: "Read and print PDF story books for Playgroup, Pre-KG, LKG & UKG.",
           },
           {
-            icon: <BookOpen className="w-4 h-4 text-white" />,
-            title: "Course materials",
-            description: "PPT & PDF worksheets from teachers.",
-          },
-          {
-            icon: <GraduationCap className="w-4 h-4 text-white" />,
-            title: "Student dashboard",
-            description: "Materials, payments & alerts in one place.",
+            icon: <Presentation className="w-4 h-4 text-white" />,
+            title: "Story books (PPT)",
+            description: "View presentation-style story books shared by Simba teachers.",
           },
         ]}
         sideFooter={feeFooter}
@@ -213,7 +219,7 @@ export default function RegisterPage() {
         >
           <AntiAutofillTrap />
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-2">
             <AuthField label="Full name" error={nameError} portal="student" softLabel>
               <div className="relative">
                 <input
