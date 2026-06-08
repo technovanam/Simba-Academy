@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import type { Route } from "./+types/student.checkout";
 import { api, ApiError, type AuthUser, type Course } from "../lib/api";
-import { PAYMENTS_ENABLED } from "../lib/constants";
+import { PAYMENTS_ENABLED, PAYMENTS_MOCK_MODE } from "../lib/constants";
 import { useMockPaymentGateway } from "../lib/useMockPaymentGateway";
 import { clearSession, getToken, getUser } from "../lib/auth";
 import { isActionBusy } from "../lib/actionGuard";
@@ -135,7 +135,7 @@ export default function StudentCheckoutPage() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] font-sans text-sm text-slate-900 flex flex-col relative overflow-hidden">
-      {mockModal}
+      {PAYMENTS_MOCK_MODE ? mockModal : null}
 
       <div className="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-[#FF9F1C]/10 blur-3xl pointer-events-none" />
       <div className="absolute -bottom-24 -left-24 w-72 h-72 rounded-full bg-[#FF9F1C]/8 blur-3xl pointer-events-none" />
@@ -240,7 +240,8 @@ export default function StudentCheckoutPage() {
       </main>
 
       <footer className="h-12 border-t border-slate-200 bg-white px-6 flex items-center justify-center shrink-0 text-[10px] font-semibold text-slate-400">
-        Simba Academy © {new Date().getFullYear()} — Secure payments via Zoho Payments
+        Simba Academy © {new Date().getFullYear()} —{" "}
+        {PAYMENTS_MOCK_MODE ? "Demo checkout" : "Secure payments via Zoho Payments"}
       </footer>
     </div>
   );

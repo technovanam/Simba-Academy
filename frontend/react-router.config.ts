@@ -1,13 +1,6 @@
-import { vercelPreset } from "@vercel/react-router/vite";
 import type { Config } from "@react-router/dev/config";
 
 export default {
-  ssr: true,
-  presets: [vercelPreset()],
-  future: {
-    v8_passThroughRequests: true,
-    v8_splitRouteModules: true,
-    v8_trailingSlashAwareDataRequests: true,
-    v8_viteEnvironmentApi: true,
-  },
+  // Static client build → upload build/client to cPanel public_html
+  ssr: false,
 } satisfies Config;

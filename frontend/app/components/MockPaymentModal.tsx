@@ -37,13 +37,14 @@ export function MockPaymentModal({
         <div className="flex items-center justify-center gap-2 mb-2">
           <CreditCard className="w-4 h-4 text-[#FF9F1C]" />
           <span className="text-[10px] font-bold uppercase tracking-widest text-[#c77a00]">
-            Mock Payment Gateway
+            Simba Academy Checkout
           </span>
         </div>
 
-        <h3 className="text-lg font-bold text-slate-800 mb-1 text-center">Test checkout</h3>
+        <h3 className="text-lg font-bold text-slate-800 mb-1 text-center">Complete payment</h3>
         <p className="text-xs text-slate-500 font-medium mb-5 text-center leading-relaxed">
-          Zoho Payments is not active yet. Use this sandbox to complete registration and enrollment flows locally.
+          Demo checkout for student registration and enrollment. No real payment is processed — click below to
+          continue.
         </p>
 
         <div className="bg-[#FF9F1C]/5 rounded-xl p-4 border border-[#FF9F1C]/10 mb-5 space-y-2 text-left">
@@ -71,7 +72,7 @@ export function MockPaymentModal({
             onClick={onSuccess}
             className="w-full py-3 rounded-xl bg-[#FF9F1C] hover:bg-[#e88f0a] text-white font-sans font-extrabold transition-colors shadow-md text-sm cursor-pointer"
           >
-            Simulate successful payment
+            Confirm payment
           </button>
           <button
             type="button"

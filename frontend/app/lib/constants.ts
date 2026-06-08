@@ -1,8 +1,15 @@
 /** One-time student platform registration fee (INR) */
-export const STUDENT_PLATFORM_FEE_INR = 120;
+export const STUDENT_PLATFORM_FEE_INR = 1;
 
-/** Set true when Zoho Payments is verified and live. */
-export const PAYMENTS_ENABLED = true;
+/** Live Zoho Payments checkout widget */
+export const PAYMENTS_LIVE_ZOHO = import.meta.env.VITE_PAYMENTS_LIVE_ZOHO === "true";
+
+/** Demo checkout modal — only when VITE_PAYMENTS_MOCK=true (and live Zoho is off) */
+export const PAYMENTS_MOCK_MODE =
+  import.meta.env.VITE_PAYMENTS_MOCK === "true" && !PAYMENTS_LIVE_ZOHO;
+
+/** Student registration + checkout payment gate */
+export const PAYMENTS_ENABLED = PAYMENTS_LIVE_ZOHO || PAYMENTS_MOCK_MODE;
 
 /** Class levels for student signup & story book browsing */
 export const STUDENT_CLASS_LEVELS = ["Playgroup", "Pre-KG", "LKG", "UKG"] as const;

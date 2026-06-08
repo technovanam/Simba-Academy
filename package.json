@@ -3,6 +3,20 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "npm run dev --prefix backend",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "build:backend": "npm run build --prefix backend",
+    "build:frontend": "npm run build --prefix frontend",
+    "build": "npm run build:backend && npm run build:frontend",
+    "typecheck:backend": "npm run typecheck --prefix backend",
+    "typecheck:frontend": "npm run typecheck --prefix frontend",
+    "typecheck": "npm run typecheck:backend && npm run typecheck:frontend",
+    "db:push": "npm run db:push --prefix backend",
+    "db:generate": "npm run db:generate --prefix backend",
+    "db:seed": "npm run db:seed --prefix backend",
+    "db:clear": "node backend/scripts/clear-db.mjs",
+    "db:purge-teachers": "npm run db:purge-teachers --prefix backend",
     "test:db": "node backend/scripts/verify-all-features.mjs",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
@@ -14,10 +28,14 @@
     "test:a11y": "playwright test tests/a11y.smoke.spec.ts",
     "test:readiness": "node backend/scripts/production-readiness.mjs",
     "test:all": "npm run test:readiness -- --static-only && npm run test:db && npm run test:e2e",
+    "pack:backend": "npm run deploy:pack --prefix backend",
+    "pack:frontend": "npm run deploy:pack --prefix frontend",
+    "pack:cpanel": "npm run pack:backend && npm run pack:frontend",
     "postinstall": "playwright install chromium"
   },
   "devDependencies": {
     "@playwright/test": "^1.52.0",
+    "concurrently": "^9.2.1",
     "dotenv": "^17.4.2"
   }
 }

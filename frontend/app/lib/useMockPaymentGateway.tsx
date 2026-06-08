@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 import { MockPaymentModal } from "../components/MockPaymentModal";
+import { PAYMENTS_LIVE_ZOHO, PAYMENTS_MOCK_MODE } from "./constants";
 import {
   openZohoCheckout,
   type OpenZohoCheckoutOptions,
@@ -34,7 +35,11 @@ export function useMockPaymentGateway() {
   const [pending, setPending] = useState<PendingMock | null>(null);
 
   const runCheckout = useCallback(async (options: OpenZohoCheckoutOptions): Promise<ZohoWidgetPaymentResult> => {
-    if (isMockPaymentMode(options.session)) {
+    const sessionIsMock =
+      isMockPaymentMode(options.session) || options.session.isPlaceholder === true;
+    const useMock = PAYMENTS_MOCK_MODE || (!PAYMENTS_LIVE_ZOHO && sessionIsMock);
+
+    if (useMock) {
       return new Promise((resolve, reject) => {
         setPending({ options, resolve, reject });
       });
