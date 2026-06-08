@@ -72,14 +72,14 @@ if (homeRoute.includes("meta(")) {
 }
 
 // ── Phase 6: Security static ─────────────────────────────────────
-const indexTs = read("backend/src/index.ts");
-if (indexTs.includes("helmet(")) pass("Security", "Helmet enabled");
+const appTs = read("backend/src/app.ts");
+if (appTs.includes("helmet(")) pass("Security", "Helmet enabled");
 else fail("Security", "Helmet not found");
 
-if (indexTs.includes("cors(")) pass("Security", "CORS configured");
+if (appTs.includes("cors(")) pass("Security", "CORS configured");
 else fail("Security", "CORS not configured");
 
-if (indexTs.includes("apiLimiter")) pass("Security", "API rate limiting mounted");
+if (appTs.includes("apiLimiter")) pass("Security", "API rate limiting mounted");
 else fail("Security", "API rate limiter missing");
 
 const rateLimiter = read("backend/src/middleware/rateLimiter.ts");
@@ -87,7 +87,7 @@ const authTs = read("backend/src/routes/auth.ts");
 if (rateLimiter.includes("authLimiter")) pass("Security", "Auth rate limiter defined");
 if (rateLimiter.includes("emailCheckLimiter")) pass("Security", "Check-email rate limiter defined");
 if (authTs.includes("PORTAL_ROLE")) pass("Security", "Portal-scoped login enforced");
-if (indexTs.includes("entity.too.large")) pass("Security", "Oversized JSON returns 413");
+if (appTs.includes("entity.too.large")) pass("Security", "Oversized JSON returns 413");
 if (authTs.includes("bcrypt.hash") && authTs.includes("12")) {
   pass("Security", "Passwords hashed with bcrypt cost 12");
 }
@@ -136,13 +136,13 @@ if (!authTs.includes("emailVerified")) {
 }
 
 // ── Phase 8: Email ────────────────────────────────────────────────
-const smtpUser = process.env.SMTP_USER ?? "";
-if (smtpUser && !smtpUser.includes("your-brevo")) {
-  pass("Email", "SMTP credentials configured");
+const resendApiKey = process.env.RESEND_API_KEY ?? "";
+if (resendApiKey && !resendApiKey.includes("re_xxxxxxxxx")) {
+  pass("Email", "Resend API key configured");
 } else if (isProd) {
-  fail("Email", "Configure Brevo SMTP for production");
+  fail("Email", "Configure Resend API Key for production");
 } else {
-  warn("Email", "SMTP not configured (dev may log emails only)");
+  warn("Email", "Resend API Key not configured");
 }
 
 // ── Phase 15: Backups (manual checklist) ──────────────────────────
