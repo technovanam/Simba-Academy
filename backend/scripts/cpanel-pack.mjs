@@ -87,6 +87,11 @@ if (existsSync(deployGuide)) {
   copyPath(deployGuide, join(STAGING, "DEPLOY-CPANEL.md"));
 }
 
+const htaccessTemplate = join(BACKEND, "scripts", "public_html-backend.htaccess.template");
+if (existsSync(htaccessTemplate)) {
+  copyPath(htaccessTemplate, join(STAGING, "scripts", "public_html-backend.htaccess.template"));
+}
+
 console.log("\n==> Copying pre-generated Prisma client folders to backup…");
 if (existsSync(join(BACKEND, "node_modules", "@prisma", "client"))) {
   copyPath(

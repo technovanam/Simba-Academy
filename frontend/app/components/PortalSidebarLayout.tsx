@@ -95,7 +95,7 @@ export function PortalSidebarLayout({
         ) : null}
 
         <aside
-          className={`portal-drawer fixed lg:static inset-y-0 left-0 z-[58] lg:z-30 w-[min(20rem,92vw)] sm:w-80 lg:w-72 lg:max-w-none lg:h-screen lg:sticky lg:top-0 bg-[#F1F5F9] border-r border-slate-200 flex flex-col shrink-0 select-none shadow-2xl lg:shadow-none transition-transform duration-300 ease-out ${
+          className={`portal-drawer fixed lg:static inset-y-0 left-0 z-[58] lg:z-30 w-[min(20rem,92vw)] sm:w-80 lg:w-72 lg:max-w-none h-[100dvh] max-h-[100dvh] lg:sticky lg:top-0 bg-[#F1F5F9] border-r border-slate-200 flex flex-col shrink-0 overflow-hidden select-none shadow-2xl lg:shadow-none transition-transform duration-300 ease-out ${
             menuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
           }`}
           role="dialog"
@@ -115,7 +115,7 @@ export function PortalSidebarLayout({
           </div>
 
           <div
-            className="flex-1 min-h-0 overflow-y-auto scrollbar-hide lg:overflow-visible px-5 py-5 lg:py-6 lg:px-5 flex flex-col justify-between gap-6"
+            className="portal-sidebar-inner flex-1 min-h-0 overflow-hidden px-5 py-4 lg:py-5 lg:px-5 flex flex-col"
             onClick={(event) => {
               const target = (event.target as HTMLElement).closest("a, button");
               if (target && menuOpen) closeMenu();

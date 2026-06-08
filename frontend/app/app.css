@@ -128,6 +128,11 @@ input:-webkit-autofill:active {
   animation: toast-slide-out 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+/* Compact toast — never stretch across wide desktop layouts */
+.toast-notification {
+  max-width: min(20rem, calc(100vw - 2rem));
+}
+
 /* Native selects: hide default arrow and show a aligned chevron */
 .portal-select {
   appearance: none;
@@ -199,6 +204,10 @@ html:has(.portal-app-shell) body {
   padding-top: env(safe-area-inset-top, 0px);
 }
 
+.portal-sidebar-inner {
+  min-height: 0;
+}
+
 @media (max-width: 1023px) {
   .portal-main-column {
     min-height: 0;
@@ -206,8 +215,6 @@ html:has(.portal-app-shell) body {
   }
 
   .portal-drawer {
-    height: 100dvh;
-    max-height: 100dvh;
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 }

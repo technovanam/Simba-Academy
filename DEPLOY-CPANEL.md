@@ -78,6 +78,8 @@ Example: `/home1/simapre/uploads`
 
 The included `.htaccess` enables React Router client-side routing on Apache.
 
+**Important:** Do **not** delete `public_html/backend/` — that folder is created by **Setup Node.js App** for the API (`/backend` URL). The frontend zip only goes in `public_html` root. If `public_html/backend/.htaccess` is missing, the Node app cannot start/stop (see troubleshooting below).
+
 ### Verify
 
 - `https://yourdomain.in/` — portal picker / landing
@@ -97,11 +99,41 @@ The included `.htaccess` enables React Router client-side routing on Apache.
 
 | Issue | Fix |
 |--------|-----|
+| `FileNotFoundError: ... public_html/backend/.htaccess` | Create folder `public_html/backend`, add empty `.htaccess`, then **Setup Node.js App → Edit app → Save** (regenerates Passenger config). See section 6. |
 | API 404 | Check Node app URL prefix matches `VITE_API_URL` (e.g. `/backend`) |
 | CORS error | Add your site to `ALLOWED_ORIGINS` in backend env |
 | Blank page after refresh | Ensure `.htaccess` is in `public_html` |
 | Uploads fail | Create `STORAGE_PATH` folder with write permission |
 | Prisma errors on server | Re-run **Run NPM Install**, then `scripts/cpanel-setup.mjs` |
+
+---
+
+## 6. Fix missing `public_html/backend/.htaccess`
+
+This happens if the frontend was extracted over the Node.js `/backend` URL folder.
+
+### Option A — cPanel File Manager (recommended)
+
+1. **File Manager** → `public_html`
+2. Create folder **`backend`** (if missing)
+3. Inside `backend`, create new file **`.htaccess`** (enable *Show Hidden Files* in Settings)
+4. Leave it **empty** and save
+5. **Setup Node.js App** → open your API app → click **Save** (cPanel writes Passenger lines into that file)
+6. **Restart** the app
+
+### Option B — Terminal
+
+```bash
+mkdir -p ~/public_html/backend
+touch ~/public_html/backend/.htaccess
+chmod 644 ~/public_html/backend/.htaccess
+```
+
+Then **Setup Node.js App → Save → Restart**.
+
+### Option C — Copy template
+
+From `simba-api.zip`, use `scripts/public_html-backend.htaccess.template` — replace `simbapre` and `nodevenv` paths with values shown on your **Setup Node.js App** page, save as `public_html/backend/.htaccess`.
 
 ---
 

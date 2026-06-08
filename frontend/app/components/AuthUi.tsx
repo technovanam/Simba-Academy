@@ -516,11 +516,11 @@ export function AuthAlert({ variant, message, onDismiss, portal = "student" }: A
 
   return (
     <div
-      className={`mb-5 p-3.5 rounded-xl border flex gap-2.5 text-base font-medium ${styles}`}
+      className={`mb-5 p-3 rounded-xl border flex gap-2.5 text-sm font-medium max-w-full ${styles}`}
       role="alert"
     >
       <Icon className="w-4 h-4 shrink-0 mt-0.5" />
-      <p className="flex-1 leading-snug">{message}</p>
+      <p className="flex-1 min-w-0 leading-snug break-words line-clamp-3">{message}</p>
       {onDismiss && variant === "error" && (
         <button
           type="button"

@@ -1,0 +1,13 @@
+# Place at: /home1/USERNAME/public_html/backend/.htaccess
+# Replace USERNAME and paths from cPanel → Setup Node.js App.
+#
+# Quick fix: create an EMPTY .htaccess in public_html/backend/, then
+# Setup Node.js App → Edit app → Save (cPanel rewrites this file).
+
+# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION BEGIN
+PassengerAppRoot "/home1/simbapre/backend"
+PassengerBaseURI "/backend"
+PassengerNodejs "/home1/simbapre/nodevenv/backend/20/bin/node"
+PassengerAppType node
+PassengerStartupFile app.js
+# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION END

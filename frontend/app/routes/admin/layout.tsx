@@ -10,7 +10,7 @@ import {
 } from "../../lib/adminRoutes";
 import { type AuthUser } from "../../lib/api";
 import { clearSession, getToken, getUser } from "../../lib/auth";
-import { Toast } from "../../components/Toast";
+import { PortalToasts } from "../../components/Toast";
 import { PortalSidebarLayout } from "../../components/PortalSidebarLayout";
 import {
   Award,
@@ -116,7 +116,8 @@ export default function AdminLayout() {
   }
 
   const sidebar = (
-    <>
+    <div className="flex flex-col h-full min-h-0">
+      <div className="flex-1 min-h-0 overflow-y-auto scrollbar-hide pr-0.5">
       <div className="space-y-6">
         <div className="flex items-center gap-3.5 bg-slate-100/80 p-3 rounded-xl border border-slate-200/80">
           <img
@@ -166,22 +167,28 @@ export default function AdminLayout() {
           })}
         </div>
       </div>
+      </div>
 
-      <div className="mt-8 space-y-4">
+      <div className="shrink-0 pt-3 mt-2 border-t border-slate-200/80 bg-[#F1F5F9]">
         <button
+          type="button"
           onClick={handleLogout}
-          className="w-full flex items-center justify-center gap-2 py-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 font-bold text-xs tracking-wider uppercase hover:bg-rose-100 hover:text-rose-800 transition-all duration-300"
+          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 font-bold text-xs tracking-wider uppercase hover:bg-rose-100 hover:text-rose-800 transition-all duration-300"
         >
           <LogOut className="w-3.5 h-3.5" /> Logout
         </button>
       </div>
-    </>
+    </div>
   );
 
   return (
     <PortalSidebarLayout sidebar={sidebar} mobileTitle="Academy Director">
-      <Toast message={error} variant="error" onDismiss={() => setError("")} />
-      <Toast message={message} variant="success" onDismiss={() => setMessage("")} />
+      <PortalToasts
+        error={error}
+        message={message}
+        onDismissError={() => setError("")}
+        onDismissSuccess={() => setMessage("")}
+      />
 
       <main className="flex-1 min-h-0 w-full min-w-0 max-w-7xl mx-auto flex flex-col portal-main-scroll overflow-y-auto overflow-x-hidden p-3 sm:p-4 lg:p-6 pb-6 lg:pb-8">
         <AdminOutletProvider value={{ token, user, setMessage, setError }}>
