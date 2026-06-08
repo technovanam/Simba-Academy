@@ -76,7 +76,7 @@ export function TeacherNotificationsPage({ token, onError, onRefresh }: TeacherN
   }
 
   return (
-    <div className={`${portalDashboardBodyClass} h-full`}>
+    <div className={portalDashboardBodyClass}>
       <AdminPageShell>
         <AdminPageHeader
           title="Notifications"

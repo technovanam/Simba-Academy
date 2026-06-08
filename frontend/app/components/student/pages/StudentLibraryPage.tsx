@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
-import { Eye, Printer } from "lucide-react";
 import { api, ApiError, type AuthUser, type StoryBook } from "../../../lib/api";
 import { clearSession, saveSession } from "../../../lib/auth";
 import { PAYMENTS_ENABLED } from "../../../lib/constants";
-import { StoryBookInlineViewer } from "../../StoryBookInlineViewer";
+import { StoryBookActions } from "../../StoryBookActions";
 import { AdminPageBody, AdminPageHeader, AdminPageShell } from "../../AdminPageShell";
 import {
   adminListRowClass,
@@ -26,11 +25,6 @@ export function StudentLibraryPage() {
   const [books, setBooks] = useState<StoryBook[]>([]);
   const [loading, setLoading] = useState(true);
   const [librarySearch, setLibrarySearch] = useState("");
-  const [libraryViewer, setLibraryViewer] = useState<{
-    bookId: string;
-    title: string;
-    print: boolean;
-  } | null>(null);
 
   useEffect(() => {
     if (!token) return;
@@ -103,27 +97,8 @@ export function StudentLibraryPage() {
 
   if (loading) return <StudentTabLoader />;
 
-  if (libraryViewer && token) {
-    return (
-      <div className={`${portalDashboardBodyClass} h-full`}>
-        <AdminPageShell>
-          <AdminPageBody>
-            <StoryBookInlineViewer
-              bookId={libraryViewer.bookId}
-              title={libraryViewer.title}
-              token={token}
-              printOnLoad={libraryViewer.print}
-              accent="orange"
-              onBack={() => setLibraryViewer(null)}
-            />
-          </AdminPageBody>
-        </AdminPageShell>
-      </div>
-    );
-  }
-
   return (
-    <div className={`${portalDashboardBodyClass} h-full`}>
+    <div className={portalDashboardBodyClass}>
       <AdminPageShell>
         <AdminPageHeader
           title="Story Books Library"
@@ -152,7 +127,7 @@ export function StudentLibraryPage() {
                 <div key={b.id} className={adminListRowClass}>
                   <div className="flex-1 min-w-[180px]">
                     <div className="flex flex-wrap items-center gap-2 mb-1">
-                      <span className="px-2 py-0.5 rounded-md bg-[#FF9F1C]/15 text-[#c77a00] text-4xs font-extrabold uppercase border border-[#FF9F1C]/30 shrink-0">
+                      <span className="px-2 py-0.5 rounded-md bg-[#8AC926]/15 text-[#6B9E1A] text-4xs font-extrabold uppercase border border-[#8AC926]/30 shrink-0">
                         {b.category}
                       </span>
                     </div>
@@ -163,22 +138,13 @@ export function StudentLibraryPage() {
                   </div>
                   {token ? (
                     <div className="flex flex-wrap items-center gap-2 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => setLibraryViewer({ bookId: b.id, title: b.title, print: false })}
-                        className="px-3 py-1.5 rounded-lg font-bold text-2xs flex items-center gap-1 border bg-[#FF9F1C]/10 border-[#FF9F1C]/30 text-[#c77a00] hover:bg-[#FF9F1C]/20"
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                        View
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setLibraryViewer({ bookId: b.id, title: b.title, print: true })}
-                        className="px-3 py-1.5 rounded-lg font-bold text-2xs flex items-center gap-1 border bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100"
-                      >
-                        <Printer className="w-3.5 h-3.5" />
-                        Print
-                      </button>
+                      <StoryBookActions
+                        bookId={b.id}
+                        token={token}
+                        role="STUDENT"
+                        title={b.title}
+                        variant="admin"
+                      />
                     </div>
                   ) : null}
                 </div>

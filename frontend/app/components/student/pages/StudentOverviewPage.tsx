@@ -262,8 +262,8 @@ export function StudentOverviewPage() {
 
         {/* Split workspace — matches admin layout, fills remaining viewport */}
         <div className={portalDashboardLowerGridClass}>
-          <div className="lg:col-span-2 flex flex-col min-h-0 h-full">
-            <div className="bg-white rounded-2xl p-5 border border-slate-200 flex-1 flex flex-col min-h-0 h-full">
+          <div className="lg:col-span-2 flex flex-col">
+            <div className="bg-white rounded-2xl p-5 border border-slate-200 flex flex-col">
               <div className="flex flex-wrap justify-between items-center gap-4 mb-4">
                 <div>
                   <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
@@ -316,8 +316,8 @@ export function StudentOverviewPage() {
             </div>
           </div>
 
-          <div className="flex flex-col min-h-0 h-full">
-            <div className="bg-white rounded-2xl p-5 border border-slate-200 flex-1 flex flex-col justify-between min-h-0 h-full overflow-y-auto">
+          <div className="flex flex-col">
+            <div className="bg-white rounded-2xl p-5 border border-slate-200 flex flex-col">
               <div className="space-y-5">
                 <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                   <h4 className="font-bold text-[10px] uppercase text-slate-800 tracking-wider">

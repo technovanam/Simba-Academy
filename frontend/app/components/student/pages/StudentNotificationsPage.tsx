@@ -74,7 +74,7 @@ export function StudentNotificationsPage() {
   if (loading) return <StudentTabLoader />;
 
   return (
-    <div className={`${portalDashboardBodyClass} h-full`}>
+    <div className={portalDashboardBodyClass}>
       <AdminPageShell>
         <AdminPageHeader
           title="Notifications"

@@ -13,7 +13,8 @@ import { clearSession, getToken, getUser, saveSession } from "../lib/auth";
 import { isActionBusy } from "../lib/actionGuard";
 import { TEACHER_TAB_PATHS } from "../lib/teacherRoutes";
 import { Toast } from "../components/Toast";
-import { StoryBookInlineViewer } from "../components/StoryBookInlineViewer";
+import { PortalSidebarLayout } from "../components/PortalSidebarLayout";
+import { TeacherStoryLibrary } from "../components/teacher/TeacherStoryLibrary";
 import { LessonPlanViewerModal, printLessonPlan } from "../components/LessonPlanViewerModal";
 import { ModalCloseButton } from "../components/ModalCloseButton";
 import { TeacherSettingsPanel } from "../components/TeacherSettingsPanel";
@@ -113,15 +114,9 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
   // Search/Filter States
   const [taskSearch, setTaskSearch] = useState("");
   const [taskStatusFilter, setTaskStatusFilter] = useState("ALL");
-  const [librarySearch, setLibrarySearch] = useState("");
   const [plannerSearch, setPlannerSearch] = useState("");
   const [lessonPlanViewer, setLessonPlanViewer] = useState<{
     plan: LessonPlan;
-    print: boolean;
-  } | null>(null);
-  const [libraryViewer, setLibraryViewer] = useState<{
-    bookId: string;
-    title: string;
     print: boolean;
   } | null>(null);
 
@@ -229,7 +224,6 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
       } else if (tab === "library") {
         const allBooks = await api.getTeacherStoryBooks(token);
         setBooks(allBooks);
-        setLibraryViewer(null);
       } else if (tab === "planner") {
         const allPlans = await api.getTeacherLessonPlans(token);
         setLessonPlans(allPlans);
@@ -312,16 +306,6 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
     return matchesSearch && matchesStatus;
   });
 
-  const filteredLibraryBooks = books.filter((b) => {
-    const q = librarySearch.toLowerCase();
-    return (
-      !q ||
-      b.title.toLowerCase().includes(q) ||
-      (b.author ?? "").toLowerCase().includes(q) ||
-      b.category.toLowerCase().includes(q)
-    );
-  });
-
   const taskStatusOptions = [
     { id: "ALL" as const, label: "All Statuses" },
     { id: "PENDING" as const, label: "Pending" },
@@ -341,7 +325,6 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
   });
 
   const taskPagination = useAdminPagination(filteredTasks, [taskSearch, taskStatusFilter], 4);
-  const libraryPagination = useAdminPagination(filteredLibraryBooks, [librarySearch, books.length]);
   const plannerPagination = useAdminPagination(filteredLessonPlans, [plannerSearch]);
 
   const recentLessonPlans = [...lessonPlans]
@@ -375,86 +358,82 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
     );
   }
 
-  return (
-    <div className="h-[100dvh] min-h-screen bg-[#F8FAFC] font-sans text-sm text-slate-900 flex flex-col lg:flex-row overflow-hidden">
-      
-      {/* ── LEFT INTEGRATED SIDEBAR ── */}
-      <aside className="w-full lg:w-72 lg:h-screen lg:sticky lg:top-0 bg-[#F1F5F9] border-r border-slate-200 py-6 px-5 flex flex-col shrink-0 select-none overflow-y-auto justify-between z-30 shadow-2xl">
-        <div className="space-y-6">
-          {/* Brand + role (matches admin sidebar) */}
-          <div className="flex items-center gap-3.5 bg-slate-100/80 p-3 rounded-xl border border-slate-200/80">
-            <img
-              src="/favicon.png"
-              alt="Simba Preschool"
-              className="w-11 h-11 shrink-0 object-contain"
-            />
-            <div className="flex flex-col min-w-0">
-              <h3 className="text-sm font-bold text-slate-900 truncate leading-tight">Simba Preschool</h3>
-              <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mt-0.5">
-                Teacher Portal
-              </p>
-              {user?.name && (
-                <p className="text-[9px] font-medium text-slate-400 truncate mt-0.5">{user.name}</p>
-              )}
-            </div>
+  const sidebar = (
+    <>
+      <div className="space-y-6">
+        <div className="flex items-center gap-3.5 bg-slate-100/80 p-3 rounded-xl border border-slate-200/80">
+          <img
+            src="/favicon.png"
+            alt="Simba Preschool"
+            className="w-11 h-11 shrink-0 object-contain"
+          />
+          <div className="flex flex-col min-w-0">
+            <h3 className="text-sm font-bold text-slate-900 truncate leading-tight">Simba Preschool</h3>
+            <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mt-0.5">
+              Teacher Portal
+            </p>
+            {user?.name && (
+              <p className="text-[9px] font-medium text-slate-400 truncate mt-0.5">{user.name}</p>
+            )}
           </div>
+        </div>
 
-          {/* Menu Navigation System */}
-          <div className="space-y-1">
-            <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest block px-3 mb-2">MENU</span>
-            {[
-              { id: "overview", label: "Dashboard", icon: Layers },
-              { id: "tasks", label: "Assigned Tasks", icon: Calendar },
-              { id: "library", label: "Story Library", icon: Book },
-              { id: "planner", label: "Lesson Planner", icon: Compass },
-              { id: "notifications", label: "Notifications", icon: Bell },
-              { id: "settings", label: "Settings", icon: Settings },
-            ].map((tab) => {
-              const Icon = tab.icon;
-              const isActive = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => goToTab(tab.id as TabType)}
-                  className={`w-full flex items-center justify-between px-3.5 py-2 rounded-xl font-bold text-xs tracking-wider transition-all duration-300 relative group/btn ${
+        <div className="space-y-1">
+          <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest block px-3 mb-2">MENU</span>
+          {[
+            { id: "overview", label: "Dashboard", icon: Layers },
+            { id: "tasks", label: "Assigned Tasks", icon: Calendar },
+            { id: "library", label: "Story Library", icon: Book },
+            { id: "planner", label: "Lesson Planner", icon: Compass },
+            { id: "notifications", label: "Notifications", icon: Bell },
+            { id: "settings", label: "Settings", icon: Settings },
+          ].map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => goToTab(tab.id as TabType)}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-bold text-xs tracking-wider transition-all duration-300 relative group/btn ${
                     isActive
-                      ? "bg-[#8AC926] text-white shadow-md shadow-[#8AC926]/10 translate-x-1"
-                      : "text-slate-600 hover:bg-slate-200/60 hover:text-slate-900 hover:translate-x-1"
+                      ? "bg-[#8AC926] text-white shadow-md shadow-[#8AC926]/10 lg:translate-x-1"
+                      : "text-slate-600 hover:bg-slate-200/60 hover:text-slate-900 lg:hover:translate-x-1"
                   }`}
-                >
-                  <div className="flex items-center gap-3 py-1">
-                    <Icon className={`w-4 h-4 transition-transform duration-300 group-hover/btn:scale-110 ${isActive ? "text-white" : "text-[#8AC926]"}`} />
-                    <span>{tab.label}</span>
-                  </div>
-                  {tab.id === "notifications" && unreadNotificationCount > 0 ? (
-                    <span className="min-w-[1.125rem] h-[1.125rem] px-1 rounded-full text-[9px] font-extrabold flex items-center justify-center bg-rose-500 text-white">
-                      {unreadNotificationCount > 9 ? "9+" : unreadNotificationCount}
-                    </span>
-                  ) : null}
-                  {isActive && (
-                    <div className="w-0.5 h-3 bg-white rounded-lg absolute left-0 top-1/2 -translate-y-1/2" />
-                  )}
-                </button>
-              );
-            })}
-          </div>
+              >
+                <div className="flex items-center gap-3 py-1">
+                  <Icon className={`w-4 h-4 transition-transform duration-300 group-hover/btn:scale-110 ${isActive ? "text-white" : "text-[#8AC926]"}`} />
+                  <span>{tab.label}</span>
+                </div>
+                {tab.id === "notifications" && unreadNotificationCount > 0 ? (
+                  <span className="min-w-[1.125rem] h-[1.125rem] px-1 rounded-full text-[9px] font-extrabold flex items-center justify-center bg-rose-500 text-white">
+                    {unreadNotificationCount > 9 ? "9+" : unreadNotificationCount}
+                  </span>
+                ) : null}
+                {isActive && (
+                  <div className="w-0.5 h-3 bg-white rounded-lg absolute left-0 top-1/2 -translate-y-1/2" />
+                )}
+              </button>
+            );
+          })}
         </div>
+      </div>
 
-        {/* Bottom Sidebar Blocks */}
-        <div className="mt-8 space-y-4">
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="w-full flex items-center justify-center gap-2 py-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 font-bold text-xs tracking-wider uppercase hover:bg-rose-100 hover:text-rose-800 transition-all duration-300"
-          >
-            <LogOut className="w-3.5 h-3.5" /> Logout
-          </button>
-        </div>
-      </aside>
+      <div className="mt-8 space-y-4">
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="w-full flex items-center justify-center gap-2 py-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 font-bold text-xs tracking-wider uppercase hover:bg-rose-100 hover:text-rose-800 transition-all duration-300"
+        >
+          <LogOut className="w-3.5 h-3.5" /> Logout
+        </button>
+      </div>
+    </>
+  );
 
-      {/* ── RIGHT MAIN WORKSPACE ── */}
-      <main className="flex-1 flex flex-col min-h-0 h-full overflow-hidden">
+  return (
+    <PortalSidebarLayout sidebar={sidebar} mobileTitle="Teacher Portal">
+      <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
         
         <Toast message={error} variant="error" onDismiss={() => setError("")} />
         <Toast message={message} variant="success" onDismiss={() => setMessage("")} />
@@ -499,13 +478,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
         ) : null}
 
         {/* Tab view area */}
-        <div
-          className={`flex-1 min-h-0 bg-[#F8FAFC] focus:outline-none ${
-            activeTab === "overview"
-              ? "overflow-hidden flex flex-col p-6"
-              : "overflow-y-auto p-4 lg:p-6"
-          }`}
-        >
+        <div className="flex-1 min-h-0 bg-[#F8FAFC] focus:outline-none portal-main-scroll overflow-y-auto p-4 lg:p-6 pb-6 lg:pb-8">
           
           {loading && activeTab !== "settings" && activeTab !== "notifications" ? (
             <div className="flex-1 flex flex-col items-center justify-center min-h-0 gap-3">
@@ -690,7 +663,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
 
                   {/* Split workspace */}
                   <div className={portalDashboardLowerGridClass}>
-                    <div className="lg:col-span-2 bg-white rounded-2xl p-5 border border-slate-200 flex flex-col min-h-0 h-full">
+                    <div className="lg:col-span-2 bg-white rounded-2xl p-5 border border-slate-200 flex flex-col">
                       <div className="flex flex-wrap justify-between items-center gap-4 mb-4">
                         <div>
                           <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Recent Tasks</h3>
@@ -757,7 +730,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                       </div>
                     </div>
 
-                    <div className="bg-white rounded-2xl p-5 border border-slate-200 flex flex-col min-h-0 h-full">
+                    <div className="bg-white rounded-2xl p-5 border border-slate-200 flex flex-col">
                       <div className="flex items-center justify-between pb-2 border-b border-slate-100 mb-4">
                         <h4 className="font-bold text-[10px] uppercase text-slate-800 tracking-wider">Workspace Summary</h4>
                         <TrendingUp className="w-4 h-4 text-[#8AC926]" />
@@ -923,89 +896,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
 
               {/* ────────────────── STORY LIBRARY Tab ────────────────── */}
               {activeTab === "library" && token && (
-                <AdminPageShell>
-                  {!libraryViewer ? (
-                    <>
-                      <AdminPageHeader
-                        title="Story Library"
-                        description="All story books across every class — view and print only. Downloads are reserved for administrators."
-                        actions={
-                          <AdminSearchInput
-                            value={librarySearch}
-                            onChange={setLibrarySearch}
-                            placeholder="Search books…"
-                            ariaLabel="Search story books"
-                          />
-                        }
-                      />
-                      <AdminPageBody>
-                        {filteredLibraryBooks.length === 0 ? (
-                          <AdminListEmpty message="No story books matched your search." />
-                        ) : (
-                          <AdminRecordList>
-                            {libraryPagination.paginatedItems.map((b) => (
-                              <div key={b.id} className={adminListRowClass}>
-                                <div className="flex-1 min-w-[180px]">
-                                  <div className="flex flex-wrap items-center gap-2 mb-1">
-                                    <span className="px-2 py-0.5 rounded-md bg-[#8AC926]/15 text-[#6B9E1A] text-4xs font-extrabold uppercase border border-[#8AC926]/30 shrink-0">
-                                      {b.category}
-                                    </span>
-                                  </div>
-                                  <p className="font-bold text-sm text-slate-800">{b.title}</p>
-                                  {b.author && (
-                                    <p className="text-2xs text-slate-600 font-medium">Author: {b.author}</p>
-                                  )}
-                                </div>
-                                <div className="flex flex-wrap items-center gap-2 shrink-0">
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      setLibraryViewer({ bookId: b.id, title: b.title, print: false })
-                                    }
-                                    className="px-3 py-1.5 rounded-lg font-bold text-2xs flex items-center gap-1 border bg-blue-50 border-blue-200 text-blue-800 hover:bg-blue-100"
-                                  >
-                                    <Eye className="w-3.5 h-3.5" />
-                                    View
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      setLibraryViewer({ bookId: b.id, title: b.title, print: true })
-                                    }
-                                    className="px-3 py-1.5 rounded-lg font-bold text-2xs flex items-center gap-1 border bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100"
-                                  >
-                                    <Printer className="w-3.5 h-3.5" />
-                                    Print
-                                  </button>
-                                </div>
-                              </div>
-                            ))}
-                            <AdminListPagination
-                              rangeStart={libraryPagination.rangeStart}
-                              rangeEnd={libraryPagination.rangeEnd}
-                              total={filteredLibraryBooks.length}
-                              safePage={libraryPagination.safePage}
-                              totalPages={libraryPagination.totalPages}
-                              pageNumbers={libraryPagination.pageNumbers}
-                              onPageChange={libraryPagination.setCurrentPage}
-                              itemLabel="books"
-                            />
-                          </AdminRecordList>
-                        )}
-                      </AdminPageBody>
-                    </>
-                  ) : (
-                    <AdminPageBody>
-                      <StoryBookInlineViewer
-                        bookId={libraryViewer.bookId}
-                        title={libraryViewer.title}
-                        token={token}
-                        printOnLoad={libraryViewer.print}
-                        onBack={() => setLibraryViewer(null)}
-                      />
-                    </AdminPageBody>
-                  )}
-                </AdminPageShell>
+                <TeacherStoryLibrary books={books} token={token} />
               )}
 
               {/* ────────────────── LESSON PLANNER Tab (view only) ────────────────── */}
@@ -1198,6 +1089,6 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
         </div>
       )}
 
-    </div>
+    </PortalSidebarLayout>
   );
 }
