@@ -26,13 +26,19 @@ import { prisma } from "./config/database.js";
 import { ensureDefaultAdmin } from "./config/seedAdmin.js";
 
 function isOriginAllowed(origin: string): boolean {
-  if (env.ALLOWED_ORIGINS.includes(origin)) return true;
-  if (env.ALLOW_VERCEL_PREVIEWS && origin.endsWith(".vercel.app")) return true;
-  return false;
+  return env.ALLOWED_ORIGINS.includes(origin);
 }
 
 export const app: Express = express();
 export const storagePath = path.resolve(env.STORAGE_PATH);
+
+// Strip /backend prefix for cPanel subfolder deployments
+app.use((req, res, next) => {
+  if (req.url.startsWith("/backend")) {
+    req.url = req.url.slice(8) || "/";
+  }
+  next();
+});
 
 app.set("trust proxy", 1);
 
@@ -120,7 +126,7 @@ app.get("/api/health", (_req, res) => {
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     environment: env.NODE_ENV,
-    platform: process.env.VERCEL ? "vercel" : "node",
+    platform: "cpanel",
   });
 });
 
@@ -168,7 +174,7 @@ app.use(errorHandler);
 
 let initPromise: Promise<void> | undefined;
 
-/** Seed admin once per serverless instance / before listen. */
+/** Seed default admin once before the server accepts traffic. */
 export function initApp(): Promise<void> {
   if (!initPromise) {
     initPromise = ensureDefaultAdmin().catch((err) => {

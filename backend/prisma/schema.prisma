@@ -1,7 +1,6 @@
 // ── Generator & Datasource ──────────────────────────────────────────
 generator client {
-  provider      = "prisma-client-js"
-  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -13,15 +12,11 @@ enum Role {
   ADMIN
   TEACHER
   STUDENT
-
-  @@map("user_role")
 }
 
 enum AccountStatus {
   ACTIVE
   DEACTIVATED
-
-  @@map("user_status")
 }
 
 model User {
@@ -51,8 +46,6 @@ model User {
   passwordResetTokens  PasswordResetToken[]
   notifications        StudentNotification[]
   teacherNotifications TeacherNotification[]
-
-  @@map("user")
 }
 
 model PasswordResetToken {
@@ -67,7 +60,6 @@ model PasswordResetToken {
 
   @@index([userId])
   @@index([expiresAt])
-  @@map("passwordresettoken")
 }
 
 // ── Course ──────────────────────────────────────────────────────────
@@ -86,8 +78,6 @@ model Course {
   materials   Material[]
   payments    Payment[]
   lessonPlans LessonPlan[]
-
-  @@map("course")
 }
 
 // ── Material (PDF / PPT / Resources) ────────────────────────────────
@@ -106,8 +96,6 @@ model Material {
 
   course     Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
   uploadedBy User?  @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
-
-  @@map("material")
 }
 
 // ── Payment (Zoho Payments) ─────────────────────────────────────────
@@ -116,8 +104,6 @@ enum PaymentStatus {
   SUCCESS
   FAILED
   REFUNDED
-
-  @@map("payment_status")
 }
 
 model Payment {
@@ -135,8 +121,6 @@ model Payment {
 
   user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   course Course? @relation(fields: [courseId], references: [id], onDelete: SetNull)
-
-  @@map("payment")
 }
 
 // ── Contact / Inquiry ───────────────────────────────────────────────
@@ -152,8 +136,6 @@ model Inquiry {
   createdAt DateTime  @default(now())
 
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
-
-  @@map("inquiry")
 }
 
 // ── Testimonial ─────────────────────────────────────────────────────
@@ -165,8 +147,6 @@ model Testimonial {
   isApproved Boolean  @default(false)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
-
-  @@map("testimonial")
 }
 
 // ── Gallery / Media ─────────────────────────────────────────────────
@@ -177,8 +157,6 @@ model Gallery {
   type      String   @default("IMAGE")
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
-
-  @@map("gallery")
 }
 
 // ── Franchise Inquiry ───────────────────────────────────────────────
@@ -191,8 +169,6 @@ model FranchiseInquiry {
   message   String?
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
-
-  @@map("franchiseinquiry")
 }
 
 // ── Teacher Tasks (Assigned by Admin) ───────────────────────────────
@@ -210,8 +186,6 @@ model Task {
 
   teacher       User                  @relation("TeacherTasks", fields: [teacherId], references: [id], onDelete: Cascade)
   notifications TeacherNotification[]
-
-  @@map("task")
 }
 
 // ── Lesson Plans (Admin creates, teachers view) ─────────────────────
@@ -228,8 +202,6 @@ model LessonPlan {
 
   course        Course?               @relation(fields: [courseId], references: [id], onDelete: SetNull)
   notifications TeacherNotification[]
-
-  @@map("lessonplan")
 }
 
 // ── Story Books (Children Library) ──────────────────────────────────
@@ -237,8 +209,6 @@ enum LibraryAudience {
   STUDENT
   TEACHER
   BOTH
-
-  @@map("storybook_audience")
 }
 
 model StoryBook {
@@ -253,8 +223,6 @@ model StoryBook {
 
   studentNotifications StudentNotification[]
   teacherNotifications TeacherNotification[]
-
-  @@map("storybook")
 }
 
 // ── Student in-app notifications ────────────────────────────────────
@@ -273,7 +241,6 @@ model StudentNotification {
 
   @@index([userId, isRead])
   @@index([userId, createdAt])
-  @@map("studentnotification")
 }
 
 // ── Teacher in-app notifications ────────────────────────────────────
@@ -296,5 +263,22 @@ model TeacherNotification {
 
   @@index([userId, isRead])
   @@index([userId, createdAt])
-  @@map("teachernotification")
 }
+
+// ── Google Review (GBP Sync) ────────────────────────────────────────
+model GoogleReview {
+  reviewId         String   @id // The unique reviewId from Google
+  reviewerName     String
+  reviewerPhotoUrl String?  @db.Text
+  comment          String   @db.Text
+  rating           Int
+  locationId       String   // Extracted branch location ID
+  createTime       DateTime
+  updateTime       DateTime
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([locationId])
+  @@index([updateTime])
+}
+

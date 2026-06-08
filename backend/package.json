@@ -9,9 +9,10 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "prisma generate && tsc",
-    "postinstall": "prisma generate",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
+    "cpanel-setup": "node scripts/cpanel-setup.mjs",
+    "cpanel-install": "npm install --no-engine-strict",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:check": "node scripts/check-db.mjs",
@@ -25,17 +26,17 @@
     "google:connect-business": "node scripts/print-google-business-auth-url.mjs",
     "google:list-business-account": "node scripts/google-list-business-account.mjs",
     "google:sync-reviews": "npx tsx scripts/google-sync-reviews.mjs",
+    "google:sync-reviews-db": "npx tsx scripts/google-sync-reviews-db.ts",
     "reviews:report": "npx tsx scripts/reviews-report.mjs",
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
     "db:seed": "tsx src/config/seedAdmin.ts",
-    "db:seed:demo": "tsx src/config/seedDemo.ts",
     "db:purge-teachers": "node scripts/purge-teachers.mjs",
     "production": "npm run build && prisma db push && npm start",
     "deploy:cpanel": "npm run build && prisma db push",
     "deploy:pack": "node scripts/cpanel-pack.mjs",
-    "deploy:cpanel:start": "node dist/index.js",
-    "deploy:vercel": "npm run build"
+    "pack:clean": "node scripts/pack-clean.mjs",
+    "deploy:cpanel:start": "node dist/index.js"
   },
   "dependencies": {
     "@prisma/adapter-mariadb": "^7.8.0",
@@ -51,9 +52,8 @@
     "mariadb": "^3.5.2",
     "morgan": "^1.10.0",
     "multer": "^2.1.1",
-    "nodemailer": "^8.0.10",
     "prisma": "^7.8.0",
-    "serverless-http": "^3.2.0",
+    "resend": "^6.12.4",
     "zod": "^4.4.3"
   },
   "devDependencies": {
@@ -64,7 +64,6 @@
     "@types/morgan": "^1.9.9",
     "@types/multer": "^2.1.0",
     "@types/node": "^22",
-    "@types/nodemailer": "^8.0.0",
     "pm2": "^7.0.1",
     "tsx": "^4.19.0",
     "typescript": "^5.5.0"
