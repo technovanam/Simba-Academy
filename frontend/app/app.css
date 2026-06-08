@@ -25,10 +25,20 @@
 html,
 body {
   @apply bg-white dark:bg-gray-950;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  min-height: 100%;
+  -webkit-text-size-adjust: 100%;
 
   @media (prefers-color-scheme: dark) {
     color-scheme: dark;
   }
+}
+
+#root,
+body > * {
+  max-width: 100%;
 }
 
 .font-sans {
@@ -153,4 +163,58 @@ input:-webkit-autofill:active {
 .inline-arrow svg {
   flex-shrink: 0;
   display: block;
+}
+
+/* Hide scrollbar while keeping scroll (sidebar menus, etc.) */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Portal main scroll — touch + pull-to-refresh friendly on phones/tablets */
+.portal-main-scroll {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: auto;
+}
+
+/* Portal shell — viewport locked; only main content scrolls */
+html:has(.portal-app-shell),
+html:has(.portal-app-shell) body {
+  overflow: hidden;
+  height: 100dvh;
+  max-height: 100dvh;
+}
+
+.portal-app-shell {
+  width: 100%;
+  max-width: 100%;
+}
+
+.portal-mobile-topbar {
+  height: calc(3.5rem + env(safe-area-inset-top, 0px));
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+@media (max-width: 1023px) {
+  .portal-main-column {
+    min-height: 0;
+    flex: 1 1 auto;
+  }
+
+  .portal-drawer {
+    height: 100dvh;
+    max-height: 100dvh;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+
+/* Admin tables & wide panels — horizontal scroll on narrow screens */
+.admin-table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
 }
