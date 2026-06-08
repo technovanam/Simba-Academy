@@ -8,7 +8,8 @@ const placeholders = ["YOUR_DB_PASSWORD", "YOUR_PASSWORD", "simbapre_DBUSER"];
 if (!url || placeholders.some((p) => url.includes(p))) {
   console.error(
     "❌ Set DATABASE_URL in backend/.env\n" +
-      "   Example: mysql://avnadmin:password@mysql-XXXX.h.aivencloud.com:22462/defaultdb?ssl-mode=REQUIRED"
+      "   Server: mysql://simbapre_school:password@localhost:3306/simbapre_simbaacademy?allowPublicKeyRetrieval=true\n" +
+      "   Local:  mysql://simbapre_school:password@simbapreschool.in:3306/simbapre_simbaacademy?allowPublicKeyRetrieval=true"
   );
   process.exit(1);
 }
@@ -62,10 +63,10 @@ try {
   console.error("❌ Database connection failed:", cause);
   console.error(
     "\nCheck:\n" +
-      "  • DATABASE_URL password is correct in backend/.env\n" +
-      "  • Aiven firewall allows your IP (or 0.0.0.0/0)\n" +
-      "  • URL includes ?ssl-mode=REQUIRED for Aiven\n" +
-      "  • Port 22462 reachable: Test-NetConnection HOST -Port 22462"
+      "  • DATABASE_URL password is correct (URL-encode @ ! # in password)\n" +
+      "  • On server: host is localhost\n" +
+      "  • From PC: cPanel → Remote MySQL → your IP added, host simbapreschool.in\n" +
+      "  • User simbapre_school has ALL PRIVILEGES on simbapre_simbaacademy"
   );
   process.exit(1);
 } finally {
