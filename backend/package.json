@@ -12,7 +12,7 @@
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
     "cpanel-setup": "node scripts/cpanel-setup.mjs",
-    "cpanel-install": "npm install --no-engine-strict",
+    "cpanel-install": "npm install --no-engine-strict --include=dev",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:check": "node scripts/check-db.mjs",

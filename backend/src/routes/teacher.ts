@@ -202,7 +202,7 @@ router.patch("/tasks/:id/proof", validate(submitTaskProofSchema), async (req, re
 
       const absoluteProofUrl = proofUrl.startsWith("http")
         ? proofUrl
-        : `${env.WEBDAV_BASE_URL || "http://localhost:3001"}${proofUrl}`;
+        : `${env.PUBLIC_API_URL}${proofUrl}`;
 
       for (const admin of admins) {
         await sendEmail({

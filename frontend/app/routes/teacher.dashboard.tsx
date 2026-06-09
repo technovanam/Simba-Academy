@@ -271,7 +271,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
     }
 
     try {
-      // 1. Upload the proof file to WebDAV
+      // 1. Upload the proof file to backend/uploads
       const uploadResponse = await api.uploadRaw(token, selectedProofFile);
       const proofUrl = uploadResponse.url;
 

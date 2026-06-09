@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-// Accepts either an absolute http(s) URL (WebDAV/CDN mode) or a local upload
-// path like "/uploads/abc.pdf" (returned when WebDAV is disabled).
+// Accepts either an absolute http(s) URL or a local upload path like
+// "/uploads/abc.pdf" (files live in backend/uploads, served at /backend/uploads).
 const urlOrUploadPath = z
   .string()
   .refine(

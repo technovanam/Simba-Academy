@@ -10,6 +10,7 @@ const express = cjsImport<typeof import("express")>("express");
 const cors = cjsImport<typeof import("cors")>("cors");
 const morgan = cjsImport<typeof import("morgan")>("morgan");
 import { env } from "./config/env.js";
+import { ensureUploadsDir, UPLOAD_URL_PREFIX } from "./config/uploads.js";
 import { apiLimiter } from "./middleware/rateLimiter.js";
 import { AppError, ValidationError } from "./utils/errors.js";
 import authRoutes from "./routes/auth.js";
@@ -22,6 +23,7 @@ import publicRoutes from "./routes/public.js";
 import teacherRoutes from "./routes/teacher.js";
 import libraryRoutes from "./routes/library.js";
 import studentRoutes from "./routes/student.js";
+import healthRoutes from "./routes/health.js";
 import { prisma } from "./config/database.js";
 import { ensureDefaultAdmin } from "./config/seedAdmin.js";
 
@@ -30,12 +32,16 @@ function isOriginAllowed(origin: string): boolean {
 }
 
 export const app: Express = express();
+ensureUploadsDir();
 export const storagePath = path.resolve(env.STORAGE_PATH);
 
 // Strip /backend prefix for cPanel subfolder deployments
-app.use((req, res, next) => {
+app.use((req, _res, next) => {
   if (req.url.startsWith("/backend")) {
+    (req as Express.Request & { apiBase?: string }).apiBase = "/backend";
     req.url = req.url.slice(8) || "/";
+  } else {
+    (req as Express.Request & { apiBase?: string }).apiBase = "";
   }
   next();
 });
@@ -63,7 +69,7 @@ app.use("/api", apiLimiter);
 
 const uploadAccessGuard: RequestHandler = async (req, res, next) => {
   try {
-    const fileUrl = `/uploads${req.path}`;
+    const fileUrl = `${UPLOAD_URL_PREFIX}${req.path}`;
     const material = await prisma.material.findFirst({
       where: { fileUrl },
       select: { isApproved: true },
@@ -93,7 +99,7 @@ const uploadAccessGuard: RequestHandler = async (req, res, next) => {
 };
 
 app.use(
-  "/uploads",
+  UPLOAD_URL_PREFIX,
   uploadAccessGuard,
   express.static(storagePath, {
     maxAge: "1d",
@@ -119,15 +125,11 @@ app.use("/api/public", publicRoutes);
 app.use("/api/teacher", teacherRoutes);
 app.use("/api/library", libraryRoutes);
 app.use("/api/student", studentRoutes);
+app.use("/api", healthRoutes);
 
-app.get("/api/health", (_req, res) => {
-  res.json({
-    status: "ok",
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    environment: env.NODE_ENV,
-    platform: "cpanel",
-  });
+app.get("/", (req, res) => {
+  const base = (req as Express.Request & { apiBase?: string }).apiBase ?? "";
+  res.redirect(302, `${base}/api/health`);
 });
 
 app.use((_req, res) => {

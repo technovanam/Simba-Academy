@@ -30,11 +30,8 @@ echo "==> prisma generate + db push"
 npx prisma generate
 npx prisma db push
 
-STORAGE_PATH="$(grep -E '^STORAGE_PATH=' .env | cut -d= -f2- | tr -d '\r' || true)"
-if [[ -n "$STORAGE_PATH" ]]; then
-  mkdir -p "$STORAGE_PATH"
-  chmod 755 "$STORAGE_PATH" || true
-fi
+mkdir -p uploads
+chmod 755 uploads || true
 
 mkdir -p data
 chmod 755 data || true

@@ -1,25 +1,11 @@
+import { filenameFromUploadUrl } from "../config/uploads.js";
 import { env } from "../config/env.js";
 import { deleteFile as deleteLocalFile } from "./storage.js";
 import { deleteFileFromWebDAV } from "./webdav.js";
 
 /** Extract stored filename from a public URL or `/uploads/...` path. */
 export function extractStorageFilename(fileUrl: string): string | null {
-  const trimmed = fileUrl.trim();
-  if (!trimmed) return null;
-
-  try {
-    if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
-      const u = new URL(trimmed);
-      const last = u.pathname.split("/").filter(Boolean).pop();
-      return last ? decodeURIComponent(last) : null;
-    }
-  } catch {
-    /* fall through */
-  }
-
-  const parts = trimmed.replace(/^\/+/, "").split("/").filter(Boolean);
-  const last = parts.pop();
-  return last ? decodeURIComponent(last) : null;
+  return filenameFromUploadUrl(fileUrl);
 }
 
 /**

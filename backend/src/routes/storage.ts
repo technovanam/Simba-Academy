@@ -7,9 +7,12 @@ import { authenticate, authorize, optionalAuthenticate } from "../middleware/aut
 import { upload } from "../middleware/upload.js";
 import { validate } from "../middleware/validate.js";
 import { createMaterialSchema } from "../config/schemas.js";
+import {
+  buildUploadUrl,
+  materialTypeFromMime,
+  UPLOADS_DIR,
+} from "../config/uploads.js";
 import { AppError } from "../utils/errors.js";
-import { env } from "../config/env.js";
-import { uploadFileToWebDAV } from "../services/webdav.js";
 import { removeStoredFile } from "../services/removeStoredFile.js";
 
 const router = Router();
@@ -19,16 +22,17 @@ interface UploadedFile extends Express.Multer.File {
   size: number;
 }
 
-/**
- * Utility to delete a file if something goes wrong after upload.
- */
-function deleteFile(filename: string): void {
-  const filePath = path.resolve(env.STORAGE_PATH, filename);
+function deleteLocalUpload(filename: string): void {
+  const filePath = path.join(UPLOADS_DIR, filename);
   if (fs.existsSync(filePath)) {
     fs.unlink(filePath, (err) => {
       if (err) console.error(`Failed to delete orphaned file: ${filePath}`, err);
     });
   }
+}
+
+async function verifyLocalUpload(filename: string): Promise<void> {
+  await fs.promises.access(path.join(UPLOADS_DIR, filename));
 }
 
 // ── Upload File (Teachers / Admin) ──────────────────────────────────
@@ -45,10 +49,8 @@ router.post(
       }
       uploadedFilename = req.file.filename;
 
-      // Validate body manually to allow cleanup on failure
       const validation = createMaterialSchema.safeParse(req.body);
       if (!validation.success) {
-        // Return first error message
         const message = validation.error.issues[0]?.message ?? "Validation failed";
         throw new AppError(message, 400);
       }
@@ -56,19 +58,13 @@ router.post(
       const { title, description, type, courseId } = validation.data;
       const file = req.file as UploadedFile;
 
-      // Verify course exists
       const course = await prisma.course.findUnique({ where: { id: courseId } });
       if (!course) {
         throw new AppError("Course not found", 404);
       }
 
-      let fileUrl = `/uploads/${file.filename}`;
-      if (env.USE_WEBDAV) {
-        const localPath = path.resolve(env.STORAGE_PATH, file.filename);
-        fileUrl = await uploadFileToWebDAV(localPath, file.filename);
-        // Clean up local temp file
-        deleteFile(file.filename);
-      }
+      await verifyLocalUpload(file.filename);
+      const fileUrl = buildUploadUrl(file.filename);
 
       const material = await prisma.material.create({
         data: {
@@ -79,22 +75,21 @@ router.post(
           fileSize: file.size,
           courseId,
           uploadedById: req.user!.userId,
-          isApproved: req.user!.role === "ADMIN", // Auto-approve if admin uploads
+          isApproved: req.user!.role === "ADMIN",
         },
       });
 
       res.status(201).json(material);
     } catch (err) {
-      // Cleanup orphaned file
       if (uploadedFilename) {
-        deleteFile(uploadedFilename);
+        deleteLocalUpload(uploadedFilename);
       }
       next(err);
     }
   }
 );
 
-// ── Upload Raw File (Generic - returns JSON with URL) ────────────────
+// ── Upload Raw File (returns JSON with /uploads/… URL) ─────────────
 router.post(
   "/upload-raw",
   authenticate,
@@ -109,22 +104,13 @@ router.post(
       uploadedFilename = req.file.filename;
       const file = req.file as UploadedFile;
 
-      const localPath = path.resolve(env.STORAGE_PATH, file.filename);
-      let fileUrl = `/uploads/${file.filename}`;
-      let storage: "webdav" | "local" = "local";
+      await verifyLocalUpload(file.filename);
+      const fileUrl = buildUploadUrl(file.filename);
 
-      if (env.USE_WEBDAV) {
-        fileUrl = await uploadFileToWebDAV(localPath, file.filename);
-        storage = "webdav";
-        deleteFile(file.filename);
-      } else {
-        await fs.promises.access(localPath);
-      }
-
-      res.status(200).json({ url: fileUrl, storage, verified: true });
+      res.status(200).json({ url: fileUrl, storage: "local" as const, verified: true });
     } catch (err) {
       if (uploadedFilename) {
-        deleteFile(uploadedFilename);
+        deleteLocalUpload(uploadedFilename);
       }
       next(err);
     }
@@ -151,7 +137,6 @@ router.post(
         throw new AppError("Course ID is required", 400);
       }
 
-      // Verify course exists before creating any material rows.
       const course = await prisma.course.findUnique({ where: { id: courseId } });
       if (!course) {
         throw new AppError("Course not found", 404);
@@ -159,18 +144,13 @@ router.post(
 
       const results = [];
       for (const file of req.files) {
-        let fileUrl = `/uploads/${file.filename}`;
-        if (env.USE_WEBDAV) {
-          const localPath = path.resolve(env.STORAGE_PATH, file.filename);
-          fileUrl = await uploadFileToWebDAV(localPath, file.filename);
-          // Clean up local temp file
-          deleteFile(file.filename);
-        }
+        await verifyLocalUpload(file.filename);
+        const fileUrl = buildUploadUrl(file.filename);
 
         const material = await prisma.material.create({
           data: {
             title: file.originalname,
-            type: getFileType(file.mimetype),
+            type: materialTypeFromMime(file.mimetype),
             fileUrl,
             fileSize: file.size,
             courseId,
@@ -183,21 +163,11 @@ router.post(
 
       res.status(201).json(results);
     } catch (err) {
-      // Cleanup all orphaned files
-      uploadedFiles.forEach(deleteFile);
+      uploadedFiles.forEach(deleteLocalUpload);
       next(err);
     }
   }
 );
-
-function getFileType(mimetype: string): string {
-  if (mimetype.includes("pdf")) return "PDF";
-  if (mimetype.includes("presentation") || mimetype.includes("powerpoint")) return "PPT";
-  if (mimetype.includes("video")) return "VIDEO";
-  if (mimetype.includes("image")) return "IMAGE";
-  if (mimetype.includes("document") || mimetype.includes("msword")) return "DOC";
-  return "DOC";
-}
 
 // ── List All Materials ──────────────────────────────────────────────
 router.get("/materials", optionalAuthenticate, async (req, res, next) => {
@@ -208,7 +178,6 @@ router.get("/materials", optionalAuthenticate, async (req, res, next) => {
     if (courseId) where.courseId = courseId as string;
     if (type) where.type = type as string;
 
-    // Students and teachers only see approved materials (teachers upload task proof, not course files)
     if (!req.user || req.user.role === "STUDENT" || req.user.role === "TEACHER") {
       where.isApproved = true;
     }
@@ -280,8 +249,5 @@ router.delete(
     }
   }
 );
-
-// ── Serve Static Files ──────────────────────────────────────────────
-// Files are served via express.static in index.ts
 
 export default router;

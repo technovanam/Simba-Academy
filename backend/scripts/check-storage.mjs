@@ -6,9 +6,12 @@ import "dotenv/config";
 import fs from "node:fs/promises";
 import path from "node:path";
 import https from "node:https";
+import { fileURLToPath } from "node:url";
 
 const USE_WEBDAV = process.env.USE_WEBDAV === "true";
-const STORAGE_PATH = process.env.STORAGE_PATH ?? "uploads";
+const BACKEND_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+/** Same path as backend/src/config/uploads.ts — <app-root>/uploads */
+const UPLOADS_DIR = path.join(BACKEND_ROOT, "uploads");
 const WEBDAV_URL = (process.env.WEBDAV_URL ?? "").replace(/\/$/, "");
 const WEBDAV_USER = process.env.WEBDAV_USER ?? "";
 const WEBDAV_PASSWORD = process.env.WEBDAV_PASSWORD ?? "";
@@ -35,7 +38,7 @@ function webdavRequest(targetUrl, method, headers, body) {
 }
 
 async function checkLocal() {
-  const dir = path.resolve(STORAGE_PATH);
+  const dir = UPLOADS_DIR;
   await fs.mkdir(dir, { recursive: true });
   const testName = `_storage-check-${Date.now()}.txt`;
   const testPath = path.join(dir, testName);

@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { UPLOADS_DIR } from "./uploads.js";
 
 function envString(key: string, fallback?: string): string {
   const value = process.env[key] ?? fallback;
@@ -68,10 +69,15 @@ export const env = {
     .split(",")
     .map((s) => s.trim()),
 
-  // ── Storage (local uploads dir on the server) ───────────────────
-  /** e.g. "uploads" or "/home1/simapre/uploads" on cPanel */
-  STORAGE_PATH: envString("STORAGE_PATH", "uploads"),
+  // ── Storage (backend/uploads — PPT, PDF, images, etc.) ───────────
+  /** Always <backend>/uploads inside the Node app (served at /backend/uploads on cPanel). */
+  STORAGE_PATH: UPLOADS_DIR,
   MAX_FILE_SIZE: envInt("MAX_FILE_SIZE", 50 * 1024 * 1024), // 50 MB
+  /** Public API base for absolute file links in emails (no trailing slash). */
+  PUBLIC_API_URL: (
+    process.env.PUBLIC_API_URL ??
+    `${(process.env.FRONTEND_URL ?? "http://localhost:5173").replace(/\/$/, "")}/backend`
+  ).replace(/\/$/, ""),
 
   // ── Rate Limiting ──────────────────────────────────────────────
   RATE_LIMIT_WINDOW_MS: envInt("RATE_LIMIT_WINDOW_MS", 15 * 60 * 1000), // 15 min

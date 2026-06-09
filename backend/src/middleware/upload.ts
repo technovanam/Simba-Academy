@@ -1,7 +1,12 @@
 import type { Request, RequestHandler } from "express";
-import fs from "node:fs";
 import path from "node:path";
 import { env } from "../config/env.js";
+import {
+  ensureUploadsDir,
+  isAllowedUploadExtension,
+  isAllowedUploadMime,
+  UPLOADS_DIR,
+} from "../config/uploads.js";
 import { AppError } from "../utils/errors.js";
 import { cjsImport } from "../utils/cjsImport.js";
 
@@ -32,46 +37,38 @@ interface MulterModule {
 
 const multer = cjsImport<MulterModule>("multer");
 
-// Ensure storage directory exists
-const storagePath = path.resolve(env.STORAGE_PATH);
-if (!fs.existsSync(storagePath)) {
-  fs.mkdirSync(storagePath, { recursive: true });
-}
+ensureUploadsDir();
 
 const diskStorage = multer.diskStorage({
   destination: (_req, _file, cb) => {
-    cb(null, storagePath);
+    cb(null, UPLOADS_DIR);
   },
   filename: (_req, file, cb) => {
     const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    const ext = path.extname(file.originalname);
+    const ext = path.extname(file.originalname).toLowerCase();
     cb(null, `${uniqueSuffix}${ext}`);
   },
 });
-
-const ALLOWED_MIMES = [
-  "application/pdf",
-  "application/vnd.ms-powerpoint",
-  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/gif",
-  "video/mp4",
-  "application/msword",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-];
 
 function fileFilter(
   _req: Express.Request,
   file: Express.Multer.File,
   cb: FileFilterCallback
 ) {
-  if (ALLOWED_MIMES.includes(file.mimetype)) {
-    cb(null, true);
-  } else {
-    cb(new AppError(`File type ${file.mimetype} is not allowed`, 400));
+  if (!isAllowedUploadExtension(file.originalname)) {
+    cb(
+      new AppError(
+        `File type not allowed. Use PDF, PPT, Word, image, or MP4 only.`,
+        400
+      )
+    );
+    return;
   }
+  if (!isAllowedUploadMime(file.mimetype)) {
+    cb(new AppError(`File type ${file.mimetype} is not allowed`, 400));
+    return;
+  }
+  cb(null, true);
 }
 
 export const upload = multer({

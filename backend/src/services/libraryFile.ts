@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import https from "node:https";
 import path from "node:path";
 import { env } from "../config/env.js";
+import { filenameFromUploadUrl } from "../config/uploads.js";
 import { buildWebdavTargetUrl, webdavAgent } from "./webdav.js";
 
 function filenameFromUrl(fileUrl: string): string | null {
@@ -84,9 +85,9 @@ export async function readLibraryFile(fileUrl: string): Promise<{
   const filename = filenameFromUrl(fileUrl) ?? "document.pdf";
   const contentType = contentTypeForFilename(filename);
 
-  if (fileUrl.startsWith("/uploads/")) {
-    const localName = fileUrl.replace(/^\/uploads\//, "");
-    const localPath = path.resolve(env.STORAGE_PATH, localName);
+  const localName = filenameFromUploadUrl(fileUrl);
+  if (localName) {
+    const localPath = path.join(env.STORAGE_PATH, localName);
     const buffer = await fs.readFile(localPath);
     return { buffer, contentType, filename: localName };
   }

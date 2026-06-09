@@ -643,9 +643,7 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
       });
       setBooks((prev) => [created, ...prev]);
       setMessage(
-        uploadResponse.storage === "webdav"
-          ? "Story book saved to cPanel storage and published to selected portals."
-          : "Story book saved to server storage and published to selected portals."
+        "Story book saved to backend/uploads and published to selected portals."
       );
       setBookForm({
         title: "",

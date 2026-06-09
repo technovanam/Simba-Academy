@@ -48,8 +48,8 @@ cp frontend/.env.production.example frontend/.env.production
    - `DATABASE_URL`
    - `JWT_SECRET`
    - `FRONTEND_URL` / `ALLOWED_ORIGINS`
-   - `STORAGE_PATH` (absolute path, e.g. `/home1/username/uploads`)
-   - Zoho / Resend keys if used
+   - Zoho / Resend keys (set `PAYMENTS_ENABLED=true`, `ZOHO_PAYMENTS_PLACEHOLDER=false`)
+   - `PUBLIC_API_URL` (e.g. `https://simbapreschool.in/backend`)
 
 7. Click **Run NPM Install**
 8. **Run JS script:** `scripts/cpanel-setup.mjs` (once — creates tables + admin user)
@@ -62,8 +62,9 @@ Expected: `{"status":"ok",...}`
 
 ### Uploads folder
 
-Create the folder from `STORAGE_PATH` in File Manager and set permissions **755**.  
-Example: `/home1/simapre/uploads`
+Uploads are stored **inside the Node app** at `uploads/` (created automatically on first start).  
+Public URL: `https://yourdomain.in/backend/uploads/…`  
+In File Manager, ensure `<app-root>/uploads` exists with permissions **755** (writable by Node).
 
 ---
 
@@ -103,8 +104,9 @@ The included `.htaccess` enables React Router client-side routing on Apache.
 | API 404 | Check Node app URL prefix matches `VITE_API_URL` (e.g. `/backend`) |
 | CORS error | Add your site to `ALLOWED_ORIGINS` in backend env |
 | Blank page after refresh | Ensure `.htaccess` is in `public_html` |
-| Uploads fail | Create `STORAGE_PATH` folder with write permission |
+| Uploads fail | Ensure `<app-root>/uploads` exists with write permission (755) |
 | Prisma errors on server | Re-run **Run NPM Install**, then `scripts/cpanel-setup.mjs` |
+| `tsc` / TS7006 / TS7016 (`Could not find declaration file for module 'express'`) | **Do not build on the server.** `simba-api.zip` already includes compiled `dist/`. Re-pack on your PC (`npm run pack:backend`), re-upload, **Run NPM Install**, **Restart**. If you must compile in cPanel Terminal: `npm run cpanel-install` then `npm run build` (needs devDependencies from `.npmrc`). |
 
 ---
 

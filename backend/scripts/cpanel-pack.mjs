@@ -125,6 +125,7 @@ writeFileSync(
     "7. SAVE → Restart app",
     "8. Open: https://simbapreschool.in/backend/api/health",
     "",
+    "Do NOT run `npm run build` on the server — dist/ is pre-built in this zip.",
     "Full guide: DEPLOY-CPANEL.md",
   ].join("\n")
 );
