@@ -60,6 +60,7 @@ import { RecentPaymentCard, sortPaymentsNewestFirst } from "../RecentPaymentCard
 import { StoryBookActions } from "../StoryBookActions";
 import { GalleryItemActions } from "../GalleryItemActions";
 import { PortalSelect } from "../PortalSelect";
+import { AdminSettingsPanel } from "../AdminSettingsPanel";
 import { LIBRARY_AUDIENCE_OPTIONS, audienceLabel } from "../../lib/library";
 import {
   STUDENT_CLASS_OPTIONS,
@@ -3090,6 +3091,20 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                   </div>
                 </div>
               )}
+            </AdminPageShell>
+          )}
+
+          {activeTab === "settings" && (
+            <AdminPageShell>
+              <AdminPageHeader
+                title="Academy Settings"
+                description="Manage your profile, password, and secure session."
+              />
+              <AdminPageBody>
+                <div className="mt-6">
+                  <AdminSettingsPanel user={user!} token={token!} />
+                </div>
+              </AdminPageBody>
             </AdminPageShell>
           )}
         </div>

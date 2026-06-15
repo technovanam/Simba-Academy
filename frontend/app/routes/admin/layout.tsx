@@ -26,6 +26,7 @@ import {
   Mail,
   UserPlus,
   Users,
+  Settings,
 } from "lucide-react";
 import { AdminOutletProvider } from "../../components/admin/AdminOutletContext";
 
@@ -45,6 +46,7 @@ const NAV_ITEMS: { id: AdminTab; label: string; icon: typeof Layers }[] = [
   { id: "inquiries", label: "General Enquiry", icon: Mail },
   { id: "reviews", label: "Parent Reviews", icon: Award },
   { id: "gallery", label: "Media Gallery", icon: Image },
+  { id: "settings", label: "Settings", icon: Settings },
 ];
 
 function sectionFromPathname(pathname: string): string {
@@ -167,16 +169,6 @@ export default function AdminLayout() {
           })}
         </div>
       </div>
-      </div>
-
-      <div className="shrink-0 pt-3 mt-2 border-t border-slate-200/80 bg-[#F1F5F9]">
-        <button
-          type="button"
-          onClick={handleLogout}
-          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 font-bold text-xs tracking-wider uppercase hover:bg-rose-100 hover:text-rose-800 transition-all duration-300"
-        >
-          <LogOut className="w-3.5 h-3.5" /> Logout
-        </button>
       </div>
     </div>
   );

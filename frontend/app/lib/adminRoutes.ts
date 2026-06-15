@@ -10,7 +10,8 @@ export type AdminTab =
   | "books"
   | "inquiries"
   | "reviews"
-  | "gallery";
+  | "gallery"
+  | "settings";
 
 /** URL segment after /admin/ */
 export const ADMIN_TAB_SECTIONS: Record<AdminTab, string> = {
@@ -26,6 +27,7 @@ export const ADMIN_TAB_SECTIONS: Record<AdminTab, string> = {
   inquiries: "inquiries",
   reviews: "reviews",
   gallery: "gallery",
+  settings: "settings",
 };
 
 export const ADMIN_TAB_PATHS: Record<AdminTab, string> = Object.fromEntries(
@@ -65,6 +67,7 @@ export function adminTabTitle(tab: AdminTab): string {
     inquiries: "General Enquiry",
     reviews: "Parent Reviews",
     gallery: "Media Gallery",
+    settings: "Settings",
   };
   return titles[tab];
 }

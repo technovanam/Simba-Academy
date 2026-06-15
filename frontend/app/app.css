@@ -1,10 +1,8 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif,
+  --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-  --font-sans: "Fredoka", "Quicksand", sans-serif;
-  --font-sans: "Quicksand", sans-serif;
 
   --text-2xs: 0.625rem;
   --text-4xs: 0.5rem;
