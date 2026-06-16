@@ -230,6 +230,8 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
     teacherId: "",
   });
   const [showTaskForm, setShowTaskForm] = useState(false);
+  const [showRejectTaskForm, setShowRejectTaskForm] = useState(false);
+  const [rejectTaskForm, setRejectTaskForm] = useState({ id: "", reason: "" });
   const [taskFormErrors, setTaskFormErrors] = useState<Record<string, string>>({});
 
   const [bookForm, setBookForm] = useState({
@@ -604,13 +606,13 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
     }
   }
 
-  async function handleApproveTaskProof(taskId: string, approve: boolean) {
+  async function handleApproveTaskProof(taskId: string, approve: boolean, rejectReason?: string) {
     if (!token || isActionBusy(actionLoading)) return;
     setActionLoading(`task-approve-${taskId}`);
     try {
       const updated = await api.approveTask(token, taskId, {
         status: approve ? "APPROVED" : "REJECTED",
-        proofDesc: approve ? "Approved by Admin" : "Rejected by Admin",
+        proofDesc: approve ? "Approved by Admin" : (rejectReason || "Rejected by Admin"),
       });
       setTasks((prev) => prev.map((t) => (t.id === taskId ? updated : t)));
       setMessage(approve ? "Task proof approved!" : "Task proof rejected.");
@@ -1873,7 +1875,7 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                       <div key={m.id} className={adminListRowStackClass}>
                         <div className="flex-1 min-w-0 w-full space-y-1.5">
                           <a
-                            href={m.fileUrl}
+                            href={resolveStorageUrl(m.fileUrl)}
                             target="_blank"
                             rel="noreferrer"
                             className="font-bold text-sm text-[#8AC926] hover:underline inline-flex items-start gap-1.5 break-words"
@@ -1957,7 +1959,10 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                               {m.status === "COMPLETED" && (
                                 <button
                                   disabled={actionLoading === `task-approve-${m.id}`}
-                                  onClick={() => handleApproveTaskProof(m.id, false)}
+                                  onClick={() => {
+                                    setRejectTaskForm({ id: m.id, reason: "" });
+                                    setShowRejectTaskForm(true);
+                                  }}
                                   className="px-2.5 py-1.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 font-bold text-2xs flex items-center gap-1 transition disabled:opacity-50"
                                 >
                                   {actionLoading === `task-approve-${m.id}` ? (
@@ -1970,7 +1975,10 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                               {m.status === "APPROVED" && (
                                 <button
                                   disabled={actionLoading === `task-approve-${m.id}`}
-                                  onClick={() => handleApproveTaskProof(m.id, false)}
+                                  onClick={() => {
+                                    setRejectTaskForm({ id: m.id, reason: "" });
+                                    setShowRejectTaskForm(true);
+                                  }}
                                   className="px-2.5 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100 font-bold text-2xs flex items-center gap-1 transition disabled:opacity-50"
                                 >
                                   {actionLoading === `task-approve-${m.id}` ? (
@@ -3801,6 +3809,63 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
               </AdminPageBody>
             </AdminPageShell>
           )}
+        </div>
+      )}
+
+      {/* REJECT TASK PROOF MODAL */}
+      {showRejectTaskForm && (
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl border border-slate-200 animate-scale-up text-slate-800 relative">
+            <ModalCloseButton
+              onClick={() => {
+                setShowRejectTaskForm(false);
+                setRejectTaskForm({ id: "", reason: "" });
+              }}
+              className="absolute top-4 right-4"
+            />
+            <h3 className="font-sans text-lg font-extrabold text-slate-900 mb-4 pr-10">
+              Provide a reason for rejection
+            </h3>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!rejectTaskForm.reason.trim()) {
+                  setError("Reason is required.");
+                  return;
+                }
+                handleApproveTaskProof(rejectTaskForm.id, false, rejectTaskForm.reason.trim());
+                setShowRejectTaskForm(false);
+              }}
+              className="space-y-4 text-xs"
+            >
+              <div>
+                <label className="block text-slate-700 font-bold mb-1.5">Rejection Reason</label>
+                <textarea
+                  rows={3}
+                  placeholder="Explain why this task was rejected..."
+                  value={rejectTaskForm.reason}
+                  onChange={(e) => setRejectTaskForm({ ...rejectTaskForm, reason: e.target.value })}
+                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-xs outline-none focus:border-rose-400 focus:ring-1 focus:ring-rose-400 transition resize-none"
+                  required
+                />
+              </div>
+              <div className="flex items-center gap-3 justify-end pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowRejectTaskForm(false)}
+                  className="px-4 py-2 rounded-xl font-bold text-slate-500 hover:bg-slate-100 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2 rounded-xl bg-rose-500 text-white font-bold hover:bg-rose-600 transition shadow-md shadow-rose-500/20"
+                >
+                  Confirm Reject
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </PortalPageShell>
