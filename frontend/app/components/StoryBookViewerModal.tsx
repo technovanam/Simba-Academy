@@ -39,25 +39,28 @@ export function StoryBookViewerModal({
     setBlobUrl(null);
   }, []);
 
-  const [pointerEvents, setPointerEvents] = useState<"auto" | "none">("none");
   const scrollTimeoutRef = useRef<number | null>(null);
 
   const handleContainerWheel = () => {
-    if (role === "ADMIN") return;
-    setPointerEvents("auto");
+    if (role === "ADMIN" || !iframeRef.current) return;
+    iframeRef.current.style.pointerEvents = "auto";
     if (scrollTimeoutRef.current) window.clearTimeout(scrollTimeoutRef.current);
     scrollTimeoutRef.current = window.setTimeout(() => {
-      setPointerEvents("none");
+      if (iframeRef.current) iframeRef.current.style.pointerEvents = "none";
     }, 500);
   };
 
   const handleContainerMouseDown = (e: React.MouseEvent) => {
-    if (role === "ADMIN") return;
+    if (role === "ADMIN" || !iframeRef.current) return;
     if (e.button === 0) {
-      setPointerEvents("auto");
+      iframeRef.current.style.pointerEvents = "auto";
       setTimeout(() => {
-        setPointerEvents("none");
+        if (iframeRef.current) iframeRef.current.style.pointerEvents = "none";
       }, 350);
+    } else if (e.button === 2) {
+      iframeRef.current.style.pointerEvents = "none";
+      e.preventDefault();
+      e.stopPropagation();
     }
   };
 
@@ -85,18 +88,27 @@ export function StoryBookViewerModal({
     const onContextMenu = (e: MouseEvent) => {
       if (role !== "ADMIN") {
         e.preventDefault();
+        if (iframeRef.current) iframeRef.current.style.pointerEvents = "none";
+      }
+    };
+
+    const onGlobalMouseDown = (e: MouseEvent) => {
+      if (role !== "ADMIN" && e.button === 2) {
+        if (iframeRef.current) iframeRef.current.style.pointerEvents = "none";
       }
     };
 
     window.addEventListener("keydown", onKeyDown, true);
     if (role !== "ADMIN") {
       window.addEventListener("contextmenu", onContextMenu, true);
+      window.addEventListener("mousedown", onGlobalMouseDown, true);
     }
 
     return () => {
       document.body.style.overflow = prevOverflow;
       window.removeEventListener("keydown", onKeyDown, true);
       window.removeEventListener("contextmenu", onContextMenu, true);
+      window.removeEventListener("mousedown", onGlobalMouseDown, true);
     };
   }, [onClose, role]);
 
@@ -264,10 +276,10 @@ export function StoryBookViewerModal({
             <iframe
               ref={iframeRef}
               title={title}
-              src={role === "ADMIN" ? blobUrl : `${blobUrl}#toolbar=0`}
+              src={role === "ADMIN" ? blobUrl : `${blobUrl}#toolbar=0&navpanes=0&scrollbar=0`}
               className="absolute inset-0 w-full h-full border-0 bg-white"
               style={{
-                pointerEvents: role === "ADMIN" ? "auto" : pointerEvents
+                pointerEvents: role === "ADMIN" ? "auto" : "none"
               }}
             />
           )}

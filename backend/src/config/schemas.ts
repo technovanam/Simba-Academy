@@ -183,17 +183,21 @@ export const approveTaskSchema = z.object({
   proofDesc: z.string().optional(),
 });
 
+
 // ── Lesson Plan (Admin) ───────────────────────────────────────────
 export const createLessonPlanSchema = z.object({
   title: z.string().min(2, "Title must be at least 2 characters"),
   courseId: z.string().optional().nullable(),
   planDate: z.string().optional().nullable(),
-  content: z.string().min(10, "Lesson plan content must be at least 10 characters"),
+  content: z.string().optional().nullable(),
   materialsNeeded: z.string().optional().nullable(),
   isPublished: z.boolean().optional(),
+  fileUrl: urlOrUploadPath.optional().nullable(),
+  fileName: z.string().optional().nullable(),
 });
 
 export const updateLessonPlanSchema = createLessonPlanSchema.partial();
+
 
 // ── Story Book (Admin) ──────────────────────────────────────────────
 export const createStoryBookSchema = z.object({

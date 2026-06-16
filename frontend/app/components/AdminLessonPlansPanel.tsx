@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   api,
   formatApiError,
-  type Course,
+  API_URL,
   type LessonPlan,
 } from "../lib/api";
 import { isActionBusy } from "../lib/actionGuard";
@@ -16,8 +16,7 @@ import {
   useAdminPagination,
 } from "./AdminListUi";
 import { ModalCloseButton } from "./ModalCloseButton";
-import { PortalSelect } from "./PortalSelect";
-import { Compass, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import { Compass, Loader2, Pencil, Plus, Trash2, Upload, Paperclip, FileText, X } from "lucide-react";
 
 interface AdminLessonPlansPanelProps {
   token: string;
@@ -28,32 +27,26 @@ interface AdminLessonPlansPanelProps {
 const emptyForm = {
   id: "",
   title: "",
-  courseId: "",
-  planDate: "",
-  content: "",
   materialsNeeded: "",
-  isPublished: true,
+  fileUrl: "",
+  fileName: "",
 };
 
 export function AdminLessonPlansPanel({ token, onNotify, onError }: AdminLessonPlansPanelProps) {
   const [plans, setPlans] = useState<LessonPlan[]>([]);
-  const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [allPlans, allCourses] = await Promise.all([
-        api.getLessonPlans(token),
-        api.getCourses(),
-      ]);
+      const allPlans = await api.getLessonPlans(token);
       setPlans(allPlans);
-      setCourses(allCourses);
     } catch (err) {
       onError(formatApiError(err, "Failed to load lesson plans."));
     } finally {
@@ -68,17 +61,13 @@ export function AdminLessonPlansPanel({ token, onNotify, onError }: AdminLessonP
   const filtered = plans.filter((p) => {
     const q = search.toLowerCase();
     if (!q) return true;
-    return (
-      p.title.toLowerCase().includes(q) ||
-      p.content.toLowerCase().includes(q) ||
-      (p.course?.title ?? "").toLowerCase().includes(q)
-    );
+    return p.title.toLowerCase().includes(q);
   });
 
   const pagination = useAdminPagination(filtered, [search]);
 
   function openCreate() {
-    setForm({ ...emptyForm, courseId: courses[0]?.id ?? "" });
+    setForm({ ...emptyForm });
     setShowForm(true);
   }
 
@@ -86,20 +75,45 @@ export function AdminLessonPlansPanel({ token, onNotify, onError }: AdminLessonP
     setForm({
       id: plan.id,
       title: plan.title,
-      courseId: plan.courseId ?? "",
-      planDate: plan.planDate ? plan.planDate.slice(0, 10) : "",
-      content: plan.content,
       materialsNeeded: plan.materialsNeeded ?? "",
-      isPublished: plan.isPublished,
+      fileUrl: plan.fileUrl ?? "",
+      fileName: plan.fileName ?? "",
     });
     setShowForm(true);
+  }
+
+  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const allowedTypes = [".pdf", ".doc", ".docx", ".ppt", ".pptx"];
+    const ext = file.name.substring(file.name.lastIndexOf(".")).toLowerCase();
+    if (!allowedTypes.includes(ext)) {
+      onError("Only PDF, Word, and PowerPoint files are allowed.");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const res = await api.uploadRaw(token, file);
+      setForm((prev) => ({
+        ...prev,
+        fileUrl: res.url,
+        fileName: file.name,
+      }));
+      onNotify("File uploaded successfully.");
+    } catch (err) {
+      onError(formatApiError(err, "Failed to upload file."));
+    } finally {
+      setUploading(false);
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (saving || isActionBusy(actionLoading)) return;
-    if (form.title.trim().length < 2 || form.content.trim().length < 10) {
-      onError("Title must be at least 2 characters and lesson content at least 10 characters.");
+    if (form.title.trim().length < 2) {
+      onError("Title must be at least 2 characters.");
       return;
     }
 
@@ -107,11 +121,13 @@ export function AdminLessonPlansPanel({ token, onNotify, onError }: AdminLessonP
     try {
       const body = {
         title: form.title.trim(),
-        courseId: form.courseId || null,
-        planDate: form.planDate || null,
-        content: form.content.trim(),
+        courseId: null,
+        planDate: null,
+        content: form.title.trim(),
         materialsNeeded: form.materialsNeeded.trim() || null,
-        isPublished: form.isPublished,
+        isPublished: true,
+        fileUrl: form.fileUrl || null,
+        fileName: form.fileName || null,
       };
 
       if (form.id) {
@@ -185,34 +201,25 @@ export function AdminLessonPlansPanel({ token, onNotify, onError }: AdminLessonP
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2 mb-1">
                     <span
-                      className={`px-2 py-0.5 rounded-md text-4xs font-extrabold uppercase border shrink-0 ${
-                        plan.isPublished
-                          ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                          : "bg-slate-100 text-slate-600 border-slate-200"
-                      }`}
+                      className="px-2 py-0.5 rounded-md text-4xs font-extrabold uppercase border shrink-0 bg-emerald-50 text-emerald-700 border-emerald-200"
                     >
-                      {plan.isPublished ? "Published" : "Draft"}
+                      Published
                     </span>
-                    {plan.course?.title && (
-                      <span className="px-2 py-0.5 rounded-md bg-violet-50 text-violet-700 text-4xs font-extrabold uppercase border border-violet-200 shrink-0">
-                        {plan.course.title}
-                      </span>
-                    )}
                   </div>
                   <p className="font-bold text-sm text-slate-800">{plan.title}</p>
-                  {plan.planDate && (
-                    <p className="text-2xs text-slate-600 font-medium mt-0.5">
-                      Plan date:{" "}
-                      {new Date(plan.planDate).toLocaleDateString("en-IN", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
-                    </p>
+                  {plan.fileUrl && (
+                    <div className="mt-1 flex items-center gap-1.5">
+                      <Paperclip className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <a
+                        href={plan.fileUrl.startsWith("/") ? `${API_URL}${plan.fileUrl}` : plan.fileUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-2xs font-bold text-[#8AC926] hover:underline truncate max-w-xs"
+                      >
+                        {plan.fileName || "View attachment"}
+                      </a>
+                    </div>
                   )}
-                  <p className="text-2xs text-slate-600 font-medium line-clamp-2 mt-0.5 whitespace-pre-wrap">
-                    {plan.content}
-                  </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 shrink-0">
                   <button
@@ -280,62 +287,49 @@ export function AdminLessonPlansPanel({ token, onNotify, onError }: AdminLessonP
                   placeholder="e.g. UKG Phonics — Week 3"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-slate-700 font-bold mb-1.5">Course (optional)</label>
-                  <PortalSelect
-                    value={form.courseId}
-                    onChange={(e) => setForm({ ...form, courseId: e.target.value })}
-                    className="w-full rounded-xl border border-slate-200 px-4 py-2.5 outline-none focus:border-[#8AC926]"
-                  >
-                    <option value="">— None —</option>
-                    {courses.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.title}
-                      </option>
-                    ))}
-                  </PortalSelect>
-                </div>
-                <div>
-                  <label className="block text-slate-700 font-bold mb-1.5">Plan date (optional)</label>
-                  <input
-                    type="date"
-                    value={form.planDate}
-                    onChange={(e) => setForm({ ...form, planDate: e.target.value })}
-                    className="w-full rounded-xl border border-slate-200 px-4 py-2.5 outline-none focus:border-[#8AC926]"
-                  />
-                </div>
-              </div>
               <div>
-                <label className="block text-slate-700 font-bold mb-1.5">Lesson plan content</label>
-                <textarea
-                  required
-                  rows={6}
-                  value={form.content}
-                  onChange={(e) => setForm({ ...form, content: e.target.value })}
-                  className="w-full rounded-xl border border-slate-200 px-4 py-2.5 outline-none focus:border-[#8AC926]"
-                  placeholder="Objectives, activities, timing, notes for teachers…"
-                />
+                <label className="block text-slate-700 font-bold mb-1.5">Materials needed (PDF or Word)</label>
+                {form.fileUrl ? (
+                  <div className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-slate-50">
+                     <div className="flex items-center gap-2 min-w-0">
+                       <FileText className="w-4 h-4 text-[#8AC926] shrink-0" />
+                       <span className="text-xs text-slate-700 font-medium truncate">{form.fileName || "Attachment"}</span>
+                     </div>
+                     <button
+                       type="button"
+                       onClick={() => setForm((prev) => ({ ...prev, fileUrl: "", fileName: "" }))}
+                       className="p-1 rounded-full hover:bg-slate-200 text-slate-500"
+                       title="Remove file"
+                     >
+                       <X className="w-4 h-4" />
+                     </button>
+                  </div>
+                ) : (
+                  <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-slate-300 rounded-xl cursor-pointer bg-slate-50 hover:bg-slate-100 hover:border-[#8AC926] transition">
+                    <div className="flex flex-col items-center justify-center py-4">
+                      {uploading ? (
+                        <>
+                          <Loader2 className="w-6 h-6 animate-spin text-[#8AC926] mb-1" />
+                          <p className="text-2xs text-slate-500 font-bold">Uploading document...</p>
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-6 h-6 text-slate-400 mb-1" />
+                          <p className="text-2xs text-slate-500 font-bold">Attach PDF or Word Document</p>
+                          <p className="text-[10px] text-slate-400">Word (.doc/.docx) or PDF up to 50MB</p>
+                        </>
+                      )}
+                    </div>
+                    <input
+                      type="file"
+                      accept=".pdf,.doc,.docx"
+                      disabled={uploading}
+                      onChange={handleFileUpload}
+                      className="hidden"
+                    />
+                  </label>
+                )}
               </div>
-              <div>
-                <label className="block text-slate-700 font-bold mb-1.5">Materials needed (optional)</label>
-                <textarea
-                  rows={2}
-                  value={form.materialsNeeded}
-                  onChange={(e) => setForm({ ...form, materialsNeeded: e.target.value })}
-                  className="w-full rounded-xl border border-slate-200 px-4 py-2.5 outline-none focus:border-[#8AC926]"
-                  placeholder="Charts, worksheets, props…"
-                />
-              </div>
-              <label className="flex items-center gap-2 font-bold text-slate-700 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={form.isPublished}
-                  onChange={(e) => setForm({ ...form, isPublished: e.target.checked })}
-                  className="rounded border-slate-300 text-[#8AC926] focus:ring-[#8AC926]"
-                />
-                Publish for teachers
-              </label>
               <button
                 type="submit"
                 disabled={saving}

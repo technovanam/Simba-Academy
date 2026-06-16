@@ -660,15 +660,17 @@ router.get("/lesson-plans", async (_req, res, next) => {
 
 router.post("/lesson-plans", validate(createLessonPlanSchema), async (req, res, next) => {
   try {
-    const { title, courseId, planDate, content, materialsNeeded, isPublished } = req.body;
+    const { title, courseId, planDate, content, materialsNeeded, isPublished, fileUrl, fileName } = req.body;
     const plan = await prisma.lessonPlan.create({
       data: {
         title,
         courseId: courseId || null,
         planDate: planDate ? new Date(planDate) : null,
-        content,
+        content: content || title,
         materialsNeeded: materialsNeeded || null,
         isPublished: isPublished ?? true,
+        fileUrl: fileUrl || null,
+        fileName: fileName || null,
       },
       include: { course: { select: { title: true, level: true } } },
     });
@@ -697,16 +699,18 @@ router.patch("/lesson-plans/:id", validate(updateLessonPlanSchema), async (req, 
       throw new AppError("Lesson plan not found", 404);
     }
 
-    const { title, courseId, planDate, content, materialsNeeded, isPublished } = req.body;
+    const { title, courseId, planDate, content, materialsNeeded, isPublished, fileUrl, fileName } = req.body;
     const plan = await prisma.lessonPlan.update({
       where: { id: String(req.params.id) },
       data: {
         ...(title !== undefined && { title }),
         ...(courseId !== undefined && { courseId: courseId || null }),
         ...(planDate !== undefined && { planDate: planDate ? new Date(planDate) : null }),
-        ...(content !== undefined && { content }),
+        ...(content !== undefined && { content: content || title }),
         ...(materialsNeeded !== undefined && { materialsNeeded: materialsNeeded || null }),
         ...(isPublished !== undefined && { isPublished }),
+        ...(fileUrl !== undefined && { fileUrl: fileUrl || null }),
+        ...(fileName !== undefined && { fileName: fileName || null }),
       },
       include: { course: { select: { title: true, level: true } } },
     });

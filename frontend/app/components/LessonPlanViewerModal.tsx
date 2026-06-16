@@ -1,203 +1,264 @@
-import { useCallback, useEffect, useRef } from "react";
-import { Printer } from "lucide-react";
-import type { LessonPlan } from "../lib/api";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Loader2 } from "lucide-react";
+import { API_URL, type LessonPlan } from "../lib/api";
 import { ModalCloseButton } from "./ModalCloseButton";
 
 interface LessonPlanViewerModalProps {
   plan: LessonPlan;
-  printOnLoad?: boolean;
   onClose: () => void;
 }
 
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
-
-function buildPrintHtml(plan: LessonPlan): string {
-  const planDate = plan.planDate
-    ? new Date(plan.planDate).toLocaleDateString("en-IN", {
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-      })
-    : "";
-
-  const meta = [plan.course?.title, planDate]
-    .filter((v): v is string => Boolean(v))
-    .map(escapeHtml)
-    .join(" · ");
-
-  return `<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <title>${escapeHtml(plan.title)}</title>
-    <style>
-      body { font-family: system-ui, sans-serif; padding: 2rem; color: #1e293b; line-height: 1.6; margin: 0; }
-      h1 { font-size: 1.5rem; margin: 0 0 0.5rem; }
-      .meta { font-size: 0.875rem; color: #64748b; margin-bottom: 1.5rem; }
-      .content { white-space: pre-wrap; font-size: 0.9375rem; }
-      .materials { margin-top: 1.5rem; padding: 1rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 0.5rem; }
-      .materials h2 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin: 0 0 0.5rem; }
-    </style>
-  </head>
-  <body>
-    <h1>${escapeHtml(plan.title)}</h1>
-    ${meta ? `<p class="meta">${meta}</p>` : ""}
-    <div class="content">${escapeHtml(plan.content)}</div>
-    ${
-      plan.materialsNeeded
-        ? `<div class="materials"><h2>Materials needed</h2><div class="content">${escapeHtml(plan.materialsNeeded)}</div></div>`
-        : ""
-    }
-  </body>
-</html>`;
-}
-
-/** Print a lesson plan (call from a click handler for best browser support). */
-export function printLessonPlan(plan: LessonPlan): void {
-  const iframe = document.createElement("iframe");
-  iframe.setAttribute("title", "Lesson plan print");
-  iframe.style.cssText = "position:fixed;width:0;height:0;border:0;opacity:0;pointer-events:none";
-  document.body.appendChild(iframe);
-
-  const cleanup = () => {
-    setTimeout(() => iframe.remove(), 500);
-  };
-
-  iframe.addEventListener("load", () => {
-    try {
-      iframe.contentWindow?.focus();
-      iframe.contentWindow?.print();
-    } catch {
-      /* print may be blocked */
-    }
-    cleanup();
-  });
-
-  iframe.srcdoc = buildPrintHtml(plan);
-}
-
+/**
+ * Lesson Plan Viewer Modal — if the plan has a fileUrl (PDF/Word),
+ * it fetches the file and embeds it in an iframe as a PDF viewer.
+ * Otherwise it shows the plan title and materials text.
+ */
 export function LessonPlanViewerModal({
   plan,
-  printOnLoad = false,
   onClose,
 }: LessonPlanViewerModalProps) {
-  const printFrameRef = useRef<HTMLIFrameElement>(null);
-  const pendingPrintRef = useRef(false);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const blobUrlRef = useRef<string | null>(null);
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState("");
 
-  const runPrint = useCallback(() => {
-    const iframe = printFrameRef.current;
-    if (!iframe) return;
-
-    pendingPrintRef.current = true;
-    iframe.srcdoc = buildPrintHtml(plan);
-  }, [plan]);
-
-  useEffect(() => {
-    const iframe = printFrameRef.current;
-    if (!iframe) return;
-
-    const handleLoad = () => {
-      if (!pendingPrintRef.current) return;
-      pendingPrintRef.current = false;
-      try {
-        iframe.contentWindow?.focus();
-        iframe.contentWindow?.print();
-      } catch {
-        /* print may be blocked in some browsers */
-      }
-    };
-
-    iframe.addEventListener("load", handleLoad);
-    return () => iframe.removeEventListener("load", handleLoad);
+  const revokeBlob = useCallback(() => {
+    if (blobUrlRef.current) {
+      URL.revokeObjectURL(blobUrlRef.current);
+      blobUrlRef.current = null;
+    }
+    setBlobUrl(null);
   }, []);
 
+  const scrollTimeoutRef = useRef<number | null>(null);
+
+  const handleContainerWheel = () => {
+    if (!iframeRef.current) return;
+    iframeRef.current.style.pointerEvents = "auto";
+    if (scrollTimeoutRef.current) window.clearTimeout(scrollTimeoutRef.current);
+    scrollTimeoutRef.current = window.setTimeout(() => {
+      if (iframeRef.current) iframeRef.current.style.pointerEvents = "none";
+    }, 500);
+  };
+
+  const handleContainerMouseDown = (e: React.MouseEvent) => {
+    if (!iframeRef.current) return;
+    if (e.button === 0) {
+      iframeRef.current.style.pointerEvents = "auto";
+      setTimeout(() => {
+        if (iframeRef.current) iframeRef.current.style.pointerEvents = "none";
+      }, 350);
+    } else if (e.button === 2) {
+      iframeRef.current.style.pointerEvents = "none";
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (scrollTimeoutRef.current) {
+        window.clearTimeout(scrollTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Fetch the file and create a blob URL
+  useEffect(() => {
+    if (!plan.fileUrl) return;
+
+    let cancelled = false;
+    setLoading(true);
+    setLoadError("");
+    revokeBlob();
+
+    const fullUrl = plan.fileUrl.startsWith("/") ? `${API_URL}${plan.fileUrl}` : plan.fileUrl;
+    fetch(fullUrl, { credentials: "omit" })
+      .then(async (res) => {
+        if (!res.ok) {
+          const text = await res.text().catch(() => "");
+          throw new Error(text || `Failed to load (${res.status})`);
+        }
+        return res.blob();
+      })
+      .then((blob) => {
+        if (cancelled) return;
+        const url = URL.createObjectURL(blob);
+        blobUrlRef.current = url;
+        setBlobUrl(url);
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setLoadError(
+          err instanceof Error ? err.message : "Could not load the document."
+        );
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+      revokeBlob();
+    };
+  }, [plan.fileUrl, revokeBlob]);
+
+  // Lock body scroll, ESC to close, & Security
   useEffect(() => {
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
+      // Disable print and save shortcuts
+      if ((e.ctrlKey || e.metaKey) && (e.key === "p" || e.key === "P" || e.key === "s" || e.key === "S")) {
+        e.preventDefault();
+      }
     };
-    window.addEventListener("keydown", onKeyDown);
+
+    const onContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+      if (iframeRef.current) iframeRef.current.style.pointerEvents = "none";
+    };
+
+    const onGlobalMouseDown = (e: MouseEvent) => {
+      if (e.button === 2) {
+        if (iframeRef.current) iframeRef.current.style.pointerEvents = "none";
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown, true);
+    window.addEventListener("contextmenu", onContextMenu, true);
+    window.addEventListener("mousedown", onGlobalMouseDown, true);
+
     return () => {
       document.body.style.overflow = prevOverflow;
-      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keydown", onKeyDown, true);
+      window.removeEventListener("contextmenu", onContextMenu, true);
+      window.removeEventListener("mousedown", onGlobalMouseDown, true);
     };
   }, [onClose]);
 
   useEffect(() => {
-    if (!printOnLoad) return;
-    runPrint();
-  }, [printOnLoad, runPrint]);
+    if (!blobUrl || !iframeRef.current) return;
+    const iframe = iframeRef.current;
+    
+    const applyProtections = () => {
+      try {
+        const iframeWindow = iframe.contentWindow;
+        const iframeDoc = iframe.contentDocument || iframeWindow?.document;
+        if (iframeDoc) {
+          iframeDoc.addEventListener("contextmenu", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }, true);
+          iframeDoc.addEventListener("keydown", (e) => {
+            if ((e.ctrlKey || e.metaKey) && (e.key === "p" || e.key === "P" || e.key === "s" || e.key === "S")) {
+              e.preventDefault();
+              e.stopPropagation();
+            }
+          }, true);
+        }
+        
+        if (iframeWindow) {
+          iframeWindow.addEventListener("contextmenu", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }, true);
+          iframeWindow.addEventListener("keydown", (e) => {
+            if ((e.ctrlKey || e.metaKey) && (e.key === "p" || e.key === "P" || e.key === "s" || e.key === "S")) {
+              e.preventDefault();
+              e.stopPropagation();
+            }
+          }, true);
+        }
+      } catch (err) {
+        // ignore CORS if any
+      }
+    };
 
-  const planDateLabel = plan.planDate
-    ? new Date(plan.planDate).toLocaleDateString("en-IN", {
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-      })
-    : null;
+    iframe.addEventListener("load", applyProtections);
+    applyProtections();
+    const t1 = setTimeout(applyProtections, 300);
+    const t2 = setTimeout(applyProtections, 1000);
+
+    return () => {
+      iframe.removeEventListener("load", applyProtections);
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, [blobUrl]);
+
+  const hasFile = Boolean(plan.fileUrl);
 
   return (
-    <>
-      <iframe
-        ref={printFrameRef}
-        title="Lesson plan print"
-        className="fixed w-0 h-0 border-0 opacity-0 pointer-events-none"
-        aria-hidden="true"
-      />
-
+    <div
+      className="fixed inset-0 z-[100] flex flex-col bg-slate-900/60 backdrop-blur-sm p-3 sm:p-6 select-none"
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Viewing ${plan.title}`}
+      onClick={onClose}
+      onContextMenu={(e) => e.preventDefault()}
+    >
       <div
-        className="fixed inset-0 z-[100] flex flex-col bg-slate-900/60 backdrop-blur-sm p-3 sm:p-6"
-        role="dialog"
-        aria-modal="true"
-        aria-label={`Viewing ${plan.title}`}
-        onClick={onClose}
+        className={`flex flex-col flex-1 min-h-0 w-full mx-auto bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden ${
+          hasFile ? "max-w-6xl" : "max-w-3xl"
+        }`}
+        onClick={(e) => e.stopPropagation()}
       >
-        <div
-          className="flex flex-col flex-1 min-h-0 max-w-3xl w-full mx-auto bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-slate-200 bg-slate-50 shrink-0">
-            <h3 className="font-sans font-extrabold text-sm text-slate-900 truncate pr-2">{plan.title}</h3>
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={runPrint}
-                className="px-3 py-1.5 rounded-lg font-bold text-2xs flex items-center gap-1 border border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
-              >
-                <Printer className="w-3.5 h-3.5" />
-                Print
-              </button>
-              <ModalCloseButton onClick={onClose} />
-            </div>
+        {/* Header */}
+        <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-slate-200 bg-slate-50 shrink-0">
+          <h3 className="font-sans font-extrabold text-sm text-slate-900 truncate pr-2 max-w-md">
+            {plan.title}
+          </h3>
+          <div className="flex items-center gap-2 shrink-0">
+            <ModalCloseButton onClick={onClose} />
           </div>
+        </div>
 
+        {/* Body */}
+        {hasFile ? (
+          <div 
+            className="relative flex-1 min-h-0 bg-slate-800/95 flex items-center justify-center p-4"
+            onContextMenu={(e) => e.preventDefault()}
+            onWheel={handleContainerWheel}
+            onMouseDown={handleContainerMouseDown}
+          >
+            {loading && (
+              <div className="flex flex-col items-center gap-2 text-white/90">
+                <Loader2 className="w-8 h-8 animate-spin text-[#8AC926]" />
+                <p className="text-xs font-semibold">Loading document…</p>
+              </div>
+            )}
+            {loadError && !loading && (
+              <p className="text-sm font-semibold text-red-300 text-center">
+                {loadError}
+              </p>
+            )}
+            {blobUrl && !loadError && (
+              plan.fileUrl?.toLowerCase().endsWith('.pdf') ? (
+                <iframe
+                  ref={iframeRef}
+                  title={plan.title}
+                  src={`${blobUrl}#toolbar=0&navpanes=0&scrollbar=0`}
+                  className="absolute inset-0 w-full h-full border-0 bg-white"
+                  style={{ pointerEvents: "none" }}
+                />
+              ) : (
+                <p className="text-sm text-gray-500">File type not supported for preview.</p>
+              )
+            )}
+          </div>
+        ) : (
+          /* ── Fallback: text only (no file attached) ── */
           <div className="flex-1 min-h-0 overflow-y-auto p-5 sm:p-6 space-y-4">
-            <div className="flex flex-wrap gap-2">
-              {plan.course?.title && (
-                <span className="px-2 py-0.5 rounded-md bg-violet-50 text-violet-700 text-4xs font-extrabold uppercase border border-violet-200">
-                  {plan.course.title}
-                </span>
-              )}
-              {planDateLabel && (
-                <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-4xs font-extrabold uppercase border border-slate-200">
-                  {planDateLabel}
-                </span>
-              )}
-            </div>
-
             <div>
               <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">
                 Lesson plan
               </h4>
               <p className="text-sm text-slate-800 whitespace-pre-wrap font-medium leading-relaxed">
-                {plan.content}
+                {plan.content || plan.title}
               </p>
             </div>
 
@@ -212,8 +273,8 @@ export function LessonPlanViewerModal({
               </div>
             )}
           </div>
-        </div>
+        )}
       </div>
-    </>
+    </div>
   );
 }

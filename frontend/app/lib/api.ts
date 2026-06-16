@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
+export const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
 
 export class ApiError extends Error {
   status: number;
@@ -337,6 +337,8 @@ export const api = {
       content: string;
       materialsNeeded?: string | null;
       isPublished?: boolean;
+      fileUrl?: string | null;
+      fileName?: string | null;
     }
   ) =>
     request<LessonPlan>("/api/admin/lesson-plans", {
@@ -354,6 +356,8 @@ export const api = {
       content: string;
       materialsNeeded: string | null;
       isPublished: boolean;
+      fileUrl: string | null;
+      fileName: string | null;
     }>
   ) =>
     request<LessonPlan>(`/api/admin/lesson-plans/${id}`, {
@@ -851,6 +855,8 @@ export interface LessonPlan {
   content: string;
   materialsNeeded?: string | null;
   isPublished: boolean;
+  fileUrl?: string | null;
+  fileName?: string | null;
   createdAt: string;
   updatedAt: string;
   course?: { title: string; level?: string } | null;

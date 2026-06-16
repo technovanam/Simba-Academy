@@ -15,7 +15,7 @@ import { TEACHER_TAB_PATHS } from "../lib/teacherRoutes";
 import { PortalToasts } from "../components/Toast";
 import { PortalSidebarLayout } from "../components/PortalSidebarLayout";
 import { TeacherStoryLibrary } from "../components/teacher/TeacherStoryLibrary";
-import { LessonPlanViewerModal, printLessonPlan } from "../components/LessonPlanViewerModal";
+import { LessonPlanViewerModal } from "../components/LessonPlanViewerModal";
 import { ModalCloseButton } from "../components/ModalCloseButton";
 import { TeacherSettingsPanel } from "../components/TeacherSettingsPanel";
 import { TeacherNotificationBell } from "../components/teacher/TeacherNotificationBell";
@@ -44,7 +44,6 @@ import {
   Layers,
   ExternalLink,
   Eye,
-  Printer,
   Clock,
   TrendingUp,
   ChevronRight,
@@ -115,10 +114,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
   const [taskSearch, setTaskSearch] = useState("");
   const [taskStatusFilter, setTaskStatusFilter] = useState("ALL");
   const [plannerSearch, setPlannerSearch] = useState("");
-  const [lessonPlanViewer, setLessonPlanViewer] = useState<{
-    plan: LessonPlan;
-    print: boolean;
-  } | null>(null);
+  const [lessonPlanViewer, setLessonPlanViewer] = useState<LessonPlan | null>(null);
 
   // Modal / Form States
   const [showProofModal, setShowProofModal] = useState(false);
@@ -925,42 +921,16 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                         {plannerPagination.paginatedItems.map((plan) => (
                           <div key={plan.id} className={adminListRowClass}>
                             <div className="flex-1 min-w-[180px]">
-                              {plan.course?.title && (
-                                <span className="px-2 py-0.5 rounded-md bg-violet-50 text-violet-700 text-4xs font-extrabold uppercase border border-violet-200 shrink-0 inline-block mb-1">
-                                  {plan.course.title}
-                                </span>
-                              )}
-                              <p className="font-bold text-sm text-slate-800">{plan.title}</p>
-                              {plan.planDate && (
-                                <p className="text-2xs text-slate-600 font-medium mt-0.5">
-                                  Plan date:{" "}
-                                  {new Date(plan.planDate).toLocaleDateString("en-IN", {
-                                    month: "short",
-                                    day: "numeric",
-                                    year: "numeric",
-                                  })}
-                                </p>
-                              )}
-                              <p className="text-2xs text-slate-600 font-medium line-clamp-2 mt-0.5 whitespace-pre-wrap">
-                                {plan.content}
-                              </p>
+                              <p className="font-bold text-sm text-slate-800 truncate max-w-md">{plan.title}</p>
                             </div>
                             <div className="flex flex-wrap items-center gap-2 shrink-0">
                               <button
                                 type="button"
-                                onClick={() => setLessonPlanViewer({ plan, print: false })}
+                                onClick={() => setLessonPlanViewer(plan)}
                                 className="px-3 py-1.5 rounded-lg font-bold text-2xs flex items-center gap-1 border bg-blue-50 border-blue-200 text-blue-800 hover:bg-blue-100"
                               >
                                 <Eye className="w-3.5 h-3.5" />
                                 View
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => printLessonPlan(plan)}
-                                className="px-3 py-1.5 rounded-lg font-bold text-2xs flex items-center gap-1 border bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100"
-                              >
-                                <Printer className="w-3.5 h-3.5" />
-                                Print
                               </button>
                             </div>
                           </div>
@@ -981,8 +951,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
 
                   {lessonPlanViewer && (
                     <LessonPlanViewerModal
-                      plan={lessonPlanViewer.plan}
-                      printOnLoad={lessonPlanViewer.print}
+                      plan={lessonPlanViewer}
                       onClose={() => setLessonPlanViewer(null)}
                     />
                   )}

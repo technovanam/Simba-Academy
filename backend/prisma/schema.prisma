@@ -200,6 +200,8 @@ model LessonPlan {
   content         String    @db.Text
   materialsNeeded String?   @db.Text
   isPublished     Boolean   @default(true)
+  fileUrl         String?
+  fileName        String?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
