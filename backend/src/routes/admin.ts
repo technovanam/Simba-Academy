@@ -800,4 +800,75 @@ router.delete("/books/:id", async (req, res, next) => {
   }
 });
 
+// ═════════════════════════════════════════════════════════════════════
+//  ADMIN NOTIFICATIONS
+// ═════════════════════════════════════════════════════════════════════
+
+router.get("/notifications/unread-count", async (req, res, next) => {
+  try {
+    const count = await prisma.adminNotification.count({
+      where: { isRead: false },
+    });
+    res.json({ count });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get("/notifications", async (req, res, next) => {
+  try {
+    const notifications = await prisma.adminNotification.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 100,
+      include: {
+        user: { select: { id: true, name: true, role: true } },
+        task: { select: { id: true, title: true, status: true } },
+        payment: { select: { id: true, amount: true, status: true } },
+      },
+    });
+    res.json(notifications);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.patch("/notifications/read-all", async (req, res, next) => {
+  try {
+    await prisma.adminNotification.updateMany({
+      where: { isRead: false },
+      data: { isRead: true },
+    });
+    res.json({ message: "All notifications marked as read" });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.patch("/notifications/:id/read", async (req, res, next) => {
+  try {
+    const id = String(req.params.id);
+
+    const existing = await prisma.adminNotification.findFirst({
+      where: { id },
+    });
+    if (!existing) {
+      throw new AppError("Notification not found", 404);
+    }
+
+    const updated = await prisma.adminNotification.update({
+      where: { id },
+      data: { isRead: true },
+      include: {
+        user: { select: { id: true, name: true, role: true } },
+        task: { select: { id: true, title: true, status: true } },
+        payment: { select: { id: true, amount: true, status: true } },
+      },
+    });
+
+    res.json(updated);
+  } catch (err) {
+    next(err);
+  }
+});
+
 export default router;

@@ -46,6 +46,7 @@ model User {
   passwordResetTokens  PasswordResetToken[]
   notifications        StudentNotification[]
   teacherNotifications TeacherNotification[]
+  adminNotifications   AdminNotification[]
 }
 
 model PasswordResetToken {
@@ -121,6 +122,7 @@ model Payment {
 
   user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   course Course? @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  adminNotifications   AdminNotification[]
 }
 
 // ── Contact / Inquiry ───────────────────────────────────────────────
@@ -186,6 +188,7 @@ model Task {
 
   teacher       User                  @relation("TeacherTasks", fields: [teacherId], references: [id], onDelete: Cascade)
   notifications TeacherNotification[]
+  adminNotifications   AdminNotification[]
 }
 
 // ── Lesson Plans (Admin creates, teachers view) ─────────────────────
@@ -281,4 +284,26 @@ model GoogleReview {
   @@index([locationId])
   @@index([updateTime])
 }
+
+// ── Admin in-app notifications ──────────────────────────────────────
+model AdminNotification {
+  id        String   @id @default(cuid())
+  type      String   // e.g. "TASK_PROOF", "PAYMENT_SUCCESS", "STUDENT_REGISTER"
+  title     String
+  message   String   @db.Text
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  paymentId String?
+  taskId    String?
+  userId    String?
+
+  user    User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  payment Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  task    Task?    @relation(fields: [taskId], references: [id], onDelete: SetNull)
+
+  @@index([isRead])
+  @@index([createdAt])
+}
+
 

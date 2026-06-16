@@ -6,6 +6,7 @@ import { createOrder, verifyPayment } from "../services/payment.js";
 import { getZohoCheckoutConfig } from "../services/zohoPayments.js";
 import { sendEmail, getPaymentSuccessHtml } from "../services/email.js";
 import { AppError } from "../utils/errors.js";
+import { createAdminNotification } from "../services/adminNotifications.js";
 
 const router = Router();
 
@@ -133,6 +134,14 @@ router.post("/verify", authenticate, async (req, res, next) => {
         user: { select: { name: true, email: true } },
         course: { select: { title: true } },
       },
+    });
+
+    void createAdminNotification({
+      type: "PAYMENT_SUCCESS",
+      title: "Payment successful",
+      message: `Student ${payment.user.name} paid ₹${payment.amount}${payment.course ? ` for course "${payment.course.title}"` : ""}.`,
+      userId: payment.userId,
+      paymentId: payment.id,
     });
 
     try {

@@ -34,6 +34,7 @@ export default [
     route("reviews", "routes/admin/reviews.tsx"),
     route("gallery", "routes/admin/gallery.tsx"),
     route("settings", "routes/admin/settings.tsx"),
+    route("notifications", "routes/admin/notifications.tsx"),
   ]),
   route("student", "routes/student/layout.tsx", [
     index("routes/student/index.tsx"),

@@ -504,6 +504,18 @@ export const api = {
 
   markAllTeacherNotificationsRead: (token: string) =>
     request<{ message: string }>("/api/teacher/notifications/read-all", { method: "PATCH" }, token),
+
+  getAdminNotifications: (token: string) =>
+    request<AdminNotification[]>("/api/admin/notifications", {}, token),
+
+  getAdminNotificationUnreadCount: (token: string) =>
+    request<{ count: number }>("/api/admin/notifications/unread-count", {}, token),
+
+  markAdminNotificationRead: (token: string, id: string) =>
+    request<AdminNotification>(`/api/admin/notifications/${id}/read`, { method: "PATCH" }, token),
+
+  markAllAdminNotificationsRead: (token: string) =>
+    request<{ message: string }>("/api/admin/notifications/read-all", { method: "PATCH" }, token),
 };
 
 export type AccountStatus = "ACTIVE" | "DEACTIVATED";
@@ -731,6 +743,21 @@ export interface TeacherNotification {
   storyBook?: Pick<StoryBook, "id" | "title" | "category" | "author"> | null;
   task?: Pick<Task, "id" | "title" | "status"> | null;
   lessonPlan?: Pick<LessonPlan, "id" | "title" | "planDate"> | null;
+}
+
+export interface AdminNotification {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  isRead: boolean;
+  createdAt: string;
+  userId?: string | null;
+  taskId?: string | null;
+  paymentId?: string | null;
+  user?: Pick<AuthUser, "id" | "name" | "role"> | null;
+  task?: Pick<Task, "id" | "title" | "status"> | null;
+  payment?: Pick<Payment, "id" | "amount" | "status"> | null;
 }
 
 export interface LessonPlan {

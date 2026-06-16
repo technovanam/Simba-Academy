@@ -6,6 +6,7 @@ import { submitTaskProofSchema } from "../config/schemas.js";
 import { AppError } from "../utils/errors.js";
 import { sendEmail, getTaskCompletionAdminHtml } from "../services/email.js";
 import { env } from "../config/env.js";
+import { createAdminNotification } from "../services/adminNotifications.js";
 
 const router = Router();
 
@@ -191,6 +192,14 @@ router.patch("/tasks/:id/proof", validate(submitTaskProofSchema), async (req, re
         status: "COMPLETED",
       },
       include: { teacher: { select: { name: true, email: true } } },
+    });
+
+    void createAdminNotification({
+      type: "TASK_PROOF",
+      title: "Task proof submitted",
+      message: `Teacher ${updated.teacher.name} submitted proof for task "${updated.title}".`,
+      userId: updated.teacherId,
+      taskId: updated.id,
     });
 
     // Notify Admin via Email

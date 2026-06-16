@@ -22,6 +22,7 @@ import { sendEmail, getPaymentSuccessHtml, getPasswordResetHtml } from "../servi
 import { assertAccountCanAuthenticate } from "../utils/userAccess.js";
 import { generateResetToken } from "../utils/password.js";
 import { buildPasswordResetUrl } from "../utils/passwordResetUrl.js";
+import { createAdminNotification } from "../services/adminNotifications.js";
 
 const PORTAL_ROLE = {
   student: "STUDENT",
@@ -69,6 +70,13 @@ router.post("/register", authLimiter, validate(registerSchema), async (req, res,
         mustChangePassword: true,
         status: true,
       },
+    });
+
+    void createAdminNotification({
+      type: "STUDENT_REGISTER",
+      title: "New student registered",
+      message: `Student ${user.name} (${user.email}) registered on the platform.`,
+      userId: user.id,
     });
 
     const token = jwt.sign(
@@ -237,6 +245,14 @@ router.post(
       });
 
       return { user, payment };
+    });
+
+    void createAdminNotification({
+      type: "STUDENT_REGISTER",
+      title: "New student registered (paid)",
+      message: `Student ${result.user.name} (${result.user.email}) registered and paid ₹${result.payment.amount}.`,
+      userId: result.user.id,
+      paymentId: result.payment.id,
     });
 
     // 4. Send confirmation email (non-blocking)

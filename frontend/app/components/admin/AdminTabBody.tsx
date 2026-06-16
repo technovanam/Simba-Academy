@@ -17,6 +17,7 @@ import {
   type DashboardStats,
   type GoogleLocationSummary,
   type PublicReview,
+  type AdminNotification,
 } from "../../lib/api";
 import { clearSession } from "../../lib/auth";
 import { isActionBusy } from "../../lib/actionGuard";
@@ -33,6 +34,7 @@ import {
   Image,
   Award,
   Search,
+  Bell,
   Check,
   Loader2,
   FileCheck2,
@@ -92,6 +94,7 @@ import {
 } from "../AdminListUi";
 import { useAdminOutlet } from "./AdminOutletContext";
 import { AdminTabLoader } from "./AdminTabLoader";
+import { AdminNotificationBell } from "./AdminNotificationBell";
 
 const TASK_TITLE_MIN = 2;
 const TASK_DESCRIPTION_MIN = 10;
@@ -173,6 +176,9 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
     fetchMode?: "business_profile" | "places" | "oauth_pending" | "none";
   }>({ configured: false });
   const [gallery, setGallery] = useState<GalleryItem[]>([]);
+  const [adminNotifications, setAdminNotifications] = useState<AdminNotification[]>([]);
+  const [notificationSearch, setNotificationSearch] = useState("");
+  const [notificationFilter, setNotificationFilter] = useState<"ALL" | "UNREAD" | "READ">("ALL");
 
   // Loading & Feedback States
   const [loading, setLoading] = useState(true);
@@ -363,6 +369,9 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
       } else if (tab === "gallery") {
         const allGallery = await api.getGallery();
         setGallery(allGallery);
+      } else if (tab === "notifications") {
+        const allNotifications = await api.getAdminNotifications(token);
+        setAdminNotifications(allNotifications);
       }
     } catch (err) {
       console.error(`Dashboard data load error for tab "${tab}":`, err);
@@ -1009,6 +1018,62 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
       })),
   ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
+  async function handleMarkAdminNotificationRead(notificationId: string) {
+    if (!token || isActionBusy(actionLoading)) return;
+    setActionLoading(`notification-read-${notificationId}`);
+    try {
+      await api.markAdminNotificationRead(token, notificationId);
+      setAdminNotifications((prev) =>
+        prev.map((n) => (n.id === notificationId ? { ...n, isRead: true } : n))
+      );
+      setMessage("Notification marked as read.");
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Failed to update notification.");
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleMarkAllAdminNotificationsRead() {
+    if (!token || isActionBusy(actionLoading)) return;
+    setActionLoading("notifications-read-all");
+    try {
+      await api.markAllAdminNotificationsRead(token);
+      setAdminNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+      setMessage("All notifications marked as read.");
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Failed to update notifications.");
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  const filteredNotifications = adminNotifications
+    .filter((n) => {
+      const q = notificationSearch.toLowerCase().trim();
+      if (q) {
+        const titleMatch = n.title.toLowerCase().includes(q);
+        const msgMatch = n.message.toLowerCase().includes(q);
+        if (!titleMatch && !msgMatch) return false;
+      }
+      if (notificationFilter === "UNREAD") return !n.isRead;
+      if (notificationFilter === "READ") return n.isRead;
+      return true;
+    })
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  const notificationPagination = useAdminPagination(
+    filteredNotifications,
+    [notificationSearch, notificationFilter, adminNotifications.length],
+    10
+  );
+
+  const notificationFilterOptions = [
+    { id: "ALL", label: "All Alerts" },
+    { id: "UNREAD", label: "Unread" },
+    { id: "READ", label: "Read" },
+  ];
+
   return (
     <PortalPageShell>
       {activeTab === "overview" && (
@@ -1022,6 +1087,7 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
             </p>
           </div>
           <div className="flex items-center gap-3">
+            {token && <AdminNotificationBell token={token} />}
             <a
               href="/"
               target="_blank"
@@ -3104,6 +3170,148 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                 <div className="mt-6">
                   <AdminSettingsPanel user={user!} token={token!} />
                 </div>
+              </AdminPageBody>
+            </AdminPageShell>
+          )}
+
+          {activeTab === "notifications" && (
+            <AdminPageShell>
+              <AdminPageHeader
+                title="System Notifications & Alerts"
+                description="View automated security logs, registration events, and workspace alerts."
+                actions={
+                  <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+                    <AdminSearchInput
+                      value={notificationSearch}
+                      onChange={setNotificationSearch}
+                      placeholder="Search alerts…"
+                      ariaLabel="Search notifications"
+                    />
+                    
+                    <PillSelect
+                      value={notificationFilter}
+                      options={notificationFilterOptions}
+                      onChange={(val) => setNotificationFilter(val as any)}
+                      ariaLabel="Filter alerts by status"
+                    />
+
+                    {adminNotifications.some((n) => !n.isRead) && (
+                      <button
+                        type="button"
+                        onClick={handleMarkAllAdminNotificationsRead}
+                        disabled={actionLoading === "notifications-read-all"}
+                        className="px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 hover:text-slate-900 font-sans font-bold text-xs tracking-wider flex items-center gap-2 hover:bg-[#8AC926]/10 hover:border-[#8AC926]/40 transition disabled:opacity-50"
+                      >
+                        <Check className="w-4 h-4 text-[#8AC926]" /> Mark all read
+                      </button>
+                    )}
+                  </div>
+                }
+              />
+              <AdminPageBody>
+                {filteredNotifications.length === 0 ? (
+                  <AdminListEmpty message="No alerts match your search/filter." />
+                ) : (
+                  <>
+                    <AdminRecordList>
+                      {notificationPagination.paginatedItems.map((n) => {
+                        const isUnread = !n.isRead;
+                        const dateText = new Date(n.createdAt).toLocaleDateString("en-IN", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        });
+
+                        let Icon = Bell;
+                        let iconColor = "text-[#8AC926] bg-[#8AC926]/10 border-[#8AC926]/20";
+                        
+                        if (n.type.includes("PAYMENT")) {
+                          Icon = CreditCard;
+                          iconColor = "text-emerald-600 bg-emerald-50 border-emerald-100";
+                        } else if (n.type.includes("USER") || n.type.includes("REGISTER") || n.type.includes("TEACHER")) {
+                          Icon = Users;
+                          iconColor = "text-blue-600 bg-blue-50 border-blue-100";
+                        } else if (n.type.includes("TASK") || n.type.includes("PROOF")) {
+                          Icon = Calendar;
+                          iconColor = "text-amber-600 bg-amber-50 border-amber-100";
+                        } else if (n.type.includes("ALERT") || n.type.includes("ERROR")) {
+                          Icon = AlertCircle;
+                          iconColor = "text-rose-600 bg-rose-50 border-rose-100";
+                        }
+
+                        return (
+                          <div
+                            key={n.id}
+                            className={`${adminListRowClass} flex items-center justify-between gap-4 p-4 border transition ${
+                              isUnread
+                                ? "bg-[#8AC926]/5 border-[#8AC926]/20 shadow-xs"
+                                : "bg-white hover:bg-slate-50/50"
+                            }`}
+                          >
+                            <div className="flex items-start gap-4 flex-1 min-w-0">
+                              <div className={`p-2.5 rounded-xl border shrink-0 ${iconColor}`}>
+                                <Icon className="w-5 h-5" />
+                              </div>
+                              
+                              <div className="flex-1 min-w-0">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <h4 className={`text-sm font-bold text-slate-800 ${isUnread ? "font-extrabold" : ""}`}>
+                                    {n.title}
+                                  </h4>
+                                  {isUnread && (
+                                    <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-[#8AC926] text-white uppercase tracking-wider">
+                                      New
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-slate-600 font-semibold text-xs leading-relaxed mt-1">
+                                  {n.message}
+                                </p>
+                                <div className="flex items-center gap-3 mt-1.5 text-[10px] text-slate-400 font-medium">
+                                  <span className="flex items-center gap-1">
+                                    <Clock className="w-3 h-3" />
+                                    {dateText}
+                                  </span>
+                                  {n.user && (
+                                    <span className="px-2 py-0.5 rounded-lg bg-slate-100 text-slate-600 font-bold uppercase text-[8px] tracking-wider">
+                                      By {n.user.name} ({n.user.role})
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            {isUnread && (
+                              <button
+                                type="button"
+                                onClick={() => handleMarkAdminNotificationRead(n.id)}
+                                disabled={actionLoading === `notification-read-${n.id}`}
+                                className="px-3 py-1.5 rounded-lg border border-slate-200 hover:border-[#8AC926]/50 bg-white hover:bg-[#8AC926]/10 text-slate-500 hover:text-[#78B020] font-sans font-bold text-[10px] uppercase tracking-wider flex items-center gap-1.5 transition shrink-0 disabled:opacity-50"
+                                title="Mark as read"
+                              >
+                                <Check className="w-3.5 h-3.5 text-[#8AC926]" />
+                                Mark read
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </AdminRecordList>
+
+                    <AdminListPagination
+                      rangeStart={notificationPagination.rangeStart}
+                      rangeEnd={notificationPagination.rangeEnd}
+                      total={filteredNotifications.length}
+                      safePage={notificationPagination.safePage}
+                      totalPages={notificationPagination.totalPages}
+                      pageNumbers={notificationPagination.pageNumbers}
+                      onPageChange={notificationPagination.setCurrentPage}
+                      itemLabel="alerts"
+                    />
+                  </>
+                )}
               </AdminPageBody>
             </AdminPageShell>
           )}
