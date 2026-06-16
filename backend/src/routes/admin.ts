@@ -840,7 +840,6 @@ router.delete("/books/:id", async (req, res, next) => {
 });
 
 // ═════════════════════════════════════════════════════════════════════
-<<<<<<< Updated upstream
 //  ADMIN NOTIFICATIONS
 // ═════════════════════════════════════════════════════════════════════
 
@@ -867,35 +866,11 @@ router.get("/notifications", async (req, res, next) => {
       },
     });
     res.json(notifications);
-=======
-//  LIBRARY FOLDERS (Google Drive-style)
-// ═════════════════════════════════════════════════════════════════════
-
-// ── List Folders ────────────────────────────────────────────────────
-router.get("/folders", async (req, res, next) => {
-  try {
-    const parentId = typeof req.query.parentId === "string" ? req.query.parentId : undefined;
-    const parentFilter =
-      parentId === "root" || !parentId
-        ? { parentId: null }
-        : { parentId };
-    const folders = await prisma.libraryFolder.findMany({
-      where: parentFilter,
-      orderBy: { name: "asc" },
-      include: {
-        _count: {
-          select: { children: true, storyBooks: true },
-        },
-      },
-    });
-    res.json(folders);
->>>>>>> Stashed changes
   } catch (err) {
     next(err);
   }
 });
 
-<<<<<<< Updated upstream
 router.patch("/notifications/read-all", async (req, res, next) => {
   try {
     await prisma.adminNotification.updateMany({
@@ -903,22 +878,11 @@ router.patch("/notifications/read-all", async (req, res, next) => {
       data: { isRead: true },
     });
     res.json({ message: "All notifications marked as read" });
-=======
-// ── List all folders (flat, for move dialog) ────────────────────────
-router.get("/folders-all", async (_req, res, next) => {
-  try {
-    const folders = await prisma.libraryFolder.findMany({
-      orderBy: { name: "asc" },
-      select: { id: true, name: true, parentId: true },
-    });
-    res.json(folders);
->>>>>>> Stashed changes
   } catch (err) {
     next(err);
   }
 });
 
-<<<<<<< Updated upstream
 router.patch("/notifications/:id/read", async (req, res, next) => {
   try {
     const id = String(req.params.id);
@@ -940,7 +904,52 @@ router.patch("/notifications/:id/read", async (req, res, next) => {
       },
     });
 
-=======
+    res.json(updated);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ═════════════════════════════════════════════════════════════════════
+//  LIBRARY FOLDERS (Google Drive-style)
+// ═════════════════════════════════════════════════════════════════════
+
+// ── List Folders ────────────────────────────────────────────────────
+router.get("/folders", async (req, res, next) => {
+  try {
+    const parentId = typeof req.query.parentId === "string" ? req.query.parentId : undefined;
+    const parentFilter =
+      parentId === "root" || !parentId
+        ? { parentId: null }
+        : { parentId };
+    const folders = await prisma.libraryFolder.findMany({
+      where: parentFilter,
+      orderBy: { name: "asc" },
+      include: {
+        _count: {
+          select: { children: true, storyBooks: true },
+        },
+      },
+    });
+    res.json(folders);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── List all folders (flat, for move dialog) ────────────────────────
+router.get("/folders-all", async (_req, res, next) => {
+  try {
+    const folders = await prisma.libraryFolder.findMany({
+      orderBy: { name: "asc" },
+      select: { id: true, name: true, parentId: true },
+    });
+    res.json(folders);
+  } catch (err) {
+    next(err);
+  }
+});
+
 // ── Get single folder (for breadcrumb ancestors) ────────────────────
 router.get("/folders/:id", async (req, res, next) => {
   try {
@@ -1025,15 +1034,13 @@ router.patch("/folders/:id", validate(updateFolderSchema), async (req, res, next
         _count: { select: { children: true, storyBooks: true } },
       },
     });
->>>>>>> Stashed changes
+
     res.json(updated);
   } catch (err) {
     next(err);
   }
 });
 
-<<<<<<< Updated upstream
-=======
 // ── Move Folder ─────────────────────────────────────────────────────
 router.patch("/folders/:id/move", validate(moveItemSchema), async (req, res, next) => {
   try {
@@ -1120,7 +1127,4 @@ router.delete("/folders/:id", async (req, res, next) => {
   }
 });
 
-
-
->>>>>>> Stashed changes
 export default router;

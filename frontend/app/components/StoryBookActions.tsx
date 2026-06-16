@@ -71,14 +71,16 @@ export function StoryBookActions({
           >
             <Eye className="w-4 h-4" />
           </button>
-          <button
-            type="button"
-            onClick={() => openViewer(true)}
-            className="p-1.5 rounded-full hover:bg-slate-200 text-slate-600 transition"
-            title="Print"
-          >
-            <Printer className="w-4 h-4" />
-          </button>
+          {role === "ADMIN" && (
+            <button
+              type="button"
+              onClick={() => openViewer(true)}
+              className="p-1.5 rounded-full hover:bg-slate-200 text-slate-600 transition"
+              title="Print"
+            >
+              <Printer className="w-4 h-4" />
+            </button>
+          )}
           {downloadUrl && (
             <button
               type="button"
@@ -103,6 +105,7 @@ export function StoryBookActions({
             printOnLoad={printOnLoad}
             onClose={closeViewer}
             accent="green"
+            role={role}
           />
         )}
       </>
@@ -124,18 +127,20 @@ export function StoryBookActions({
           <Eye className="w-3.5 h-3.5" />
           View
         </button>
-        <button
-          type="button"
-          onClick={() => openViewer(true)}
-          className={
-            variant === "student"
-              ? `${btnBase} bg-white border border-slate-200 text-slate-700 hover:bg-slate-50`
-              : `${btnBase} bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100`
-          }
-        >
-          <Printer className="w-3.5 h-3.5" />
-          Print
-        </button>
+        {role === "ADMIN" && (
+          <button
+            type="button"
+            onClick={() => openViewer(true)}
+            className={
+              variant === "student"
+                ? `${btnBase} bg-white border border-slate-200 text-slate-700 hover:bg-slate-50`
+                : `${btnBase} bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100`
+            }
+          >
+            <Printer className="w-3.5 h-3.5" />
+            Print
+          </button>
+        )}
         {downloadUrl && (
           <button
             type="button"
@@ -160,6 +165,7 @@ export function StoryBookActions({
           printOnLoad={printOnLoad}
           onClose={closeViewer}
           accent={variant === "student" ? "orange" : "green"}
+          role={role}
         />
       )}
     </>

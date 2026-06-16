@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { api, ApiError, type AuthUser, type StoryBook, type LibraryFolder } from "../../../lib/api";
 import { clearSession, saveSession } from "../../../lib/auth";
 import { PAYMENTS_ENABLED } from "../../../lib/constants";
+import { audienceLabel } from "../../../lib/library";
 import { StoryBookActions } from "../../StoryBookActions";
 import { AdminPageBody, AdminPageHeader, AdminPageShell } from "../../AdminPageShell";
 import {
@@ -16,7 +17,7 @@ import {
 import { portalDashboardBodyClass } from "../../PortalPageShell";
 import { useStudentOutlet } from "../StudentOutletContext";
 import { StudentTabLoader } from "../StudentTabLoader";
-import { FolderOpen, Home, ChevronRight } from "lucide-react";
+import { Folder, FolderOpen, Home, ChevronRight, FileText } from "lucide-react";
 
 export function StudentLibraryPage() {
   const navigate = useNavigate();
@@ -122,7 +123,16 @@ export function StudentLibraryPage() {
     });
   }, [books, librarySearch, studentClass]);
 
-  const libraryPagination = useAdminPagination(filteredBooks, [librarySearch, studentClass, books.length]);
+  const combinedItems = useMemo(() => {
+    const q = librarySearch.toLowerCase().trim();
+    const filteredFolders = !q ? folders : folders.filter((f) => f.name.toLowerCase().includes(q));
+    return [
+      ...filteredFolders.map((f) => ({ ...f, isFolder: true })),
+      ...filteredBooks.map((b) => ({ ...b, isFolder: false })),
+    ];
+  }, [folders, filteredBooks, librarySearch]);
+
+  const libraryPagination = useAdminPagination(combinedItems, [librarySearch, studentClass, books.length, folders.length], 10);
 
   if (loading) return <StudentTabLoader />;
 
@@ -179,73 +189,130 @@ export function StudentLibraryPage() {
                 ))}
               </nav>
 
-              {/* Folder cards */}
-              {folders.length > 0 && (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 mb-5 shrink-0">
-                  {folders.map((f) => (
-                    <div
-                      key={f.id}
-                      className="bg-white border border-slate-200 rounded-xl p-3 cursor-pointer hover:border-indigo-300 hover:shadow-md hover:shadow-indigo-50 transition"
-                      onClick={() => navigateToFolder(f.id)}
-                      onKeyDown={(e) => { if (e.key === "Enter") navigateToFolder(f.id); }}
-                      role="button"
-                      tabIndex={0}
-                    >
-                      <div className="flex items-start gap-2">
-                        <FolderOpen className="w-7 h-7 text-indigo-400 shrink-0 mt-0.5" />
-                        <div className="flex-1 min-w-0">
-                          <p className="font-bold text-xs text-slate-800 truncate">{f.name}</p>
-                          <p className="text-3xs text-slate-500 mt-1 font-medium">
-                            {(f._count?.children ?? 0)} folders · {(f._count?.storyBooks ?? 0)} files
-                          </p>
-                        </div>
-                      </div>
+              {/* Combined Items Table */}
+              {combinedItems.length === 0 ? (
+                <AdminListEmpty
+                  message={
+                    currentFolderId
+                      ? "This folder is empty."
+                      : `No story books for ${studentClass} match your search.`
+                  }
+                />
+              ) : (
+                <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm flex-1 min-h-0 flex flex-col mb-12">
+                  <div className="overflow-x-auto flex-1">
+                    <table className="w-full text-left text-sm whitespace-nowrap">
+                      <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium text-xs sticky top-0 z-10">
+                        <tr>
+                          <th className="px-4 py-3 font-semibold">Name</th>
+                          <th className="px-4 py-3 font-semibold">Access</th>
+                          <th className="px-4 py-3 font-semibold">Date Added</th>
+                          <th className="px-4 py-3 font-semibold text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {libraryPagination.paginatedItems.map((item: any) => {
+                          if (item.isFolder) {
+                            const f = item;
+                            return (
+                              <tr
+                                key={`folder-${f.id}`}
+                                className="hover:bg-slate-50 group transition cursor-pointer"
+                                onClick={() => navigateToFolder(f.id)}
+                              >
+                                <td className="px-4 py-3 flex items-center gap-3 w-1/2">
+                                  <Folder className="w-5 h-5 text-slate-400 fill-slate-400 shrink-0" />
+                                  <span className="font-semibold text-slate-700 whitespace-normal break-words">
+                                    {f.name}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3">
+                                  <div className="flex flex-wrap items-center gap-1">
+                                    <span className="px-1.5 py-0.5 rounded bg-violet-50 text-violet-600 text-4xs font-extrabold uppercase border border-violet-200">
+                                      {audienceLabel(f.audience ?? "BOTH")}
+                                    </span>
+                                    {f.category && (
+                                      <span className="px-1.5 py-0.5 rounded bg-[#8AC926]/10 text-[#6B9E1A] text-4xs font-extrabold uppercase border border-[#8AC926]/30">
+                                        {f.category}
+                                      </span>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3 text-slate-500 text-xs">
+                                  {new Date(f.createdAt).toLocaleDateString("en-IN", {
+                                    month: "short",
+                                    day: "numeric",
+                                    year: "numeric",
+                                  })}
+                                </td>
+                                <td className="px-4 py-2 text-right align-middle">
+                                  {/* View is entering folder, done on click */}
+                                </td>
+                              </tr>
+                            );
+                          } else {
+                            const b = item;
+                            return (
+                              <tr key={`book-${b.id}`} className="hover:bg-slate-50 group transition">
+                                <td className="px-4 py-3 flex items-center gap-3 w-1/2">
+                                  <FileText className="w-5 h-5 text-blue-500 shrink-0" />
+                                  <span className="font-semibold text-slate-700 whitespace-normal break-words">
+                                    {b.title}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3">
+                                  <div className="flex flex-wrap items-center gap-1">
+                                    {b.category && (
+                                      <span className="px-1.5 py-0.5 rounded bg-[#8AC926]/10 text-[#6B9E1A] text-4xs font-extrabold uppercase border border-[#8AC926]/30">
+                                        {b.category}
+                                      </span>
+                                    )}
+                                    <span className="px-1.5 py-0.5 rounded bg-violet-50 text-violet-700 text-4xs font-extrabold uppercase border border-violet-200">
+                                      {audienceLabel(b.audience ?? "BOTH")}
+                                    </span>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3 text-slate-500 text-xs">
+                                  {new Date(b.createdAt).toLocaleDateString("en-IN", {
+                                    month: "short",
+                                    day: "numeric",
+                                    year: "numeric",
+                                  })}
+                                </td>
+                                <td className="px-4 py-2 text-right align-middle">
+                                  <div className="flex items-center justify-end gap-1">
+                                    {token && (
+                                      <StoryBookActions
+                                        bookId={b.id}
+                                        token={token}
+                                        role="STUDENT"
+                                        title={b.title}
+                                        variant="admin"
+                                      />
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          }
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                  {combinedItems.length > 10 && (
+                    <div className="p-3 border-t border-slate-200 bg-slate-50 shrink-0">
+                      <AdminListPagination
+                        rangeStart={libraryPagination.rangeStart}
+                        rangeEnd={libraryPagination.rangeEnd}
+                        total={combinedItems.length}
+                        safePage={libraryPagination.safePage}
+                        totalPages={libraryPagination.totalPages}
+                        pageNumbers={libraryPagination.pageNumbers}
+                        onPageChange={libraryPagination.setCurrentPage}
+                        itemLabel="items"
+                      />
                     </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Files */}
-              {filteredBooks.length === 0 && folders.length === 0 ? (
-                <AdminListEmpty message={currentFolderId ? "This folder is empty." : `No story books for ${studentClass} match your search.`} />
-              ) : filteredBooks.length === 0 ? null : (
-                <div className="flex-1 min-h-0 overflow-y-auto min-w-0 pb-12">
-                  <AdminRecordList>
-                    {libraryPagination.paginatedItems.map((b) => (
-                      <div key={b.id} className={adminListRowClass}>
-                        <div className="flex-1 min-w-[180px]">
-                          <div className="flex flex-wrap items-center gap-2 mb-1">
-                            <span className="px-2 py-0.5 rounded-md bg-[#8AC926]/15 text-[#6B9E1A] text-4xs font-extrabold uppercase border border-[#8AC926]/30 shrink-0">
-                              {b.category}
-                            </span>
-                          </div>
-                          <p className="font-bold text-sm text-slate-800">{b.title}</p>
-
-                        </div>
-                        {token ? (
-                          <div className="flex flex-wrap items-center gap-2 shrink-0">
-                            <StoryBookActions
-                              bookId={b.id}
-                              token={token}
-                              role="STUDENT"
-                              title={b.title}
-                              variant="admin"
-                            />
-                          </div>
-                        ) : null}
-                      </div>
-                    ))}
-                    <AdminListPagination
-                      rangeStart={libraryPagination.rangeStart}
-                      rangeEnd={libraryPagination.rangeEnd}
-                      total={filteredBooks.length}
-                      safePage={libraryPagination.safePage}
-                      totalPages={libraryPagination.totalPages}
-                      pageNumbers={libraryPagination.pageNumbers}
-                      onPageChange={libraryPagination.setCurrentPage}
-                      itemLabel="books"
-                    />
-                  </AdminRecordList>
+                  )}
                 </div>
               )}
             </>

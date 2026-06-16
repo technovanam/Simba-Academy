@@ -17,11 +17,8 @@ import {
   type DashboardStats,
   type GoogleLocationSummary,
   type PublicReview,
-<<<<<<< Updated upstream
   type AdminNotification,
-=======
   type LibraryFolder,
->>>>>>> Stashed changes
 } from "../../lib/api";
 import { clearSession } from "../../lib/auth";
 import { isActionBusy } from "../../lib/actionGuard";
@@ -1273,11 +1270,7 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
   ];
 
   return (
-<<<<<<< Updated upstream
     <PortalPageShell className="!overflow-visible">
-=======
-    <PortalPageShell className="!overflow-y-visible flex-none">
->>>>>>> Stashed changes
       {activeTab === "overview" && (
         <div className="flex flex-wrap justify-between items-center gap-4 border-b border-slate-100 pb-3 mb-5 shrink-0 select-none w-full min-w-0">
           <div>
@@ -1313,11 +1306,7 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
           <p className="font-bold text-[#8AC926] mt-2">Loading dashboard data…</p>
         </div>
       ) : (
-<<<<<<< Updated upstream
         <div className="space-y-5 animate-fade-in flex-1 flex flex-col min-h-0 w-full min-w-0 max-w-full overflow-visible pb-6 lg:pb-8">
-=======
-        <div className="space-y-5 animate-fade-in flex-1 flex flex-col min-h-0 w-full min-w-0 max-w-full overflow-x-hidden !overflow-y-visible pb-6 lg:pb-8">
->>>>>>> Stashed changes
           {/* ────────────────── OVERVIEW TAB ────────────────── */}
           {activeTab === "overview" && (
             <div className={portalDashboardBodyClass}>

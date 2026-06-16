@@ -10,6 +10,7 @@ export interface StoryBookViewerModalProps {
   printOnLoad?: boolean;
   onClose: () => void;
   accent?: "green" | "orange";
+  role?: "ADMIN" | "TEACHER" | "STUDENT";
 }
 
 /** Full-screen modal PDF/PPT viewer — view and print only (matches admin story viewer). */
@@ -20,6 +21,7 @@ export function StoryBookViewerModal({
   printOnLoad = false,
   onClose,
   accent = "green",
+  role = "STUDENT",
 }: StoryBookViewerModalProps) {
   const accentSpin = accent === "orange" ? "text-[#FF9F1C]" : "text-[#8AC926]";
   const viewUrl = libraryStoryViewUrl(bookId, token);
@@ -85,7 +87,7 @@ export function StoryBookViewerModal({
   }, [viewUrl, revokeBlob]);
 
   useEffect(() => {
-    if (!printOnLoad || !blobUrl || !iframeRef.current) return;
+    if (role !== "ADMIN" || !printOnLoad || !blobUrl || !iframeRef.current) return;
     const iframe = iframeRef.current;
     const handleLoad = () => {
       try {
@@ -97,7 +99,7 @@ export function StoryBookViewerModal({
     };
     iframe.addEventListener("load", handleLoad);
     return () => iframe.removeEventListener("load", handleLoad);
-  }, [printOnLoad, blobUrl]);
+  }, [printOnLoad, blobUrl, role]);
 
   const handlePrint = () => {
     try {
@@ -123,7 +125,7 @@ export function StoryBookViewerModal({
         <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-slate-200 bg-white shrink-0">
           <h3 className="font-sans font-extrabold text-sm text-slate-900 truncate pr-2">{title}</h3>
           <div className="flex items-center gap-2 shrink-0">
-            {blobUrl && !loading && !loadError && (
+            {role === "ADMIN" && blobUrl && !loading && !loadError && (
               <button
                 type="button"
                 onClick={handlePrint}
@@ -153,7 +155,7 @@ export function StoryBookViewerModal({
             <iframe
               ref={iframeRef}
               title={title}
-              src={blobUrl}
+              src={role === "ADMIN" ? blobUrl : `${blobUrl}#toolbar=0`}
               className="absolute inset-0 w-full h-full border-0 bg-white"
             />
           )}
