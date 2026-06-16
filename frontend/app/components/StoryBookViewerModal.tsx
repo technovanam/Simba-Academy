@@ -39,18 +39,66 @@ export function StoryBookViewerModal({
     setBlobUrl(null);
   }, []);
 
+  const [pointerEvents, setPointerEvents] = useState<"auto" | "none">("none");
+  const scrollTimeoutRef = useRef<number | null>(null);
+
+  const handleContainerWheel = () => {
+    if (role === "ADMIN") return;
+    setPointerEvents("auto");
+    if (scrollTimeoutRef.current) window.clearTimeout(scrollTimeoutRef.current);
+    scrollTimeoutRef.current = window.setTimeout(() => {
+      setPointerEvents("none");
+    }, 500);
+  };
+
+  const handleContainerMouseDown = (e: React.MouseEvent) => {
+    if (role === "ADMIN") return;
+    if (e.button === 0) {
+      setPointerEvents("auto");
+      setTimeout(() => {
+        setPointerEvents("none");
+      }, 350);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (scrollTimeoutRef.current) {
+        window.clearTimeout(scrollTimeoutRef.current);
+      }
+    };
+  }, []);
+
   useEffect(() => {
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
+      
+      // Disable print and save shortcuts on main window
+      if (role !== "ADMIN" && (e.ctrlKey || e.metaKey) && (e.key === "p" || e.key === "P" || e.key === "s" || e.key === "S")) {
+        e.preventDefault();
+      }
     };
-    window.addEventListener("keydown", onKeyDown);
+
+    const onContextMenu = (e: MouseEvent) => {
+      if (role !== "ADMIN") {
+        e.preventDefault();
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown, true);
+    if (role !== "ADMIN") {
+      window.addEventListener("contextmenu", onContextMenu, true);
+    }
+
     return () => {
       document.body.style.overflow = prevOverflow;
-      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keydown", onKeyDown, true);
+      window.removeEventListener("contextmenu", onContextMenu, true);
     };
-  }, [onClose]);
+  }, [onClose, role]);
 
   useEffect(() => {
     let cancelled = false;
@@ -101,6 +149,61 @@ export function StoryBookViewerModal({
     return () => iframe.removeEventListener("load", handleLoad);
   }, [printOnLoad, blobUrl, role]);
 
+  useEffect(() => {
+    if (role === "ADMIN" || !blobUrl || !iframeRef.current) return;
+    const iframe = iframeRef.current;
+    
+    const applyProtections = () => {
+      try {
+        const iframeWindow = iframe.contentWindow;
+        const iframeDoc = iframe.contentDocument || iframeWindow?.document;
+        if (iframeDoc) {
+          // Disable context menu inside iframe
+          iframeDoc.addEventListener("contextmenu", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }, true);
+          
+          // Disable Ctrl+P, Ctrl+S inside iframe
+          iframeDoc.addEventListener("keydown", (e) => {
+            if ((e.ctrlKey || e.metaKey) && (e.key === "p" || e.key === "P" || e.key === "s" || e.key === "S")) {
+              e.preventDefault();
+              e.stopPropagation();
+            }
+          }, true);
+        }
+        
+        if (iframeWindow) {
+          iframeWindow.addEventListener("contextmenu", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }, true);
+          
+          iframeWindow.addEventListener("keydown", (e) => {
+            if ((e.ctrlKey || e.metaKey) && (e.key === "p" || e.key === "P" || e.key === "s" || e.key === "S")) {
+              e.preventDefault();
+              e.stopPropagation();
+            }
+          }, true);
+        }
+      } catch (err) {
+        console.error("Iframe protection error:", err);
+      }
+    };
+
+    iframe.addEventListener("load", applyProtections);
+    // Apply protections immediately & with minor delays to capture late-loaded pdf views
+    applyProtections();
+    const t1 = setTimeout(applyProtections, 300);
+    const t2 = setTimeout(applyProtections, 1000);
+
+    return () => {
+      iframe.removeEventListener("load", applyProtections);
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, [blobUrl, role]);
+
   const handlePrint = () => {
     try {
       iframeRef.current?.contentWindow?.focus();
@@ -112,11 +215,12 @@ export function StoryBookViewerModal({
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex flex-col bg-slate-900/60 backdrop-blur-sm p-3 sm:p-6"
+      className="fixed inset-0 z-[100] flex flex-col bg-slate-900/60 backdrop-blur-sm p-3 sm:p-6 select-none"
       role="dialog"
       aria-modal="true"
       aria-label={`Viewing ${title}`}
       onClick={onClose}
+      onContextMenu={(e) => role !== "ADMIN" && e.preventDefault()}
     >
       <div
         className="flex flex-col flex-1 min-h-0 max-w-6xl w-full mx-auto bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden"
@@ -139,7 +243,12 @@ export function StoryBookViewerModal({
           </div>
         </div>
 
-        <div className="relative flex-1 min-h-0 bg-slate-800/95">
+        <div 
+          className="relative flex-1 min-h-0 bg-slate-800/95" 
+          onContextMenu={(e) => role !== "ADMIN" && e.preventDefault()}
+          onWheel={handleContainerWheel}
+          onMouseDown={handleContainerMouseDown}
+        >
           {loading && (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-white/90 z-10">
               <Loader2 className={`w-8 h-8 animate-spin ${accentSpin}`} />
@@ -157,6 +266,9 @@ export function StoryBookViewerModal({
               title={title}
               src={role === "ADMIN" ? blobUrl : `${blobUrl}#toolbar=0`}
               className="absolute inset-0 w-full h-full border-0 bg-white"
+              style={{
+                pointerEvents: role === "ADMIN" ? "auto" : pointerEvents
+              }}
             />
           )}
         </div>
