@@ -203,7 +203,7 @@ export function AdminListPagination({
   onPageChange: (page: number) => void;
   itemLabel?: string;
 }) {
-  if (total === 0) return null;
+  if (totalPages <= 1) return null;
 
   return (
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-1 pt-2 border-t border-slate-100">

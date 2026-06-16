@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
-export function AdminPageShell({ children }: { children: ReactNode }) {
-  return <div className="space-y-5 w-full min-w-0 max-w-full overflow-x-hidden">{children}</div>;
+export function AdminPageShell({ children, className = "overflow-x-hidden" }: { children: ReactNode; className?: string }) {
+  return <div className={`space-y-5 w-full min-w-0 max-w-full ${className}`.trim()}>{children}</div>;
 }
 
 export function AdminPageHeader({

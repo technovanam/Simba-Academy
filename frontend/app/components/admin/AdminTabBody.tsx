@@ -62,6 +62,7 @@ import { RecentPaymentCard, sortPaymentsNewestFirst } from "../RecentPaymentCard
 import { StoryBookActions } from "../StoryBookActions";
 import { GalleryItemActions } from "../GalleryItemActions";
 import { PortalSelect } from "../PortalSelect";
+import { PortalDateRangePicker } from "../PortalDateRangePicker";
 import { AdminSettingsPanel } from "../AdminSettingsPanel";
 import { LIBRARY_AUDIENCE_OPTIONS, audienceLabel } from "../../lib/library";
 import {
@@ -179,6 +180,10 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
   const [adminNotifications, setAdminNotifications] = useState<AdminNotification[]>([]);
   const [notificationSearch, setNotificationSearch] = useState("");
   const [notificationFilter, setNotificationFilter] = useState<"ALL" | "UNREAD" | "READ">("ALL");
+  const [notificationTypeFilter, setNotificationTypeFilter] = useState<"ALL" | "PAYMENT" | "TASK" | "USER">("ALL");
+  const [notificationDateFilter, setNotificationDateFilter] = useState<"ALL" | "TODAY" | "WEEK" | "MONTH" | "CUSTOM">("ALL");
+  const [notificationStartDate, setNotificationStartDate] = useState("");
+  const [notificationEndDate, setNotificationEndDate] = useState("");
 
   // Loading & Feedback States
   const [loading, setLoading] = useState(true);
@@ -1058,24 +1063,73 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
       }
       if (notificationFilter === "UNREAD") return !n.isRead;
       if (notificationFilter === "READ") return n.isRead;
+
+      if (notificationTypeFilter !== "ALL") {
+        const typeStr = (n.type || "").toUpperCase();
+        if (notificationTypeFilter === "PAYMENT" && !typeStr.includes("PAYMENT")) return false;
+        if (notificationTypeFilter === "TASK" && !typeStr.includes("TASK")) return false;
+        if (notificationTypeFilter === "USER" && !typeStr.includes("USER") && !typeStr.includes("REGISTER") && !typeStr.includes("TEACHER")) return false;
+      }
+
+      if (notificationDateFilter !== "ALL") {
+        const notifDate = new Date(n.createdAt);
+        const now = new Date();
+        if (notificationDateFilter === "TODAY") {
+          const isToday = notifDate.toDateString() === now.toDateString();
+          if (!isToday) return false;
+        } else if (notificationDateFilter === "WEEK") {
+          const oneWeekAgo = new Date();
+          oneWeekAgo.setDate(now.getDate() - 7);
+          if (notifDate < oneWeekAgo) return false;
+        } else if (notificationDateFilter === "MONTH") {
+          const oneMonthAgo = new Date();
+          oneMonthAgo.setDate(now.getDate() - 30);
+          if (notifDate < oneMonthAgo) return false;
+        } else if (notificationDateFilter === "CUSTOM") {
+          if (notificationStartDate) {
+            const start = new Date(`${notificationStartDate}T00:00:00`);
+            if (notifDate < start) return false;
+          }
+          if (notificationEndDate) {
+            const end = new Date(`${notificationEndDate}T23:59:59`);
+            if (notifDate > end) return false;
+          }
+        }
+      }
+
       return true;
     })
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   const notificationPagination = useAdminPagination(
     filteredNotifications,
-    [notificationSearch, notificationFilter, adminNotifications.length],
-    10
+    [notificationSearch, notificationFilter, notificationTypeFilter, notificationDateFilter, notificationStartDate, notificationEndDate, adminNotifications.length],
+    4
   );
 
   const notificationFilterOptions = [
-    { id: "ALL", label: "All Alerts" },
+    { id: "ALL", label: "All Statuses" },
     { id: "UNREAD", label: "Unread" },
     { id: "READ", label: "Read" },
   ];
 
+  const notificationTypeOptions = [
+    { id: "ALL", label: "All Categories" },
+    { id: "PAYMENT", label: "Payments" },
+    { id: "TASK", label: "Tasks" },
+    { id: "USER", label: "Accounts" },
+  ];
+
+  const notificationDateOptions = [
+    { id: "ALL", label: "All Time" },
+    { id: "TODAY", label: "Today" },
+    { id: "WEEK", label: "Last 7 Days" },
+    { id: "MONTH", label: "Last 30 Days" },
+    { id: "CUSTOM", label: "Custom Range" },
+  ];
+
   return (
-    <PortalPageShell>
+    <PortalPageShell className="!overflow-visible">
       {activeTab === "overview" && (
         <div className="flex flex-wrap justify-between items-center gap-4 border-b border-slate-100 pb-3 mb-5 shrink-0 select-none w-full min-w-0">
           <div>
@@ -1111,7 +1165,7 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
           <p className="font-bold text-[#8AC926] mt-2">Loading dashboard data…</p>
         </div>
       ) : (
-        <div className="space-y-5 animate-fade-in flex-1 flex flex-col min-h-0 w-full min-w-0 max-w-full overflow-x-hidden overflow-y-auto pb-6 lg:pb-8">
+        <div className="space-y-5 animate-fade-in flex-1 flex flex-col min-h-0 w-full min-w-0 max-w-full overflow-visible pb-6 lg:pb-8">
           {/* ────────────────── OVERVIEW TAB ────────────────── */}
           {activeTab === "overview" && (
             <div className={portalDashboardBodyClass}>
@@ -3175,7 +3229,7 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
           )}
 
           {activeTab === "notifications" && (
-            <AdminPageShell>
+            <AdminPageShell className="!overflow-visible">
               <AdminPageHeader
                 title="System Notifications & Alerts"
                 description="View automated security logs, registration events, and workspace alerts."
@@ -3195,6 +3249,20 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                       ariaLabel="Filter alerts by status"
                     />
 
+                    <PillSelect
+                      value={notificationTypeFilter}
+                      options={notificationTypeOptions}
+                      onChange={(val) => setNotificationTypeFilter(val as any)}
+                      ariaLabel="Filter alerts by category"
+                    />
+
+                    <PillSelect
+                      value={notificationDateFilter}
+                      options={notificationDateOptions}
+                      onChange={(val) => setNotificationDateFilter(val as any)}
+                      ariaLabel="Filter alerts by date"
+                    />
+
                     {adminNotifications.some((n) => !n.isRead) && (
                       <button
                         type="button"
@@ -3209,6 +3277,20 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                 }
               />
               <AdminPageBody>
+                {notificationDateFilter === "CUSTOM" && (
+                  <div className="mb-5 animate-fade-in">
+                    <PortalDateRangePicker
+                      startDate={notificationStartDate}
+                      endDate={notificationEndDate}
+                      onStartChange={setNotificationStartDate}
+                      onEndChange={setNotificationEndDate}
+                      onClear={() => {
+                        setNotificationStartDate("");
+                        setNotificationEndDate("");
+                      }}
+                    />
+                  </div>
+                )}
                 {filteredNotifications.length === 0 ? (
                   <AdminListEmpty message="No alerts match your search/filter." />
                 ) : (
