@@ -119,13 +119,13 @@ export default function AdminLayout() {
 
   const sidebar = (
     <div className="flex flex-col h-full min-h-0">
-      <div className="flex-1 min-h-0 overflow-y-auto scrollbar-hide pr-0.5">
-      <div className="space-y-6">
-        <div className="flex items-center gap-3.5 bg-slate-100/80 p-3 rounded-xl border border-slate-200/80">
+      <div className="flex-1 min-h-0 overflow-y-auto scrollbar-hide px-2 -mx-2 py-1">
+      <div className="space-y-4">
+        <div className="flex items-center gap-2.5 bg-slate-100/80 p-2 rounded-xl border border-slate-200/80">
           <img
             src="/favicon.png"
             alt="Simba Preschool"
-            className="w-11 h-11 shrink-0 object-contain"
+            className="w-7 h-7 shrink-0 object-contain"
           />
           <div className="flex flex-col min-w-0">
             <h3 className="text-sm font-bold text-slate-900 truncate leading-tight">
@@ -149,21 +149,18 @@ export default function AdminLayout() {
               <Link
                 key={tab.id}
                 to={to}
-                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-bold text-xs tracking-wider transition-all duration-300 relative group/btn ${
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-bold text-xs tracking-wider transition-all duration-300 relative group/btn border ${
                   isActive
-                    ? "bg-[#8AC926] text-white shadow-md shadow-[#8AC926]/10 lg:translate-x-1"
-                    : "text-slate-600 hover:bg-slate-200/60 hover:text-slate-900 lg:hover:translate-x-1"
+                    ? "bg-white text-slate-900 border-slate-200/80 shadow-sm lg:translate-x-1"
+                    : "text-slate-600 border-transparent hover:bg-slate-200/60 hover:text-slate-900 lg:hover:translate-x-1"
                 }`}
               >
                 <div className="flex items-center gap-3 py-1">
                   <Icon
-                    className={`w-4 h-4 transition-transform duration-300 group-hover/btn:scale-110 ${isActive ? "text-white" : "text-[#8AC926]"}`}
+                    className="w-4 h-4 transition-transform duration-300 group-hover/btn:scale-110 text-[#8AC926]"
                   />
                   <span>{tab.label}</span>
                 </div>
-                {isActive && (
-                  <div className="w-0.5 h-3 bg-white rounded-lg absolute left-0 top-1/2 -translate-y-1/2" />
-                )}
               </Link>
             );
           })}
