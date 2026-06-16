@@ -59,6 +59,56 @@ export function StoryBookActions({
     }
   };
 
+  if (variant === "admin") {
+    return (
+      <>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => openViewer(false)}
+            className="p-1.5 rounded-full hover:bg-slate-200 text-slate-600 transition"
+            title="View"
+          >
+            <Eye className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => openViewer(true)}
+            className="p-1.5 rounded-full hover:bg-slate-200 text-slate-600 transition"
+            title="Print"
+          >
+            <Printer className="w-4 h-4" />
+          </button>
+          {downloadUrl && (
+            <button
+              type="button"
+              onClick={handleAdminDownload}
+              className="p-1.5 rounded-full hover:bg-slate-200 text-slate-600 transition"
+              title="Download"
+            >
+              <Download className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+
+        {loadError && !viewerOpen && (
+          <p className="text-2xs font-semibold text-red-600 mt-1 absolute">{loadError}</p>
+        )}
+
+        {viewerOpen && (
+          <StoryBookViewerModal
+            bookId={bookId}
+            title={title}
+            token={token}
+            printOnLoad={printOnLoad}
+            onClose={closeViewer}
+            accent="green"
+          />
+        )}
+      </>
+    );
+  }
+
   return (
     <>
       <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">

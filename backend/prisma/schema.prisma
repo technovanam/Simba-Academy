@@ -214,6 +214,23 @@ enum LibraryAudience {
   BOTH
 }
 
+// ── Library Folders (Google Drive-style) ────────────────────────────
+model LibraryFolder {
+  id        String          @id @default(cuid())
+  name      String
+  parentId  String?
+  audience  LibraryAudience @default(BOTH)
+  category  String?
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  parent    LibraryFolder?  @relation("FolderTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children  LibraryFolder[] @relation("FolderTree")
+  storyBooks StoryBook[]
+
+  @@index([parentId])
+}
+
 model StoryBook {
   id        String          @id @default(cuid())
   title     String
@@ -222,10 +239,14 @@ model StoryBook {
   fileUrl   String
   fileSize  Int?
   audience  LibraryAudience @default(BOTH)
+  folderId  String?
   createdAt DateTime        @default(now())
 
+  folder               LibraryFolder?        @relation(fields: [folderId], references: [id], onDelete: SetNull)
   studentNotifications StudentNotification[]
   teacherNotifications TeacherNotification[]
+
+  @@index([folderId])
 }
 
 // ── Student in-app notifications ────────────────────────────────────

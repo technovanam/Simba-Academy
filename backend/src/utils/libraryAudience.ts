@@ -18,3 +18,10 @@ export function canAccessStoryBook(role: Role, audience: LibraryAudience): boole
   if (role === "STUDENT" && audience === "STUDENT") return true;
   return false;
 }
+
+/** Same audience filter logic applied to LibraryFolder. */
+export const audienceFilterForFolders = audienceFilterForRole;
+
+export function canAccessFolder(role: Role, audience: LibraryAudience): boolean {
+  return canAccessStoryBook(role, audience);
+}

@@ -301,7 +301,7 @@ export function StudentOverviewPage() {
                         </span>
                       </div>
                       <div className="flex justify-between items-center text-[9px] text-slate-600 font-semibold">
-                        <span className="truncate">{b.author ?? "Story book"}</span>
+                        <span className="truncate">Story book</span>
                         <span>
                           {new Date(b.createdAt).toLocaleDateString("en-IN", {
                             month: "short",

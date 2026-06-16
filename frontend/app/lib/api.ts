@@ -310,14 +310,20 @@ export const api = {
   deleteTask: (token: string, id: string) =>
     request<{ message: string }>(`/api/admin/tasks/${id}`, { method: "DELETE" }, token),
 
-  getStoryBooks: (token: string) =>
-    request<StoryBook[]>("/api/admin/books", {}, token),
+  getStoryBooks: (token: string, folderId?: string | null) => {
+    const qs = folderId !== undefined ? `?folderId=${encodeURIComponent(folderId ?? "root")}` : "";
+    return request<StoryBook[]>(`/api/admin/books${qs}`, {}, token);
+  },
 
-  getLibraryStoryBooks: (token: string) =>
-    request<StoryBook[]>("/api/library/storybooks", {}, token),
+  getLibraryStoryBooks: (token: string, folderId?: string | null) => {
+    const qs = folderId !== undefined ? `?folderId=${encodeURIComponent(folderId ?? "root")}` : "";
+    return request<StoryBook[]>(`/api/library/storybooks${qs}`, {}, token);
+  },
 
-  getTeacherStoryBooks: (token: string) =>
-    request<StoryBook[]>("/api/teacher/books", {}, token),
+  getTeacherStoryBooks: (token: string, folderId?: string | null) => {
+    const qs = folderId !== undefined ? `?folderId=${encodeURIComponent(folderId ?? "root")}` : "";
+    return request<StoryBook[]>(`/api/teacher/books${qs}`, {}, token);
+  },
 
   getLessonPlans: (token: string) =>
     request<LessonPlan[]>("/api/admin/lesson-plans", {}, token),
@@ -370,6 +376,7 @@ export const api = {
       fileUrl: string;
       fileSize?: number | null;
       audience?: "STUDENT" | "TEACHER" | "BOTH";
+      folderId?: string | null;
     }
   ) =>
     request<StoryBook>("/api/admin/books", {
@@ -377,8 +384,69 @@ export const api = {
       body: JSON.stringify(body),
     }, token),
 
+  moveStoryBook: (token: string, bookId: string, targetFolderId: string | null) =>
+    request<StoryBook>(`/api/admin/books/${bookId}/move`, {
+      method: "PATCH",
+      body: JSON.stringify({ targetFolderId }),
+    }, token),
+
   deleteStoryBook: (token: string, id: string) =>
     request<{ message: string }>(`/api/admin/books/${id}`, { method: "DELETE" }, token),
+
+  // ── Library Folders ─────────────────────────────────────────────
+  getLibraryFolders: (token: string, parentId?: string | null) => {
+    const qs = parentId !== undefined ? `?parentId=${encodeURIComponent(parentId ?? "root")}` : "";
+    return request<LibraryFolder[]>(`/api/admin/folders${qs}`, {}, token);
+  },
+
+  getLibraryFolderAncestors: (token: string, folderId: string) =>
+    request<Array<{ id: string; name: string; parentId: string | null }>>(
+      `/api/admin/folders/${folderId}/ancestors`, {}, token
+    ),
+
+  getAllLibraryFolders: (token: string) =>
+    request<Array<{ id: string; name: string; parentId: string | null }>>(
+      "/api/admin/folders-all", {}, token
+    ),
+
+  createLibraryFolder: (
+    token: string,
+    body: { name: string; parentId?: string | null; audience?: string; category?: string | null }
+  ) =>
+    request<LibraryFolder>("/api/admin/folders", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }, token),
+
+  updateLibraryFolder: (
+    token: string,
+    id: string,
+    body: { name?: string; audience?: string; category?: string | null }
+  ) =>
+    request<LibraryFolder>(`/api/admin/folders/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }, token),
+
+  moveLibraryFolder: (token: string, folderId: string, targetFolderId: string | null) =>
+    request<LibraryFolder>(`/api/admin/folders/${folderId}/move`, {
+      method: "PATCH",
+      body: JSON.stringify({ targetFolderId }),
+    }, token),
+
+  deleteLibraryFolder: (token: string, id: string) =>
+    request<{ message: string }>(`/api/admin/folders/${id}`, { method: "DELETE" }, token),
+
+  // Library folder browsing (teacher/student)
+  getPublicLibraryFolders: (token: string, parentId?: string | null) => {
+    const qs = parentId !== undefined ? `?parentId=${encodeURIComponent(parentId ?? "root")}` : "";
+    return request<LibraryFolder[]>(`/api/library/folders${qs}`, {}, token);
+  },
+
+  getPublicFolderAncestors: (token: string, folderId: string) =>
+    request<Array<{ id: string; name: string; parentId: string | null }>>(
+      `/api/library/folders/${folderId}/ancestors`, {}, token
+    ),
 
   markFranchiseRead: (token: string, id: string) =>
     request<FranchiseInquiry>(`/api/contact/franchises/${id}/read`, { method: "PATCH" }, token),
@@ -716,7 +784,22 @@ export interface StoryBook {
   fileUrl: string;
   fileSize?: number | null;
   audience?: "STUDENT" | "TEACHER" | "BOTH";
+  folderId?: string | null;
   createdAt: string;
+}
+
+export interface LibraryFolder {
+  id: string;
+  name: string;
+  parentId?: string | null;
+  audience: "STUDENT" | "TEACHER" | "BOTH";
+  category?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  _count?: {
+    children: number;
+    storyBooks: number;
+  };
 }
 
 export interface StudentNotification {

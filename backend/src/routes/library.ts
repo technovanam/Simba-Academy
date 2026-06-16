@@ -3,11 +3,78 @@ import { Router } from "express";
 import { prisma } from "../config/database.js";
 import { authenticate, authenticateFromHeaderOrQuery, authorize } from "../middleware/auth.js";
 import { AppError } from "../utils/errors.js";
-import { audienceFilterForRole, canAccessStoryBook } from "../utils/libraryAudience.js";
+import { audienceFilterForRole, canAccessStoryBook, audienceFilterForFolders } from "../utils/libraryAudience.js";
 import { readLibraryFile } from "../services/libraryFile.js";
 
 const router = Router();
 const libraryRoles = authorize("ADMIN", "TEACHER", "STUDENT");
+
+/** List folders visible to the current user's role. */
+router.get("/folders", authenticate, libraryRoles, async (req, res, next) => {
+  try {
+    const role = req.user!.role as Role;
+    const audienceWhere = audienceFilterForFolders(role);
+    const parentId = typeof req.query.parentId === "string" ? req.query.parentId : undefined;
+    const parentFilter =
+      parentId === "root" || !parentId
+        ? { parentId: null }
+        : { parentId };
+
+    let classWhere: any = {};
+    if (role === "STUDENT") {
+      const user = await prisma.user.findUnique({
+        where: { id: req.user!.userId },
+        select: { studentClass: true },
+      });
+      if (user?.studentClass) {
+        // Show folders matching class or with no class restriction
+        classWhere = {
+          OR: [
+            { category: user.studentClass },
+            { category: null }
+          ]
+        };
+      }
+    }
+
+    const folders = await prisma.libraryFolder.findMany({
+      where: { ...parentFilter, ...audienceWhere, ...classWhere },
+      orderBy: { name: "asc" },
+      include: {
+        _count: {
+          select: { children: true, storyBooks: true },
+        },
+      },
+    });
+    res.json(folders);
+  } catch (err) {
+    next(err);
+  }
+});
+
+/** Get folder ancestors (breadcrumb path). */
+router.get("/folders/:id/ancestors", authenticate, libraryRoles, async (req, res, next) => {
+  try {
+    const ancestors: Array<{ id: string; name: string; parentId: string | null }> = [];
+    let currentId: string | null = String(req.params.id);
+    const visited = new Set<string>();
+
+    while (currentId && !visited.has(currentId)) {
+      visited.add(currentId);
+      const f: { id: string; name: string; parentId: string | null } | null = await prisma.libraryFolder.findUnique({
+        where: { id: currentId },
+        select: { id: true, name: true, parentId: true },
+      });
+      if (!f) break;
+      ancestors.unshift(f);
+      currentId = f.parentId;
+    }
+
+    res.json(ancestors);
+  } catch (err) {
+    next(err);
+  }
+});
 
 /** List story books visible to the current user's role. */
 router.get("/storybooks", authenticate, libraryRoles, async (req, res, next) => {
@@ -26,8 +93,16 @@ router.get("/storybooks", authenticate, libraryRoles, async (req, res, next) => 
       }
     }
 
+    const folderId = typeof req.query.folderId === "string" ? req.query.folderId : undefined;
+    const folderFilter =
+      folderId === "root"
+        ? { folderId: null }
+        : folderId
+          ? { folderId }
+          : {};
+
     const books = await prisma.storyBook.findMany({
-      where: { ...audienceWhere, ...classWhere },
+      where: { ...audienceWhere, ...classWhere, ...folderFilter },
       orderBy: { createdAt: "desc" },
     });
     res.json(books);
@@ -76,3 +151,4 @@ router.get("/storybooks/:id/view", authenticateFromHeaderOrQuery, libraryRoles, 
 });
 
 export default router;
+

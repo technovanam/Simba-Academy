@@ -13,6 +13,9 @@ import {
   createStoryBookSchema,
   createLessonPlanSchema,
   updateLessonPlanSchema,
+  createFolderSchema,
+  updateFolderSchema,
+  moveItemSchema,
 } from "../config/schemas.js";
 import { env } from "../config/env.js";
 import { AppError } from "../utils/errors.js";
@@ -744,9 +747,17 @@ router.delete("/lesson-plans/:id", async (req, res, next) => {
 // ═════════════════════════════════════════════════════════════════════
 
 // ── List All Story Books ────────────────────────────────────────────
-router.get("/books", async (_req, res, next) => {
+router.get("/books", async (req, res, next) => {
   try {
+    const folderId = typeof req.query.folderId === "string" ? req.query.folderId : undefined;
+    const folderFilter =
+      folderId === "root"
+        ? { folderId: null }
+        : folderId
+          ? { folderId }
+          : {};
     const books = await prisma.storyBook.findMany({
+      where: folderFilter,
       orderBy: { createdAt: "desc" },
     });
     res.json(books);
@@ -758,9 +769,14 @@ router.get("/books", async (_req, res, next) => {
 // ── Create Story Book ───────────────────────────────────────────────
 router.post("/books", validate(createStoryBookSchema), async (req, res, next) => {
   try {
-    const book = await prisma.storyBook.create({
-      data: req.body,
-    });
+    const { folderId, ...rest } = req.body;
+    const data: any = { ...rest };
+    if (folderId) {
+      const folder = await prisma.libraryFolder.findUnique({ where: { id: folderId } });
+      if (!folder) throw new AppError("Target folder not found", 404);
+      data.folderId = folderId;
+    }
+    const book = await prisma.storyBook.create({ data });
 
     try {
       const [studentCount, teacherCount] = await Promise.all([
@@ -778,6 +794,29 @@ router.post("/books", validate(createStoryBookSchema), async (req, res, next) =>
     }
 
     res.status(201).json(book);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── Move Story Book to folder (or root) ─────────────────────────────
+router.patch("/books/:id/move", validate(moveItemSchema), async (req, res, next) => {
+  try {
+    const bookId = String(req.params.id);
+    const { targetFolderId } = req.body;
+    const book = await prisma.storyBook.findUnique({ where: { id: bookId } });
+    if (!book) throw new AppError("Story book not found", 404);
+
+    if (targetFolderId) {
+      const folder = await prisma.libraryFolder.findUnique({ where: { id: targetFolderId } });
+      if (!folder) throw new AppError("Target folder not found", 404);
+    }
+
+    const updated = await prisma.storyBook.update({
+      where: { id: bookId },
+      data: { folderId: targetFolderId || null },
+    });
+    res.json(updated);
   } catch (err) {
     next(err);
   }
@@ -801,6 +840,7 @@ router.delete("/books/:id", async (req, res, next) => {
 });
 
 // ═════════════════════════════════════════════════════════════════════
+<<<<<<< Updated upstream
 //  ADMIN NOTIFICATIONS
 // ═════════════════════════════════════════════════════════════════════
 
@@ -827,11 +867,35 @@ router.get("/notifications", async (req, res, next) => {
       },
     });
     res.json(notifications);
+=======
+//  LIBRARY FOLDERS (Google Drive-style)
+// ═════════════════════════════════════════════════════════════════════
+
+// ── List Folders ────────────────────────────────────────────────────
+router.get("/folders", async (req, res, next) => {
+  try {
+    const parentId = typeof req.query.parentId === "string" ? req.query.parentId : undefined;
+    const parentFilter =
+      parentId === "root" || !parentId
+        ? { parentId: null }
+        : { parentId };
+    const folders = await prisma.libraryFolder.findMany({
+      where: parentFilter,
+      orderBy: { name: "asc" },
+      include: {
+        _count: {
+          select: { children: true, storyBooks: true },
+        },
+      },
+    });
+    res.json(folders);
+>>>>>>> Stashed changes
   } catch (err) {
     next(err);
   }
 });
 
+<<<<<<< Updated upstream
 router.patch("/notifications/read-all", async (req, res, next) => {
   try {
     await prisma.adminNotification.updateMany({
@@ -839,11 +903,22 @@ router.patch("/notifications/read-all", async (req, res, next) => {
       data: { isRead: true },
     });
     res.json({ message: "All notifications marked as read" });
+=======
+// ── List all folders (flat, for move dialog) ────────────────────────
+router.get("/folders-all", async (_req, res, next) => {
+  try {
+    const folders = await prisma.libraryFolder.findMany({
+      orderBy: { name: "asc" },
+      select: { id: true, name: true, parentId: true },
+    });
+    res.json(folders);
+>>>>>>> Stashed changes
   } catch (err) {
     next(err);
   }
 });
 
+<<<<<<< Updated upstream
 router.patch("/notifications/:id/read", async (req, res, next) => {
   try {
     const id = String(req.params.id);
@@ -865,10 +940,187 @@ router.patch("/notifications/:id/read", async (req, res, next) => {
       },
     });
 
+=======
+// ── Get single folder (for breadcrumb ancestors) ────────────────────
+router.get("/folders/:id", async (req, res, next) => {
+  try {
+    const folder = await prisma.libraryFolder.findUnique({
+      where: { id: String(req.params.id) },
+      include: {
+        _count: { select: { children: true, storyBooks: true } },
+      },
+    });
+    if (!folder) throw new AppError("Folder not found", 404);
+    res.json(folder);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── Get folder ancestors (breadcrumb path) ──────────────────────────
+router.get("/folders/:id/ancestors", async (req, res, next) => {
+  try {
+    const ancestors: Array<{ id: string; name: string; parentId: string | null }> = [];
+    let currentId: string | null = String(req.params.id);
+    const visited = new Set<string>();
+
+    while (currentId && !visited.has(currentId)) {
+      visited.add(currentId);
+      const f: { id: string; name: string; parentId: string | null } | null = await prisma.libraryFolder.findUnique({
+        where: { id: currentId },
+        select: { id: true, name: true, parentId: true },
+      });
+      if (!f) break;
+      ancestors.unshift(f);
+      currentId = f.parentId;
+    }
+
+    res.json(ancestors);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── Create Folder ───────────────────────────────────────────────────
+router.post("/folders", validate(createFolderSchema), async (req, res, next) => {
+  try {
+    const { name, parentId, audience, category } = req.body;
+    if (parentId) {
+      const parent = await prisma.libraryFolder.findUnique({ where: { id: parentId } });
+      if (!parent) throw new AppError("Parent folder not found", 404);
+    }
+    const folder = await prisma.libraryFolder.create({
+      data: {
+        name,
+        parentId: parentId || null,
+        audience: audience || "BOTH",
+        category: category === "ALL" ? null : category || null,
+      },
+      include: {
+        _count: { select: { children: true, storyBooks: true } },
+      },
+    });
+    res.status(201).json(folder);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── Rename / Update Folder ──────────────────────────────────────────
+router.patch("/folders/:id", validate(updateFolderSchema), async (req, res, next) => {
+  try {
+    const id = String(req.params.id);
+    const existing = await prisma.libraryFolder.findUnique({ where: { id } });
+    if (!existing) throw new AppError("Folder not found", 404);
+
+    const data: Record<string, unknown> = {};
+    if (req.body.name !== undefined) data.name = req.body.name;
+    if (req.body.audience !== undefined) data.audience = req.body.audience;
+    if (req.body.category !== undefined) data.category = req.body.category === "ALL" ? null : req.body.category;
+
+    const updated = await prisma.libraryFolder.update({
+      where: { id },
+      data,
+      include: {
+        _count: { select: { children: true, storyBooks: true } },
+      },
+    });
+>>>>>>> Stashed changes
     res.json(updated);
   } catch (err) {
     next(err);
   }
 });
 
+<<<<<<< Updated upstream
+=======
+// ── Move Folder ─────────────────────────────────────────────────────
+router.patch("/folders/:id/move", validate(moveItemSchema), async (req, res, next) => {
+  try {
+    const folderId = String(req.params.id);
+    const { targetFolderId } = req.body;
+    const folder = await prisma.libraryFolder.findUnique({ where: { id: folderId } });
+    if (!folder) throw new AppError("Folder not found", 404);
+
+    // Prevent moving folder into itself or its own descendants
+    if (targetFolderId) {
+      if (targetFolderId === folderId) throw new AppError("Cannot move folder into itself", 400);
+      const targetFolder = await prisma.libraryFolder.findUnique({ where: { id: targetFolderId } });
+      if (!targetFolder) throw new AppError("Target folder not found", 404);
+
+      // Walk up from target to check it's not a descendant
+      let checkId: string | null = targetFolderId;
+      const visited = new Set<string>();
+      while (checkId && !visited.has(checkId)) {
+        visited.add(checkId);
+        if (checkId === folderId) throw new AppError("Cannot move folder into its own subfolder", 400);
+        const parent = await prisma.libraryFolder.findUnique({
+          where: { id: checkId },
+          select: { parentId: true },
+        });
+        checkId = parent?.parentId ?? null;
+      }
+    }
+
+    const updated = await prisma.libraryFolder.update({
+      where: { id: folderId },
+      data: { parentId: targetFolderId || null },
+      include: {
+        _count: { select: { children: true, storyBooks: true } },
+      },
+    });
+    res.json(updated);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── Delete Folder ───────────────────────────────────────────────────
+router.delete("/folders/:id", async (req, res, next) => {
+  try {
+    const id = String(req.params.id);
+    const folder = await prisma.libraryFolder.findUnique({ where: { id } });
+    if (!folder) throw new AppError("Folder not found", 404);
+
+    // Move orphaned storybooks to root before deleting folder tree
+    // (Cascade will delete sub-folders, but books have onDelete: SetNull so they go to root)
+    await prisma.storyBook.updateMany({
+      where: { folderId: id },
+      data: { folderId: null },
+    });
+
+    // Also move books in sub-folders to root
+    const collectSubFolderIds = async (parentId: string): Promise<string[]> => {
+      const subs = await prisma.libraryFolder.findMany({
+        where: { parentId },
+        select: { id: true },
+      });
+      const ids = subs.map((s) => s.id);
+      for (const sub of subs) {
+        const deepIds = await collectSubFolderIds(sub.id);
+        ids.push(...deepIds);
+      }
+      return ids;
+    };
+
+    const subIds = await collectSubFolderIds(id);
+    if (subIds.length > 0) {
+      await prisma.storyBook.updateMany({
+        where: { folderId: { in: subIds } },
+        data: { folderId: null },
+      });
+    }
+
+    // Cascade deletes all sub-folders
+    await prisma.libraryFolder.delete({ where: { id } });
+
+    res.json({ message: "Folder deleted successfully" });
+  } catch (err) {
+    next(err);
+  }
+});
+
+
+
+>>>>>>> Stashed changes
 export default router;

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router";
 import { ADMIN_TAB_PATHS, type AdminTab } from "../../lib/adminRoutes";
 import {
@@ -17,7 +17,11 @@ import {
   type DashboardStats,
   type GoogleLocationSummary,
   type PublicReview,
+<<<<<<< Updated upstream
   type AdminNotification,
+=======
+  type LibraryFolder,
+>>>>>>> Stashed changes
 } from "../../lib/api";
 import { clearSession } from "../../lib/auth";
 import { isActionBusy } from "../../lib/actionGuard";
@@ -51,9 +55,17 @@ import {
   CheckCircle2,
   Activity,
   Eye,
+  FileText,
   Download,
   Phone,
   MapPin,
+  FolderPlus,
+  Folder,
+  FolderOpen,
+  FolderInput,
+  ChevronDown,
+  Home,
+  MoreVertical,
 } from "lucide-react";
 import { AdminPeoplePanel } from "../AdminPeoplePanel";
 import { AdminPaymentsPanel } from "../AdminPaymentsPanel";
@@ -163,6 +175,10 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [books, setBooks] = useState<StoryBook[]>([]);
+  const [folders, setFolders] = useState<LibraryFolder[]>([]);
+  const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
+  const [folderAncestors, setFolderAncestors] = useState<Array<{ id: string; name: string; parentId: string | null }>>([]);
+  const [allFoldersFlat, setAllFoldersFlat] = useState<Array<{ id: string; name: string; parentId: string | null }>>([]);
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [franchiseInquiries, setFranchiseInquiries] = useState<FranchiseInquiry[]>([]);
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
@@ -227,6 +243,14 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
     audience: "BOTH" as "STUDENT" | "TEACHER" | "BOTH",
   });
   const [showBookForm, setShowBookForm] = useState(false);
+
+  // Folder form states
+  const [showFolderForm, setShowFolderForm] = useState(false);
+  const [editingFolder, setEditingFolder] = useState<LibraryFolder | null>(null);
+  const [folderForm, setFolderForm] = useState({ name: "", audience: "BOTH" as string, category: "" as string });
+  const [showMoveDialog, setShowMoveDialog] = useState<{ type: "book" | "folder"; id: string; name: string } | null>(null);
+  const [moveTargetId, setMoveTargetId] = useState<string | null>(null);
+  const [folderActionMenu, setFolderActionMenu] = useState<string | null>(null);
 
   const [galleryForm, setGalleryForm] = useState({ title: "" });
   const [galleryImageFile, setGalleryImageFile] = useState<File | null>(null);
@@ -348,8 +372,7 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
         setTasks(allTasks);
         setUsers(allUsers);
       } else if (tab === "books") {
-        const allBooks = await api.getStoryBooks(token);
-        setBooks(allBooks);
+        await loadFolderContents(currentFolderId);
       } else if (tab === "inquiries") {
         const [allInquiries, allFranchises] = await Promise.all([
           api.getInquiries(token),
@@ -655,6 +678,7 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
         fileUrl: finalFileUrl,
         fileSize: bookFile?.size ?? null,
         audience: bookForm.audience,
+        folderId: currentFolderId,
       });
       setBooks((prev) => [created, ...prev]);
       setMessage(
@@ -695,6 +719,122 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
       setMessage("Story book deleted.");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Failed to delete story book.");
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  // ── LIBRARY FOLDER ACTIONS ─────────────────────────────────────────
+  const loadFolderContents = useCallback(async (folderId: string | null) => {
+    if (!token) return;
+    try {
+      const [folderList, bookList] = await Promise.all([
+        api.getLibraryFolders(token, folderId),
+        api.getStoryBooks(token, folderId),
+      ]);
+      setFolders(folderList);
+      setBooks(bookList);
+
+      if (folderId) {
+        const ancestors = await api.getLibraryFolderAncestors(token, folderId);
+        setFolderAncestors(ancestors);
+      } else {
+        setFolderAncestors([]);
+      }
+    } catch (err) {
+      console.error("Failed to load folder contents:", err);
+      setError(err instanceof ApiError ? err.message : "Failed to load folder contents.");
+    }
+  }, [token, setError]);
+
+  async function navigateToFolder(folderId: string | null) {
+    setCurrentFolderId(folderId);
+    setLoading(true);
+    await loadFolderContents(folderId);
+    setLoading(false);
+  }
+
+  async function handleCreateFolder(e: React.FormEvent) {
+    e.preventDefault();
+    if (!token || isActionBusy(actionLoading)) return;
+    setError("");
+    setMessage("");
+    if (!folderForm.name.trim()) {
+      setError("Please enter a folder name.");
+      return;
+    }
+    setActionLoading("folder-save");
+    try {
+      if (editingFolder) {
+        const updated = await api.updateLibraryFolder(token, editingFolder.id, {
+          name: folderForm.name.trim(),
+          audience: folderForm.audience,
+          category: folderForm.category || null,
+        });
+        setFolders((prev) => prev.map((f) => (f.id === updated.id ? updated : f)));
+        setMessage("Folder updated.");
+      } else {
+        const created = await api.createLibraryFolder(token, {
+          name: folderForm.name.trim(),
+          parentId: currentFolderId,
+          audience: folderForm.audience,
+          category: folderForm.category || null,
+        });
+        setFolders((prev) => [created, ...prev]);
+        setMessage("Folder created.");
+      }
+      setShowFolderForm(false);
+      setEditingFolder(null);
+      setFolderForm({ name: "", audience: "BOTH", category: "" });
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Failed to save folder.");
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleDeleteFolder(folderId: string) {
+    if (!token || isActionBusy(actionLoading) || !window.confirm("Delete this folder? All files inside will be moved to root.")) return;
+    setActionLoading(`folder-delete-${folderId}`);
+    try {
+      await api.deleteLibraryFolder(token, folderId);
+      setFolders((prev) => prev.filter((f) => f.id !== folderId));
+      setMessage("Folder deleted. Files moved to root.");
+      // Reload to get orphaned books
+      await loadFolderContents(currentFolderId);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Failed to delete folder.");
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function openMoveDialog(type: "book" | "folder", id: string, name: string) {
+    if (!token) return;
+    setShowMoveDialog({ type, id, name });
+    setMoveTargetId(null);
+    try {
+      const flat = await api.getAllLibraryFolders(token);
+      setAllFoldersFlat(flat);
+    } catch {
+      setAllFoldersFlat([]);
+    }
+  }
+
+  async function handleMoveItem() {
+    if (!token || !showMoveDialog || isActionBusy(actionLoading)) return;
+    setActionLoading("move-item");
+    try {
+      if (showMoveDialog.type === "book") {
+        await api.moveStoryBook(token, showMoveDialog.id, moveTargetId);
+      } else {
+        await api.moveLibraryFolder(token, showMoveDialog.id, moveTargetId);
+      }
+      setMessage(`Moved "${showMoveDialog.name}" successfully.`);
+      setShowMoveDialog(null);
+      await loadFolderContents(currentFolderId);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Failed to move item.");
     } finally {
       setActionLoading(null);
     }
@@ -953,7 +1093,11 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
       g.type.toLowerCase().includes(gallerySearch.toLowerCase())
   );
 
-  const bookPagination = useAdminPagination(filteredBooks, [bookSearch, books.length]);
+  const combinedItems = [
+    ...folders.map((f) => ({ ...f, isFolder: true })),
+    ...filteredBooks.map((b) => ({ ...b, isFolder: false })),
+  ];
+  const bookPagination = useAdminPagination(combinedItems, [bookSearch, books.length, folders.length], 10);
   const galleryPagination = useAdminPagination(filteredGallery, [gallerySearch, gallery.length]);
   const inquiryPagination = useAdminPagination(
     filteredInquiries,
@@ -1129,7 +1273,11 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
   ];
 
   return (
+<<<<<<< Updated upstream
     <PortalPageShell className="!overflow-visible">
+=======
+    <PortalPageShell className="!overflow-y-visible flex-none">
+>>>>>>> Stashed changes
       {activeTab === "overview" && (
         <div className="flex flex-wrap justify-between items-center gap-4 border-b border-slate-100 pb-3 mb-5 shrink-0 select-none w-full min-w-0">
           <div>
@@ -1165,7 +1313,11 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
           <p className="font-bold text-[#8AC926] mt-2">Loading dashboard data…</p>
         </div>
       ) : (
+<<<<<<< Updated upstream
         <div className="space-y-5 animate-fade-in flex-1 flex flex-col min-h-0 w-full min-w-0 max-w-full overflow-visible pb-6 lg:pb-8">
+=======
+        <div className="space-y-5 animate-fade-in flex-1 flex flex-col min-h-0 w-full min-w-0 max-w-full overflow-x-hidden !overflow-y-visible pb-6 lg:pb-8">
+>>>>>>> Stashed changes
           {/* ────────────────── OVERVIEW TAB ────────────────── */}
           {activeTab === "overview" && (
             <div className={portalDashboardBodyClass}>
@@ -2176,6 +2328,17 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                     />
                     <button
                       type="button"
+                      onClick={() => {
+                        setEditingFolder(null);
+                        setFolderForm({ name: "", audience: "BOTH", category: "" });
+                        setShowFolderForm(true);
+                      }}
+                      className="px-4 py-2 rounded-xl bg-indigo-500 text-white font-sans font-bold text-xs tracking-wider flex items-center gap-2 hover:bg-indigo-600 transition shadow-md shadow-indigo-500/10 whitespace-nowrap"
+                    >
+                      <FolderPlus className="w-4 h-4" /> New Folder
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => setShowBookForm(true)}
                       className="px-4 py-2 rounded-xl bg-[#8AC926] text-white font-sans font-bold text-xs tracking-wider flex items-center gap-2 hover:bg-[#78B020] transition shadow-md shadow-[#8AC926]/10 whitespace-nowrap"
                     >
@@ -2186,68 +2349,197 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
               />
 
               <AdminPageBody>
-                {filteredBooks.length === 0 ? (
-                  <AdminListEmpty message="No story books match your search." />
-                ) : (
-                  <AdminRecordList>
-                    {bookPagination.paginatedItems.map((b) => (
-                      <div key={b.id} className={adminListRowStackClass}>
-                        <div className="flex-1 min-w-0 w-full">
-                          <div className="flex flex-wrap items-center gap-2 mb-1">
-                            <span className="px-2 py-0.5 rounded-md bg-[#8AC926]/15 text-[#6B9E1A] text-4xs font-extrabold uppercase border border-[#8AC926]/30 shrink-0">
-                              {b.category}
-                            </span>
-                            <span className="px-2 py-0.5 rounded-md bg-violet-50 text-violet-700 text-4xs font-extrabold uppercase border border-violet-200 shrink-0">
-                              {audienceLabel(b.audience ?? "BOTH")}
-                            </span>
-                          </div>
-                          <p className="font-bold text-sm text-slate-800 break-words">{b.title}</p>
-                          {b.author && (
-                            <p className="text-2xs text-slate-600 font-medium break-words">
-                              Author: {b.author}
-                            </p>
-                          )}
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto sm:justify-end shrink-0">
-                          {token && (
-                            <StoryBookActions
-                              bookId={b.id}
-                              token={token}
-                              role="ADMIN"
-                              title={b.title}
-                              variant="admin"
-                            />
-                          )}
-                          <button
-                            type="button"
-                            disabled={actionLoading === `book-delete-${b.id}`}
-                            onClick={() => handleDeleteStoryBook(b.id)}
-                            className="px-3 py-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 disabled:opacity-50 flex items-center justify-center"
-                            title="Delete book"
-                          >
-                            {actionLoading === `book-delete-${b.id}` ? (
-                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            ) : (
-                              <Trash2 className="w-3.5 h-3.5" />
-                            )}
-                          </button>
-                        </div>
-                      </div>
+                {/* ── BREADCRUMB NAVIGATION ── */}
+                {currentFolderId && (
+                  <nav className="flex items-center gap-1 text-xs font-semibold text-slate-500 mb-4 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => navigateToFolder(null)}
+                      className="flex items-center gap-1 px-2 py-1 rounded-lg transition hover:bg-slate-100 hover:text-slate-700"
+                    >
+                      <Home className="w-3.5 h-3.5" /> Root
+                    </button>
+                    {folderAncestors.map((anc, i) => (
+                      <span key={anc.id} className="flex items-center gap-1">
+                        <ChevronRight className="w-3 h-3 text-slate-400" />
+                        <button
+                          type="button"
+                          onClick={() => navigateToFolder(anc.id)}
+                          className={`px-2 py-1 rounded-lg transition hover:bg-slate-100 ${
+                            i === folderAncestors.length - 1
+                              ? "text-[#6B9E1A] bg-[#8AC926]/10"
+                              : "hover:text-slate-700"
+                          }`}
+                        >
+                          {anc.name}
+                        </button>
+                      </span>
                     ))}
-                    <AdminListPagination
-                      rangeStart={bookPagination.rangeStart}
-                      rangeEnd={bookPagination.rangeEnd}
-                      total={filteredBooks.length}
-                      safePage={bookPagination.safePage}
-                      totalPages={bookPagination.totalPages}
-                      pageNumbers={bookPagination.pageNumbers}
-                      onPageChange={bookPagination.setCurrentPage}
-                      itemLabel="books"
-                    />
-                  </AdminRecordList>
+                  </nav>
                 )}
 
-                {/* STORY BOOK UPLOAD FORM MODAL */}
+                {/* ── GOOGLE DRIVE STYLE LIST ── */}
+                <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                  {combinedItems.length === 0 ? (
+                    <AdminListEmpty message={currentFolderId ? "This folder is empty." : "No items match your search."} />
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-sm whitespace-nowrap">
+                        <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium text-xs">
+                          <tr>
+                            <th className="px-4 py-3 font-semibold">Name</th>
+                            <th className="px-4 py-3 font-semibold">Access</th>
+                            <th className="px-4 py-3 font-semibold">Date Added</th>
+                            <th className="px-4 py-3 font-semibold text-right">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {bookPagination.paginatedItems.map((item: any) => {
+                            if (item.isFolder) {
+                              const f = item;
+                              return (
+                                <tr
+                                  key={`folder-${f.id}`}
+                                  className="hover:bg-slate-50 group transition cursor-pointer"
+                                  onClick={() => navigateToFolder(f.id)}
+                                >
+                                  <td className="px-4 py-3 flex items-center gap-3 w-1/2">
+                                    <Folder className="w-5 h-5 text-slate-400 fill-slate-400 shrink-0" />
+                                    <span className="font-semibold text-slate-700 whitespace-normal break-words">{f.name}</span>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <div className="flex flex-wrap items-center gap-1">
+                                      <span className="px-1.5 py-0.5 rounded bg-violet-50 text-violet-600 text-4xs font-extrabold uppercase border border-violet-200">
+                                        {audienceLabel(f.audience ?? "BOTH")}
+                                      </span>
+                                      {f.category && (
+                                        <span className="px-1.5 py-0.5 rounded bg-[#8AC926]/10 text-[#6B9E1A] text-4xs font-extrabold uppercase border border-[#8AC926]/30">
+                                          {f.category}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-3 text-slate-500 text-xs">
+                                    {new Date(f.createdAt).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" })}
+                                  </td>
+                                  <td className="px-4 py-2 text-right align-middle">
+                                    <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setEditingFolder(f);
+                                          setFolderForm({
+                                            name: f.name,
+                                            audience: f.audience ?? "BOTH",
+                                            category: f.category ?? "",
+                                          });
+                                          setShowFolderForm(true);
+                                        }}
+                                        className="p-1.5 rounded-full hover:bg-slate-200 text-slate-600 transition"
+                                        title="Rename"
+                                      >
+                                        <Edit2 className="w-4 h-4" />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => openMoveDialog("folder", f.id, f.name)}
+                                        className="p-1.5 rounded-full hover:bg-slate-200 text-slate-600 transition"
+                                        title="Move"
+                                      >
+                                        <FolderInput className="w-4 h-4" />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDeleteFolder(f.id)}
+                                        className="p-1.5 rounded-full hover:bg-rose-100 text-rose-600 transition"
+                                        title="Delete"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            } else {
+                              const b = item;
+                              return (
+                                <tr key={`book-${b.id}`} className="hover:bg-slate-50 group transition">
+                                  <td className="px-4 py-3 flex items-center gap-3 w-1/2">
+                                    <FileText className="w-5 h-5 text-blue-500 shrink-0" />
+                                    <span className="font-semibold text-slate-700 whitespace-normal break-words">{b.title}</span>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <div className="flex flex-wrap items-center gap-1">
+                                      <span className="px-1.5 py-0.5 rounded bg-[#8AC926]/10 text-[#6B9E1A] text-4xs font-extrabold uppercase border border-[#8AC926]/30">
+                                        {b.category}
+                                      </span>
+                                      <span className="px-1.5 py-0.5 rounded bg-violet-50 text-violet-700 text-4xs font-extrabold uppercase border border-violet-200">
+                                        {audienceLabel(b.audience ?? "BOTH")}
+                                      </span>
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-3 text-slate-500 text-xs">
+                                    {new Date(b.createdAt).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" })}
+                                  </td>
+                                  <td className="px-4 py-2 text-right align-middle">
+                                    <div className="flex items-center justify-end gap-1">
+                                      {token && (
+                                        <StoryBookActions
+                                          bookId={b.id}
+                                          token={token}
+                                          role="ADMIN"
+                                          title={b.title}
+                                          variant="admin"
+                                        />
+                                      )}
+                                      <button
+                                        type="button"
+                                        onClick={() => openMoveDialog("book", b.id, b.title)}
+                                        className="p-1.5 rounded-full hover:bg-slate-200 text-slate-600 transition"
+                                        title="Move to folder"
+                                      >
+                                        <FolderInput className="w-4 h-4" />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        disabled={actionLoading === `book-delete-${b.id}`}
+                                        onClick={() => handleDeleteStoryBook(b.id)}
+                                        className="p-1.5 rounded-full hover:bg-rose-100 text-rose-600 transition disabled:opacity-50"
+                                        title="Delete book"
+                                      >
+                                        {actionLoading === `book-delete-${b.id}` ? (
+                                          <Loader2 className="w-4 h-4 animate-spin" />
+                                        ) : (
+                                          <Trash2 className="w-4 h-4" />
+                                        )}
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            }
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                  {combinedItems.length > 10 && (
+                    <div className="p-3 border-t border-slate-200 bg-slate-50">
+                      <AdminListPagination
+                        rangeStart={bookPagination.rangeStart}
+                        rangeEnd={bookPagination.rangeEnd}
+                        total={combinedItems.length}
+                        safePage={bookPagination.safePage}
+                        totalPages={bookPagination.totalPages}
+                        pageNumbers={bookPagination.pageNumbers}
+                        onPageChange={bookPagination.setCurrentPage}
+                        itemLabel="items"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* ── STORY BOOK UPLOAD FORM MODAL ── */}
                 {showBookForm && (
                   <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
                     <div className="bg-white rounded-2xl p-5 sm:p-6 w-full max-w-md max-h-[min(92dvh,720px)] overflow-y-auto shadow-2xl border border-slate-200 animate-scale-up text-slate-800 relative my-auto">
@@ -2255,9 +2547,15 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                         onClick={() => setShowBookForm(false)}
                         className="absolute top-4 right-4"
                       />
-                      <h3 className="font-sans text-lg font-extrabold text-slate-900 mb-4 pr-10">
+                      <h3 className="font-sans text-lg font-extrabold text-slate-900 mb-1 pr-10">
                         Register Story Book
                       </h3>
+                      {currentFolderId && folderAncestors.length > 0 && (
+                        <p className="text-3xs text-indigo-600 font-semibold mb-3 flex items-center gap-1">
+                          <Folder className="w-3 h-3" />
+                          Adding to: {folderAncestors[folderAncestors.length - 1]?.name ?? "folder"}
+                        </p>
+                      )}
                       <form onSubmit={handleAddStoryBook} noValidate className="space-y-4 text-xs">
                         <div>
                           <label className="block text-slate-700 font-bold mb-1.5">
@@ -2272,17 +2570,7 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                           />
                         </div>
 
-                        <div>
-                          <label className="block text-slate-700 font-bold mb-1.5">
-                            Author Name (optional)
-                          </label>
-                          <input
-                            placeholder="e.g. Aesop"
-                            value={bookForm.author}
-                            onChange={(e) => setBookForm({ ...bookForm, author: e.target.value })}
-                            className="w-full rounded-xl bg-white border border-slate-200 px-4 py-2.5 text-slate-900 outline-none focus:border-[#8AC926] placeholder-slate-400 transition"
-                          />
-                        </div>
+
 
                         <div>
                           <label className="block text-slate-700 font-bold mb-1.5">
@@ -2374,6 +2662,133 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                           Register Book to Library
                         </button>
                       </form>
+                    </div>
+                  </div>
+                )}
+
+                {/* ── CREATE / EDIT FOLDER MODAL ── */}
+                {showFolderForm && (
+                  <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+                    <div className="bg-white rounded-2xl p-5 sm:p-6 w-full max-w-sm shadow-2xl border border-slate-200 animate-scale-up text-slate-800 relative my-auto">
+                      <ModalCloseButton
+                        onClick={() => { setShowFolderForm(false); setEditingFolder(null); }}
+                        className="absolute top-4 right-4"
+                      />
+                      <h3 className="font-sans text-lg font-extrabold text-slate-900 mb-4 pr-10 flex items-center gap-2">
+                        <FolderPlus className="w-5 h-5 text-indigo-500" />
+                        {editingFolder ? "Edit Folder" : "New Folder"}
+                      </h3>
+                      <form onSubmit={handleCreateFolder} noValidate className="space-y-4 text-xs">
+                        <div>
+                          <label className="block text-slate-700 font-bold mb-1.5">Folder Name</label>
+                          <input
+                            required
+                            placeholder="e.g. Rhymes Collection"
+                            value={folderForm.name}
+                            onChange={(e) => setFolderForm({ ...folderForm, name: e.target.value })}
+                            className="w-full rounded-xl bg-white border border-slate-200 px-4 py-2.5 text-slate-900 outline-none focus:border-indigo-500 placeholder-slate-400 transition"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-slate-700 font-bold mb-1.5">Access</label>
+                          <PortalSelect
+                            value={folderForm.audience}
+                            onChange={(e) => setFolderForm({ ...folderForm, audience: e.target.value })}
+                            className="rounded-xl bg-white border border-slate-200 px-4 py-2.5 text-slate-900 outline-none focus:border-indigo-500 transition"
+                          >
+                            {LIBRARY_AUDIENCE_OPTIONS.map((opt) => (
+                              <option key={opt.id} value={opt.id}>{opt.label}</option>
+                            ))}
+                          </PortalSelect>
+                        </div>
+                        <div>
+                          <label className="block text-slate-700 font-bold mb-1.5">Class filter (optional)</label>
+                          <select
+                            value={folderForm.category}
+                            onChange={(e) => setFolderForm({ ...folderForm, category: e.target.value })}
+                            className="w-full rounded-xl bg-white border border-slate-200 px-4 py-2.5 text-slate-900 outline-none focus:border-indigo-500 transition text-xs"
+                          >
+                            <option value="">All classes</option>
+                            {STUDENT_CLASS_OPTIONS.map((opt) => (
+                              <option key={opt.id} value={opt.id}>{opt.label}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <button
+                          type="submit"
+                          disabled={actionLoading === "folder-save"}
+                          className="w-full py-3 rounded-xl bg-indigo-500 text-white font-sans font-bold text-xs tracking-wider uppercase hover:bg-indigo-600 transition shadow-md shadow-indigo-500/10 disabled:opacity-60"
+                        >
+                          {actionLoading === "folder-save" ? "Saving…" : editingFolder ? "Update Folder" : "Create Folder"}
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                )}
+
+                {/* ── MOVE DIALOG ── */}
+                {showMoveDialog && (
+                  <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+                    <div className="bg-white rounded-2xl p-5 sm:p-6 w-full max-w-sm shadow-2xl border border-slate-200 animate-scale-up text-slate-800 relative my-auto">
+                      <ModalCloseButton
+                        onClick={() => setShowMoveDialog(null)}
+                        className="absolute top-4 right-4"
+                      />
+                      <h3 className="font-sans text-base font-extrabold text-slate-900 mb-1 pr-10 flex items-center gap-2">
+                        <FolderInput className="w-5 h-5 text-indigo-500" />
+                        Move "{showMoveDialog.name}"
+                      </h3>
+                      <p className="text-3xs text-slate-500 mb-4 font-medium">
+                        Select a destination folder, or choose root.
+                      </p>
+                      <div className="space-y-1 max-h-60 overflow-y-auto mb-4 border border-slate-100 rounded-xl p-2 bg-[#F8FAFC]">
+                        <button
+                          type="button"
+                          onClick={() => setMoveTargetId(null)}
+                          className={`w-full text-left px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition ${
+                            moveTargetId === null
+                              ? "bg-indigo-50 text-indigo-700 border border-indigo-200"
+                              : "text-slate-600 hover:bg-slate-100"
+                          }`}
+                        >
+                          <Home className="w-3.5 h-3.5" /> Root (no folder)
+                        </button>
+                        {allFoldersFlat
+                          .filter((f) => f.id !== showMoveDialog.id)
+                          .map((f) => (
+                            <button
+                              key={f.id}
+                              type="button"
+                              onClick={() => setMoveTargetId(f.id)}
+                              className={`w-full text-left px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition ${
+                                moveTargetId === f.id
+                                  ? "bg-indigo-50 text-indigo-700 border border-indigo-200"
+                                  : "text-slate-600 hover:bg-slate-100"
+                              }`}
+                            >
+                              <Folder className="w-3.5 h-3.5 text-indigo-400" />
+                              {f.name}
+                              {f.parentId && (
+                                <span className="text-3xs text-slate-400 ml-auto">
+                                  (in {allFoldersFlat.find((p) => p.id === f.parentId)?.name ?? "…"})
+                                </span>
+                              )}
+                            </button>
+                          ))}
+                        {allFoldersFlat.length === 0 && (
+                          <p className="text-3xs text-slate-400 text-center py-4 font-medium">
+                            No folders created yet.
+                          </p>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleMoveItem}
+                        disabled={actionLoading === "move-item"}
+                        className="w-full py-3 rounded-xl bg-indigo-500 text-white font-sans font-bold text-xs tracking-wider uppercase hover:bg-indigo-600 transition shadow-md shadow-indigo-500/10 disabled:opacity-60"
+                      >
+                        {actionLoading === "move-item" ? "Moving…" : "Move Here"}
+                      </button>
                     </div>
                   </div>
                 )}

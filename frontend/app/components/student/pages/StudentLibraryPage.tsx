@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
-import { api, ApiError, type AuthUser, type StoryBook } from "../../../lib/api";
+import { api, ApiError, type AuthUser, type StoryBook, type LibraryFolder } from "../../../lib/api";
 import { clearSession, saveSession } from "../../../lib/auth";
 import { PAYMENTS_ENABLED } from "../../../lib/constants";
 import { StoryBookActions } from "../../StoryBookActions";
@@ -16,6 +16,7 @@ import {
 import { portalDashboardBodyClass } from "../../PortalPageShell";
 import { useStudentOutlet } from "../StudentOutletContext";
 import { StudentTabLoader } from "../StudentTabLoader";
+import { FolderOpen, Home, ChevronRight } from "lucide-react";
 
 export function StudentLibraryPage() {
   const navigate = useNavigate();
@@ -23,8 +24,36 @@ export function StudentLibraryPage() {
 
   const [profile, setProfile] = useState<AuthUser | null>(user);
   const [books, setBooks] = useState<StoryBook[]>([]);
+  const [folders, setFolders] = useState<LibraryFolder[]>([]);
+  const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
+  const [folderAncestors, setFolderAncestors] = useState<Array<{ id: string; name: string; parentId: string | null }>>([]);
   const [loading, setLoading] = useState(true);
   const [librarySearch, setLibrarySearch] = useState("");
+
+  const studentClass = profile?.studentClass ?? user?.studentClass ?? null;
+
+  const loadFolder = useCallback(async (folderId: string | null) => {
+    if (!token) return;
+    try {
+      // For students, the API route already filters books by studentClass
+      const [folderList, bookList] = await Promise.all([
+        api.getPublicLibraryFolders(token, folderId),
+        api.getLibraryStoryBooks(token, folderId),
+      ]);
+      setFolders(folderList);
+      setBooks(bookList);
+      if (folderId) {
+        const ancestors = await api.getPublicFolderAncestors(token, folderId);
+        setFolderAncestors(ancestors);
+      } else {
+        setFolderAncestors([]);
+      }
+    } catch (err) {
+      console.error("Folder load error:", err);
+      setFolders([]);
+      setBooks([]);
+    }
+  }, [token]);
 
   useEffect(() => {
     if (!token) return;
@@ -35,9 +64,8 @@ export function StudentLibraryPage() {
       setError("");
 
       try {
-        const [profileResult, booksResult, paymentsResult] = await Promise.allSettled([
+        const [profileResult, paymentsResult] = await Promise.allSettled([
           api.profile(token),
-          api.getPublicStoryBooks(token),
           api.getStudentPayments(token),
         ]);
 
@@ -48,12 +76,6 @@ export function StudentLibraryPage() {
           saveSession(token, profileResult.value);
         }
 
-        if (booksResult.status === "fulfilled") {
-          setBooks(booksResult.value);
-        } else {
-          throw booksResult.reason;
-        }
-
         if (paymentsResult.status === "fulfilled" && PAYMENTS_ENABLED) {
           const successful = paymentsResult.value.filter((p) => p.status === "SUCCESS");
           if (successful.length === 0) {
@@ -61,13 +83,17 @@ export function StudentLibraryPage() {
             return;
           }
         }
+
+        // After profile loaded, load root folder
+        await loadFolder(null);
+
       } catch (err) {
-        console.error("Student library load error:", err);
+        console.error("Student library init error:", err);
         if (err instanceof ApiError && err.status === 401) {
           clearSession();
           navigate("/login");
         } else {
-          setError("Failed to load story books. Please try again.");
+          setError("Failed to initialize library. Please try again.");
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -77,9 +103,12 @@ export function StudentLibraryPage() {
     return () => {
       cancelled = true;
     };
-  }, [token, navigate, setError]);
+  }, [token, navigate, setError, loadFolder]);
 
-  const studentClass = profile?.studentClass ?? user?.studentClass ?? null;
+  function navigateToFolder(folderId: string | null) {
+    setCurrentFolderId(folderId);
+    loadFolder(folderId);
+  }
 
   const filteredBooks = useMemo(() => {
     const q = librarySearch.toLowerCase();
@@ -119,47 +148,107 @@ export function StudentLibraryPage() {
         <AdminPageBody className="flex-1 min-h-0 flex flex-col">
           {!studentClass ? (
             <AdminListEmpty message="Your class is not set yet. Contact Simba Academy if you need help." />
-          ) : filteredBooks.length === 0 ? (
-            <AdminListEmpty message={`No story books for ${studentClass} match your search yet.`} />
           ) : (
-            <AdminRecordList>
-              {libraryPagination.paginatedItems.map((b) => (
-                <div key={b.id} className={adminListRowClass}>
-                  <div className="flex-1 min-w-[180px]">
-                    <div className="flex flex-wrap items-center gap-2 mb-1">
-                      <span className="px-2 py-0.5 rounded-md bg-[#8AC926]/15 text-[#6B9E1A] text-4xs font-extrabold uppercase border border-[#8AC926]/30 shrink-0">
-                        {b.category}
-                      </span>
+            <>
+              {/* Breadcrumb */}
+              <nav className="flex items-center gap-1 text-xs font-semibold text-slate-500 mb-4 flex-wrap shrink-0">
+                <button
+                  type="button"
+                  onClick={() => navigateToFolder(null)}
+                  className={`flex items-center gap-1 px-2 py-1 rounded-lg transition hover:bg-slate-100 ${
+                    !currentFolderId ? "text-[#6B9E1A] bg-[#8AC926]/10" : "hover:text-slate-700"
+                  }`}
+                >
+                  <Home className="w-3.5 h-3.5" /> All Books
+                </button>
+                {folderAncestors.map((anc, i) => (
+                  <span key={anc.id} className="flex items-center gap-1">
+                    <ChevronRight className="w-3 h-3 text-slate-400" />
+                    <button
+                      type="button"
+                      onClick={() => navigateToFolder(anc.id)}
+                      className={`px-2 py-1 rounded-lg transition hover:bg-slate-100 ${
+                        i === folderAncestors.length - 1
+                          ? "text-[#6B9E1A] bg-[#8AC926]/10"
+                          : "hover:text-slate-700"
+                      }`}
+                    >
+                      {anc.name}
+                    </button>
+                  </span>
+                ))}
+              </nav>
+
+              {/* Folder cards */}
+              {folders.length > 0 && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 mb-5 shrink-0">
+                  {folders.map((f) => (
+                    <div
+                      key={f.id}
+                      className="bg-white border border-slate-200 rounded-xl p-3 cursor-pointer hover:border-indigo-300 hover:shadow-md hover:shadow-indigo-50 transition"
+                      onClick={() => navigateToFolder(f.id)}
+                      onKeyDown={(e) => { if (e.key === "Enter") navigateToFolder(f.id); }}
+                      role="button"
+                      tabIndex={0}
+                    >
+                      <div className="flex items-start gap-2">
+                        <FolderOpen className="w-7 h-7 text-indigo-400 shrink-0 mt-0.5" />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-xs text-slate-800 truncate">{f.name}</p>
+                          <p className="text-3xs text-slate-500 mt-1 font-medium">
+                            {(f._count?.children ?? 0)} folders · {(f._count?.storyBooks ?? 0)} files
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                    <p className="font-bold text-sm text-slate-800">{b.title}</p>
-                    {b.author ? (
-                      <p className="text-2xs text-slate-600 font-medium">Author: {b.author}</p>
-                    ) : null}
-                  </div>
-                  {token ? (
-                    <div className="flex flex-wrap items-center gap-2 shrink-0">
-                      <StoryBookActions
-                        bookId={b.id}
-                        token={token}
-                        role="STUDENT"
-                        title={b.title}
-                        variant="admin"
-                      />
-                    </div>
-                  ) : null}
+                  ))}
                 </div>
-              ))}
-              <AdminListPagination
-                rangeStart={libraryPagination.rangeStart}
-                rangeEnd={libraryPagination.rangeEnd}
-                total={filteredBooks.length}
-                safePage={libraryPagination.safePage}
-                totalPages={libraryPagination.totalPages}
-                pageNumbers={libraryPagination.pageNumbers}
-                onPageChange={libraryPagination.setCurrentPage}
-                itemLabel="books"
-              />
-            </AdminRecordList>
+              )}
+
+              {/* Files */}
+              {filteredBooks.length === 0 && folders.length === 0 ? (
+                <AdminListEmpty message={currentFolderId ? "This folder is empty." : `No story books for ${studentClass} match your search.`} />
+              ) : filteredBooks.length === 0 ? null : (
+                <div className="flex-1 min-h-0 overflow-y-auto min-w-0 pb-12">
+                  <AdminRecordList>
+                    {libraryPagination.paginatedItems.map((b) => (
+                      <div key={b.id} className={adminListRowClass}>
+                        <div className="flex-1 min-w-[180px]">
+                          <div className="flex flex-wrap items-center gap-2 mb-1">
+                            <span className="px-2 py-0.5 rounded-md bg-[#8AC926]/15 text-[#6B9E1A] text-4xs font-extrabold uppercase border border-[#8AC926]/30 shrink-0">
+                              {b.category}
+                            </span>
+                          </div>
+                          <p className="font-bold text-sm text-slate-800">{b.title}</p>
+
+                        </div>
+                        {token ? (
+                          <div className="flex flex-wrap items-center gap-2 shrink-0">
+                            <StoryBookActions
+                              bookId={b.id}
+                              token={token}
+                              role="STUDENT"
+                              title={b.title}
+                              variant="admin"
+                            />
+                          </div>
+                        ) : null}
+                      </div>
+                    ))}
+                    <AdminListPagination
+                      rangeStart={libraryPagination.rangeStart}
+                      rangeEnd={libraryPagination.rangeEnd}
+                      total={filteredBooks.length}
+                      safePage={libraryPagination.safePage}
+                      totalPages={libraryPagination.totalPages}
+                      pageNumbers={libraryPagination.pageNumbers}
+                      onPageChange={libraryPagination.setCurrentPage}
+                      itemLabel="books"
+                    />
+                  </AdminRecordList>
+                </div>
+              )}
+            </>
           )}
         </AdminPageBody>
       </AdminPageShell>

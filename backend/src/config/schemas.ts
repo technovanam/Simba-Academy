@@ -203,7 +203,27 @@ export const createStoryBookSchema = z.object({
   fileUrl: urlOrUploadPath,
   fileSize: z.number().optional().nullable(),
   audience: z.enum(["STUDENT", "TEACHER", "BOTH"]).default("BOTH"),
+  folderId: z.string().optional().nullable(),
 });
+
+// ── Library Folders (Admin) ─────────────────────────────────────────
+export const createFolderSchema = z.object({
+  name: z.string().min(2, "Folder name must be at least 2 characters"),
+  parentId: z.string().optional().nullable(),
+  audience: z.enum(["STUDENT", "TEACHER", "BOTH"]).default("BOTH"),
+  category: z.enum([...STUDENT_CLASS_LEVELS, "ALL"] as [string, ...string[]]).optional().nullable(),
+});
+
+export const updateFolderSchema = z.object({
+  name: z.string().min(2, "Folder name must be at least 2 characters").optional(),
+  audience: z.enum(["STUDENT", "TEACHER", "BOTH"]).optional(),
+  category: z.enum([...STUDENT_CLASS_LEVELS, "ALL"] as [string, ...string[]]).optional().nullable(),
+});
+
+export const moveItemSchema = z.object({
+  targetFolderId: z.string().nullable(),
+});
+
 
 // ── Task Proof Submission (Teacher) ─────────────────────────────────
 export const submitTaskProofSchema = z.object({
