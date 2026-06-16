@@ -131,7 +131,16 @@ router.get("/lesson-plans", async (_req, res, next) => {
       orderBy: [{ planDate: "desc" }, { createdAt: "desc" }],
       include: { course: { select: { title: true, level: true } } },
     });
-    res.json(plans);
+
+    const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const sanitizedPlans = plans.map(plan => {
+      if (plan.fileUrl && plan.updatedAt < oneWeekAgo) {
+        return { ...plan, fileUrl: null, fileName: null };
+      }
+      return plan;
+    });
+
+    res.json(sanitizedPlans);
   } catch (err) {
     next(err);
   }
@@ -146,6 +155,13 @@ router.get("/lesson-plans/:id", async (req, res, next) => {
     if (!plan) {
       throw new AppError("Lesson plan not found", 404);
     }
+
+    const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    if (plan.fileUrl && plan.updatedAt < oneWeekAgo) {
+      plan.fileUrl = null;
+      plan.fileName = null;
+    }
+
     res.json(plan);
   } catch (err) {
     next(err);

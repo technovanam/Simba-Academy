@@ -321,7 +321,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
     );
   });
 
-  const taskPagination = useAdminPagination(filteredTasks, [taskSearch, taskStatusFilter], 4);
+  const taskPagination = useAdminPagination(filteredTasks, [taskSearch, taskStatusFilter], 3);
   const plannerPagination = useAdminPagination(filteredLessonPlans, [plannerSearch]);
 
   const recentLessonPlans = [...lessonPlans]

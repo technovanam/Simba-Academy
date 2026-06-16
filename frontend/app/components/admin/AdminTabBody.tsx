@@ -1084,7 +1084,7 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
   const taskPagination = useAdminPagination(
     sortedFilteredTasks,
     [taskSearch, taskStatusFilter, taskTeacherFilter, tasks.length],
-    4
+    3
   );
   const filteredGallery = gallery.filter(
     (g) =>
@@ -1165,6 +1165,12 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
         status: t.status,
       })),
   ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  const approvalPagination = useAdminPagination(
+    combinedApprovals,
+    [materials.length, tasks.length],
+    3
+  );
 
   async function handleMarkAdminNotificationRead(notificationId: string) {
     if (!token || isActionBusy(actionLoading)) return;
@@ -1871,7 +1877,7 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                   <AdminListEmpty message="No learning materials or task proofs have been uploaded for review." />
                 ) : (
                   <AdminRecordList>
-                    {combinedApprovals.map((m) => (
+                    {approvalPagination.paginatedItems.map((m) => (
                       <div key={m.id} className={adminListRowStackClass}>
                         <div className="flex-1 min-w-0 w-full space-y-1.5">
                           <a
@@ -2045,6 +2051,16 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                         </div>
                       </div>
                     ))}
+                    <AdminListPagination
+                      rangeStart={approvalPagination.rangeStart}
+                      rangeEnd={approvalPagination.rangeEnd}
+                      total={combinedApprovals.length}
+                      safePage={approvalPagination.safePage}
+                      totalPages={approvalPagination.totalPages}
+                      pageNumbers={approvalPagination.pageNumbers}
+                      onPageChange={approvalPagination.setCurrentPage}
+                      itemLabel="uploads"
+                    />
                   </AdminRecordList>
                 )}
               </AdminPageBody>
