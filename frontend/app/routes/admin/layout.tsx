@@ -36,7 +36,7 @@ export function meta({}: Route.MetaArgs) {
 
 const NAV_ITEMS: { id: AdminTab; label: string; icon: typeof Layers }[] = [
   { id: "overview", label: "Dashboard", icon: Layers },
-  { id: "users", label: "Registered Users", icon: Users },
+  { id: "users", label: "Student Management", icon: Users },
   { id: "teachers", label: "Teacher Management", icon: UserPlus },
   { id: "books", label: "Story Library", icon: Book },
   { id: "planner", label: "Lesson Planner", icon: Compass },

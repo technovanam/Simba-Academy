@@ -34,12 +34,14 @@ export default function RegisterPage() {
   const [form, setForm] = useState({
     name: "",
     email: "",
+    phone: "",
     password: "",
     studentClass: "" as StudentClassLevel | "",
   });
   const [error, setError] = useState("");
   const [nameError, setNameError] = useState("");
   const [emailError, setEmailError] = useState("");
+  const [phoneError, setPhoneError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [classError, setClassError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -57,6 +59,7 @@ export default function RegisterPage() {
     setError("");
     setNameError("");
     setEmailError("");
+    setPhoneError("");
     setPasswordError("");
     setClassError("");
 
@@ -72,6 +75,14 @@ export default function RegisterPage() {
       hasErrors = true;
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
       setEmailError("Enter a valid email address");
+      hasErrors = true;
+    }
+
+    if (!form.phone.trim()) {
+      setPhoneError("Please enter your phone number");
+      hasErrors = true;
+    } else if (form.phone.trim().length < 7) {
+      setPhoneError("Please enter a valid phone number");
       hasErrors = true;
     }
 
@@ -105,6 +116,7 @@ export default function RegisterPage() {
         const result = await api.register({
           name: form.name,
           email: form.email,
+          phone: form.phone,
           password: form.password,
           studentClass: form.studentClass,
         });
@@ -130,6 +142,7 @@ export default function RegisterPage() {
         const result = await api.registerWithPayment({
           name: form.name,
           email: form.email,
+          phone: form.phone,
           password: form.password,
           studentClass: form.studentClass,
           paymentSessionId: payment.payments_session_id ?? orderData.paymentSessionId,
@@ -260,20 +273,42 @@ export default function RegisterPage() {
             </AuthField>
           </div>
 
-          <AuthField label="Child's class" error={classError} portal="student" softLabel>
-            <FormPillSelect
-              compact
-              value={form.studentClass}
-              options={STUDENT_CLASS_OPTIONS}
-              onChange={(studentClass) => {
-                setForm({ ...form, studentClass });
-                if (classError) setClassError("");
-              }}
-              ariaLabel="Select child's class"
-              placeholder="Choose class"
-              hasError={!!classError}
-            />
-          </AuthField>
+          <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-2">
+            <AuthField label="Child's class" error={classError} portal="student" softLabel>
+              <FormPillSelect
+                compact
+                value={form.studentClass}
+                options={STUDENT_CLASS_OPTIONS}
+                onChange={(studentClass) => {
+                  setForm({ ...form, studentClass });
+                  if (classError) setClassError("");
+                }}
+                ariaLabel="Select child's class"
+                placeholder="Choose class"
+                hasError={!!classError}
+              />
+            </AuthField>
+
+            <AuthField label="Phone number" error={phoneError} portal="student" softLabel>
+              <div className="relative">
+                <input
+                  type="text"
+                  inputMode="tel"
+                  placeholder="Contact number"
+                  {...blockAutofillInputProps}
+                  value={form.phone}
+                  onChange={(e) => {
+                    setForm({ ...form, phone: e.target.value });
+                    if (phoneError) setPhoneError("");
+                  }}
+                  className={inputClass(!!phoneError)}
+                />
+                {phoneError && (
+                  <AlertCircle className="w-4 h-4 text-red-500 absolute right-3 top-1/2 -translate-y-1/2" />
+                )}
+              </div>
+            </AuthField>
+          </div>
 
           <AuthField label="Password" error={passwordError} portal="student" softLabel>
             <PasswordInput

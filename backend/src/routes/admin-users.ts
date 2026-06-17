@@ -101,6 +101,7 @@ router.get("/users", async (req, res, next) => {
         { firstName: { contains: search } },
         { lastName: { contains: search } },
         { employeeId: { contains: search } },
+        { studentClass: { contains: search } },
       ];
     }
 
@@ -142,6 +143,7 @@ router.get("/teachers", async (req, res, next) => {
         { firstName: { contains: search } },
         { lastName: { contains: search } },
         { employeeId: { contains: search } },
+        { studentClass: { contains: search } },
       ];
     }
 

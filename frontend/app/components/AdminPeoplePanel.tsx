@@ -58,11 +58,9 @@ interface AdminPeoplePanelProps {
 }
 
 const USER_FILTERS: { id: UserListFilter; label: string }[] = [
-  { id: "ALL", label: "All Users" },
-  { id: "ACTIVE", label: "Active Users" },
-  { id: "DEACTIVATED", label: "Deactivated Users" },
-  { id: "TEACHERS", label: "Teachers" },
-  { id: "STUDENTS", label: "Students" },
+  { id: "ALL", label: "All Students" },
+  { id: "ACTIVE", label: "Active Students" },
+  { id: "DEACTIVATED", label: "Deactivated Students" },
 ];
 
 const TEACHER_FILTERS: { id: TeacherListFilter; label: string }[] = [
@@ -173,6 +171,7 @@ export function AdminPeoplePanel({
   const [teacherFilter, setTeacherFilter] = useState<TeacherListFilter>("ALL");
   const [sort, setSort] = useState<UserListSort>("NEWEST");
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
 
   const [showCreateTeacher, setShowCreateTeacher] = useState(false);
   const [teacherForm, setTeacherForm] = useState(emptyTeacherForm);
@@ -190,7 +189,7 @@ export function AdminPeoplePanel({
           filter: userFilter,
           sort,
         });
-        setRecords(data);
+        setRecords(data.filter((u) => u.role === "STUDENT"));
       } else {
         const data = await api.getTeachers(token, {
           search: search.trim() || undefined,
@@ -217,13 +216,13 @@ export function AdminPeoplePanel({
     setCurrentPage(1);
   }, [search, userFilter, teacherFilter, sort, mode]);
 
-  const totalPages = Math.max(1, Math.ceil(records.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(records.length / pageSize));
   const safePage = Math.min(currentPage, totalPages);
-  const pageStart = (safePage - 1) * PAGE_SIZE;
-  const paginatedRecords = records.slice(pageStart, pageStart + PAGE_SIZE);
+  const pageStart = (safePage - 1) * pageSize;
+  const paginatedRecords = records.slice(pageStart, pageStart + pageSize);
   const pageNumbers = buildPageNumbers(safePage, totalPages);
   const rangeStart = records.length === 0 ? 0 : pageStart + 1;
-  const rangeEnd = Math.min(pageStart + PAGE_SIZE, records.length);
+  const rangeEnd = Math.min(pageStart + pageSize, records.length);
 
   const isCreatingTeacher = actionLoading === "teacher-create";
   const isTeacherFormReady =
@@ -405,10 +404,10 @@ export function AdminPeoplePanel({
   return (
     <AdminPageShell>
       <AdminPageHeader
-        title={mode === "users" ? "Registered Users" : "Teacher Management"}
+        title={mode === "users" ? "Student Management" : "Teacher Management"}
         description={
           mode === "users"
-            ? "Search, filter, activate, deactivate, or remove platform accounts."
+            ? "Search, filter, activate, deactivate, or remove student accounts."
             : "Create staff accounts, edit profiles, and send password reset emails."
         }
         actions={
@@ -462,120 +461,152 @@ export function AdminPeoplePanel({
           No accounts match your search or filters.
         </div>
       ) : (
-        <div className={adminListContainerClass}>
-          {paginatedRecords.map((u) => (
-            <div key={u.id} className={adminListRowStackClass}>
-              <div className="flex-1 min-w-0 w-full space-y-0.5">
-                <div className="flex flex-wrap items-center gap-2 mb-1">
-                  <span
-                    className={`px-2 py-0.5 rounded-md text-4xs font-extrabold uppercase border shrink-0 ${
-                      u.role === "ADMIN"
-                        ? "bg-purple-50 text-purple-700 border-purple-200"
-                        : u.role === "TEACHER"
-                        ? "bg-amber-50 text-amber-700 border-amber-200"
-                        : "bg-blue-50 text-blue-700 border-blue-200"
-                    }`}
-                  >
-                    {u.role}
-                  </span>
-                  <AccountStatusBadge status={u.status ?? "ACTIVE"} />
-                </div>
-                <p className="font-bold text-sm text-slate-800 break-words">{u.name}</p>
-                <p className="text-2xs text-slate-600 font-medium break-all">{u.email}</p>
-                {u.role === "TEACHER" && u.studentClass ? (
-                  <p className="text-2xs font-semibold text-slate-700">
-                    Class: <span className="text-[#8AC926] font-bold">{u.studentClass}</span>
-                  </p>
-                ) : null}
-                {u.phone ? (
-                  <p className="text-2xs text-slate-500 inline-flex items-center gap-1 break-all">
-                    <Phone className="w-3 h-3 shrink-0" /> {u.phone}
-                  </p>
-                ) : null}
-                {u.employeeId ? (
-                  <p className="text-2xs text-slate-500 break-all">ID: {u.employeeId}</p>
-                ) : null}
-              </div>
+        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm whitespace-nowrap">
+              <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium text-xs">
+                <tr>
+                  <th className="px-4 py-3 font-semibold">Name</th>
+                  <th className="px-4 py-3 font-semibold">Email</th>
+                  <th className="px-4 py-3 font-semibold">Class</th>
+                  <th className="px-4 py-3 font-semibold">Phone Number</th>
+                  <th className="px-4 py-3 font-semibold text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {paginatedRecords.map((u) => (
+                  <tr key={u.id} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="px-4 py-3 align-middle">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`px-1.5 py-0.5 rounded text-4xs font-extrabold uppercase border shrink-0 ${
+                            u.role === "ADMIN"
+                              ? "bg-purple-50 text-purple-700 border-purple-200"
+                              : u.role === "TEACHER"
+                              ? "bg-amber-50 text-amber-700 border-amber-200"
+                              : "bg-blue-50 text-blue-700 border-blue-200"
+                          }`}
+                        >
+                          {u.role}
+                        </span>
+                        <span className="font-bold text-sm text-slate-800">{u.name}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 align-middle text-xs text-slate-600 font-medium">
+                      {u.email}
+                    </td>
+                    <td className="px-4 py-3 align-middle text-xs text-slate-650">
+                      {u.studentClass ? (
+                        <span className="text-[#8AC926] font-bold">{u.studentClass}</span>
+                      ) : (
+                        <span className="text-slate-450">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 align-middle text-xs text-slate-500">
+                      {u.phone ? u.phone : <span className="text-slate-450">—</span>}
+                    </td>
+                    <td className="px-4 py-2 text-right align-middle">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          type="button"
+                          disabled={u.id === currentUserId || actionLoading === `status-${u.id}`}
+                          onClick={() => handleToggleStatus(u)}
+                          className={`px-2.5 py-1 rounded-lg font-medium text-[12px] transition flex items-center gap-1 border ${
+                            u.status === "ACTIVE"
+                              ? "bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100 disabled:opacity-50"
+                              : "bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100"
+                          }`}
+                        >
+                          {actionLoading === `status-${u.id}` ? (
+                            <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                          ) : u.status === "ACTIVE" ? (
+                            <>
+                              <Lock className="w-2.5 h-2.5" /> Deactivate
+                            </>
+                          ) : (
+                            <>
+                              <Unlock className="w-2.5 h-2.5" /> Activate
+                            </>
+                          )}
+                        </button>
 
-              <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full sm:w-auto sm:justify-end shrink-0 pt-2 sm:pt-0 border-t border-slate-100 sm:border-0">
-                <button
-                  type="button"
-                  disabled={u.id === currentUserId || actionLoading === `status-${u.id}`}
-                  onClick={() => handleToggleStatus(u)}
-                  className={`w-full sm:w-auto justify-center px-3 py-2 sm:py-1.5 rounded-lg font-bold text-2xs transition flex items-center gap-1 border ${
-                    u.status === "ACTIVE"
-                      ? "bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100 disabled:opacity-50"
-                      : "bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100"
-                  }`}
-                >
-                  {actionLoading === `status-${u.id}` ? (
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                  ) : u.status === "ACTIVE" ? (
-                    <>
-                      <Lock className="w-3 h-3" /> Deactivate
-                    </>
-                  ) : (
-                    <>
-                      <Unlock className="w-3 h-3" /> Activate
-                    </>
-                  )}
-                </button>
+                        {(u.role === "TEACHER" || u.role === "STUDENT") && (
+                          <button
+                            type="button"
+                            disabled={actionLoading === `reset-${u.id}` || u.status !== "ACTIVE"}
+                            onClick={() => handleSendReset(u)}
+                            title="Send password reset email"
+                            className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100 text-[12px] font-medium flex items-center gap-1 disabled:opacity-50"
+                          >
+                            {actionLoading === `reset-${u.id}` ? (
+                              <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                            ) : (
+                              <>
+                                <Mail className="w-2.5 h-2.5" /> Reset
+                              </>
+                            )}
+                          </button>
+                        )}
 
-                {(u.role === "TEACHER" || u.role === "STUDENT") && (
-                  <button
-                    type="button"
-                    disabled={actionLoading === `reset-${u.id}` || u.status !== "ACTIVE"}
-                    onClick={() => handleSendReset(u)}
-                    title="Send password reset email"
-                    className="w-full sm:w-auto justify-center px-3 py-2 sm:py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100 text-2xs font-bold flex items-center gap-1 disabled:opacity-50"
-                  >
-                    {actionLoading === `reset-${u.id}` ? (
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                    ) : (
-                      <>
-                        <Mail className="w-3 h-3" /> Reset
-                      </>
-                    )}
-                  </button>
-                )}
+                        {mode === "teachers" && (
+                          <button
+                            type="button"
+                            onClick={() => openEditTeacher(u)}
+                            className="px-2 py-1.5 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 flex items-center justify-center"
+                            title="Edit teacher"
+                          >
+                            <Pencil className="w-3 h-3" />
+                          </button>
+                        )}
 
-                {mode === "teachers" && (
-                  <button
-                    type="button"
-                    onClick={() => openEditTeacher(u)}
-                    className="w-full sm:w-auto px-3 py-2 sm:py-1.5 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 flex items-center justify-center"
-                    title="Edit teacher"
-                  >
-                    <Pencil className="w-3.5 h-3.5" />
-                  </button>
-                )}
-
-                <button
-                  type="button"
-                  disabled={u.id === currentUserId || actionLoading === `delete-${u.id}`}
-                  onClick={() => setDeleteTarget(u)}
-                  className="w-full sm:w-auto px-3 py-2 sm:py-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 disabled:opacity-50 flex items-center justify-center"
-                  title="Delete account"
-                >
-                  {actionLoading === `delete-${u.id}` ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <Trash2 className="w-3.5 h-3.5" />
-                  )}
-                </button>
-              </div>
-            </div>
-          ))}
+                        <button
+                          type="button"
+                          disabled={u.id === currentUserId || actionLoading === `delete-${u.id}`}
+                          onClick={() => setDeleteTarget(u)}
+                          className="px-2 py-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 disabled:opacity-50 flex items-center justify-center"
+                          title="Delete account"
+                        >
+                          {actionLoading === `delete-${u.id}` ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-3 h-3" />
+                          )}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
           {records.length > 0 && (
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-1 pt-2 border-t border-slate-100">
-              <p className="text-2xs font-semibold text-slate-600">
-                Showing{" "}
-                <span className="font-bold text-slate-800">
-                  {rangeStart}–{rangeEnd}
-                </span>{" "}
-                of <span className="font-bold text-slate-800">{records.length}</span> accounts
-              </p>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 border-t border-slate-200 bg-slate-50/40">
+              <div className="flex flex-wrap items-center gap-4">
+                <p className="text-2xs font-semibold text-slate-600">
+                  Showing{" "}
+                  <span className="font-bold text-slate-800">
+                    {rangeStart}–{rangeEnd}
+                  </span>{" "}
+                  of <span className="font-bold text-slate-800">{records.length}</span> accounts
+                </p>
+                <div className="flex items-center gap-1.5 text-2xs font-semibold text-slate-600">
+                  <span>Show:</span>
+                  <select
+                    value={pageSize}
+                    onChange={(e) => {
+                      setPageSize(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                    className="bg-white border border-slate-200 rounded-lg px-2 py-0.5 text-slate-850 outline-none text-2xs font-bold transition focus:border-[#8AC926] cursor-pointer"
+                  >
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                    <option value={75}>75</option>
+                    <option value={100}>100</option>
+                  </select>
+                </div>
+              </div>
 
               <nav
                 className="flex flex-wrap items-center justify-center sm:justify-end gap-1"

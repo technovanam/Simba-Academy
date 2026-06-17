@@ -1232,10 +1232,10 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                 <button
                   type="button"
                   onClick={() => setActiveBookTab("COMPLETED")}
-                  className={`p-2.5 rounded-xl border flex flex-col text-left transition-all duration-200 ${
+                  className={`p-2.5 rounded-xl border-2 flex flex-col text-left transition-all duration-200 ${
                     activeBookTab === "COMPLETED"
-                      ? "bg-emerald-50 border-emerald-500 ring-2 ring-emerald-500/20 shadow-xs scale-[1.02]"
-                      : "bg-emerald-50/10 border-slate-200/80 hover:bg-emerald-50/30 opacity-75"
+                      ? "bg-emerald-50/80 border-emerald-500 shadow-sm"
+                      : "bg-transparent border-slate-100 hover:border-emerald-200 hover:bg-emerald-50/30 opacity-70 hover:opacity-100"
                   }`}
                 >
                   <span className="text-3xs font-extrabold text-emerald-800 uppercase tracking-wider">Completed (Read)</span>
@@ -1246,10 +1246,10 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                 <button
                   type="button"
                   onClick={() => setActiveBookTab("READING")}
-                  className={`p-2.5 rounded-xl border flex flex-col text-left transition-all duration-200 ${
+                  className={`p-2.5 rounded-xl border-2 flex flex-col text-left transition-all duration-200 ${
                     activeBookTab === "READING"
-                      ? "bg-amber-50 border-amber-500 ring-2 ring-amber-500/20 shadow-xs scale-[1.02]"
-                      : "bg-amber-50/10 border-slate-200/80 hover:bg-amber-50/30 opacity-75"
+                      ? "bg-amber-50/80 border-amber-500 shadow-sm"
+                      : "bg-transparent border-slate-100 hover:border-amber-200 hover:bg-amber-50/30 opacity-70 hover:opacity-100"
                   }`}
                 >
                   <span className="text-3xs font-extrabold text-amber-800 uppercase tracking-wider">Reading Now</span>
@@ -1260,10 +1260,10 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                 <button
                   type="button"
                   onClick={() => setActiveBookTab("UNREAD")}
-                  className={`p-2.5 rounded-xl border flex flex-col text-left transition-all duration-200 ${
+                  className={`p-2.5 rounded-xl border-2 flex flex-col text-left transition-all duration-200 ${
                     activeBookTab === "UNREAD"
-                      ? "bg-slate-100 border-slate-400 ring-2 ring-slate-400/20 shadow-xs scale-[1.02]"
-                      : "bg-slate-50 border-slate-200 hover:bg-slate-100/70 opacity-75"
+                      ? "bg-slate-50 border-slate-400 shadow-sm"
+                      : "bg-transparent border-slate-100 hover:border-slate-300 hover:bg-slate-50 opacity-70 hover:opacity-100"
                   }`}
                 >
                   <span className="text-3xs font-extrabold text-slate-600 uppercase tracking-wider">Unread</span>
@@ -1359,9 +1359,6 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                                   <p className="font-bold text-xs text-slate-800 truncate">{b.title}</p>
                                   {b.author && <p className="text-3xs text-slate-500 font-semibold truncate">by {b.author}</p>}
                                 </div>
-                                <span className="shrink-0 px-2 py-0.5 rounded-full text-4xs font-black uppercase border flex items-center gap-1 bg-slate-100 text-slate-600 border-slate-200">
-                                  <Book className="w-2.5 h-2.5 text-slate-400" /> Unread
-                                </span>
                               </div>
                             ))}
                           </div>

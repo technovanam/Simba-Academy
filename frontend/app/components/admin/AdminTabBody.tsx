@@ -2435,23 +2435,23 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                                   className="hover:bg-slate-50 group transition cursor-pointer"
                                   onClick={() => navigateToFolder(f.id)}
                                 >
-                                  <td className="px-4 py-3 flex items-center gap-3 w-1/2">
+                                  <td className="px-4 py-3 flex items-center gap-3 w-[65%] min-w-0">
                                     <Folder className="w-5 h-5 text-slate-400 fill-slate-400 shrink-0" />
-                                    <span className="font-semibold text-slate-700 whitespace-normal break-words">{f.name}</span>
+                                    <span className="font-semibold text-slate-700 truncate block">{f.name}</span>
                                   </td>
                                   <td className="px-4 py-3">
                                     <div className="flex flex-wrap items-center gap-1">
-                                      <span className="px-1.5 py-0.5 rounded bg-violet-50 text-violet-600 text-4xs font-extrabold uppercase border border-violet-200">
+                                      <span className="px-1.5 py-0.5 rounded bg-violet-50 text-violet-600 text-2xs font-extrabold uppercase border border-violet-200">
                                         {audienceLabel(f.audience ?? "BOTH")}
                                       </span>
                                       {f.category && (
-                                        <span className="px-1.5 py-0.5 rounded bg-[#8AC926]/10 text-[#6B9E1A] text-4xs font-extrabold uppercase border border-[#8AC926]/30">
+                                        <span className="px-1.5 py-0.5 rounded bg-[#8AC926]/10 text-[#6B9E1A] text-2xs font-extrabold uppercase border border-[#8AC926]/30">
                                           {f.category}
                                         </span>
                                       )}
                                     </div>
                                   </td>
-                                  <td className="px-4 py-3 text-slate-500 text-xs">
+                                  <td className="px-4 py-3 text-slate-650 text-sm">
                                     {new Date(f.createdAt).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" })}
                                   </td>
                                   <td className="px-4 py-2 text-right align-middle">
@@ -2496,21 +2496,21 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                               const b = item;
                               return (
                                 <tr key={`book-${b.id}`} className="hover:bg-slate-50 group transition">
-                                  <td className="px-4 py-3 flex items-center gap-3 w-1/2">
+                                  <td className="px-4 py-3 flex items-center gap-3 w-[65%] min-w-0">
                                     <FileText className="w-5 h-5 text-blue-500 shrink-0" />
-                                    <span className="font-semibold text-slate-700 whitespace-normal break-words">{b.title}</span>
+                                    <span className="font-semibold text-slate-700 truncate block">{b.title}</span>
                                   </td>
                                   <td className="px-4 py-3">
                                     <div className="flex flex-wrap items-center gap-1">
-                                      <span className="px-1.5 py-0.5 rounded bg-[#8AC926]/10 text-[#6B9E1A] text-4xs font-extrabold uppercase border border-[#8AC926]/30">
+                                      <span className="px-1.5 py-0.5 rounded bg-[#8AC926]/10 text-[#6B9E1A] text-2xs font-extrabold uppercase border border-[#8AC926]/30">
                                         {b.category}
                                       </span>
-                                      <span className="px-1.5 py-0.5 rounded bg-violet-50 text-violet-700 text-4xs font-extrabold uppercase border border-violet-200">
+                                      <span className="px-1.5 py-0.5 rounded bg-violet-50 text-violet-700 text-2xs font-extrabold uppercase border border-violet-200">
                                         {audienceLabel(b.audience ?? "BOTH")}
                                       </span>
                                     </div>
                                   </td>
-                                  <td className="px-4 py-3 text-slate-500 text-xs">
+                                  <td className="px-4 py-3 text-slate-650 text-sm">
                                     {new Date(b.createdAt).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" })}
                                   </td>
                                   <td className="px-4 py-2 text-right align-middle">

@@ -58,7 +58,7 @@ export function adminTabFromSection(section: string | undefined): AdminTab {
 export function adminTabTitle(tab: AdminTab): string {
   const titles: Record<AdminTab, string> = {
     overview: "Dashboard",
-    users: "Registered Users",
+    users: "Student Management",
     payments: "Payments",
     teachers: "Teacher Management",
     courses: "Courses",
