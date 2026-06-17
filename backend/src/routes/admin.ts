@@ -11,6 +11,7 @@ import {
   createTaskSchema,
   approveTaskSchema,
   createStoryBookSchema,
+  updateStoryBookSchema,
   createLessonPlanSchema,
   updateLessonPlanSchema,
   createFolderSchema,
@@ -807,6 +808,30 @@ router.post("/books", validate(createStoryBookSchema), async (req, res, next) =>
     }
 
     res.status(201).json(book);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── Update Story Book ───────────────────────────────────────────────
+router.put("/books/:id", validate(updateStoryBookSchema), async (req, res, next) => {
+  try {
+    const existing = await prisma.storyBook.findUnique({ where: { id: String(req.params.id) } });
+    if (!existing) {
+      throw new AppError("Story book not found", 404);
+    }
+    const { folderId, ...rest } = req.body;
+    const data: any = { ...rest };
+    if (folderId) {
+      const folder = await prisma.libraryFolder.findUnique({ where: { id: folderId } });
+      if (!folder) throw new AppError("Target folder not found", 404);
+      data.folderId = folderId;
+    }
+    const book = await prisma.storyBook.update({
+      where: { id: String(req.params.id) },
+      data,
+    });
+    res.json(book);
   } catch (err) {
     next(err);
   }

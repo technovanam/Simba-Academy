@@ -17,6 +17,7 @@ import {
 } from "./AdminListUi";
 import { ModalCloseButton } from "./ModalCloseButton";
 import { Compass, Loader2, Pencil, Plus, Trash2, Upload, Paperclip, FileText, X } from "lucide-react";
+import { ConfirmDialog } from "./ConfirmDialog";
 
 interface AdminLessonPlansPanelProps {
   token: string;
@@ -41,6 +42,7 @@ export function AdminLessonPlansPanel({ token, onNotify, onError }: AdminLessonP
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -149,7 +151,14 @@ export function AdminLessonPlansPanel({ token, onNotify, onError }: AdminLessonP
   }
 
   async function handleDelete(id: string) {
-    if (isActionBusy(actionLoading) || !window.confirm("Delete this lesson plan permanently?")) return;
+    if (isActionBusy(actionLoading)) return;
+    setDeleteTarget(id);
+  }
+
+  async function handleDeleteConfirmed() {
+    if (!deleteTarget) return;
+    const id = deleteTarget;
+    setDeleteTarget(null);
     setActionLoading(`delete-${id}`);
     try {
       await api.deleteLessonPlan(token, id);
@@ -349,6 +358,17 @@ export function AdminLessonPlansPanel({ token, onNotify, onError }: AdminLessonP
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title="Delete Lesson Plan?"
+        message="Delete this lesson plan permanently?"
+        confirmLabel="Delete"
+        variant="danger"
+        loading={actionLoading === `delete-${deleteTarget}`}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={handleDeleteConfirmed}
+      />
     </AdminPageShell>
   );
 }

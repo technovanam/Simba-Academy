@@ -215,6 +215,8 @@ export const createStoryBookSchema = z.object({
   folderId: z.string().optional().nullable(),
 });
 
+export const updateStoryBookSchema = createStoryBookSchema.partial();
+
 // ── Library Folders (Admin) ─────────────────────────────────────────
 export const createFolderSchema = z.object({
   name: z.string().min(2, "Folder name must be at least 2 characters"),

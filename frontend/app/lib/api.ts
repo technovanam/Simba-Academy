@@ -389,6 +389,24 @@ export const api = {
       body: JSON.stringify(body),
     }, token),
 
+  updateStoryBook: (
+    token: string,
+    bookId: string,
+    body: {
+      title?: string;
+      author?: string | null;
+      category?: string;
+      fileUrl?: string;
+      fileSize?: number | null;
+      audience?: "STUDENT" | "TEACHER" | "BOTH";
+      folderId?: string | null;
+    }
+  ) =>
+    request<StoryBook>(`/api/admin/books/${bookId}`, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }, token),
+
   moveStoryBook: (token: string, bookId: string, targetFolderId: string | null) =>
     request<StoryBook>(`/api/admin/books/${bookId}/move`, {
       method: "PATCH",

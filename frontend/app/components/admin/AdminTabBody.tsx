@@ -67,6 +67,7 @@ import {
 import { AdminPeoplePanel } from "../AdminPeoplePanel";
 import { AdminPaymentsPanel } from "../AdminPaymentsPanel";
 import { AdminLessonPlansPanel } from "../AdminLessonPlansPanel";
+import { ConfirmDialog } from "../ConfirmDialog";
 import { RecentPaymentCard, sortPaymentsNewestFirst } from "../RecentPaymentCard";
 import { StoryBookActions } from "../StoryBookActions";
 import { GalleryItemActions } from "../GalleryItemActions";
@@ -240,11 +241,12 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
     audience: "BOTH" as LibraryAudience,
   });
   const [showBookForm, setShowBookForm] = useState(false);
+  const [editingBookId, setEditingBookId] = useState<string | null>(null);
 
   // Folder form states
   const [showFolderForm, setShowFolderForm] = useState(false);
   const [editingFolder, setEditingFolder] = useState<LibraryFolder | null>(null);
-  const [folderForm, setFolderForm] = useState({ name: "", audience: "BOTH" as string, category: "" as string });
+  const [folderForm, setFolderForm] = useState({ name: "", audience: "BOTH" as string, categories: [] as string[] });
   const [showMoveDialog, setShowMoveDialog] = useState<{ type: "book" | "folder"; id: string; name: string } | null>(null);
   const [moveTargetId, setMoveTargetId] = useState<string | null>(null);
   const [folderActionMenu, setFolderActionMenu] = useState<string | null>(null);
@@ -261,6 +263,13 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
   // New Direct File Upload States
   const [courseImageFile, setCourseImageFile] = useState<File | null>(null);
   const [bookFile, setBookFile] = useState<File | null>(null);
+
+  const [confirmDelete, setConfirmDelete] = useState<{
+    type: "course" | "material" | "task" | "book" | "folder" | "gallery" | "testimonial";
+    id: string;
+    title: string;
+    message: string;
+  } | null>(null);
 
   // Fetch data specifically for the active tab
   useEffect(() => {
@@ -497,44 +506,24 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
   }
 
   async function handleDeleteCourse(courseId: string) {
-    if (
-      !token ||
-      isActionBusy(actionLoading) ||
-      !window.confirm(
-        "Are you sure you want to delete this course? All uploaded materials for this course will be deleted."
-      )
-    )
-      return;
-    setActionLoading(`course-delete-${courseId}`);
-    try {
-      await api.deleteCourse(token, courseId);
-      setCourses((prev) => prev.filter((c) => c.id !== courseId));
-      setMessage("Course deleted successfully.");
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to delete course.");
-    } finally {
-      setActionLoading(null);
-    }
+    if (!token || isActionBusy(actionLoading)) return;
+    setConfirmDelete({
+      type: "course",
+      id: courseId,
+      title: "Delete Course?",
+      message: "Are you sure you want to delete this course? All uploaded materials for this course will be deleted.",
+    });
   }
 
   // ── MATERIAL APPROVAL ACTIONS ────────────────────────────────────────
   async function handleDeleteMaterial(materialId: string) {
-    if (
-      !token ||
-      isActionBusy(actionLoading) ||
-      !window.confirm("Permanently delete this material and its file from storage?")
-    )
-      return;
-    setActionLoading(`material-delete-${materialId}`);
-    try {
-      await api.deleteMaterial(token, materialId);
-      setMaterials((prev) => prev.filter((m) => m.id !== materialId));
-      setMessage("Learning material permanently deleted.");
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to delete material.");
-    } finally {
-      setActionLoading(null);
-    }
+    if (!token || isActionBusy(actionLoading)) return;
+    setConfirmDelete({
+      type: "material",
+      id: materialId,
+      title: "Delete Learning Material?",
+      message: "Permanently delete this material and its file from storage?",
+    });
   }
 
   async function handleApproveMaterial(materialId: string, approve: boolean) {
@@ -622,22 +611,13 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
   }
 
   async function handleDeleteTask(taskId: string) {
-    if (
-      !token ||
-      isActionBusy(actionLoading) ||
-      !window.confirm("Permanently delete this task and any proof file from storage?")
-    )
-      return;
-    setActionLoading(`task-delete-${taskId}`);
-    try {
-      await api.deleteTask(token, taskId);
-      setTasks((prev) => prev.filter((t) => t.id !== taskId));
-      setMessage("Task deleted successfully.");
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to delete task.");
-    } finally {
-      setActionLoading(null);
-    }
+    if (!token || isActionBusy(actionLoading)) return;
+    setConfirmDelete({
+      type: "task",
+      id: taskId,
+      title: "Delete Task?",
+      message: "Permanently delete this task and any proof file from storage?",
+    });
   }
 
   // ── STORY BOOKS ACTIONS ──────────────────────────────────────────────
@@ -655,36 +635,57 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
       setError("Please select at least one class.");
       return;
     }
-    if (!bookFile) {
+    if (!editingBookId && !bookFile) {
       setError("Please choose a file to upload.");
       return;
     }
-    if (!isValidStoryBookFile(bookFile)) {
+    if (bookFile && !isValidStoryBookFile(bookFile)) {
       setError("Selected file must be a PDF, DOC, DOCX, PPT, or PPTX file.");
       return;
     }
     setActionLoading("book-save");
 
     try {
-      const uploadResponse = await api.uploadRaw(token, bookFile);
-      if (!uploadResponse.verified) {
-        throw new ApiError("Story book file could not be verified on storage.", 500);
+      let finalFileUrl: string | undefined = undefined;
+      let finalFileSize: number | null | undefined = undefined;
+      
+      if (bookFile) {
+        const uploadResponse = await api.uploadRaw(token, bookFile);
+        if (!uploadResponse.verified) {
+          throw new ApiError("Story book file could not be verified on storage.", 500);
+        }
+        finalFileUrl = uploadResponse.url;
+        finalFileSize = bookFile.size;
       }
-      const finalFileUrl = uploadResponse.url;
 
-      const created = await api.createStoryBook(token, {
-        title: bookForm.title,
-        author: bookForm.author || null,
-        category: bookForm.categories.join(","),
-        fileUrl: finalFileUrl,
-        fileSize: bookFile?.size ?? null,
-        audience: bookForm.audience,
-        folderId: currentFolderId,
-      });
-      setBooks((prev) => [created, ...prev]);
-      setMessage(
-        "Story book saved to backend/uploads and published to selected portals."
-      );
+      if (editingBookId) {
+        const payload: any = {
+          title: bookForm.title,
+          author: bookForm.author || null,
+          category: bookForm.categories.join(","),
+          audience: bookForm.audience,
+        };
+        if (finalFileUrl) {
+          payload.fileUrl = finalFileUrl;
+          payload.fileSize = finalFileSize;
+        }
+        const updated = await api.updateStoryBook(token, editingBookId, payload);
+        setBooks((prev) => prev.map((b) => (b.id === editingBookId ? updated : b)));
+        setMessage("Story book updated successfully.");
+      } else {
+        const created = await api.createStoryBook(token, {
+          title: bookForm.title,
+          author: bookForm.author || null,
+          category: bookForm.categories.join(","),
+          fileUrl: finalFileUrl!,
+          fileSize: finalFileSize ?? null,
+          audience: bookForm.audience,
+          folderId: currentFolderId,
+        });
+        setBooks((prev) => [created, ...prev]);
+        setMessage("Story book saved to backend/uploads and published to selected portals.");
+      }
+
       setBookForm({
         title: "",
         author: "",
@@ -692,6 +693,7 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
         audience: "BOTH",
       });
       setBookFile(null);
+      setEditingBookId(null);
       setShowBookForm(false);
     } catch (err) {
       console.error("Storybook save failed:", err);
@@ -706,22 +708,13 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
   }
 
   async function handleDeleteStoryBook(bookId: string) {
-    if (
-      !token ||
-      isActionBusy(actionLoading) ||
-      !window.confirm("Are you sure you want to delete this story book?")
-    )
-      return;
-    setActionLoading(`book-delete-${bookId}`);
-    try {
-      await api.deleteStoryBook(token, bookId);
-      setBooks((prev) => prev.filter((b) => b.id !== bookId));
-      setMessage("Story book deleted.");
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to delete story book.");
-    } finally {
-      setActionLoading(null);
-    }
+    if (!token || isActionBusy(actionLoading)) return;
+    setConfirmDelete({
+      type: "book",
+      id: bookId,
+      title: "Delete Story Book?",
+      message: "Are you sure you want to delete this story book?",
+    });
   }
 
   // ── LIBRARY FOLDER ACTIONS ─────────────────────────────────────────
@@ -765,11 +758,12 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
     }
     setActionLoading("folder-save");
     try {
+      const categoryString = folderForm.categories.length > 0 ? folderForm.categories.join(",") : null;
       if (editingFolder) {
         const updated = await api.updateLibraryFolder(token, editingFolder.id, {
           name: folderForm.name.trim(),
           audience: folderForm.audience,
-          category: folderForm.category || null,
+          category: categoryString,
         });
         setFolders((prev) => prev.map((f) => (f.id === updated.id ? updated : f)));
         setMessage("Folder updated.");
@@ -778,14 +772,14 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
           name: folderForm.name.trim(),
           parentId: currentFolderId,
           audience: folderForm.audience,
-          category: folderForm.category || null,
+          category: categoryString,
         });
         setFolders((prev) => [created, ...prev]);
         setMessage("Folder created.");
       }
       setShowFolderForm(false);
       setEditingFolder(null);
-      setFolderForm({ name: "", audience: "BOTH", category: "" });
+      setFolderForm({ name: "", audience: "BOTH", categories: [] });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Failed to save folder.");
     } finally {
@@ -794,19 +788,13 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
   }
 
   async function handleDeleteFolder(folderId: string) {
-    if (!token || isActionBusy(actionLoading) || !window.confirm("Delete this folder? All files inside will be moved to root.")) return;
-    setActionLoading(`folder-delete-${folderId}`);
-    try {
-      await api.deleteLibraryFolder(token, folderId);
-      setFolders((prev) => prev.filter((f) => f.id !== folderId));
-      setMessage("Folder deleted. Files moved to root.");
-      // Reload to get orphaned books
-      await loadFolderContents(currentFolderId);
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to delete folder.");
-    } finally {
-      setActionLoading(null);
-    }
+    if (!token || isActionBusy(actionLoading)) return;
+    setConfirmDelete({
+      type: "folder",
+      id: folderId,
+      title: "Delete Folder?",
+      message: "Delete this folder? All files inside will be moved to root.",
+    });
   }
 
   async function openMoveDialog(type: "book" | "folder", id: string, name: string) {
@@ -956,22 +944,13 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
   }
 
   async function handleDeleteGallery(galleryId: string) {
-    if (
-      !token ||
-      isActionBusy(actionLoading) ||
-      !window.confirm("Are you sure you want to delete this gallery item?")
-    )
-      return;
-    setActionLoading(`gallery-delete-${galleryId}`);
-    try {
-      await api.deleteGalleryItem(token, galleryId);
-      setGallery((prev) => prev.filter((g) => g.id !== galleryId));
-      setMessage("Gallery item deleted.");
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to delete gallery item.");
-    } finally {
-      setActionLoading(null);
-    }
+    if (!token || isActionBusy(actionLoading)) return;
+    setConfirmDelete({
+      type: "gallery",
+      id: galleryId,
+      title: "Delete Gallery Item?",
+      message: "Are you sure you want to delete this gallery item?",
+    });
   }
 
   async function handleApproveTestimonial(testimonialId: string, approve: boolean) {
@@ -991,19 +970,53 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
   }
 
   async function handleDeleteTestimonial(testimonialId: string) {
-    if (
-      !token ||
-      isActionBusy(actionLoading) ||
-      !window.confirm("Are you sure you want to delete this testimonial?")
-    )
-      return;
-    setActionLoading(`testimonial-delete-${testimonialId}`);
+    if (!token || isActionBusy(actionLoading)) return;
+    setConfirmDelete({
+      type: "testimonial",
+      id: testimonialId,
+      title: "Delete Testimonial?",
+      message: "Are you sure you want to delete this testimonial?",
+    });
+  }
+
+  async function handleConfirmDelete() {
+    if (!confirmDelete || !token) return;
+    const { type, id } = confirmDelete;
+    setActionLoading(`${type}-delete-${id}`);
     try {
-      await api.deleteTestimonial(token, testimonialId);
-      setTestimonials((prev) => prev.filter((t) => t.id !== testimonialId));
-      setMessage("Testimonial deleted.");
+      if (type === "course") {
+        await api.deleteCourse(token, id);
+        setCourses((prev) => prev.filter((c) => c.id !== id));
+        setMessage("Course deleted successfully.");
+      } else if (type === "material") {
+        await api.deleteMaterial(token, id);
+        setMaterials((prev) => prev.filter((m) => m.id !== id));
+        setMessage("Learning material permanently deleted.");
+      } else if (type === "task") {
+        await api.deleteTask(token, id);
+        setTasks((prev) => prev.filter((t) => t.id !== id));
+        setMessage("Task deleted successfully.");
+      } else if (type === "book") {
+        await api.deleteStoryBook(token, id);
+        setBooks((prev) => prev.filter((b) => b.id !== id));
+        setMessage("Story book deleted.");
+      } else if (type === "folder") {
+        await api.deleteLibraryFolder(token, id);
+        setFolders((prev) => prev.filter((f) => f.id !== id));
+        setMessage("Folder deleted. Files moved to root.");
+        await loadFolderContents(currentFolderId);
+      } else if (type === "gallery") {
+        await api.deleteGalleryItem(token, id);
+        setGallery((prev) => prev.filter((g) => g.id !== id));
+        setMessage("Gallery item deleted.");
+      } else if (type === "testimonial") {
+        await api.deleteTestimonial(token, id);
+        setTestimonials((prev) => prev.filter((t) => t.id !== id));
+        setMessage("Testimonial deleted.");
+      }
+      setConfirmDelete(null);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to delete testimonial.");
+      setError(err instanceof ApiError ? err.message : `Failed to delete ${type}.`);
     } finally {
       setActionLoading(null);
     }
@@ -2344,7 +2357,7 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                       type="button"
                       onClick={() => {
                         setEditingFolder(null);
-                        setFolderForm({ name: "", audience: "BOTH", category: "" });
+                        setFolderForm({ name: "", audience: "BOTH", categories: [] });
                         setShowFolderForm(true);
                       }}
                       className="px-4 py-2 rounded-xl bg-indigo-500 text-white font-sans font-bold text-xs tracking-wider flex items-center gap-2 hover:bg-indigo-600 transition shadow-md shadow-indigo-500/10 whitespace-nowrap"
@@ -2353,7 +2366,12 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setShowBookForm(true)}
+                      onClick={() => {
+                        setEditingBookId(null);
+                        setBookForm({ title: "", author: "", categories: ["Playgroup"], audience: "BOTH" });
+                        setBookFile(null);
+                        setShowBookForm(true);
+                      }}
                       className="px-4 py-2 rounded-xl bg-[#8AC926] text-white font-sans font-bold text-xs tracking-wider flex items-center gap-2 hover:bg-[#78B020] transition shadow-md shadow-[#8AC926]/10 whitespace-nowrap"
                     >
                       <Plus className="w-4 h-4" /> Add Story Book
@@ -2445,7 +2463,7 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                                           setFolderForm({
                                             name: f.name,
                                             audience: f.audience ?? "BOTH",
-                                            category: f.category ?? "",
+                                            categories: f.category ? f.category.split(",") : [],
                                           });
                                           setShowFolderForm(true);
                                         }}
@@ -2516,6 +2534,24 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                                       </button>
                                       <button
                                         type="button"
+                                        onClick={() => {
+                                          setEditingBookId(b.id);
+                                          setBookForm({
+                                            title: b.title,
+                                            author: b.author || "",
+                                            categories: b.category.split(",") as StudentClassLevel[],
+                                            audience: (b.audience as LibraryAudience) || "BOTH",
+                                          });
+                                          setBookFile(null);
+                                          setShowBookForm(true);
+                                        }}
+                                        className="p-1.5 rounded-full hover:bg-slate-200 text-slate-600 transition"
+                                        title="Edit book"
+                                      >
+                                        <Edit2 className="w-4 h-4" />
+                                      </button>
+                                      <button
+                                        type="button"
                                         disabled={actionLoading === `book-delete-${b.id}`}
                                         onClick={() => handleDeleteStoryBook(b.id)}
                                         className="p-1.5 rounded-full hover:bg-rose-100 text-rose-600 transition disabled:opacity-50"
@@ -2558,11 +2594,11 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                   <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
                     <div className="bg-white rounded-2xl p-5 sm:p-6 w-full max-w-md max-h-[min(92dvh,720px)] overflow-y-auto shadow-2xl border border-slate-200 animate-scale-up text-slate-800 relative my-auto">
                       <ModalCloseButton
-                        onClick={() => setShowBookForm(false)}
+                        onClick={() => { setShowBookForm(false); setEditingBookId(null); }}
                         className="absolute top-4 right-4"
                       />
                       <h3 className="font-sans text-lg font-extrabold text-slate-900 mb-1 pr-10">
-                        Register Story Book
+                        {editingBookId ? "Edit Story Book" : "Register Story Book"}
                       </h3>
                       {currentFolderId && folderAncestors.length > 0 && (
                         <p className="text-3xs text-indigo-600 font-semibold mb-3 flex items-center gap-1">
@@ -2642,7 +2678,7 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
 
                         <div>
                           <label className="block text-slate-700 font-bold mb-1.5">
-                            Book document
+                            Book document {editingBookId && <span className="font-normal text-slate-400 text-xs ml-2">(Optional, leave empty to keep current file)</span>}
                           </label>
                           <div className="flex flex-col gap-2">
                             <label className="w-full border-2 border-dashed border-slate-200 rounded-xl p-4 bg-[#F8FAFC] flex flex-col items-center justify-center cursor-pointer hover:bg-[#8AC926]/5 transition">
@@ -2673,7 +2709,7 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                           type="submit"
                           className="w-full py-3 rounded-xl bg-[#8AC926] text-white font-sans font-bold text-xs tracking-wider uppercase hover:bg-[#78B020] transition shadow-md shadow-[#8AC926]/10"
                         >
-                          Register Book to Library
+                          {editingBookId ? "Update Book" : "Register Book to Library"}
                         </button>
                       </form>
                     </div>
@@ -2705,28 +2741,46 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                         </div>
                         <div>
                           <label className="block text-slate-700 font-bold mb-1.5">Access</label>
-                          <PortalSelect
+                          <PillSelect
                             value={folderForm.audience}
-                            onChange={(e) => setFolderForm({ ...folderForm, audience: e.target.value })}
-                            className="rounded-xl bg-white border border-slate-200 px-4 py-2.5 text-slate-900 outline-none focus:border-indigo-500 transition"
-                          >
-                            {LIBRARY_AUDIENCE_OPTIONS.map((opt) => (
-                              <option key={opt.id} value={opt.id}>{opt.label}</option>
-                            ))}
-                          </PortalSelect>
+                            options={LIBRARY_AUDIENCE_OPTIONS}
+                            onChange={(audience) => setFolderForm({ ...folderForm, audience: audience as string })}
+                            ariaLabel="Folder access"
+                          />
                         </div>
                         <div>
-                          <label className="block text-slate-700 font-bold mb-1.5">Class filter (optional)</label>
-                          <select
-                            value={folderForm.category}
-                            onChange={(e) => setFolderForm({ ...folderForm, category: e.target.value })}
-                            className="w-full rounded-xl bg-white border border-slate-200 px-4 py-2.5 text-slate-900 outline-none focus:border-indigo-500 transition text-xs"
-                          >
-                            <option value="">All classes</option>
-                            {STUDENT_CLASS_OPTIONS.map((opt) => (
-                              <option key={opt.id} value={opt.id}>{opt.label}</option>
-                            ))}
-                          </select>
+                          <label className="block text-slate-700 font-bold mb-1.5">Class filter</label>
+                          <div className="flex flex-wrap gap-2">
+                            {STUDENT_CLASS_OPTIONS.map((opt) => {
+                              const isSelected = folderForm.categories.includes(opt.id);
+                              return (
+                                <button
+                                  key={opt.id}
+                                  type="button"
+                                  onClick={() => {
+                                    const next = isSelected
+                                      ? folderForm.categories.filter((c) => c !== opt.id)
+                                      : [...folderForm.categories, opt.id];
+                                    setFolderForm({ ...folderForm, categories: next });
+                                  }}
+                                  className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full border text-xs font-bold transition ${
+                                    isSelected
+                                      ? "border-[#8AC926] bg-[#8AC926]/15 text-[#5a8218]"
+                                      : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                                  }`}
+                                >
+                                  <span className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 ${
+                                    isSelected
+                                      ? "bg-[#8AC926] border-[#8AC926]"
+                                      : "border-slate-300 bg-white"
+                                  }`}>
+                                    {isSelected && <Check className="w-2.5 h-2.5 text-white" />}
+                                  </span>
+                                  {opt.label}
+                                </button>
+                              );
+                            })}
+                          </div>
                         </div>
                         <button
                           type="submit"
@@ -3885,6 +3939,17 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmDelete !== null}
+        title={confirmDelete?.title || "Are you sure?"}
+        message={confirmDelete?.message || ""}
+        confirmLabel="Delete"
+        variant="danger"
+        loading={actionLoading !== null && actionLoading.includes("delete")}
+        onCancel={() => setConfirmDelete(null)}
+        onConfirm={handleConfirmDelete}
+      />
     </PortalPageShell>
   );
 }

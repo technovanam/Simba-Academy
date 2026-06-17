@@ -57,7 +57,7 @@ app.use(
       return callback(new AppError(`Origin ${origin} not allowed by CORS`, 403));
     },
     credentials: true,
-    methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
