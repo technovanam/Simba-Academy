@@ -205,7 +205,10 @@ export const updateLessonPlanSchema = createLessonPlanSchema.partial();
 export const createStoryBookSchema = z.object({
   title: z.string().min(2, "Title must be at least 2 characters"),
   author: z.string().optional().nullable(),
-  category: z.enum(STUDENT_CLASS_LEVELS, { message: "Class category is required" }),
+  category: z.string().min(1, "At least one class must be selected").refine(
+    (val) => val.split(",").every((c) => (STUDENT_CLASS_LEVELS as readonly string[]).includes(c.trim())),
+    { message: "Each class must be one of: " + STUDENT_CLASS_LEVELS.join(", ") }
+  ),
   fileUrl: urlOrUploadPath,
   fileSize: z.number().optional().nullable(),
   audience: z.enum(["STUDENT", "TEACHER", "BOTH"]).default("BOTH"),

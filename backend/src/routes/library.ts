@@ -30,7 +30,7 @@ router.get("/folders", authenticate, libraryRoles, async (req, res, next) => {
         // Show folders matching class or with no class restriction
         classWhere = {
           OR: [
-            { category: user.studentClass },
+            { category: { contains: user.studentClass } },
             { category: null }
           ]
         };
@@ -82,14 +82,14 @@ router.get("/storybooks", authenticate, libraryRoles, async (req, res, next) => 
     const role = req.user!.role as Role;
     const audienceWhere = audienceFilterForRole(role);
 
-    let classWhere: { category?: string } = {};
+    let classWhere: any = {};
     if (role === "STUDENT") {
       const user = await prisma.user.findUnique({
         where: { id: req.user!.userId },
         select: { studentClass: true },
       });
       if (user?.studentClass) {
-        classWhere = { category: user.studentClass };
+        classWhere = { category: { contains: user.studentClass } };
       }
     }
 
@@ -123,12 +123,8 @@ router.get("/storybooks", authenticate, libraryRoles, async (req, res, next) => 
         const notif = notifications.find((n) => n.storyBookId === book.id);
         return {
           ...book,
-          readingStatus: notif 
-            ? (notif.readingStatus === "READING" 
-                ? "READING" 
-                : (notif.isRead ? "READ" : "UNREAD")) 
-            : "UNREAD",
-          isRead: notif ? notif.isRead : false,
+          readingStatus: notif ? notif.readingStatus : "UNREAD",
+          isRead: notif ? notif.readingStatus === "READ" : false,
         };
       });
 

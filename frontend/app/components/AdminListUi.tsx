@@ -82,12 +82,14 @@ export function PillSelect<T extends string>({
   onChange,
   ariaLabel,
   accent = "green",
+  align = "left",
 }: {
   value: T;
   options: { id: T; label: string }[];
   onChange: (id: T) => void;
   ariaLabel: string;
   accent?: keyof typeof PILL_ACCENT;
+  align?: "left" | "right";
 }) {
   const tone = PILL_ACCENT[accent];
   const [open, setOpen] = useState(false);
@@ -113,7 +115,7 @@ export function PillSelect<T extends string>({
   }, [open]);
 
   return (
-    <div ref={ref} className="relative w-full min-w-0 sm:w-auto sm:shrink-0">
+    <div ref={ref} className="relative w-full min-w-0 sm:w-fit sm:shrink-0">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -131,7 +133,7 @@ export function PillSelect<T extends string>({
         <ul
           role="listbox"
           aria-label={ariaLabel}
-          className="absolute right-0 top-[calc(100%+6px)] z-30 min-w-[168px] py-1.5 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden"
+          className={`absolute ${align === "right" ? "right-0" : "left-0"} top-[calc(100%+6px)] z-30 min-w-[168px] py-1.5 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden`}
         >
           {options.map((o) => (
             <li key={o.id} role="option" aria-selected={o.id === value}>

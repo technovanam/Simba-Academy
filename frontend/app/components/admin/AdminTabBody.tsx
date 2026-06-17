@@ -76,12 +76,11 @@ import { AdminSettingsPanel } from "../AdminSettingsPanel";
 import { LIBRARY_AUDIENCE_OPTIONS, audienceLabel } from "../../lib/library";
 import {
   STUDENT_CLASS_OPTIONS,
-  STORY_BOOK_FILE_TYPE_OPTIONS,
-  storyBookAcceptForType,
-  storyBookFileMatchesType,
+  STORY_BOOK_ACCEPT,
+  isValidStoryBookFile,
   type StudentClassLevel,
-  type StoryBookFileType,
 } from "../../lib/constants";
+import type { LibraryAudience } from "../../lib/library";
 import { resolveStorageUrl } from "../../lib/storage";
 import { isDateTodayOrFuture, localDateInputMin } from "../../lib/dates";
 import { ModalCloseButton } from "../ModalCloseButton";
@@ -237,9 +236,8 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
   const [bookForm, setBookForm] = useState({
     title: "",
     author: "",
-    category: "Playgroup" as StudentClassLevel,
-    fileType: "PDF" as StoryBookFileType,
-    audience: "BOTH" as "STUDENT" | "TEACHER" | "BOTH",
+    categories: ["Playgroup"] as StudentClassLevel[],
+    audience: "BOTH" as LibraryAudience,
   });
   const [showBookForm, setShowBookForm] = useState(false);
 
@@ -653,12 +651,16 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
       setError("Please enter the story book title.");
       return;
     }
-    if (!bookFile) {
-      setError(`Please choose a ${bookForm.fileType} file to upload.`);
+    if (bookForm.categories.length === 0) {
+      setError("Please select at least one class.");
       return;
     }
-    if (!storyBookFileMatchesType(bookFile, bookForm.fileType)) {
-      setError(`Selected file must be a ${bookForm.fileType === "PDF" ? "PDF" : "PPT/PPTX"} file.`);
+    if (!bookFile) {
+      setError("Please choose a file to upload.");
+      return;
+    }
+    if (!isValidStoryBookFile(bookFile)) {
+      setError("Selected file must be a PDF, DOC, DOCX, PPT, or PPTX file.");
       return;
     }
     setActionLoading("book-save");
@@ -673,7 +675,7 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
       const created = await api.createStoryBook(token, {
         title: bookForm.title,
         author: bookForm.author || null,
-        category: bookForm.category,
+        category: bookForm.categories.join(","),
         fileUrl: finalFileUrl,
         fileSize: bookFile?.size ?? null,
         audience: bookForm.audience,
@@ -686,8 +688,7 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
       setBookForm({
         title: "",
         author: "",
-        category: "Playgroup",
-        fileType: "PDF",
+        categories: ["Playgroup"],
         audience: "BOTH",
       });
       setBookFile(null);
@@ -2583,56 +2584,56 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                           />
                         </div>
 
-
-
                         <div>
                           <label className="block text-slate-700 font-bold mb-1.5">
                             Class (for student library)
                           </label>
-                          <PillSelect
-                            value={bookForm.category as StudentClassLevel}
-                            options={STUDENT_CLASS_OPTIONS}
-                            onChange={(category) => setBookForm({ ...bookForm, category })}
-                            ariaLabel="Story book class category"
-                          />
+                          <div className="flex flex-wrap gap-2">
+                            {STUDENT_CLASS_OPTIONS.map((opt) => {
+                              const isSelected = bookForm.categories.includes(opt.id);
+                              return (
+                                <button
+                                  key={opt.id}
+                                  type="button"
+                                  onClick={() => {
+                                    const next = isSelected
+                                      ? bookForm.categories.filter((c) => c !== opt.id)
+                                      : [...bookForm.categories, opt.id];
+                                    setBookForm({ ...bookForm, categories: next });
+                                  }}
+                                  className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full border text-xs font-bold transition ${
+                                    isSelected
+                                      ? "border-[#8AC926] bg-[#8AC926]/15 text-[#5a8218]"
+                                      : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                                  }`}
+                                >
+                                  <span className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 ${
+                                    isSelected
+                                      ? "bg-[#8AC926] border-[#8AC926]"
+                                      : "border-slate-300 bg-white"
+                                  }`}>
+                                    {isSelected && <Check className="w-2.5 h-2.5 text-white" />}
+                                  </span>
+                                  {opt.label}
+                                </button>
+                              );
+                            })}
+                          </div>
                           <p className="text-3xs text-slate-500 mt-1 font-medium">
-                            Students only see books matching the class they chose at signup.
+                            Select one or more classes. Students only see books matching their class.
                           </p>
-                        </div>
-
-                        <div>
-                          <label className="block text-slate-700 font-bold mb-1.5">File type</label>
-                          <PillSelect
-                            value={bookForm.fileType}
-                            options={STORY_BOOK_FILE_TYPE_OPTIONS}
-                            onChange={(fileType) => {
-                              setBookForm({ ...bookForm, fileType });
-                              setBookFile(null);
-                            }}
-                            ariaLabel="Story book file type"
-                          />
                         </div>
 
                         <div>
                           <label className="block text-slate-700 font-bold mb-1.5">
                             Show in portal
                           </label>
-                          <PortalSelect
+                          <PillSelect
                             value={bookForm.audience}
-                            onChange={(e) =>
-                              setBookForm({
-                                ...bookForm,
-                                audience: e.target.value as "STUDENT" | "TEACHER" | "BOTH",
-                              })
-                            }
-                            className="rounded-xl bg-white border border-slate-200 px-4 py-2.5 text-slate-900 outline-none focus:border-[#8AC926] transition"
-                          >
-                            {LIBRARY_AUDIENCE_OPTIONS.map((opt) => (
-                              <option key={opt.id} value={opt.id}>
-                                {opt.label}
-                              </option>
-                            ))}
-                          </PortalSelect>
+                            options={LIBRARY_AUDIENCE_OPTIONS}
+                            onChange={(audience) => setBookForm({ ...bookForm, audience: audience as LibraryAudience })}
+                            ariaLabel="Story book portal audience"
+                          />
                           <p className="text-3xs text-slate-500 mt-1 font-medium">
                             Teachers and students can view and print only. Only admins can download
                             files.
@@ -2641,7 +2642,7 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
 
                         <div>
                           <label className="block text-slate-700 font-bold mb-1.5">
-                            Book document ({bookForm.fileType})
+                            Book document
                           </label>
                           <div className="flex flex-col gap-2">
                             <label className="w-full border-2 border-dashed border-slate-200 rounded-xl p-4 bg-[#F8FAFC] flex flex-col items-center justify-center cursor-pointer hover:bg-[#8AC926]/5 transition">
@@ -2651,16 +2652,16 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                               <span className="font-bold text-[#8AC926] mt-2 text-2xs">
                                 {bookFile
                                   ? bookFile.name
-                                  : `Choose ${bookForm.fileType} file from computer`}
+                                  : "Choose file from computer"}
                               </span>
                               <span className="text-3xs text-slate-650 mt-1">
                                 {bookFile
                                   ? `(${(bookFile.size / 1024 / 1024).toFixed(2)} MB)`
-                                  : "Uploads directly to secure cPanel storage."}
+                                  : "Supports PDF, DOC, DOCX, PPT, PPTX"}
                               </span>
                               <input
                                 type="file"
-                                accept={storyBookAcceptForType(bookForm.fileType)}
+                                accept={STORY_BOOK_ACCEPT}
                                 className="hidden"
                                 onChange={(e) => setBookFile(e.target.files?.[0] ?? null)}
                               />

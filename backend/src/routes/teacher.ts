@@ -317,12 +317,8 @@ router.get("/students", async (req, res, next) => {
           author: book.author,
           category: book.category,
           fileUrl: book.fileUrl,
-          readingStatus: notif 
-            ? (notif.readingStatus === "READING" 
-                ? "READING" 
-                : (notif.isRead ? "READ" : "UNREAD")) 
-            : "UNREAD",
-          isRead: notif ? notif.isRead : false,
+          readingStatus: notif ? notif.readingStatus : "UNREAD",
+          isRead: notif ? notif.readingStatus === "READ" : false,
         };
       });
 

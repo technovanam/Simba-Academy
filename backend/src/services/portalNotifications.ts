@@ -20,12 +20,14 @@ export async function notifyStudentsOfNewStoryBook(book: StoryBook): Promise<num
     return 0;
   }
 
+  const classes = book.category.split(",").map((c) => c.trim()).filter(Boolean);
+
   const students = await prisma.user.findMany({
     where: {
       role: "STUDENT",
       status: "ACTIVE",
       isDeleted: false,
-      studentClass: book.category,
+      studentClass: { in: classes },
     },
     select: { id: true, name: true, email: true },
   });

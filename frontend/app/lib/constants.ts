@@ -27,21 +27,18 @@ export const STORY_BOOK_CLASS_FILTER_OPTIONS: { id: StudentClassLevel | "ALL"; l
   ...STUDENT_CLASS_OPTIONS,
 ];
 
-export const STORY_BOOK_FILE_TYPES = ["PDF", "PPT"] as const;
-export type StoryBookFileType = (typeof STORY_BOOK_FILE_TYPES)[number];
+/** Accepted file extensions for story book uploads */
+export const STORY_BOOK_ACCEPT = ".pdf,.doc,.docx,.ppt,.pptx";
 
-export const STORY_BOOK_FILE_TYPE_OPTIONS: { id: StoryBookFileType; label: string }[] = [
-  { id: "PDF", label: "PDF document" },
-  { id: "PPT", label: "PPT presentation" },
-];
-
-export function storyBookAcceptForType(type: StoryBookFileType): string {
-  return type === "PDF" ? ".pdf" : ".ppt,.pptx";
-}
-
-export function storyBookFileMatchesType(file: File, type: StoryBookFileType): boolean {
+export function isValidStoryBookFile(file: File): boolean {
   const name = file.name.toLowerCase();
-  return type === "PDF" ? name.endsWith(".pdf") : name.endsWith(".ppt") || name.endsWith(".pptx");
+  return (
+    name.endsWith(".pdf") ||
+    name.endsWith(".doc") ||
+    name.endsWith(".docx") ||
+    name.endsWith(".ppt") ||
+    name.endsWith(".pptx")
+  );
 }
 
 /** Jungle-themed auth backgrounds — mobile vs laptop/desktop */
