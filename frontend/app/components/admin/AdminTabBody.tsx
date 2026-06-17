@@ -1322,14 +1322,15 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
       activeTab !== "users" &&
       activeTab !== "teachers" &&
       activeTab !== "payments" &&
-      activeTab !== "planner" ? (
+      activeTab !== "planner" &&
+      activeTab !== "books" ? (
         <div className="flex-1 flex flex-col items-center justify-center min-h-0 gap-3">
           <Loader2 className="w-10 h-10 animate-spin text-[#8AC926]" />
           <p className="font-bold text-[#8AC926] mt-2">Loading dashboard data…</p>
         </div>
       ) : (
         <div className={`space-y-5 animate-fade-in flex-1 flex flex-col min-h-0 w-full min-w-0 max-w-full overflow-visible ${
-          activeTab === "users" ? "pb-4 lg:pb-4" : "pb-6 lg:pb-8"
+          activeTab === "users" || activeTab === "teachers" || activeTab === "books" ? "pb-4 lg:pb-4" : "pb-6 lg:pb-8"
         }`}>
           {/* ────────────────── OVERVIEW TAB ────────────────── */}
           {activeTab === "overview" && (
@@ -2343,7 +2344,7 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
 
           {/* ────────────────── STORY BOOKS LIBRARY ────────────────── */}
           {activeTab === "books" && (
-            <AdminPageShell>
+            <AdminPageShell className="h-full flex flex-col min-h-0 overflow-hidden">
               <AdminPageHeader
                 title="Story Books Library (cPanel Storage)"
                 description="Provision categorized children's books and bedtime stories directly to the student portal."
@@ -2382,7 +2383,7 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                 }
               />
 
-              <AdminPageBody>
+              <AdminPageBody className="flex-1 min-h-0 flex flex-col overflow-hidden">
                 {/* ── BREADCRUMB NAVIGATION ── */}
                 {currentFolderId && (
                   <nav className="flex items-center gap-1 text-xs font-semibold text-slate-500 mb-4 flex-wrap">
@@ -2413,22 +2414,23 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                 )}
 
                 {/* ── GOOGLE DRIVE STYLE LIST ── */}
-                <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex-1 min-h-0 flex flex-col">
                   {combinedItems.length === 0 ? (
                     <AdminListEmpty message={currentFolderId ? "This folder is empty." : "No items match your search."} />
                   ) : (
-                    <div className="overflow-x-auto">
+                    <div className="overflow-x-auto flex-1 min-h-0 overflow-y-auto modern-scrollbar">
                       <table className="w-full text-left text-sm whitespace-nowrap">
-                        <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium text-xs">
+                        <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium text-xs sticky top-0 z-10">
                           <tr>
                             <th className="px-4 py-3 font-semibold">Name</th>
                             <th className="px-4 py-3 font-semibold">Access</th>
+                            <th className="px-4 py-3 font-semibold">Class</th>
                             <th className="px-4 py-3 font-semibold">Date Added</th>
                             <th className="px-4 py-3 font-semibold text-right">Actions</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                          {bookPagination.paginatedItems.map((item: any) => {
+                          {combinedItems.map((item: any) => {
                             if (item.isFolder) {
                               const f = item;
                               return (
@@ -2437,23 +2439,23 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                                   className="hover:bg-slate-50 group transition cursor-pointer"
                                   onClick={() => navigateToFolder(f.id)}
                                 >
-                                  <td className="px-4 py-3 flex items-center gap-3 w-[65%] min-w-0">
+                                  <td className="px-4 py-3 flex items-center gap-3 align-middle">
                                     <Folder className="w-5 h-5 text-slate-400 fill-slate-400 shrink-0" />
-                                    <span className="font-semibold text-slate-700 truncate block">{f.name}</span>
+                                    <span className="font-bold text-sm text-slate-800 truncate block">{f.name}</span>
                                   </td>
-                                  <td className="px-4 py-3">
-                                    <div className="flex flex-wrap items-center gap-1">
-                                      <span className="px-1.5 py-0.5 rounded bg-violet-50 text-violet-600 text-2xs font-extrabold uppercase border border-violet-200">
-                                        {audienceLabel(f.audience ?? "BOTH")}
-                                      </span>
-                                      {f.category && (
-                                        <span className="px-1.5 py-0.5 rounded bg-[#8AC926]/10 text-[#6B9E1A] text-2xs font-extrabold uppercase border border-[#8AC926]/30">
-                                          {f.category}
-                                        </span>
-                                      )}
-                                    </div>
+                                  <td className="px-4 py-3 align-middle">
+                                    <span className="px-1.5 py-0.5 rounded bg-violet-50 text-violet-750 border border-violet-200 text-[10px] font-extrabold uppercase shrink-0">
+                                      {audienceLabel(f.audience ?? "BOTH")}
+                                    </span>
                                   </td>
-                                  <td className="px-4 py-3 text-slate-650 text-sm">
+                                  <td className="px-4 py-3 align-middle text-xs">
+                                    {f.category ? (
+                                      <span className="text-[#8AC926] font-bold">{f.category}</span>
+                                    ) : (
+                                      <span className="text-slate-450">—</span>
+                                    )}
+                                  </td>
+                                  <td className="px-4 py-3 align-middle text-xs text-slate-500">
                                     {new Date(f.createdAt).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" })}
                                   </td>
                                   <td className="px-4 py-2 text-right align-middle">
@@ -2498,21 +2500,23 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                               const b = item;
                               return (
                                 <tr key={`book-${b.id}`} className="hover:bg-slate-50 group transition">
-                                  <td className="px-4 py-3 flex items-center gap-3 w-[65%] min-w-0">
+                                  <td className="px-4 py-3 flex items-center gap-3 align-middle">
                                     <FileText className="w-5 h-5 text-blue-500 shrink-0" />
-                                    <span className="font-semibold text-slate-700 truncate block">{b.title}</span>
+                                    <span className="font-bold text-sm text-slate-800 truncate block">{b.title}</span>
                                   </td>
-                                  <td className="px-4 py-3">
-                                    <div className="flex flex-wrap items-center gap-1">
-                                      <span className="px-1.5 py-0.5 rounded bg-[#8AC926]/10 text-[#6B9E1A] text-2xs font-extrabold uppercase border border-[#8AC926]/30">
-                                        {b.category}
-                                      </span>
-                                      <span className="px-1.5 py-0.5 rounded bg-violet-50 text-violet-700 text-2xs font-extrabold uppercase border border-violet-200">
-                                        {audienceLabel(b.audience ?? "BOTH")}
-                                      </span>
-                                    </div>
+                                  <td className="px-4 py-3 align-middle">
+                                    <span className="px-1.5 py-0.5 rounded bg-violet-50 text-violet-700 border border-violet-200 text-[10px] font-extrabold uppercase shrink-0">
+                                      {audienceLabel(b.audience ?? "BOTH")}
+                                    </span>
                                   </td>
-                                  <td className="px-4 py-3 text-slate-650 text-sm">
+                                  <td className="px-4 py-3 align-middle text-xs">
+                                    {b.category ? (
+                                      <span className="text-[#8AC926] font-bold">{b.category}</span>
+                                    ) : (
+                                      <span className="text-slate-450">—</span>
+                                    )}
+                                  </td>
+                                  <td className="px-4 py-3 align-middle text-xs text-slate-500">
                                     {new Date(b.createdAt).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" })}
                                   </td>
                                   <td className="px-4 py-2 text-right align-middle">
@@ -2573,20 +2577,6 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                           })}
                         </tbody>
                       </table>
-                    </div>
-                  )}
-                  {combinedItems.length > 10 && (
-                    <div className="p-3 border-t border-slate-200 bg-slate-50">
-                      <AdminListPagination
-                        rangeStart={bookPagination.rangeStart}
-                        rangeEnd={bookPagination.rangeEnd}
-                        total={combinedItems.length}
-                        safePage={bookPagination.safePage}
-                        totalPages={bookPagination.totalPages}
-                        pageNumbers={bookPagination.pageNumbers}
-                        onPageChange={bookPagination.setCurrentPage}
-                        itemLabel="items"
-                      />
                     </div>
                   )}
                 </div>

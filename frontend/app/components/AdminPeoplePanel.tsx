@@ -78,6 +78,11 @@ const SORT_OPTIONS: { id: UserListSort; label: string }[] = [
 
 const emptyTeacherForm = { firstName: "", lastName: "", email: "", phone: "", studentClass: "" };
 
+const CLASS_FILTER_OPTIONS = [
+  { id: "ALL", label: "All Classes" },
+  ...STUDENT_CLASS_OPTIONS,
+];
+
 function PillSelect<T extends string>({
   value,
   options,
@@ -140,11 +145,10 @@ function PillSelect<T extends string>({
                   onChange(o.id);
                   setOpen(false);
                 }}
-                className={`w-full text-left px-3.5 py-2.5 text-xs font-bold transition ${
-                  o.id === value
+                className={`w-full text-left px-3.5 py-2.5 text-xs font-bold transition ${o.id === value
                     ? "bg-[#8AC926]/15 text-[#5a8218]"
                     : "text-slate-700 hover:bg-slate-50"
-                }`}
+                  }`}
               >
                 {o.label}
               </button>
@@ -170,6 +174,7 @@ export function AdminPeoplePanel({
   const [userFilter, setUserFilter] = useState<UserListFilter>("ALL");
   const [teacherFilter, setTeacherFilter] = useState<TeacherListFilter>("ALL");
   const [sort, setSort] = useState<UserListSort>("NEWEST");
+  const [classFilter, setClassFilter] = useState<string>("ALL");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
 
@@ -214,15 +219,23 @@ export function AdminPeoplePanel({
 
   useEffect(() => {
     setCurrentPage(1);
+    setClassFilter("ALL");
   }, [search, userFilter, teacherFilter, sort, mode]);
 
-  const totalPages = Math.max(1, Math.ceil(records.length / pageSize));
+  const filteredRecords = records.filter((u) => {
+    if (mode === "users" && classFilter !== "ALL") {
+      return u.studentClass === classFilter;
+    }
+    return true;
+  });
+
+  const totalPages = Math.max(1, Math.ceil(filteredRecords.length / pageSize));
   const safePage = Math.min(currentPage, totalPages);
   const pageStart = (safePage - 1) * pageSize;
-  const paginatedRecords = mode === "users" ? records : records.slice(pageStart, pageStart + pageSize);
+  const paginatedRecords = filteredRecords;
   const pageNumbers = buildPageNumbers(safePage, totalPages);
-  const rangeStart = records.length === 0 ? 0 : pageStart + 1;
-  const rangeEnd = Math.min(pageStart + pageSize, records.length);
+  const rangeStart = filteredRecords.length === 0 ? 0 : pageStart + 1;
+  const rangeEnd = Math.min(pageStart + pageSize, filteredRecords.length);
 
   const isCreatingTeacher = actionLoading === "teacher-create";
   const isTeacherFormReady =
@@ -330,7 +343,7 @@ export function AdminPeoplePanel({
       } else {
         onError(
           created.emailWarning ??
-            `Teacher ${created.email} was created but the welcome email failed. Check backend terminal for TEMPORARY PASSWORD, or check Resend API key in .env.`
+          `Teacher ${created.email} was created but the welcome email failed. Check backend terminal for TEMPORARY PASSWORD, or check Resend API key in .env.`
         );
       }
       setTeacherForm(emptyTeacherForm);
@@ -402,7 +415,7 @@ export function AdminPeoplePanel({
   const filters = mode === "users" ? USER_FILTERS : TEACHER_FILTERS;
 
   return (
-    <AdminPageShell className={mode === "users" ? "h-full flex flex-col min-h-0 overflow-hidden" : ""}>
+    <AdminPageShell className="h-full flex flex-col min-h-0 overflow-hidden">
       <AdminPageHeader
         title={mode === "users" ? "Student Management" : "Teacher Management"}
         description={
@@ -432,6 +445,14 @@ export function AdminPeoplePanel({
               }
               ariaLabel="Filter accounts"
             />
+            {mode === "users" && (
+              <PillSelect
+                value={classFilter}
+                options={CLASS_FILTER_OPTIONS}
+                onChange={setClassFilter}
+                ariaLabel="Filter by class"
+              />
+            )}
             <PillSelect
               value={sort}
               options={SORT_OPTIONS}
@@ -451,222 +472,132 @@ export function AdminPeoplePanel({
         }
       />
 
-      <AdminPageBody className={mode === "users" ? "flex-1 min-h-0 flex flex-col overflow-hidden" : ""}>
-      {loading ? (
-        <div className="flex justify-center py-16">
-          <Loader2 className="w-8 h-8 animate-spin text-[#8AC926]" />
-        </div>
-      ) : records.length === 0 ? (
-        <div className="bg-white rounded-2xl p-12 text-center text-sm font-semibold text-slate-600 border border-slate-200">
-          No accounts match your search or filters.
-        </div>
-      ) : (
-        <div className={`bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm ${
-          mode === "users" ? "flex-1 min-h-0 flex flex-col" : ""
-        }`}>
-          <div className={`overflow-x-auto ${mode === "users" ? "flex-1 min-h-0 overflow-y-auto" : ""}`}>
-            <table className="w-full text-left text-sm whitespace-nowrap">
-              <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium text-xs sticky top-0 z-10">
-                <tr>
-                  <th className="px-4 py-3 font-semibold">Name</th>
-                  <th className="px-4 py-3 font-semibold">Email</th>
-                  <th className="px-4 py-3 font-semibold">Class</th>
-                  <th className="px-4 py-3 font-semibold">Phone Number</th>
-                  <th className="px-4 py-3 font-semibold text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {paginatedRecords.map((u) => (
-                  <tr key={u.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="px-4 py-3 align-middle">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`px-1.5 py-0.5 rounded text-4xs font-extrabold uppercase border shrink-0 ${
-                            u.role === "ADMIN"
-                              ? "bg-purple-50 text-purple-700 border-purple-200"
-                              : u.role === "TEACHER"
-                              ? "bg-amber-50 text-amber-700 border-amber-200"
-                              : "bg-blue-50 text-blue-700 border-blue-200"
-                          }`}
-                        >
-                          {u.role}
-                        </span>
-                        <span className="font-bold text-sm text-slate-800">{u.name}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 align-middle text-xs text-slate-600 font-medium">
-                      {u.email}
-                    </td>
-                    <td className="px-4 py-3 align-middle text-xs text-slate-650">
-                      {u.studentClass ? (
-                        <span className="text-[#8AC926] font-bold">{u.studentClass}</span>
-                      ) : (
-                        <span className="text-slate-450">—</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 align-middle text-xs text-slate-500">
-                      {u.phone ? u.phone : <span className="text-slate-450">—</span>}
-                    </td>
-                    <td className="px-4 py-2 text-right align-middle">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <button
-                          type="button"
-                          disabled={u.id === currentUserId || actionLoading === `status-${u.id}`}
-                          onClick={() => handleToggleStatus(u)}
-                          className={`px-2.5 py-1 rounded-lg font-medium text-[12px] transition flex items-center gap-1 border ${
-                            u.status === "ACTIVE"
-                              ? "bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100 disabled:opacity-50"
-                              : "bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100"
-                          }`}
-                        >
-                          {actionLoading === `status-${u.id}` ? (
-                            <Loader2 className="w-2.5 h-2.5 animate-spin" />
-                          ) : u.status === "ACTIVE" ? (
-                            <>
-                              <Lock className="w-2.5 h-2.5" /> Deactivate
-                            </>
-                          ) : (
-                            <>
-                              <Unlock className="w-2.5 h-2.5" /> Activate
-                            </>
+      <AdminPageBody className="flex-1 min-h-0 flex flex-col overflow-hidden">
+        {loading ? (
+          <div className="flex justify-center py-16">
+            <Loader2 className="w-8 h-8 animate-spin text-[#8AC926]" />
+          </div>
+        ) : records.length === 0 ? (
+          <div className="bg-white rounded-2xl p-12 text-center text-sm font-semibold text-slate-600 border border-slate-200">
+            No accounts match your search or filters.
+          </div>
+        ) : (
+          <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex-1 min-h-0 flex flex-col">
+            <div className="overflow-x-auto flex-1 min-h-0 overflow-y-auto modern-scrollbar">
+              <table className="w-full text-left text-sm whitespace-nowrap">
+                <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium text-xs sticky top-0 z-10">
+                  <tr>
+                    <th className="px-4 py-3 font-semibold">Name</th>
+                    <th className="px-4 py-3 font-semibold">Email</th>
+                    <th className="px-4 py-3 font-semibold">Class</th>
+                    <th className="px-4 py-3 font-semibold">Phone Number</th>
+                    <th className="px-4 py-3 font-semibold text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {paginatedRecords.map((u) => (
+                    <tr key={u.id} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="px-4 py-3 align-middle">
+                        <div className="flex items-center gap-2">
+                          {u.role === "ADMIN" && (
+                            <span
+                              className="px-1.5 py-0.5 rounded text-4xs font-extrabold uppercase border shrink-0 bg-purple-50 text-purple-700 border-purple-200"
+                            >
+                              {u.role}
+                            </span>
                           )}
-                        </button>
-
-                        {(u.role === "TEACHER" || u.role === "STUDENT") && (
+                          <span className="font-bold text-sm text-slate-800">{u.name}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 align-middle text-xs text-slate-600 font-medium">
+                        {u.email}
+                      </td>
+                      <td className="px-4 py-3 align-middle text-xs text-slate-650">
+                        {u.studentClass ? (
+                          <span className="text-[#8AC926] font-bold">{u.studentClass}</span>
+                        ) : (
+                          <span className="text-slate-450">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 align-middle text-xs text-slate-500">
+                        {u.phone ? u.phone : <span className="text-slate-450">—</span>}
+                      </td>
+                      <td className="px-4 py-2 text-right align-middle">
+                        <div className="flex items-center justify-end gap-1.5">
                           <button
                             type="button"
-                            disabled={actionLoading === `reset-${u.id}` || u.status !== "ACTIVE"}
-                            onClick={() => handleSendReset(u)}
-                            title="Send password reset email"
-                            className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100 text-[12px] font-medium flex items-center gap-1 disabled:opacity-50"
+                            disabled={u.id === currentUserId || actionLoading === `status-${u.id}`}
+                            onClick={() => handleToggleStatus(u)}
+                            className={`px-2.5 py-1 rounded-lg font-medium text-[12px] transition flex items-center gap-1 border ${u.status === "ACTIVE"
+                                ? "bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100 disabled:opacity-50"
+                                : "bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100"
+                              }`}
                           >
-                            {actionLoading === `reset-${u.id}` ? (
+                            {actionLoading === `status-${u.id}` ? (
                               <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                            ) : u.status === "ACTIVE" ? (
+                              <>
+                                <Lock className="w-2.5 h-2.5" /> Deactivate
+                              </>
                             ) : (
                               <>
-                                <Mail className="w-2.5 h-2.5" /> Reset
+                                <Unlock className="w-2.5 h-2.5" /> Activate
                               </>
                             )}
                           </button>
-                        )}
 
-                        {mode === "teachers" && (
+                          {(u.role === "TEACHER" || u.role === "STUDENT") && (
+                            <button
+                              type="button"
+                              disabled={actionLoading === `reset-${u.id}` || u.status !== "ACTIVE"}
+                              onClick={() => handleSendReset(u)}
+                              title="Send password reset email"
+                              className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100 text-[12px] font-medium flex items-center gap-1 disabled:opacity-50"
+                            >
+                              {actionLoading === `reset-${u.id}` ? (
+                                <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                              ) : (
+                                <>
+                                  <Mail className="w-2.5 h-2.5" /> Reset
+                                </>
+                              )}
+                            </button>
+                          )}
+
+                          {mode === "teachers" && (
+                            <button
+                              type="button"
+                              onClick={() => openEditTeacher(u)}
+                              className="px-2 py-1.5 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 flex items-center justify-center"
+                              title="Edit teacher"
+                            >
+                              <Pencil className="w-3 h-3" />
+                            </button>
+                          )}
+
                           <button
                             type="button"
-                            onClick={() => openEditTeacher(u)}
-                            className="px-2 py-1.5 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 flex items-center justify-center"
-                            title="Edit teacher"
+                            disabled={u.id === currentUserId || actionLoading === `delete-${u.id}`}
+                            onClick={() => setDeleteTarget(u)}
+                            className="px-2 py-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 disabled:opacity-50 flex items-center justify-center"
+                            title="Delete account"
                           >
-                            <Pencil className="w-3 h-3" />
+                            {actionLoading === `delete-${u.id}` ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-3 h-3" />
+                            )}
                           </button>
-                        )}
-
-                        <button
-                          type="button"
-                          disabled={u.id === currentUserId || actionLoading === `delete-${u.id}`}
-                          onClick={() => setDeleteTarget(u)}
-                          className="px-2 py-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 disabled:opacity-50 flex items-center justify-center"
-                          title="Delete account"
-                        >
-                          {actionLoading === `delete-${u.id}` ? (
-                            <Loader2 className="w-3 h-3 animate-spin" />
-                          ) : (
-                            <Trash2 className="w-3 h-3" />
-                          )}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {records.length > 0 && mode !== "users" && (
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 border-t border-slate-200 bg-slate-50/40">
-              <div className="flex flex-wrap items-center gap-4">
-                <p className="text-2xs font-semibold text-slate-600">
-                  Showing{" "}
-                  <span className="font-bold text-slate-800">
-                    {rangeStart}–{rangeEnd}
-                  </span>{" "}
-                  of <span className="font-bold text-slate-800">{records.length}</span> accounts
-                </p>
-                <div className="flex items-center gap-1.5 text-2xs font-semibold text-slate-600">
-                  <span>Show:</span>
-                  <select
-                    value={pageSize}
-                    onChange={(e) => {
-                      setPageSize(Number(e.target.value));
-                      setCurrentPage(1);
-                    }}
-                    className="bg-white border border-slate-200 rounded-lg px-2 py-0.5 text-slate-850 outline-none text-2xs font-bold transition focus:border-[#8AC926] cursor-pointer"
-                  >
-                    <option value={25}>25</option>
-                    <option value={50}>50</option>
-                    <option value={75}>75</option>
-                    <option value={100}>100</option>
-                  </select>
-                </div>
-              </div>
-
-              <nav
-                className="flex flex-wrap items-center justify-center sm:justify-end gap-1"
-                aria-label="Pagination"
-              >
-                <button
-                  type="button"
-                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                  disabled={safePage <= 1}
-                  className="inline-arrow px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-2xs font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-40 disabled:pointer-events-none transition"
-                  aria-label="Previous page"
-                >
-                  <ChevronLeft className="w-3.5 h-3.5" />
-                  Previous
-                </button>
-
-                <div className="flex items-center gap-0.5 mx-1">
-                  {pageNumbers.map((item, idx) =>
-                    item === "ellipsis" ? (
-                      <span
-                        key={`ellipsis-${idx}`}
-                        className="px-2 py-1.5 text-2xs font-bold text-slate-400 select-none"
-                      >
-                        …
-                      </span>
-                    ) : (
-                      <button
-                        key={item}
-                        type="button"
-                        onClick={() => setCurrentPage(item)}
-                        aria-current={item === safePage ? "page" : undefined}
-                        className={`min-w-[2rem] px-2.5 py-1.5 rounded-lg text-2xs font-bold border transition ${
-                          item === safePage
-                            ? "bg-[#8AC926] border-[#8AC926] text-white"
-                            : "bg-white border-slate-200 text-slate-700 hover:bg-slate-100"
-                        }`}
-                      >
-                        {item}
-                      </button>
-                    )
-                  )}
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={safePage >= totalPages}
-                  className="inline-arrow px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-2xs font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-40 disabled:pointer-events-none transition"
-                  aria-label="Next page"
-                >
-                  Next
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </button>
-              </nav>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          )}
-        </div>
-      )}
+
+          </div>
+        )}
       </AdminPageBody>
 
       <AdminModal

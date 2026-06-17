@@ -178,6 +178,30 @@ input:-webkit-autofill:active {
   display: none;
 }
 
+/* Custom modern thin grey scrollbar */
+.modern-scrollbar {
+  background: linear-gradient(to bottom, #f8fafc 40px, #ffffff 40px);
+}
+
+.modern-scrollbar::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.modern-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+  margin-top: 40px; /* Offset to start scrollbar below the table header */
+}
+
+.modern-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1; /* Slate 300 / Grey */
+  border-radius: 9999px;
+}
+
+.modern-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8; /* Slate 400 */
+}
+
 /* Portal main scroll — touch + pull-to-refresh friendly on phones/tablets */
 .portal-main-scroll {
   -webkit-overflow-scrolling: touch;
