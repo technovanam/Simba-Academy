@@ -1,7 +1,10 @@
 import type { ReactNode } from "react";
 
-export function AdminPageShell({ children, className = "overflow-x-hidden" }: { children: ReactNode; className?: string }) {
-  return <div className={`space-y-5 w-full min-w-0 max-w-full ${className}`.trim()}>{children}</div>;
+export function AdminPageShell({ children, className = "" }: { children: ReactNode; className?: string }) {
+  const hasSpaceY = className.includes("space-y-");
+  const spacing = hasSpaceY ? "" : "space-y-5";
+  const defaultOverflow = className.includes("overflow-") ? "" : "overflow-x-hidden";
+  return <div className={`w-full min-w-0 max-w-full ${spacing} ${defaultOverflow} ${className}`.trim()}>{children}</div>;
 }
 
 export function AdminPageHeader({
@@ -31,7 +34,9 @@ export function AdminPageHeader({
 }
 
 export function AdminPageBody({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <div className={`mt-3 pt-1 space-y-5 w-full min-w-0 max-w-full ${className}`.trim()}>{children}</div>;
+  const hasSpaceY = className.includes("space-y-");
+  const spacing = hasSpaceY ? "" : "space-y-5";
+  return <div className={`mt-3 pt-1 w-full min-w-0 max-w-full ${spacing} ${className}`.trim()}>{children}</div>;
 }
 
 /** Shared width for toolbar search fields — full width on phones, fixed on sm+ */

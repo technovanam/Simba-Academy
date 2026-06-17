@@ -219,7 +219,7 @@ export function AdminPeoplePanel({
   const totalPages = Math.max(1, Math.ceil(records.length / pageSize));
   const safePage = Math.min(currentPage, totalPages);
   const pageStart = (safePage - 1) * pageSize;
-  const paginatedRecords = records.slice(pageStart, pageStart + pageSize);
+  const paginatedRecords = mode === "users" ? records : records.slice(pageStart, pageStart + pageSize);
   const pageNumbers = buildPageNumbers(safePage, totalPages);
   const rangeStart = records.length === 0 ? 0 : pageStart + 1;
   const rangeEnd = Math.min(pageStart + pageSize, records.length);
@@ -402,7 +402,7 @@ export function AdminPeoplePanel({
   const filters = mode === "users" ? USER_FILTERS : TEACHER_FILTERS;
 
   return (
-    <AdminPageShell>
+    <AdminPageShell className={mode === "users" ? "h-full flex flex-col min-h-0 overflow-hidden" : ""}>
       <AdminPageHeader
         title={mode === "users" ? "Student Management" : "Teacher Management"}
         description={
@@ -451,7 +451,7 @@ export function AdminPeoplePanel({
         }
       />
 
-      <AdminPageBody>
+      <AdminPageBody className={mode === "users" ? "flex-1 min-h-0 flex flex-col overflow-hidden" : ""}>
       {loading ? (
         <div className="flex justify-center py-16">
           <Loader2 className="w-8 h-8 animate-spin text-[#8AC926]" />
@@ -461,10 +461,12 @@ export function AdminPeoplePanel({
           No accounts match your search or filters.
         </div>
       ) : (
-        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-          <div className="overflow-x-auto">
+        <div className={`bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm ${
+          mode === "users" ? "flex-1 min-h-0 flex flex-col" : ""
+        }`}>
+          <div className={`overflow-x-auto ${mode === "users" ? "flex-1 min-h-0 overflow-y-auto" : ""}`}>
             <table className="w-full text-left text-sm whitespace-nowrap">
-              <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium text-xs">
+              <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium text-xs sticky top-0 z-10">
                 <tr>
                   <th className="px-4 py-3 font-semibold">Name</th>
                   <th className="px-4 py-3 font-semibold">Email</th>
@@ -580,7 +582,7 @@ export function AdminPeoplePanel({
             </table>
           </div>
 
-          {records.length > 0 && (
+          {records.length > 0 && mode !== "users" && (
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 border-t border-slate-200 bg-slate-50/40">
               <div className="flex flex-wrap items-center gap-4">
                 <p className="text-2xs font-semibold text-slate-600">

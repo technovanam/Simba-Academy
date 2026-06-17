@@ -1328,7 +1328,9 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
           <p className="font-bold text-[#8AC926] mt-2">Loading dashboard data…</p>
         </div>
       ) : (
-        <div className="space-y-5 animate-fade-in flex-1 flex flex-col min-h-0 w-full min-w-0 max-w-full overflow-visible pb-6 lg:pb-8">
+        <div className={`space-y-5 animate-fade-in flex-1 flex flex-col min-h-0 w-full min-w-0 max-w-full overflow-visible ${
+          activeTab === "users" ? "pb-4 lg:pb-4" : "pb-6 lg:pb-8"
+        }`}>
           {/* ────────────────── OVERVIEW TAB ────────────────── */}
           {activeTab === "overview" && (
             <div className={portalDashboardBodyClass}>
