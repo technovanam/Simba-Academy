@@ -205,7 +205,7 @@ export function StudentLibraryPage() {
                       <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium text-xs sticky top-0 z-10">
                         <tr>
                           <th className="px-4 py-3 font-semibold">Name</th>
-                          <th className="px-4 py-3 font-semibold">Access</th>
+                          <th className="px-4 py-3 font-semibold">Status / Access</th>
                           <th className="px-4 py-3 font-semibold">Date Added</th>
                           <th className="px-4 py-3 font-semibold text-right">Actions</th>
                         </tr>
@@ -262,14 +262,19 @@ export function StudentLibraryPage() {
                                 </td>
                                 <td className="px-4 py-3">
                                   <div className="flex flex-wrap items-center gap-1">
-                                    {b.category && (
-                                      <span className="px-1.5 py-0.5 rounded bg-[#8AC926]/10 text-[#6B9E1A] text-4xs font-extrabold uppercase border border-[#8AC926]/30">
-                                        {b.category}
+                                    {b.readingStatus === "READ" || b.isRead ? (
+                                      <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-4xs font-extrabold uppercase border border-emerald-200">
+                                        Completed
+                                      </span>
+                                    ) : b.readingStatus === "READING" ? (
+                                      <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-4xs font-extrabold uppercase border border-amber-200 animate-pulse">
+                                        Reading Now
+                                      </span>
+                                    ) : (
+                                      <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-4xs font-extrabold uppercase border border-slate-200">
+                                        Not Completed
                                       </span>
                                     )}
-                                    <span className="px-1.5 py-0.5 rounded bg-violet-50 text-violet-700 text-4xs font-extrabold uppercase border border-violet-200">
-                                      {audienceLabel(b.audience ?? "BOTH")}
-                                    </span>
                                   </div>
                                 </td>
                                 <td className="px-4 py-3 text-slate-500 text-xs">
@@ -280,14 +285,31 @@ export function StudentLibraryPage() {
                                   })}
                                 </td>
                                 <td className="px-4 py-2 text-right align-middle">
-                                  <div className="flex items-center justify-end gap-1">
+                                  <div className="flex items-center justify-end gap-2">
+                                    {token && !b.isRead && (
+                                      <button
+                                        type="button"
+                                        onClick={async () => {
+                                          try {
+                                            await api.updateBookStatus(token, b.id, "READ");
+                                            loadFolder(currentFolderId);
+                                          } catch (err) {
+                                            console.error("Mark as completed error:", err);
+                                          }
+                                        }}
+                                        className="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-3xs font-extrabold border border-emerald-200 transition"
+                                      >
+                                        Mark as Completed
+                                      </button>
+                                    )}
                                     {token && (
                                       <StoryBookActions
                                         bookId={b.id}
                                         token={token}
                                         role="STUDENT"
                                         title={b.title}
-                                        variant="admin"
+                                        variant="student"
+                                        onViewClose={() => loadFolder(currentFolderId)}
                                       />
                                     )}
                                   </div>

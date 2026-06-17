@@ -292,12 +292,28 @@ export function AdminPeoplePanel({
   async function handleCreateTeacher(e: React.FormEvent) {
     e.preventDefault();
     if (isActionBusy(actionLoading)) return;
-    if (!teacherForm.firstName.trim() || !teacherForm.lastName.trim()) {
-      onError("Please enter first and last name.");
+    if (!teacherForm.firstName.trim()) {
+      onError("Please enter first name.");
+      return;
+    }
+    if (!teacherForm.lastName.trim()) {
+      onError("Please enter last name.");
       return;
     }
     if (!teacherForm.email.trim()) {
       onError("Please enter the teacher's email address.");
+      return;
+    }
+    if (!teacherForm.phone.trim()) {
+      onError("Please enter contact number.");
+      return;
+    }
+    if (teacherForm.phone.trim().length < 7) {
+      onError("Please enter a valid phone number (at least 7 digits).");
+      return;
+    }
+    if (!teacherForm.studentClass) {
+      onError("Please select an assigned class.");
       return;
     }
     setActionLoading("teacher-create");
@@ -306,8 +322,8 @@ export function AdminPeoplePanel({
         firstName: teacherForm.firstName.trim(),
         lastName: teacherForm.lastName.trim(),
         email: teacherForm.email.trim(),
-        phone: teacherForm.phone.trim() || undefined,
-        studentClass: teacherForm.studentClass || null,
+        phone: teacherForm.phone.trim(),
+        studentClass: teacherForm.studentClass,
       });
       setRecords((prev) => [created, ...prev]);
       if (created.emailSent) {
@@ -341,14 +357,38 @@ export function AdminPeoplePanel({
   async function handleSaveTeacherEdit(e: React.FormEvent) {
     e.preventDefault();
     if (!editingTeacher || isActionBusy(actionLoading)) return;
+    if (!editForm.firstName.trim()) {
+      onError("Please enter first name.");
+      return;
+    }
+    if (!editForm.lastName.trim()) {
+      onError("Please enter last name.");
+      return;
+    }
+    if (!editForm.email.trim()) {
+      onError("Please enter email address.");
+      return;
+    }
+    if (!editForm.phone.trim()) {
+      onError("Please enter contact number.");
+      return;
+    }
+    if (editForm.phone.trim().length < 7) {
+      onError("Please enter a valid phone number (at least 7 digits).");
+      return;
+    }
+    if (!editForm.studentClass) {
+      onError("Please select an assigned class.");
+      return;
+    }
     setActionLoading("teacher-save");
     try {
       const updated = await api.updateTeacher(token, editingTeacher.id, {
         firstName: editForm.firstName.trim(),
         lastName: editForm.lastName.trim(),
         email: editForm.email.trim(),
-        phone: editForm.phone.trim() || null,
-        studentClass: editForm.studentClass || null,
+        phone: editForm.phone.trim(),
+        studentClass: editForm.studentClass,
       });
       setRecords((prev) => prev.map((r) => (r.id === editingTeacher.id ? { ...r, ...updated } : r)));
       onNotify("Teacher profile updated successfully.");
@@ -631,19 +671,21 @@ export function AdminPeoplePanel({
             className="w-full rounded-xl bg-white border border-slate-200 px-4 py-3 text-xs text-slate-900 outline-none focus:border-[#8AC926]"
           />
           <input
+            required
             placeholder="Contact number"
             value={teacherForm.phone}
             onChange={(e) => setTeacherForm({ ...teacherForm, phone: e.target.value })}
             className="w-full rounded-xl bg-white border border-slate-200 px-4 py-3 text-xs text-slate-900 outline-none focus:border-[#8AC926]"
           />
           <div>
-            <label className="block text-slate-700 font-bold mb-1 text-2xs uppercase tracking-wider">Assigned Class (Optional)</label>
+            <label className="block text-slate-700 font-bold mb-1 text-2xs uppercase tracking-wider">Assigned Class</label>
             <select
+              required
               value={teacherForm.studentClass}
               onChange={(e) => setTeacherForm({ ...teacherForm, studentClass: e.target.value })}
               className="w-full rounded-xl bg-white border border-slate-200 px-4 py-3 text-xs text-slate-900 outline-none focus:border-[#8AC926]"
             >
-              <option value="">None / Floating Teacher</option>
+              <option value="">Select assigned class</option>
               {STUDENT_CLASS_OPTIONS.map((opt) => (
                 <option key={opt.id} value={opt.id}>
                   {opt.label}
@@ -656,7 +698,7 @@ export function AdminPeoplePanel({
           </p>
           <button
             type="submit"
-            disabled={isCreatingTeacher || !isTeacherFormReady}
+            disabled={isCreatingTeacher}
             className="w-full py-3 rounded-xl bg-[#8AC926] text-white font-sans font-bold text-xs tracking-wider uppercase hover:bg-[#78B020] transition disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {isCreatingTeacher ? (
@@ -701,19 +743,21 @@ export function AdminPeoplePanel({
             className="w-full rounded-xl bg-white border border-slate-200 px-4 py-3 text-xs outline-none focus:border-[#8AC926]"
           />
           <input
+            required
             placeholder="Phone"
             value={editForm.phone}
             onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
             className="w-full rounded-xl bg-white border border-slate-200 px-4 py-3 text-xs outline-none focus:border-[#8AC926]"
           />
           <div>
-            <label className="block text-slate-700 font-bold mb-1 text-2xs uppercase tracking-wider">Assigned Class (Optional)</label>
+            <label className="block text-slate-700 font-bold mb-1 text-2xs uppercase tracking-wider">Assigned Class</label>
             <select
+              required
               value={editForm.studentClass}
               onChange={(e) => setEditForm({ ...editForm, studentClass: e.target.value })}
               className="w-full rounded-xl bg-white border border-slate-200 px-4 py-3 text-xs text-slate-900 outline-none focus:border-[#8AC926]"
             >
-              <option value="">None / Floating Teacher</option>
+              <option value="">Select assigned class</option>
               {STUDENT_CLASS_OPTIONS.map((opt) => (
                 <option key={opt.id} value={opt.id}>
                   {opt.label}

@@ -557,6 +557,13 @@ export const api = {
   getPublicStoryBooks: (token: string) =>
     request<StoryBook[]>("/api/library/storybooks", {}, token),
 
+  updateBookStatus: (token: string, bookId: string, status: "READING" | "READ" | "UNREAD") =>
+    request<{ success: boolean; status: string }>(
+      `/api/student/books/${bookId}/status`,
+      { method: "POST", body: JSON.stringify({ status }) },
+      token
+    ),
+
   getStudentNotifications: (token: string) =>
     request<StudentNotification[]>("/api/student/notifications", {}, token),
 
@@ -612,6 +619,15 @@ export interface AuthUser {
   status?: AccountStatus;
   mustChangePassword?: boolean;
   createdAt?: string;
+  books?: Array<{
+    id: string;
+    title: string;
+    author?: string | null;
+    category: string;
+    fileUrl: string;
+    readingStatus: "UNREAD" | "READING" | "READ";
+    isRead?: boolean;
+  }>;
 }
 
 export interface Course {
@@ -794,6 +810,8 @@ export interface StoryBook {
   audience?: "STUDENT" | "TEACHER" | "BOTH";
   folderId?: string | null;
   createdAt: string;
+  readingStatus?: "UNREAD" | "READING" | "READ";
+  isRead?: boolean;
 }
 
 export interface LibraryFolder {

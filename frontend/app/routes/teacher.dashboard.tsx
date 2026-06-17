@@ -49,10 +49,11 @@ import {
   TrendingUp,
   ChevronRight,
   Upload,
-  FileText,
   Settings,
   Bell,
   Users,
+  Mail,
+  RefreshCw,
 } from "lucide-react";
 
 const NOTIFICATION_POLL_MS = 12_000;
@@ -136,6 +137,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [proofForm, setProofForm] = useState({ description: "" });
   const [selectedProofFile, setSelectedProofFile] = useState<File | null>(null);
+  const [selectedStudentForBooks, setSelectedStudentForBooks] = useState<AuthUser | null>(null);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const knownNotificationIdsRef = useRef<Set<string>>(new Set());
   const notificationsInitializedRef = useRef(false);
@@ -264,6 +266,28 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
     clearSession();
     navigate("/login");
   }
+
+  const [refreshingStudentBooks, setRefreshingStudentBooks] = useState(false);
+  const [activeBookTab, setActiveBookTab] = useState<"COMPLETED" | "READING" | "UNREAD">("COMPLETED");
+
+  const handleOpenStudentProgress = async (student: AuthUser) => {
+    setSelectedStudentForBooks(student);
+    setActiveBookTab("COMPLETED");
+    if (!token) return;
+    setRefreshingStudentBooks(true);
+    try {
+      const students = await api.getTeacherStudents(token);
+      setClassStudents(students);
+      const freshStudent = students.find(s => s.id === student.id);
+      if (freshStudent) {
+        setSelectedStudentForBooks(freshStudent);
+      }
+    } catch (err) {
+      console.error("Failed to refresh student progress:", err);
+    } finally {
+      setRefreshingStudentBooks(false);
+    }
+  };
 
   // ── TASK PROOF SUBMISSION ─────────────────────────────────────────────
   async function handleProofSubmit(e: React.FormEvent) {
@@ -1036,47 +1060,62 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                     ).length === 0 ? (
                       <AdminListEmpty message={`No ${user?.studentClass} students found matching your search.`} />
                     ) : (
-                      <AdminRecordList>
-                        {classStudents
-                          .filter(s => 
-                            s.name.toLowerCase().includes(studentSearch.toLowerCase()) || 
-                            s.email.toLowerCase().includes(studentSearch.toLowerCase())
-                          )
-                          .map((student) => (
-                            <div key={student.id} className={adminListRowClass}>
-                              <div className="flex-1 min-w-[180px] space-y-0.5">
-                                <div className="flex flex-wrap items-center gap-2 mb-1">
-                                  <span className="px-2 py-0.5 rounded-md text-4xs font-extrabold uppercase border bg-green-50 text-green-700 border-green-200">
-                                    Student
-                                  </span>
-                                  {student.status && (
-                                    <span className={`px-2 py-0.5 rounded-md text-4xs font-extrabold uppercase border ${
-                                      student.status === "ACTIVE" 
-                                        ? "bg-emerald-50 text-emerald-700 border-emerald-200" 
-                                        : "bg-rose-50 text-rose-700 border-rose-200"
-                                    }`}>
-                                      {student.status}
+                      <div className="bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-2xs">
+                        {/* Header Row */}
+                        <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-4 bg-slate-50 border-b border-slate-200/80 text-[10px] font-black text-slate-500 uppercase tracking-widest select-none">
+                          <div className="col-span-5">Name</div>
+                          <div className="col-span-4">Email</div>
+                          <div className="col-span-3 text-right">Books</div>
+                        </div>
+
+                        {/* List container */}
+                        <div className="divide-y divide-slate-100">
+                          {classStudents
+                            .filter(s => 
+                              s.name.toLowerCase().includes(studentSearch.toLowerCase()) || 
+                              s.email.toLowerCase().includes(studentSearch.toLowerCase())
+                            )
+                            .map((student) => {
+                              const totalBooks = student.books?.length || 0;
+                              const readBooks = student.books?.filter(b => b.isRead || b.readingStatus === "READ").length || 0;
+                              const readingBooks = student.books?.filter(b => b.readingStatus === "READING").length || 0;
+                              
+                              return (
+                                <div 
+                                  key={student.id} 
+                                  onClick={() => handleOpenStudentProgress(student)}
+                                  className="px-6 py-4 flex flex-col md:grid md:grid-cols-12 md:items-center gap-2 md:gap-4 hover:bg-slate-50/80 transition duration-200 cursor-pointer"
+                                >
+                                  {/* Name column (Col span 5) */}
+                                  <div className="col-span-5 min-w-0">
+                                    <p className="font-bold text-sm text-slate-800 truncate">{student.name}</p>
+                                  </div>
+
+                                  {/* Email column (Col span 4) */}
+                                  <div className="col-span-4 min-w-0">
+                                    <p className="text-2xs text-slate-600 font-semibold truncate">{student.email}</p>
+                                  </div>
+
+                                  {/* Books column (Col span 3) */}
+                                  <div className="col-span-3 flex items-center justify-between md:justify-end shrink-0">
+                                    <span className="md:hidden text-3xs font-extrabold text-slate-400 uppercase tracking-wider">Books:</span>
+                                    <span className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 text-2xs font-bold border border-slate-200/60 flex items-center gap-1.5 flex-wrap">
+                                      <span>{totalBooks} Books</span>
+                                      <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                                      <span className="text-emerald-600">{readBooks} Read</span>
+                                      {readingBooks > 0 && (
+                                        <>
+                                          <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                                          <span className="text-amber-600">{readingBooks} Reading</span>
+                                        </>
+                                      )}
                                     </span>
-                                  )}
+                                  </div>
                                 </div>
-                                <p className="font-bold text-sm text-slate-800">{student.name}</p>
-                                <p className="text-2xs text-slate-600 font-medium">{student.email}</p>
-                                {student.phone && (
-                                  <p className="text-2xs text-slate-500 font-semibold">Phone: {student.phone}</p>
-                                )}
-                                {student.createdAt && (
-                                  <p className="text-[10px] text-slate-400 font-medium">
-                                    Registered: {new Date(student.createdAt).toLocaleDateString("en-IN", {
-                                      month: "short",
-                                      day: "numeric",
-                                      year: "numeric"
-                                    })}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                      </AdminRecordList>
+                              );
+                            })}
+                        </div>
+                      </div>
                     )}
                   </AdminPageBody>
                 </AdminPageShell>
@@ -1156,6 +1195,193 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                 )}
               </button>
             </form>
+          </div>
+        </div>
+      )}
+      {selectedStudentForBooks && (
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl border border-slate-200 animate-scale-up text-slate-800 relative flex flex-col max-h-[85vh]">
+            <ModalCloseButton
+              onClick={() => setSelectedStudentForBooks(null)}
+              className="absolute top-4 right-4"
+            />
+            
+            <div className="mb-4 pr-10 flex justify-between items-start">
+              <div>
+                <h3 className="font-sans text-lg font-extrabold text-slate-900">
+                  {selectedStudentForBooks.name}'s Reading Progress
+                </h3>
+                <p className="text-2xs font-semibold text-slate-500 mt-0.5">
+                  {selectedStudentForBooks.email} • {user?.studentClass} Class
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleOpenStudentProgress(selectedStudentForBooks)}
+                disabled={refreshingStudentBooks}
+                className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-500 hover:text-slate-800 transition disabled:opacity-50 shrink-0 mt-0.5"
+                title="Refresh reading progress"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${refreshingStudentBooks ? "animate-spin text-[#8AC926]" : ""}`} />
+              </button>
+            </div>
+
+            <div className="overflow-y-auto flex-1 pr-1 space-y-4">
+              {/* Summary Stats / Tabs */}
+              <div className="grid grid-cols-3 gap-2 select-none">
+                <button
+                  type="button"
+                  onClick={() => setActiveBookTab("COMPLETED")}
+                  className={`p-2.5 rounded-xl border flex flex-col text-left transition-all duration-200 ${
+                    activeBookTab === "COMPLETED"
+                      ? "bg-emerald-50 border-emerald-500 ring-2 ring-emerald-500/20 shadow-xs scale-[1.02]"
+                      : "bg-emerald-50/10 border-slate-200/80 hover:bg-emerald-50/30 opacity-75"
+                  }`}
+                >
+                  <span className="text-3xs font-extrabold text-emerald-800 uppercase tracking-wider">Completed (Read)</span>
+                  <span className="text-base font-black text-emerald-700 mt-1">
+                    {selectedStudentForBooks.books?.filter(b => b.isRead || b.readingStatus === "READ").length || 0}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveBookTab("READING")}
+                  className={`p-2.5 rounded-xl border flex flex-col text-left transition-all duration-200 ${
+                    activeBookTab === "READING"
+                      ? "bg-amber-50 border-amber-500 ring-2 ring-amber-500/20 shadow-xs scale-[1.02]"
+                      : "bg-amber-50/10 border-slate-200/80 hover:bg-amber-50/30 opacity-75"
+                  }`}
+                >
+                  <span className="text-3xs font-extrabold text-amber-800 uppercase tracking-wider">Reading Now</span>
+                  <span className="text-base font-black text-amber-700 mt-1">
+                    {selectedStudentForBooks.books?.filter(b => b.readingStatus === "READING").length || 0}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveBookTab("UNREAD")}
+                  className={`p-2.5 rounded-xl border flex flex-col text-left transition-all duration-200 ${
+                    activeBookTab === "UNREAD"
+                      ? "bg-slate-100 border-slate-400 ring-2 ring-slate-400/20 shadow-xs scale-[1.02]"
+                      : "bg-slate-50 border-slate-200 hover:bg-slate-100/70 opacity-75"
+                  }`}
+                >
+                  <span className="text-3xs font-extrabold text-slate-600 uppercase tracking-wider">Unread</span>
+                  <span className="text-base font-black text-slate-700 mt-1">
+                    {selectedStudentForBooks.books?.filter(b => b.readingStatus === "UNREAD" && !b.isRead).length || 0}
+                  </span>
+                </button>
+              </div>
+
+              {/* Books List */}
+              {(!selectedStudentForBooks.books || selectedStudentForBooks.books.length === 0) ? (
+                <div className="text-center py-8 text-slate-400 font-semibold text-xs">
+                  No books assigned to this student.
+                </div>
+              ) : (() => {
+                const readingNow = selectedStudentForBooks.books.filter(b => b.readingStatus === "READING");
+                const completed = selectedStudentForBooks.books.filter(b => b.isRead || b.readingStatus === "READ");
+                const unread = selectedStudentForBooks.books.filter(b => !b.isRead && b.readingStatus !== "READ" && b.readingStatus !== "READING");
+
+                return (
+                  <div className="space-y-4">
+                    {/* 1. Currently Reading */}
+                    {activeBookTab === "READING" && (
+                      <div className="space-y-2">
+                        <h4 className="text-[10px] font-black text-amber-600 uppercase tracking-widest flex items-center gap-1.5 select-none">
+                          <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                          </span>
+                          Currently Reading (Reading Now)
+                        </h4>
+                        {readingNow.length === 0 ? (
+                          <div className="text-center py-8 border border-dashed border-slate-200 rounded-xl text-slate-400 font-semibold text-xs bg-slate-50/5 select-none">
+                            No books currently being read.
+                          </div>
+                        ) : (
+                          <div className="divide-y divide-slate-100 border border-amber-200/80 rounded-xl overflow-hidden bg-amber-50/10">
+                            {readingNow.map((b) => (
+                              <div key={b.id} className="p-3 flex items-center justify-between gap-3 hover:bg-amber-50/20 transition">
+                                <div className="min-w-0">
+                                  <p className="font-bold text-xs text-slate-800 truncate">{b.title}</p>
+                                  {b.author && <p className="text-3xs text-slate-500 font-semibold truncate">by {b.author}</p>}
+                                </div>
+                                <span className="shrink-0 px-2 py-0.5 rounded-full text-4xs font-black uppercase border flex items-center gap-1 bg-amber-50 text-amber-700 border-amber-200 animate-pulse">
+                                  <Clock className="w-2.5 h-2.5" /> Reading Now
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* 2. Completed Books */}
+                    {activeBookTab === "COMPLETED" && (
+                      <div className="space-y-2">
+                        <h4 className="text-[10px] font-black text-emerald-600 uppercase tracking-widest select-none">Completed Books</h4>
+                        {completed.length === 0 ? (
+                          <div className="text-center py-8 border border-dashed border-slate-200 rounded-xl text-slate-400 font-semibold text-xs bg-slate-50/5 select-none">
+                            No completed books yet.
+                          </div>
+                        ) : (
+                          <div className="divide-y divide-slate-100 border border-slate-200/80 rounded-xl overflow-hidden bg-white">
+                            {completed.map((b) => (
+                              <div key={b.id} className="p-3 flex items-center justify-between gap-3 hover:bg-slate-50/50 transition">
+                                <div className="min-w-0">
+                                  <p className="font-bold text-xs text-slate-800 truncate">{b.title}</p>
+                                  {b.author && <p className="text-3xs text-slate-500 font-semibold truncate">by {b.author}</p>}
+                                </div>
+                                <span className="shrink-0 px-2 py-0.5 rounded-full text-4xs font-black uppercase border flex items-center gap-1 bg-emerald-50 text-emerald-700 border-emerald-200">
+                                  <Check className="w-2.5 h-2.5" /> Completed
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* 3. Not Completed */}
+                    {activeBookTab === "UNREAD" && (
+                      <div className="space-y-2">
+                        <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest select-none">Not Completed</h4>
+                        {unread.length === 0 ? (
+                          <div className="text-center py-8 border border-dashed border-slate-200 rounded-xl text-slate-400 font-semibold text-xs bg-slate-50/5 select-none">
+                            All assigned books are completed or in progress!
+                          </div>
+                        ) : (
+                          <div className="divide-y divide-slate-100 border border-slate-200/80 rounded-xl overflow-hidden bg-white">
+                            {unread.map((b) => (
+                              <div key={b.id} className="p-3 flex items-center justify-between gap-3 hover:bg-slate-50/50 transition">
+                                <div className="min-w-0">
+                                  <p className="font-bold text-xs text-slate-800 truncate">{b.title}</p>
+                                  {b.author && <p className="text-3xs text-slate-500 font-semibold truncate">by {b.author}</p>}
+                                </div>
+                                <span className="shrink-0 px-2 py-0.5 rounded-full text-4xs font-black uppercase border flex items-center gap-1 bg-slate-100 text-slate-600 border-slate-200">
+                                  <Book className="w-2.5 h-2.5 text-slate-400" /> Unread
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
+
+            <div className="mt-5 pt-3 border-t border-slate-100 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setSelectedStudentForBooks(null)}
+                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -260,6 +260,7 @@ model StudentNotification {
   message     String   @db.Text
   storyBookId String?
   isRead      Boolean  @default(false)
+  readingStatus String @default("UNREAD")
   createdAt   DateTime @default(now())
 
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)

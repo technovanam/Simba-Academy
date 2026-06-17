@@ -263,6 +263,20 @@ router.get("/students", async (req, res, next) => {
     if (!teacher || !teacher.studentClass) {
       return res.json([]);
     }
+    const classBooks = await prisma.storyBook.findMany({
+      where: {
+        category: teacher.studentClass,
+        audience: { in: ["STUDENT", "BOTH"] },
+      },
+      select: {
+        id: true,
+        title: true,
+        author: true,
+        category: true,
+        fileUrl: true,
+      },
+    });
+
     const students = await prisma.user.findMany({
       where: {
         role: "STUDENT",
@@ -278,10 +292,54 @@ router.get("/students", async (req, res, next) => {
         phone: true,
         createdAt: true,
         status: true,
+        notifications: {
+          where: {
+            type: "STORY_BOOK",
+          },
+          select: {
+            isRead: true,
+            readingStatus: true,
+            storyBookId: true,
+          },
+        },
       },
       orderBy: { name: "asc" },
     });
-    res.json(students);
+
+    const mappedStudents = students.map((student) => {
+      const bookNotifications = student.notifications.filter((n) => n.storyBookId);
+
+      const booksProgress = classBooks.map((book) => {
+        const notif = bookNotifications.find((n) => n.storyBookId === book.id);
+        return {
+          id: book.id,
+          title: book.title,
+          author: book.author,
+          category: book.category,
+          fileUrl: book.fileUrl,
+          readingStatus: notif 
+            ? (notif.readingStatus === "READING" 
+                ? "READING" 
+                : (notif.isRead ? "READ" : "UNREAD")) 
+            : "UNREAD",
+          isRead: notif ? notif.isRead : false,
+        };
+      });
+
+      return {
+        id: student.id,
+        name: student.name,
+        firstName: student.firstName,
+        lastName: student.lastName,
+        email: student.email,
+        phone: student.phone,
+        createdAt: student.createdAt,
+        status: student.status,
+        books: booksProgress,
+      };
+    });
+
+    res.json(mappedStudents);
   } catch (err) {
     next(err);
   }

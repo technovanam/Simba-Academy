@@ -95,17 +95,17 @@ export const createTeacherSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
   email: z.string().email("Invalid email address"),
-  phone: z.string().min(7, "Valid phone number required").optional(),
-  studentClass: z.enum(STUDENT_CLASS_LEVELS).optional().nullable(),
+  phone: z.string().min(7, "Valid phone number required"),
+  studentClass: z.enum(STUDENT_CLASS_LEVELS, { message: "Assigned class is required" }),
 });
 
 export const updateTeacherSchema = z.object({
   firstName: z.string().min(1).optional(),
   lastName: z.string().min(1).optional(),
   email: z.string().email().optional(),
-  phone: z.string().min(7).optional().nullable(),
+  phone: z.string().min(7, "Valid phone number required").optional(),
   status: z.enum(["ACTIVE", "DEACTIVATED"]).optional(),
-  studentClass: z.enum(STUDENT_CLASS_LEVELS).optional().nullable(),
+  studentClass: z.enum(STUDENT_CLASS_LEVELS, { message: "Assigned class is required" }).optional(),
 });
 
 export const updateUserSchema = z.object({

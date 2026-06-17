@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { Eye, Printer, Download } from "lucide-react";
+import { BookOpen, Printer, Download, Eye } from "lucide-react";
 import { libraryStoryDownloadUrl } from "../lib/library";
 import { StoryBookViewerModal } from "./StoryBookViewerModal";
 
@@ -9,6 +9,7 @@ interface StoryBookActionsProps {
   role: "ADMIN" | "TEACHER" | "STUDENT";
   title?: string;
   variant?: "student" | "teacher" | "admin";
+  onViewClose?: () => void;
 }
 
 export function StoryBookActions({
@@ -17,6 +18,7 @@ export function StoryBookActions({
   role,
   title = "Story book",
   variant = "student",
+  onViewClose,
 }: StoryBookActionsProps) {
   const downloadUrl = role === "ADMIN" ? libraryStoryDownloadUrl(bookId, token) : null;
 
@@ -33,7 +35,10 @@ export function StoryBookActions({
     setViewerOpen(false);
     setPrintOnLoad(false);
     setLoadError("");
-  }, []);
+    if (onViewClose) {
+      onViewClose();
+    }
+  }, [onViewClose]);
 
   const openViewer = useCallback((shouldPrint: boolean) => {
     setPrintOnLoad(shouldPrint);
@@ -124,8 +129,17 @@ export function StoryBookActions({
               : `${btnBase} bg-blue-50 border-blue-200 text-blue-800 hover:bg-blue-100`
           }
         >
-          <Eye className="w-3.5 h-3.5" />
-          View
+          {role === "STUDENT" ? (
+            <>
+              <BookOpen className="w-3.5 h-3.5" />
+              Reading
+            </>
+          ) : (
+            <>
+              <Eye className="w-3.5 h-3.5" />
+              View
+            </>
+          )}
         </button>
         {role === "ADMIN" && (
           <button

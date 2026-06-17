@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, Printer } from "lucide-react";
 import { libraryStoryViewUrl } from "../lib/library";
+import { api } from "../lib/api";
 import { ModalCloseButton } from "./ModalCloseButton";
 
 export interface StoryBookViewerModalProps {
@@ -23,6 +24,23 @@ export function StoryBookViewerModal({
   accent = "green",
   role = "STUDENT",
 }: StoryBookViewerModalProps) {
+  const handleClose = useCallback(async () => {
+    if (role === "STUDENT" && token && bookId) {
+      try {
+        await api.updateBookStatus(token, bookId, "UNREAD");
+      } catch (err) {
+        console.error("Failed to reset reading status on close:", err);
+      }
+    }
+    onClose();
+  }, [role, token, bookId, onClose]);
+
+  useEffect(() => {
+    if (role === "STUDENT" && token && bookId) {
+      api.updateBookStatus(token, bookId, "READING")
+        .catch(console.error);
+    }
+  }, [role, token, bookId]);
   const accentSpin = accent === "orange" ? "text-[#FF9F1C]" : "text-[#8AC926]";
   const viewUrl = libraryStoryViewUrl(bookId, token);
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
@@ -77,7 +95,7 @@ export function StoryBookViewerModal({
     document.body.style.overflow = "hidden";
     
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") handleClose();
       
       // Disable print and save shortcuts on main window
       if (role !== "ADMIN" && (e.ctrlKey || e.metaKey) && (e.key === "p" || e.key === "P" || e.key === "s" || e.key === "S")) {
@@ -110,7 +128,7 @@ export function StoryBookViewerModal({
       window.removeEventListener("contextmenu", onContextMenu, true);
       window.removeEventListener("mousedown", onGlobalMouseDown, true);
     };
-  }, [onClose, role]);
+  }, [handleClose, role]);
 
   useEffect(() => {
     let cancelled = false;
@@ -231,7 +249,7 @@ export function StoryBookViewerModal({
       role="dialog"
       aria-modal="true"
       aria-label={`Viewing ${title}`}
-      onClick={onClose}
+      onClick={handleClose}
       onContextMenu={(e) => role !== "ADMIN" && e.preventDefault()}
     >
       <div
@@ -251,7 +269,7 @@ export function StoryBookViewerModal({
                 Print
               </button>
             )}
-            <ModalCloseButton onClick={onClose} />
+            <ModalCloseButton onClick={handleClose} />
           </div>
         </div>
 

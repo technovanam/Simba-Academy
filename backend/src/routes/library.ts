@@ -105,6 +105,36 @@ router.get("/storybooks", authenticate, libraryRoles, async (req, res, next) => 
       where: { ...audienceWhere, ...classWhere, ...folderFilter },
       orderBy: { createdAt: "desc" },
     });
+
+    if (role === "STUDENT") {
+      const notifications = await prisma.studentNotification.findMany({
+        where: {
+          userId: req.user!.userId,
+          type: "STORY_BOOK",
+        },
+        select: {
+          storyBookId: true,
+          isRead: true,
+          readingStatus: true,
+        },
+      });
+
+      const mappedBooks = books.map((book) => {
+        const notif = notifications.find((n) => n.storyBookId === book.id);
+        return {
+          ...book,
+          readingStatus: notif 
+            ? (notif.readingStatus === "READING" 
+                ? "READING" 
+                : (notif.isRead ? "READ" : "UNREAD")) 
+            : "UNREAD",
+          isRead: notif ? notif.isRead : false,
+        };
+      });
+
+      return res.json(mappedBooks);
+    }
+
     res.json(books);
   } catch (err) {
     next(err);
