@@ -54,6 +54,7 @@ import {
   Eye,
   FileText,
   Download,
+  Printer,
   Phone,
   MapPin,
   FolderPlus,
@@ -256,6 +257,9 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
   const [showGalleryForm, setShowGalleryForm] = useState(false);
   const [editingGallery, setEditingGallery] = useState<GalleryItem | null>(null);
   const [gallerySearch, setGallerySearch] = useState("");
+  const [viewerImage, setViewerImage] = useState<string | null>(null);
+  const [viewerTitle, setViewerTitle] = useState<string>("");
+  const [viewerDownloading, setViewerDownloading] = useState(false);
 
   const [testimonialForm, setTestimonialForm] = useState({ name: "", content: "", rating: 5 });
   const [showTestimonialForm, setShowTestimonialForm] = useState(false);
@@ -869,6 +873,51 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
     }
   }
 
+  const handlePrintViewer = (src: string) => {
+    const w = window.open(src, "_blank", "noopener,noreferrer");
+    w?.addEventListener("load", () => {
+      try {
+        w?.print();
+      } catch {
+        /* ignore */
+      }
+    });
+  };
+
+  const handleDownloadViewer = async (src: string, title: string) => {
+    setViewerDownloading(true);
+    try {
+      const res = await fetch(src);
+      if (!res.ok) throw new Error("Download failed");
+      const blob = await res.blob();
+      const ext = src.match(/\.(jpe?g|png|webp|gif)/i)?.[1]?.toLowerCase() ?? "jpg";
+      const base = title.replace(/[^\w\s.-]/g, "_").trim() || "gallery-photo";
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `${base}.${ext}`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setViewerDownloading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!viewerImage) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setViewerImage(null);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [viewerImage]);
+
   // ── MARKETING (GALLERY / TESTIMONIALS) ACTIONS ───────────────────────
   function closeGalleryForm() {
     setShowGalleryForm(false);
@@ -1323,14 +1372,16 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
       activeTab !== "teachers" &&
       activeTab !== "payments" &&
       activeTab !== "planner" &&
-      activeTab !== "books" ? (
+      activeTab !== "books" &&
+      activeTab !== "tasks" &&
+      activeTab !== "gallery" ? (
         <div className="flex-1 flex flex-col items-center justify-center min-h-0 gap-3">
           <Loader2 className="w-10 h-10 animate-spin text-[#8AC926]" />
           <p className="font-bold text-[#8AC926] mt-2">Loading dashboard data…</p>
         </div>
       ) : (
         <div className={`space-y-5 animate-fade-in flex-1 flex flex-col min-h-0 w-full min-w-0 max-w-full overflow-visible ${
-          activeTab === "users" || activeTab === "teachers" || activeTab === "books" ? "pb-4 lg:pb-4" : "pb-6 lg:pb-8"
+          activeTab === "users" || activeTab === "teachers" || activeTab === "books" || activeTab === "planner" || activeTab === "tasks" || activeTab === "gallery" ? "pb-4 lg:pb-4" : "pb-6 lg:pb-8"
         }`}>
           {/* ────────────────── OVERVIEW TAB ────────────────── */}
           {activeTab === "overview" && (
@@ -1883,202 +1934,198 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
 
           {/* ────────────────── APPROVE UPLOADS ────────────────── */}
           {activeTab === "materials" && (
-            <AdminPageShell>
+            <AdminPageShell className="h-full flex flex-col min-h-0 overflow-hidden">
               <AdminPageHeader
                 title="Approve Learning Materials"
                 description="Review educational resources and files uploaded by teachers before publishing them to the student portal."
               />
 
-              <AdminPageBody>
+              <AdminPageBody className="flex-1 min-h-0 flex flex-col overflow-hidden">
                 {combinedApprovals.length === 0 ? (
                   <AdminListEmpty message="No learning materials or task proofs have been uploaded for review." />
                 ) : (
-                  <AdminRecordList>
-                    {approvalPagination.paginatedItems.map((m) => (
-                      <div key={m.id} className={adminListRowStackClass}>
-                        <div className="flex-1 min-w-0 w-full space-y-1.5">
-                          <a
-                            href={resolveStorageUrl(m.fileUrl)}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="font-bold text-sm text-[#8AC926] hover:underline inline-flex items-start gap-1.5 break-words"
-                          >
-                            <span className="min-w-0">{m.title}</span>
-                            <ExternalLink className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                          </a>
-                          {m.description ? (
-                            <p className="text-2xs text-slate-600 line-clamp-2 break-words">{m.description}</p>
-                          ) : null}
-                          <div className="flex flex-wrap items-center gap-2 pt-0.5">
-                            {m.isTask ? (
-                              <span className="px-2 py-0.5 rounded-md text-4xs font-extrabold uppercase bg-blue-50 text-blue-700 border border-blue-200">
-                                TASK PROOF
-                              </span>
-                            ) : (
-                              <span
-                                className={`px-2 py-0.5 rounded-md text-4xs font-extrabold uppercase border ${
-                                  m.type === "PDF"
-                                    ? "bg-red-50 text-red-700 border-red-200"
-                                    : "bg-orange-50 text-orange-700 border-orange-200"
-                                }`}
-                              >
-                                {m.type}
-                              </span>
-                            )}
-                            {m.isTask ? (
-                              <span
-                                className={`px-2.5 py-0.5 rounded-lg text-2xs font-extrabold uppercase border ${
-                                  m.status === "APPROVED"
-                                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                    : m.status === "REJECTED"
-                                      ? "bg-rose-50 text-rose-700 border-rose-200"
-                                      : "bg-blue-50 text-blue-700 border-blue-200"
-                                }`}
-                              >
-                                {m.status === "APPROVED"
-                                  ? "Approved"
-                                  : m.status === "REJECTED"
-                                    ? "Rejected"
-                                    : "Pending Review"}
-                              </span>
-                            ) : (
-                              <span
-                                className={`px-2.5 py-0.5 rounded-lg text-2xs font-extrabold uppercase border ${
-                                  m.isApproved
-                                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                    : "bg-amber-50 text-amber-700 border-amber-200"
-                                }`}
-                              >
-                                {m.isApproved ? "Approved" : "Pending Review"}
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-2xs text-slate-600 break-words">
-                            <span className="font-semibold text-slate-700">
-                              {m.uploadedBy?.name ?? "Admin"}
-                            </span>
-                            {m.uploadedBy?.email ? ` · ${m.uploadedBy.email}` : ""}
-                          </p>
-                          <p className="text-2xs text-slate-500">
-                            {new Date(m.createdAt).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto sm:justify-end shrink-0">
-                          {m.isTask ? (
-                            <>
-                              {(m.status === "COMPLETED" || m.status === "REJECTED") && (
-                                <button
-                                  disabled={actionLoading === `task-approve-${m.id}`}
-                                  onClick={() => handleApproveTaskProof(m.id, true)}
-                                  className="px-2.5 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 font-bold text-2xs flex items-center gap-1 transition disabled:opacity-50"
-                                >
-                                  {actionLoading === `task-approve-${m.id}` ? (
-                                    <Loader2 className="w-3 h-3 animate-spin" />
-                                  ) : (
-                                    "Approve"
+                  <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex-1 min-h-0 flex flex-col">
+                    <div className="overflow-x-auto flex-1 min-h-0 overflow-y-auto modern-scrollbar">
+                      <table className="w-full text-left text-sm whitespace-nowrap">
+                        <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium text-xs sticky top-0 z-10">
+                          <tr>
+                            <th className="px-4 py-3 font-semibold w-[45%]">Material Details</th>
+                            <th className="px-4 py-3 font-semibold w-[20%]">Uploaded On</th>
+                            <th className="px-4 py-3 font-semibold w-[15%]">Status</th>
+                            <th className="px-4 py-3 font-semibold text-right">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {combinedApprovals.map((m) => (
+                            <tr key={m.id} className="hover:bg-slate-50/80 transition-colors">
+                              <td className="px-4 py-3 align-middle w-[45%] min-w-0">
+                                <div className="flex flex-col space-y-1">
+                                  <a
+                                    href={resolveStorageUrl(m.fileUrl)}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="font-bold text-sm text-[#8AC926] hover:underline inline-flex items-center gap-1.5 break-all whitespace-normal"
+                                  >
+                                    <span>{m.title}</span>
+                                    <ExternalLink className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                                  </a>
+                                  {m.description && (
+                                    <p className="text-2xs text-slate-500 line-clamp-2 break-all whitespace-normal">
+                                      {m.description}
+                                    </p>
                                   )}
-                                </button>
-                              )}
-                              {m.status === "COMPLETED" && (
-                                <button
-                                  disabled={actionLoading === `task-approve-${m.id}`}
-                                  onClick={() => {
-                                    setRejectTaskForm({ id: m.id, reason: "" });
-                                    setShowRejectTaskForm(true);
-                                  }}
-                                  className="px-2.5 py-1.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 font-bold text-2xs flex items-center gap-1 transition disabled:opacity-50"
-                                >
-                                  {actionLoading === `task-approve-${m.id}` ? (
-                                    <Loader2 className="w-3 h-3 animate-spin" />
-                                  ) : (
-                                    "Reject"
-                                  )}
-                                </button>
-                              )}
-                              {m.status === "APPROVED" && (
-                                <button
-                                  disabled={actionLoading === `task-approve-${m.id}`}
-                                  onClick={() => {
-                                    setRejectTaskForm({ id: m.id, reason: "" });
-                                    setShowRejectTaskForm(true);
-                                  }}
-                                  className="px-2.5 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100 font-bold text-2xs flex items-center gap-1 transition disabled:opacity-50"
-                                >
-                                  {actionLoading === `task-approve-${m.id}` ? (
-                                    <Loader2 className="w-3 h-3 animate-spin" />
-                                  ) : (
-                                    "Revoke"
-                                  )}
-                                </button>
-                              )}
-                              <button
-                                type="button"
-                                disabled={actionLoading === `task-delete-${m.id}`}
-                                onClick={() => handleDeleteTask(m.id)}
-                                className="px-2.5 py-1.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 font-bold text-2xs flex items-center gap-1 transition disabled:opacity-50"
-                              >
-                                {actionLoading === `task-delete-${m.id}` ? (
-                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                  <p className="text-4xs text-slate-400 font-bold uppercase tracking-wider mt-0.5">
+                                    By {m.uploadedBy?.name ?? "Admin"}{m.uploadedBy?.email ? ` · ${m.uploadedBy.email}` : ""}
+                                  </p>
+                                </div>
+                              </td>
+                              <td className="px-4 py-3 align-middle text-xs text-slate-500 w-[20%]">
+                                {new Date(m.createdAt).toLocaleDateString("en-IN", {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                })}
+                              </td>
+                              <td className="px-4 py-3 align-middle w-[15%]">
+                                {m.isTask ? (
+                                  <span
+                                    className={`px-2.5 py-0.5 rounded-lg text-2xs font-extrabold uppercase border shrink-0 ${
+                                      m.status === "APPROVED"
+                                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                        : m.status === "REJECTED"
+                                          ? "bg-rose-50 text-rose-700 border-rose-200"
+                                          : "bg-blue-50 text-blue-700 border-blue-200"
+                                    }`}
+                                  >
+                                    {m.status === "APPROVED"
+                                      ? "Approved"
+                                      : m.status === "REJECTED"
+                                        ? "Rejected"
+                                        : "Pending Review"}
+                                  </span>
                                 ) : (
-                                  "Delete"
+                                  <span
+                                    className={`px-2.5 py-0.5 rounded-lg text-2xs font-extrabold uppercase border shrink-0 ${
+                                      m.isApproved
+                                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                        : "bg-amber-50 text-amber-700 border-amber-200"
+                                    }`}
+                                  >
+                                    {m.isApproved ? "Approved" : "Pending Review"}
+                                  </span>
                                 )}
-                              </button>
-                            </>
-                          ) : (
-                            <>
-                              {!m.isApproved ? (
-                                <button
-                                  disabled={actionLoading === `material-approve-${m.id}`}
-                                  onClick={() => handleApproveMaterial(m.id, true)}
-                                  className="px-2.5 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 font-bold text-2xs flex items-center gap-1 transition disabled:opacity-50"
-                                >
-                                  {actionLoading === `material-approve-${m.id}` ? (
-                                    <Loader2 className="w-3 h-3 animate-spin" />
+                              </td>
+                              <td className="px-4 py-2 text-right align-middle">
+                                <div className="flex items-center justify-end gap-1.5">
+                                  {m.isTask ? (
+                                    <>
+                                      {(m.status === "COMPLETED" || m.status === "REJECTED") && (
+                                        <button
+                                          disabled={actionLoading === `task-approve-${m.id}`}
+                                          onClick={() => handleApproveTaskProof(m.id, true)}
+                                          className="px-2.5 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 font-bold text-2xs flex items-center gap-1 transition disabled:opacity-50"
+                                        >
+                                          {actionLoading === `task-approve-${m.id}` ? (
+                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                          ) : (
+                                            "Approve"
+                                          )}
+                                        </button>
+                                      )}
+                                      {m.status === "COMPLETED" && (
+                                        <button
+                                          disabled={actionLoading === `task-approve-${m.id}`}
+                                          onClick={() => {
+                                            setRejectTaskForm({ id: m.id, reason: "" });
+                                            setShowRejectTaskForm(true);
+                                          }}
+                                          className="px-2.5 py-1.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 font-bold text-2xs flex items-center gap-1 transition disabled:opacity-50"
+                                        >
+                                          {actionLoading === `task-approve-${m.id}` ? (
+                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                          ) : (
+                                            "Reject"
+                                          )}
+                                        </button>
+                                      )}
+                                      {m.status === "APPROVED" && (
+                                        <button
+                                          disabled={actionLoading === `task-approve-${m.id}`}
+                                          onClick={() => {
+                                            setRejectTaskForm({ id: m.id, reason: "" });
+                                            setShowRejectTaskForm(true);
+                                          }}
+                                          className="px-2.5 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100 font-bold text-2xs flex items-center gap-1 transition disabled:opacity-50"
+                                        >
+                                          {actionLoading === `task-approve-${m.id}` ? (
+                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                          ) : (
+                                            "Revoke"
+                                          )}
+                                        </button>
+                                      )}
+                                      <button
+                                        type="button"
+                                        disabled={actionLoading === `task-delete-${m.id}`}
+                                        onClick={() => handleDeleteTask(m.id)}
+                                        className="px-2.5 py-1.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 font-bold text-2xs flex items-center gap-1 transition disabled:opacity-50"
+                                      >
+                                        {actionLoading === `task-delete-${m.id}` ? (
+                                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                        ) : (
+                                          "Delete"
+                                        )}
+                                      </button>
+                                    </>
                                   ) : (
-                                    "Approve"
+                                    <>
+                                      {!m.isApproved ? (
+                                        <button
+                                          disabled={actionLoading === `material-approve-${m.id}`}
+                                          onClick={() => handleApproveMaterial(m.id, true)}
+                                          className="px-2.5 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 font-bold text-2xs flex items-center gap-1 transition disabled:opacity-50"
+                                        >
+                                          {actionLoading === `material-approve-${m.id}` ? (
+                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                          ) : (
+                                            "Approve"
+                                          )}
+                                        </button>
+                                      ) : (
+                                        <button
+                                          disabled={actionLoading === `material-approve-${m.id}`}
+                                          onClick={() => handleApproveMaterial(m.id, false)}
+                                          className="px-2.5 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100 font-bold text-2xs flex items-center gap-1 transition disabled:opacity-50"
+                                        >
+                                          {actionLoading === `material-approve-${m.id}` ? (
+                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                          ) : (
+                                            "Revoke"
+                                          )}
+                                        </button>
+                                      )}
+                                      <button
+                                        type="button"
+                                        disabled={actionLoading === `material-delete-${m.id}`}
+                                        onClick={() => handleDeleteMaterial(m.id)}
+                                        className="px-2.5 py-1.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 font-bold text-2xs flex items-center gap-1 transition disabled:opacity-50"
+                                      >
+                                        {actionLoading === `material-delete-${m.id}` ? (
+                                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                        ) : (
+                                          "Delete"
+                                        )}
+                                      </button>
+                                    </>
                                   )}
-                                </button>
-                              ) : (
-                                <button
-                                  disabled={actionLoading === `material-approve-${m.id}`}
-                                  onClick={() => handleApproveMaterial(m.id, false)}
-                                  className="px-2.5 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100 font-bold text-2xs flex items-center gap-1 transition disabled:opacity-50"
-                                >
-                                  {actionLoading === `material-approve-${m.id}` ? (
-                                    <Loader2 className="w-3 h-3 animate-spin" />
-                                  ) : (
-                                    "Revoke"
-                                  )}
-                                </button>
-                              )}
-                              <button
-                                type="button"
-                                disabled={actionLoading === `material-delete-${m.id}`}
-                                onClick={() => handleDeleteMaterial(m.id)}
-                                className="px-2.5 py-1.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 font-bold text-2xs flex items-center gap-1 transition disabled:opacity-50"
-                              >
-                                {actionLoading === `material-delete-${m.id}` ? (
-                                  <Loader2 className="w-3 h-3 animate-spin" />
-                                ) : (
-                                  "Delete"
-                                )}
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                    <AdminListPagination
-                      rangeStart={approvalPagination.rangeStart}
-                      rangeEnd={approvalPagination.rangeEnd}
-                      total={combinedApprovals.length}
-                      safePage={approvalPagination.safePage}
-                      totalPages={approvalPagination.totalPages}
-                      pageNumbers={approvalPagination.pageNumbers}
-                      onPageChange={approvalPagination.setCurrentPage}
-                      itemLabel="uploads"
-                    />
-                  </AdminRecordList>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                 )}
               </AdminPageBody>
             </AdminPageShell>
@@ -2086,7 +2133,7 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
 
           {/* ────────────────── TASKS ASSIGNMENT ────────────────── */}
           {activeTab === "tasks" && (
-            <AdminPageShell>
+            <AdminPageShell className="h-full flex flex-col min-h-0 overflow-hidden">
               <AdminPageHeader
                 title="Assign Tasks & Set Due Dates"
                 description="Delegate tasks to your teachers, set exact due dates, and track their activity."
@@ -2128,86 +2175,92 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                 }
               />
 
-              <AdminPageBody>
+              <AdminPageBody className="flex-1 min-h-0 flex flex-col overflow-hidden">
                 {sortedFilteredTasks.length === 0 ? (
                   <AdminListEmpty message="No task assignments matched your search or filters." />
                 ) : (
-                  <div className="bg-white rounded-2xl border border-slate-200 px-2 sm:px-3 pt-2.5 sm:pt-3 pb-2 sm:pb-3 space-y-1.5">
-                    {taskPagination.paginatedItems.map((t) => (
-                      <div
-                        key={t.id}
-                        className="flex flex-wrap items-center gap-3 sm:gap-4 px-4 py-3 rounded-xl border border-slate-100 hover:bg-slate-50/80 transition-colors"
-                      >
-                        <div className="flex-1 min-w-0">
-                          <div className="flex flex-wrap items-center gap-2 mb-1">
-                            <span
-                              className={`px-2 py-0.5 rounded-md text-4xs font-extrabold uppercase border shrink-0 ${
-                                t.status === "APPROVED"
-                                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                  : t.status === "REJECTED"
-                                    ? "bg-rose-50 text-rose-700 border-rose-200"
-                                    : t.status === "COMPLETED"
-                                      ? "bg-blue-50 text-blue-700 border-blue-200"
-                                      : "bg-amber-50 text-amber-700 border-amber-200"
-                              }`}
-                            >
-                              {t.status}
-                            </span>
-                          </div>
-                          <p className="font-bold text-sm text-slate-800">{t.title}</p>
-                          {t.description && (
-                            <p className="text-2xs text-slate-600 font-medium line-clamp-2">
-                              {t.description}
-                            </p>
-                          )}
-                          <p className="text-2xs text-slate-500 mt-0.5">
-                            To:{" "}
-                            <span className="font-semibold text-slate-700">
-                              {t.teacher?.name ?? "—"}
-                            </span>
-                            {t.teacher?.email && <> · {t.teacher.email}</>}
-                          </p>
-                          {t.dueDate && (
-                            <p className="text-2xs text-rose-600 font-semibold mt-0.5 inline-flex items-center gap-1">
-                              <Calendar className="w-3 h-3" />
-                              Due:{" "}
-                              {new Date(t.dueDate).toLocaleDateString("en-IN", {
-                                month: "short",
-                                day: "numeric",
-                                year: "numeric",
-                              })}
-                            </p>
-                          )}
-                        </div>
-
-                        <div className="flex flex-wrap items-center gap-2 shrink-0">
-                          <button
-                            type="button"
-                            disabled={actionLoading === `task-delete-${t.id}`}
-                            onClick={() => handleDeleteTask(t.id)}
-                            className="px-3 py-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 disabled:opacity-50 flex items-center justify-center"
-                            title="Delete task"
-                          >
-                            {actionLoading === `task-delete-${t.id}` ? (
-                              <Loader2 className="w-3 h-3 animate-spin" />
-                            ) : (
-                              <Trash2 className="w-3.5 h-3.5" />
-                            )}
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-
-                    <AdminListPagination
-                      rangeStart={taskPagination.rangeStart}
-                      rangeEnd={taskPagination.rangeEnd}
-                      total={sortedFilteredTasks.length}
-                      safePage={taskPagination.safePage}
-                      totalPages={taskPagination.totalPages}
-                      pageNumbers={taskPagination.pageNumbers}
-                      onPageChange={taskPagination.setCurrentPage}
-                      itemLabel="tasks"
-                    />
+                  <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex-1 min-h-0 flex flex-col">
+                    <div className="overflow-x-auto flex-1 min-h-0 overflow-y-auto modern-scrollbar">
+                      <table className="w-full text-left text-sm whitespace-nowrap">
+                        <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium text-xs sticky top-0 z-10">
+                          <tr>
+                            <th className="px-4 py-3 font-semibold w-[45%]">Task Details</th>
+                            <th className="px-4 py-3 font-semibold w-[20%]">Assignee</th>
+                            <th className="px-4 py-3 font-semibold w-[15%]">Status</th>
+                            <th className="px-4 py-3 font-semibold w-[15%]">Due Date</th>
+                            <th className="px-4 py-3 font-semibold text-right">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {sortedFilteredTasks.map((t) => (
+                            <tr key={t.id} className="hover:bg-slate-50/80 transition-colors">
+                              <td className="px-4 py-3 align-middle w-[45%] min-w-0">
+                                <div className="flex flex-col min-w-0">
+                                  <span className="font-bold text-sm text-slate-800">{t.title}</span>
+                                  {t.description && (
+                                    <span className="text-2xs text-slate-500 font-medium line-clamp-2 mt-0.5 whitespace-pre-wrap">{t.description}</span>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="px-4 py-3 align-middle w-[20%] min-w-0 text-xs font-semibold text-slate-700">
+                                <div className="flex flex-col">
+                                  <span>{t.teacher?.name ?? "—"}</span>
+                                  {t.teacher?.email && (
+                                    <span className="text-3xs text-slate-400 font-normal mt-0.5">{t.teacher.email}</span>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="px-4 py-3 align-middle w-[15%]">
+                                <span
+                                  className={`px-1.5 py-0.5 rounded text-4xs font-extrabold uppercase border shrink-0 ${
+                                    t.status === "APPROVED"
+                                      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                      : t.status === "REJECTED"
+                                        ? "bg-rose-50 text-rose-700 border-rose-200"
+                                        : t.status === "COMPLETED"
+                                          ? "bg-blue-50 text-blue-700 border-blue-200"
+                                          : "bg-amber-50 text-amber-700 border-amber-200"
+                                  }`}
+                                >
+                                  {t.status}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 align-middle w-[15%] text-xs font-semibold text-slate-700">
+                                {t.dueDate ? (
+                                  <span className="text-rose-600 font-semibold inline-flex items-center gap-1">
+                                    <Calendar className="w-3.5 h-3.5" />
+                                    {new Date(t.dueDate).toLocaleDateString("en-IN", {
+                                      month: "short",
+                                      day: "numeric",
+                                      year: "numeric",
+                                    })}
+                                  </span>
+                                ) : (
+                                  <span className="text-slate-450">—</span>
+                                )}
+                              </td>
+                              <td className="px-4 py-2 text-right align-middle">
+                                <div className="flex items-center justify-end gap-1.5">
+                                  <button
+                                    type="button"
+                                    disabled={actionLoading === `task-delete-${t.id}`}
+                                    onClick={() => handleDeleteTask(t.id)}
+                                    className="px-2 py-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 disabled:opacity-50 flex items-center justify-center"
+                                    title="Delete task"
+                                  >
+                                    {actionLoading === `task-delete-${t.id}` ? (
+                                      <Loader2 className="w-3 h-3 animate-spin" />
+                                    ) : (
+                                      <Trash2 className="w-3 h-3" />
+                                    )}
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 )}
 
@@ -3518,7 +3571,7 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
 
           {/* ────────────────── MEDIA GALLERY ────────────────── */}
           {activeTab === "gallery" && (
-            <AdminPageShell>
+            <AdminPageShell className="h-full flex flex-col min-h-0 overflow-hidden">
               <AdminPageHeader
                 title="Academy Media Gallery (cPanel Storage)"
                 description="Manage photos for the public gallery — view, print, download, edit, or remove."
@@ -3541,7 +3594,7 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                 }
               />
 
-              <AdminPageBody>
+              <AdminPageBody className="flex-1 min-h-0 flex flex-col overflow-hidden">
                 {filteredGallery.length === 0 ? (
                   <AdminListEmpty
                     message={
@@ -3551,70 +3604,77 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                     }
                   />
                 ) : (
-                  <AdminRecordList>
-                    {galleryPagination.paginatedItems.map((g) => (
-                      <div key={g.id} className={adminListRowClass}>
-                        <img
-                          src={resolveStorageUrl(g.imageUrl)}
-                          alt=""
-                          className="w-14 h-14 rounded-xl object-cover border border-slate-200 shrink-0"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex flex-wrap items-center gap-2 mb-1">
-                            <span className="px-2 py-0.5 rounded-md bg-sky-50 text-sky-700 text-4xs font-extrabold uppercase border border-sky-200 shrink-0">
-                              {g.type}
-                            </span>
-                            <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-4xs font-extrabold uppercase border border-emerald-200 shrink-0">
-                              Public gallery
-                            </span>
-                          </div>
-                          <p className="font-bold text-sm text-slate-800">
-                            {g.title || "Academy Activity"}
-                          </p>
-                          {g.createdAt && (
-                            <p className="text-2xs text-slate-500 mt-0.5">
-                              {new Date(g.createdAt).toLocaleString("en-IN", {
-                                month: "short",
-                                day: "numeric",
-                                year: "numeric",
-                              })}
-                            </p>
-                          )}
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2 shrink-0">
-                          <GalleryItemActions
-                            imageUrl={g.imageUrl}
-                            title={g.title || "Academy Activity"}
-                            variant="admin"
-                            onEdit={() => openGalleryEdit(g)}
-                          />
-                          <button
-                            type="button"
-                            disabled={actionLoading === `gallery-delete-${g.id}`}
-                            onClick={() => handleDeleteGallery(g.id)}
-                            className="px-3 py-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 disabled:opacity-50 flex items-center justify-center"
-                            title="Delete photo"
-                          >
-                            {actionLoading === `gallery-delete-${g.id}` ? (
-                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            ) : (
-                              <Trash2 className="w-3.5 h-3.5" />
-                            )}
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                    <AdminListPagination
-                      rangeStart={galleryPagination.rangeStart}
-                      rangeEnd={galleryPagination.rangeEnd}
-                      total={filteredGallery.length}
-                      safePage={galleryPagination.safePage}
-                      totalPages={galleryPagination.totalPages}
-                      pageNumbers={galleryPagination.pageNumbers}
-                      onPageChange={galleryPagination.setCurrentPage}
-                      itemLabel="photos"
-                    />
-                  </AdminRecordList>
+                  <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex-1 min-h-0 flex flex-col">
+                    <div className="overflow-x-auto flex-1 min-h-0 overflow-y-auto modern-scrollbar">
+                      <table className="w-full text-left text-sm whitespace-nowrap">
+                        <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium text-xs sticky top-0 z-10">
+                          <tr>
+                            <th className="px-4 py-3 font-semibold w-[35%]">Title</th>
+                            <th className="px-4 py-3 font-semibold w-[20%]">Date Added</th>
+                            <th className="px-4 py-3 font-semibold text-right">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {filteredGallery.map((g) => (
+                            <tr key={g.id} className="hover:bg-slate-50/80 transition-colors">
+                              <td className="px-4 py-3 align-middle w-[35%] min-w-0">
+                                <span className="font-bold text-sm text-slate-800 truncate block max-w-md">
+                                  {g.title || "Academy Activity"}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 align-middle text-xs text-slate-500 w-[20%]">
+                                {g.createdAt ? (
+                                  new Date(g.createdAt).toLocaleDateString("en-IN", {
+                                    month: "short",
+                                    day: "numeric",
+                                    year: "numeric",
+                                  })
+                                ) : (
+                                  <span className="text-slate-450">—</span>
+                                )}
+                              </td>
+                              <td className="px-4 py-2 text-right align-middle">
+                                <div className="flex items-center justify-end gap-1.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setViewerImage(g.imageUrl);
+                                      setViewerTitle(g.title || "Academy Activity");
+                                    }}
+                                    className="px-3 py-1.5 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100 flex items-center gap-1 font-bold text-2xs transition"
+                                  >
+                                    <Eye className="w-3 h-3" />
+                                    View
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => openGalleryEdit(g)}
+                                    className="px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100 flex items-center gap-1 font-bold text-2xs transition"
+                                  >
+                                    <Edit2 className="w-3 h-3" />
+                                    Edit
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={actionLoading === `gallery-delete-${g.id}`}
+                                    onClick={() => handleDeleteGallery(g.id)}
+                                    className="px-2 py-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 disabled:opacity-50 flex items-center justify-center transition"
+                                    title="Delete photo"
+                                  >
+                                    {actionLoading === `gallery-delete-${g.id}` ? (
+                                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                    ) : (
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    )}
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                 )}
               </AdminPageBody>
 
@@ -3928,6 +3988,53 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {viewerImage && (
+        <div
+          className="fixed inset-0 z-[100] flex flex-col bg-slate-900/60 backdrop-blur-sm p-3 sm:p-6 text-slate-800"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Viewing ${viewerTitle}`}
+          onClick={() => setViewerImage(null)}
+        >
+          <div
+            className="flex flex-col flex-1 min-h-0 max-w-6xl w-full mx-auto bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-slate-200 bg-slate-50 shrink-0">
+              <h3 className="font-sans font-extrabold text-sm text-slate-900 truncate pr-2">{viewerTitle}</h3>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => handlePrintViewer(resolveStorageUrl(viewerImage))}
+                  className="px-3 py-1.5 rounded-lg font-bold text-2xs flex items-center gap-1 border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 transition"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  Print
+                </button>
+                <button
+                  type="button"
+                  disabled={viewerDownloading}
+                  onClick={() => handleDownloadViewer(resolveStorageUrl(viewerImage), viewerTitle)}
+                  className="px-3 py-1.5 rounded-lg font-bold text-2xs flex items-center gap-1 border border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 disabled:opacity-50 transition"
+                >
+                  {viewerDownloading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+                  Download
+                </button>
+                <ModalCloseButton onClick={() => setViewerImage(null)} />
+              </div>
+            </div>
+
+            <div className="relative flex-1 min-h-0 bg-slate-100 flex items-center justify-center p-4">
+              <img
+                src={resolveStorageUrl(viewerImage)}
+                alt={viewerTitle}
+                className="max-w-full max-h-full object-contain rounded-lg shadow-md"
+              />
+            </div>
           </div>
         </div>
       )}
