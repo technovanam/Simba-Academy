@@ -52,6 +52,7 @@ import {
   FileText,
   Settings,
   Bell,
+  Users,
 } from "lucide-react";
 
 const NOTIFICATION_POLL_MS = 12_000;
@@ -60,7 +61,7 @@ export function meta({}: Route.MetaArgs) {
   return [{ title: "Teacher Dashboard | Simba Academy" }];
 }
 
-type TabType = "overview" | "tasks" | "library" | "planner" | "notifications" | "settings";
+type TabType = "overview" | "tasks" | "library" | "planner" | "notifications" | "settings" | "students";
 
 const TEACHER_TAB_META: Record<TabType, { title: string; subtitle: string }> = {
   overview: { title: "Dashboard", subtitle: "Your instructor workspace overview" },
@@ -69,6 +70,7 @@ const TEACHER_TAB_META: Record<TabType, { title: string; subtitle: string }> = {
   planner: { title: "Lesson Planner", subtitle: "View lesson plans from admin" },
   notifications: { title: "Notifications", subtitle: "Tasks, story books, and lesson plan alerts" },
   settings: { title: "Account Settings", subtitle: "Profile and security preferences" },
+  students: { title: "Students", subtitle: "Students registered in your class" },
 };
 
 export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabType }) {
@@ -82,6 +84,16 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
     setUser(getUser());
     setToken(getToken());
   }, []);
+
+  useEffect(() => {
+    if (!token) return;
+    api.profile(token)
+      .then((fresh) => {
+        setUser(fresh);
+        saveSession(token, fresh);
+      })
+      .catch(console.error);
+  }, [token]);
 
   // Navigation State
   const [activeTab, setActiveTab] = useState<TabType>(initialTab ?? "overview");
@@ -104,7 +116,9 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
   const [tasks, setTasks] = useState<Task[]>([]);
   const [books, setBooks] = useState<StoryBook[]>([]);
   const [lessonPlans, setLessonPlans] = useState<LessonPlan[]>([]);
-  const [profile, setProfile] = useState<AuthUser | null>(null);
+  const [profile, setProfile] = useState<AuthUser[] | AuthUser | null>(null);
+  const [classStudents, setClassStudents] = useState<AuthUser[]>([]);
+  const [studentSearch, setStudentSearch] = useState("");
 
   // Loading & Feedback States
   const [loading, setLoading] = useState(true);
@@ -225,6 +239,9 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
         const allPlans = await api.getTeacherLessonPlans(token);
         setLessonPlans(allPlans);
         setLessonPlanViewer(null);
+      } else if (tab === "students") {
+        const students = await api.getTeacherStudents(token);
+        setClassStudents(students);
       } else if (tab === "settings") {
         const freshProfile = await api.profile(token);
         setProfile(freshProfile);
@@ -383,6 +400,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
             { id: "tasks", label: "Assigned Tasks", icon: Calendar },
             { id: "library", label: "Story Library", icon: Book },
             { id: "planner", label: "Lesson Planner", icon: Compass },
+            { id: "students", label: "Students", icon: Users },
             { id: "notifications", label: "Notifications", icon: Bell },
             { id: "settings", label: "Settings", icon: Settings },
           ].map((tab) => {
@@ -395,8 +413,8 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                 onClick={() => goToTab(tab.id as TabType)}
                   className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-bold text-xs tracking-wider transition-all duration-300 relative group/btn border ${
                     isActive
-                      ? "bg-white text-slate-900 border-slate-200/80 shadow-sm lg:translate-x-1"
-                      : "text-slate-600 border-transparent hover:bg-slate-200/60 hover:text-slate-900 lg:hover:translate-x-1"
+                       ? "bg-white text-slate-900 border-slate-200/80 shadow-sm lg:translate-x-1"
+                       : "text-slate-600 border-transparent hover:bg-slate-200/60 hover:text-slate-900 lg:hover:translate-x-1"
                   }`}
               >
                 <div className="flex items-center gap-3 py-1">
@@ -983,7 +1001,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                 <TeacherSettingsPanel
                   token={token}
                   user={user}
-                  profile={profile}
+                  profile={profile as AuthUser}
                   profileLoading={loading}
                   onNotify={setMessage}
                   onError={setError}
@@ -992,6 +1010,76 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                     setProfile(updated);
                   }}
                 />
+              )}
+
+              {/* ────────────────── STUDENTS Tab ────────────────── */}
+              {activeTab === "students" && (
+                <AdminPageShell>
+                  <AdminPageHeader
+                    title={user?.studentClass ? `${user.studentClass} Students` : "Students"}
+                    description={user?.studentClass ? `View students registered in the ${user.studentClass} class.` : "View your class students."}
+                    actions={
+                      <AdminSearchInput
+                        value={studentSearch}
+                        onChange={setStudentSearch}
+                        placeholder="Search students…"
+                        ariaLabel="Search students"
+                      />
+                    }
+                  />
+                  <AdminPageBody>
+                    {!user?.studentClass ? (
+                      <AdminListEmpty message="You are not currently assigned to a class. Please contact the administrator to assign a class to your account." />
+                    ) : classStudents.filter(s => 
+                      s.name.toLowerCase().includes(studentSearch.toLowerCase()) || 
+                      s.email.toLowerCase().includes(studentSearch.toLowerCase())
+                    ).length === 0 ? (
+                      <AdminListEmpty message={`No ${user?.studentClass} students found matching your search.`} />
+                    ) : (
+                      <AdminRecordList>
+                        {classStudents
+                          .filter(s => 
+                            s.name.toLowerCase().includes(studentSearch.toLowerCase()) || 
+                            s.email.toLowerCase().includes(studentSearch.toLowerCase())
+                          )
+                          .map((student) => (
+                            <div key={student.id} className={adminListRowClass}>
+                              <div className="flex-1 min-w-[180px] space-y-0.5">
+                                <div className="flex flex-wrap items-center gap-2 mb-1">
+                                  <span className="px-2 py-0.5 rounded-md text-4xs font-extrabold uppercase border bg-green-50 text-green-700 border-green-200">
+                                    Student
+                                  </span>
+                                  {student.status && (
+                                    <span className={`px-2 py-0.5 rounded-md text-4xs font-extrabold uppercase border ${
+                                      student.status === "ACTIVE" 
+                                        ? "bg-emerald-50 text-emerald-700 border-emerald-200" 
+                                        : "bg-rose-50 text-rose-700 border-rose-200"
+                                    }`}>
+                                      {student.status}
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="font-bold text-sm text-slate-800">{student.name}</p>
+                                <p className="text-2xs text-slate-600 font-medium">{student.email}</p>
+                                {student.phone && (
+                                  <p className="text-2xs text-slate-500 font-semibold">Phone: {student.phone}</p>
+                                )}
+                                {student.createdAt && (
+                                  <p className="text-[10px] text-slate-400 font-medium">
+                                    Registered: {new Date(student.createdAt).toLocaleDateString("en-IN", {
+                                      month: "short",
+                                      day: "numeric",
+                                      year: "numeric"
+                                    })}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                      </AdminRecordList>
+                    )}
+                  </AdminPageBody>
+                </AdminPageShell>
               )}
 
             </div>

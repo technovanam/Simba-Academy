@@ -14,6 +14,7 @@ import { ConfirmDialog } from "./ConfirmDialog";
 import { AccountStatusBadge } from "./AccountStatusBadge";
 import { AdminPageBody, AdminPageHeader, AdminPageShell } from "./AdminPageShell";
 import { adminListContainerClass, adminListRowStackClass } from "./AdminListUi";
+import { STUDENT_CLASS_OPTIONS } from "../lib/constants";
 import {
   ChevronDown,
   ChevronLeft,
@@ -77,7 +78,7 @@ const SORT_OPTIONS: { id: UserListSort; label: string }[] = [
   { id: "NAME_DESC", label: "Name Z–A" },
 ];
 
-const emptyTeacherForm = { firstName: "", lastName: "", email: "", phone: "" };
+const emptyTeacherForm = { firstName: "", lastName: "", email: "", phone: "", studentClass: "" };
 
 function PillSelect<T extends string>({
   value,
@@ -306,6 +307,7 @@ export function AdminPeoplePanel({
         lastName: teacherForm.lastName.trim(),
         email: teacherForm.email.trim(),
         phone: teacherForm.phone.trim() || undefined,
+        studentClass: teacherForm.studentClass || null,
       });
       setRecords((prev) => [created, ...prev]);
       if (created.emailSent) {
@@ -332,6 +334,7 @@ export function AdminPeoplePanel({
       lastName: teacher.lastName ?? teacher.name.split(" ").slice(1).join(" ") ?? "",
       email: teacher.email,
       phone: teacher.phone ?? "",
+      studentClass: teacher.studentClass ?? "",
     });
   }
 
@@ -345,6 +348,7 @@ export function AdminPeoplePanel({
         lastName: editForm.lastName.trim(),
         email: editForm.email.trim(),
         phone: editForm.phone.trim() || null,
+        studentClass: editForm.studentClass || null,
       });
       setRecords((prev) => prev.map((r) => (r.id === editingTeacher.id ? { ...r, ...updated } : r)));
       onNotify("Teacher profile updated successfully.");
@@ -438,6 +442,11 @@ export function AdminPeoplePanel({
                 </div>
                 <p className="font-bold text-sm text-slate-800 break-words">{u.name}</p>
                 <p className="text-2xs text-slate-600 font-medium break-all">{u.email}</p>
+                {u.role === "TEACHER" && u.studentClass ? (
+                  <p className="text-2xs font-semibold text-slate-700">
+                    Class: <span className="text-[#8AC926] font-bold">{u.studentClass}</span>
+                  </p>
+                ) : null}
                 {u.phone ? (
                   <p className="text-2xs text-slate-500 inline-flex items-center gap-1 break-all">
                     <Phone className="w-3 h-3 shrink-0" /> {u.phone}
@@ -627,6 +636,21 @@ export function AdminPeoplePanel({
             onChange={(e) => setTeacherForm({ ...teacherForm, phone: e.target.value })}
             className="w-full rounded-xl bg-white border border-slate-200 px-4 py-3 text-xs text-slate-900 outline-none focus:border-[#8AC926]"
           />
+          <div>
+            <label className="block text-slate-700 font-bold mb-1 text-2xs uppercase tracking-wider">Assigned Class (Optional)</label>
+            <select
+              value={teacherForm.studentClass}
+              onChange={(e) => setTeacherForm({ ...teacherForm, studentClass: e.target.value })}
+              className="w-full rounded-xl bg-white border border-slate-200 px-4 py-3 text-xs text-slate-900 outline-none focus:border-[#8AC926]"
+            >
+              <option value="">None / Floating Teacher</option>
+              {STUDENT_CLASS_OPTIONS.map((opt) => (
+                <option key={opt.id} value={opt.id}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
           <p className="text-2xs text-slate-500 font-medium">
             A secure temporary password will be generated automatically and emailed to the teacher via Resend.
           </p>
@@ -682,6 +706,21 @@ export function AdminPeoplePanel({
             onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
             className="w-full rounded-xl bg-white border border-slate-200 px-4 py-3 text-xs outline-none focus:border-[#8AC926]"
           />
+          <div>
+            <label className="block text-slate-700 font-bold mb-1 text-2xs uppercase tracking-wider">Assigned Class (Optional)</label>
+            <select
+              value={editForm.studentClass}
+              onChange={(e) => setEditForm({ ...editForm, studentClass: e.target.value })}
+              className="w-full rounded-xl bg-white border border-slate-200 px-4 py-3 text-xs text-slate-900 outline-none focus:border-[#8AC926]"
+            >
+              <option value="">None / Floating Teacher</option>
+              {STUDENT_CLASS_OPTIONS.map((opt) => (
+                <option key={opt.id} value={opt.id}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
           {editingTeacher?.employeeId && (
             <p className="text-2xs text-slate-500 font-semibold">Employee ID: {editingTeacher.employeeId}</p>
           )}

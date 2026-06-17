@@ -252,4 +252,39 @@ router.patch("/tasks/:id/proof", validate(submitTaskProofSchema), async (req, re
   }
 });
 
+// ── List Students in Teacher's Class ───────────────────────────────────
+router.get("/students", async (req, res, next) => {
+  try {
+    const teacherId = req.user!.userId;
+    const teacher = await prisma.user.findFirst({
+      where: { id: teacherId, isDeleted: false },
+      select: { studentClass: true },
+    });
+    if (!teacher || !teacher.studentClass) {
+      return res.json([]);
+    }
+    const students = await prisma.user.findMany({
+      where: {
+        role: "STUDENT",
+        studentClass: teacher.studentClass,
+        isDeleted: false,
+      },
+      select: {
+        id: true,
+        name: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        phone: true,
+        createdAt: true,
+        status: true,
+      },
+      orderBy: { name: "asc" },
+    });
+    res.json(students);
+  } catch (err) {
+    next(err);
+  }
+});
+
 export default router;

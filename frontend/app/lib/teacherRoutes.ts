@@ -1,4 +1,4 @@
-export type TeacherTab = "overview" | "tasks" | "library" | "planner" | "notifications" | "settings";
+export type TeacherTab = "overview" | "tasks" | "library" | "planner" | "notifications" | "settings" | "students";
 
 export const TEACHER_TAB_SECTIONS: Record<TeacherTab, string> = {
   overview: "dashboard",
@@ -7,6 +7,7 @@ export const TEACHER_TAB_SECTIONS: Record<TeacherTab, string> = {
   planner: "planner",
   notifications: "notifications",
   settings: "settings",
+  students: "students",
 };
 
 export const TEACHER_TAB_PATHS: Record<TeacherTab, string> = Object.fromEntries(
@@ -32,6 +33,7 @@ export function teacherTabTitle(tab: TeacherTab): string {
     planner: "Lesson Planner",
     notifications: "Notifications",
     settings: "Account Settings",
+    students: "Students",
   };
   return titles[tab];
 }

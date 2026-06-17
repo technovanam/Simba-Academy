@@ -96,6 +96,7 @@ export const createTeacherSchema = z.object({
   lastName: z.string().min(1, "Last name is required"),
   email: z.string().email("Invalid email address"),
   phone: z.string().min(7, "Valid phone number required").optional(),
+  studentClass: z.enum(STUDENT_CLASS_LEVELS).optional().nullable(),
 });
 
 export const updateTeacherSchema = z.object({
@@ -104,6 +105,7 @@ export const updateTeacherSchema = z.object({
   email: z.string().email().optional(),
   phone: z.string().min(7).optional().nullable(),
   status: z.enum(["ACTIVE", "DEACTIVATED"]).optional(),
+  studentClass: z.enum(STUDENT_CLASS_LEVELS).optional().nullable(),
 });
 
 export const updateUserSchema = z.object({

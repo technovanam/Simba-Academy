@@ -167,7 +167,7 @@ export const api = {
 
   createTeacher: (
     token: string,
-    body: { firstName: string; lastName: string; email: string; phone?: string }
+    body: { firstName: string; lastName: string; email: string; phone?: string; studentClass?: string | null }
   ) =>
     request<AuthUser & { emailSent?: boolean; emailWarning?: string }>("/api/admin/teachers", {
       method: "POST",
@@ -183,6 +183,7 @@ export const api = {
       email: string;
       phone: string | null;
       status: AccountStatus;
+      studentClass: string | null;
     }>
   ) =>
     request<AuthUser>(`/api/admin/teachers/${id}`, {
@@ -518,6 +519,9 @@ export const api = {
 
   getTeacherTasks: (token: string) =>
     request<Task[]>("/api/teacher/tasks", {}, token),
+
+  getTeacherStudents: (token: string) =>
+    request<AuthUser[]>("/api/teacher/students", {}, token),
 
   submitTaskProof: (
     token: string,

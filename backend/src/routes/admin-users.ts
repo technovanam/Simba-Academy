@@ -25,6 +25,7 @@ const userListSelect = {
   email: true,
   role: true,
   phone: true,
+  studentClass: true,
   employeeId: true,
   status: true,
   mustChangePassword: true,
@@ -164,7 +165,7 @@ router.get("/teachers", async (req, res, next) => {
 // ── Create Teacher ────────────────────────────────────────────────────
 router.post("/teachers", validate(createTeacherSchema), async (req, res, next) => {
   try {
-    const { firstName, lastName, email, phone } = req.body;
+    const { firstName, lastName, email, phone, studentClass } = req.body;
     const normalizedEmail = email.toLowerCase().trim();
 
     const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } });
@@ -185,6 +186,7 @@ router.post("/teachers", validate(createTeacherSchema), async (req, res, next) =
         email: normalizedEmail,
         password: hashedPassword,
         phone: phone?.trim() || null,
+        studentClass: studentClass || null,
         role: "TEACHER",
         employeeId,
         status: "ACTIVE",

@@ -50,4 +50,5 @@ export default [
   route("teacher/planner", "routes/teacher/planner.tsx"),
   route("teacher/notifications", "routes/teacher/notifications.tsx"),
   route("teacher/settings", "routes/teacher/settings.tsx"),
+  route("teacher/students", "routes/teacher/students.tsx"),
 ] satisfies RouteConfig;
