@@ -810,8 +810,8 @@ export interface Payment {
   userId: string;
   courseId?: string | null;
   createdAt: string;
-  user?: { name: string; email: string } | null;
-  course?: { title: string } | null;
+  user?: { name: string; email: string; studentClass?: string | null } | null;
+  course?: { title: string; level?: string | null } | null;
 }
 
 export interface Task {

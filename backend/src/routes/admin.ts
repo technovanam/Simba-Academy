@@ -517,8 +517,8 @@ router.get("/payments", async (_req, res, next) => {
     const payments = await prisma.payment.findMany({
       orderBy: { createdAt: "desc" },
       include: {
-        user: { select: { name: true, email: true } },
-        course: { select: { title: true } },
+        user: { select: { name: true, email: true, studentClass: true } },
+        course: { select: { title: true, level: true } },
       },
     });
     res.json(payments);

@@ -2063,14 +2063,14 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                                         title: m.isTask && m.status === "REJECTED" ? "Rejection Reason" : "Teacher Comments",
                                         message: m.description!
                                       })}
-                                      className={`text-[9px] font-bold uppercase tracking-wider hover:underline cursor-pointer flex items-center gap-1 transition-colors px-2 py-0.5 rounded ${
+                                      className={`p-1 rounded-lg transition-colors border cursor-pointer hover:opacity-80 flex items-center justify-center shrink-0 ${
                                         m.isTask && m.status === "REJECTED"
-                                          ? "text-rose-700 hover:text-rose-800 bg-rose-50 border border-rose-100"
-                                          : "text-slate-600 hover:text-slate-800 bg-slate-50 border border-slate-200"
+                                          ? "text-rose-700 bg-rose-50 border-rose-200 hover:bg-rose-100"
+                                          : "text-slate-600 bg-slate-50 border-slate-200 hover:bg-slate-100"
                                       }`}
+                                      title={m.isTask && m.status === "REJECTED" ? "Rejection Reason" : "Teacher Comments"}
                                     >
-                                      <Eye className="w-3 h-3" />
-                                      View
+                                      <ExternalLink className="w-3.5 h-3.5" />
                                     </button>
                                   )}
                                 </div>

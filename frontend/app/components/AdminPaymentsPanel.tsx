@@ -37,6 +37,7 @@ export function AdminPaymentsPanel({ token, onError }: AdminPaymentsPanelProps) 
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<PaymentStatusFilter>("ALL");
+  const [classFilter, setClassFilter] = useState("ALL");
   const [viewPayment, setViewPayment] = useState<Payment | null>(null);
 
   const loadPayments = useCallback(async () => {
@@ -55,16 +56,40 @@ export function AdminPaymentsPanel({ token, onError }: AdminPaymentsPanelProps) 
     loadPayments();
   }, [loadPayments]);
 
+  const getPaymentClass = (p: Payment) => p.course?.level || p.user?.studentClass;
+
+  const classOptions = [
+    { id: "ALL", label: "All classes" },
+    { id: "Playgroup", label: "Playgroup" },
+    { id: "Pre-KG", label: "Pre-KG" },
+    { id: "LKG", label: "LKG" },
+    { id: "UKG", label: "UKG" },
+    ...Array.from(
+      new Set(
+        payments
+          .map(getPaymentClass)
+          .filter(Boolean)
+          .filter((c) => !["Playgroup", "Pre-KG", "LKG", "UKG"].includes(c!))
+      )
+    ).map((level) => ({
+      id: level!,
+      label: level!,
+    })),
+  ];
+
   const filtered = payments.filter((p) => {
     const q = search.toLowerCase();
+    const pClass = getPaymentClass(p) || "";
     const matchesSearch =
       (p.user?.name ?? "").toLowerCase().includes(q) ||
       (p.user?.email ?? "").toLowerCase().includes(q) ||
       (p.gatewayPaymentId ?? "").toLowerCase().includes(q) ||
       (p.paymentSessionId ?? "").toLowerCase().includes(q) ||
-      (p.course?.title ?? "").toLowerCase().includes(q);
+      (p.course?.title ?? "").toLowerCase().includes(q) ||
+      pClass.toLowerCase().includes(q);
     const matchesStatus = statusFilter === "ALL" || p.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesClass = classFilter === "ALL" || pClass === classFilter;
+    return matchesSearch && matchesStatus && matchesClass;
   });
 
   const sorted = sortPaymentsNewestFirst(filtered);
@@ -91,6 +116,12 @@ export function AdminPaymentsPanel({ token, onError }: AdminPaymentsPanelProps) 
               options={STATUS_FILTERS}
               onChange={setStatusFilter}
               ariaLabel="Payment status filter"
+            />
+            <PillSelect
+              value={classFilter}
+              options={classOptions}
+              onChange={setClassFilter}
+              ariaLabel="Class filter"
             />
           </>
         }
@@ -140,7 +171,7 @@ export function AdminPaymentsPanel({ token, onError }: AdminPaymentsPanelProps) 
                 <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium text-xs sticky top-0 z-10">
                   <tr>
                     <th className="px-4 py-3 font-semibold">Payer</th>
-                    <th className="px-4 py-3 font-semibold">Course</th>
+                    <th className="px-4 py-3 font-semibold">Class</th>
                     <th className="px-4 py-3 font-semibold">Amount</th>
                     <th className="px-4 py-3 font-semibold">Status</th>
                     <th className="px-4 py-3 font-semibold">Date</th>
@@ -156,12 +187,17 @@ export function AdminPaymentsPanel({ token, onError }: AdminPaymentsPanelProps) 
                           <span className="text-2xs text-slate-500 font-medium">{p.user?.email ?? "—"}</span>
                         </div>
                       </td>
-                      <td className="px-4 py-3 align-middle text-xs text-slate-650 font-medium">
-                        {p.course?.title ? (
-                          <span>{p.course.title}</span>
-                        ) : (
-                          <span className="text-slate-450">—</span>
-                        )}
+                      <td className="px-4 py-3 align-middle text-xs font-semibold">
+                        {(() => {
+                          const cls = p.course?.level || p.user?.studentClass;
+                          return cls ? (
+                            <span className="px-2.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-100 font-extrabold text-[10px] uppercase">
+                              {cls}
+                            </span>
+                          ) : (
+                            <span className="text-slate-400 font-medium">—</span>
+                          );
+                        })()}
                       </td>
                       <td className="px-4 py-3 align-middle text-sm font-extrabold text-emerald-700">
                         ₹{p.amount.toLocaleString("en-IN")}
@@ -237,6 +273,15 @@ export function AdminPaymentsPanel({ token, onError }: AdminPaymentsPanelProps) 
                   <dd className="font-semibold text-slate-800">{viewPayment.course.title}</dd>
                 </div>
               )}
+              {(() => {
+                const cls = viewPayment.course?.level || viewPayment.user?.studentClass;
+                return cls ? (
+                  <div>
+                    <dt className="text-2xs font-bold text-slate-500 uppercase">Class</dt>
+                    <dd className="font-semibold text-slate-850 uppercase">{cls}</dd>
+                  </div>
+                ) : null;
+              })()}
               <div>
                 <dt className="text-2xs font-bold text-slate-500 uppercase">Payment session ID</dt>
                 <dd className="text-2xs font-mono text-slate-700 break-all">
