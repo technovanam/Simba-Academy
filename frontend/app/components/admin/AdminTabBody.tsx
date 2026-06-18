@@ -64,6 +64,8 @@ import {
   ChevronDown,
   Home,
   MoreVertical,
+  RotateCcw,
+  X,
 } from "lucide-react";
 import { AdminPeoplePanel } from "../AdminPeoplePanel";
 import { AdminPaymentsPanel } from "../AdminPaymentsPanel";
@@ -210,6 +212,7 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [alertModal, setAlertModal] = useState<{ title: string; message: string } | null>(null);
   const [viewReasonModal, setViewReasonModal] = useState<{ title: string; message: string } | null>(null);
+  const [viewDetailsModal, setViewDetailsModal] = useState<CombinedApprovalItem | null>(null);
   const [bookSearch, setBookSearch] = useState("");
   const [inquirySearch, setInquirySearch] = useState("");
   const [leadView, setLeadView] = useState<{
@@ -621,9 +624,17 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
     if (!token || isActionBusy(actionLoading)) return;
     setActionLoading(`task-approve-${taskId}`);
     try {
+      const task = tasks.find(t => t.id === taskId);
+      let newProofDesc: string | undefined = undefined;
+      
+      if (!approve) {
+        const reason = rejectReason || "Rejected by Admin";
+        newProofDesc = task?.proofDesc ? `${task.proofDesc}\n\n--- Admin Rejection ---\n${reason}` : `--- Admin Rejection ---\n${reason}`;
+      }
+
       const updated = await api.approveTask(token, taskId, {
         status: approve ? "APPROVED" : "REJECTED",
-        proofDesc: approve ? "Approved by Admin" : (rejectReason || "Rejected by Admin"),
+        ...(newProofDesc !== undefined && { proofDesc: newProofDesc }),
       });
       setTasks((prev) => prev.map((t) => (t.id === taskId ? updated : t)));
       setMessage(approve ? "Task proof approved!" : "Task proof rejected.");
@@ -634,6 +645,29 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
     }
   }
 
+  async function handleRevokeTaskProof(taskId: string) {
+    if (!token || isActionBusy(actionLoading)) return;
+    setActionLoading(`task-approve-${taskId}`);
+    try {
+      const task = tasks.find(t => t.id === taskId);
+      let cleanProofDesc: string | undefined = undefined;
+      
+      if (task?.proofDesc && task.proofDesc.includes("--- Admin Rejection ---")) {
+        cleanProofDesc = task.proofDesc.split("\n\n--- Admin Rejection ---")[0];
+      }
+
+      const updated = await api.approveTask(token, taskId, {
+        status: "COMPLETED",
+        ...(cleanProofDesc !== undefined && { proofDesc: cleanProofDesc }),
+      });
+      setTasks((prev) => prev.map((t) => (t.id === taskId ? updated : t)));
+      setMessage("Task review revoked and set back to pending.");
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Failed to revoke task review.");
+    } finally {
+      setActionLoading(null);
+    }
+  }
   async function handleDeleteTask(taskId: string) {
     if (!token || isActionBusy(actionLoading)) return;
     setConfirmDelete({
@@ -1231,6 +1265,8 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
     createdAt: string;
     isTask: boolean;
     status?: string;
+    originalTask?: Task;
+    originalMaterial?: Material;
   }
 
   const combinedApprovals: CombinedApprovalItem[] = [
@@ -1245,12 +1281,13 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
       isApproved: m.isApproved,
       createdAt: m.createdAt,
       isTask: false,
+      originalMaterial: m,
     })),
     ...tasks
       .filter((t) => t.proofUrl)
       .map((t) => ({
         id: t.id,
-        title: `[Task Proof] ${t.title}`,
+        title: t.title, // Removed [Task Proof] prefix
         description: t.proofDesc,
         type: "TASK_PROOF",
         fileUrl: t.proofUrl!,
@@ -1260,6 +1297,7 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
         createdAt: t.proofSubmittedAt || t.updatedAt || t.createdAt,
         isTask: true,
         status: t.status,
+        originalTask: t,
       })),
   ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
@@ -1996,15 +2034,9 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                               {/* Column 1: Material Uploaded (title) */}
                               <td className="px-4 py-3 align-middle w-[30%] min-w-0">
                                 <div className="flex flex-col space-y-1">
-                                  <a
-                                    href={resolveStorageUrl(m.fileUrl)}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="font-bold text-sm text-[#8AC926] hover:underline inline-flex items-center gap-1.5 break-all whitespace-normal"
-                                  >
-                                    <span>{m.title}</span>
-                                    <ExternalLink className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                                  </a>
+                                  <span className="font-bold text-sm text-[#8AC926] break-all whitespace-normal">
+                                    {m.title}
+                                  </span>
                                 </div>
                               </td>
                               {/* Column 2: Uploader Name & Email */}
@@ -2056,39 +2088,31 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                                       {m.isApproved ? "Approved" : "Pending Review"}
                                     </span>
                                   )}
-                                  {m.description && (
-                                    <button
-                                      type="button"
-                                      onClick={() => setViewReasonModal({
-                                        title: m.isTask && m.status === "REJECTED" ? "Rejection Reason" : "Teacher Comments",
-                                        message: m.description!
-                                      })}
-                                      className={`p-1 rounded-lg transition-colors border cursor-pointer hover:opacity-80 flex items-center justify-center shrink-0 ${
-                                        m.isTask && m.status === "REJECTED"
-                                          ? "text-rose-700 bg-rose-50 border-rose-200 hover:bg-rose-100"
-                                          : "text-slate-600 bg-slate-50 border-slate-200 hover:bg-slate-100"
-                                      }`}
-                                      title={m.isTask && m.status === "REJECTED" ? "Rejection Reason" : "Teacher Comments"}
-                                    >
-                                      <ExternalLink className="w-3.5 h-3.5" />
-                                    </button>
-                                  )}
                                 </div>
                               </td>
                               <td className="px-4 py-2 text-right align-middle">
                                 <div className="flex items-center justify-end gap-1.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => setViewDetailsModal(m)}
+                                    title="View"
+                                    className="p-1.5 rounded-lg bg-slate-100 border border-slate-200 text-slate-700 hover:bg-slate-200 transition"
+                                  >
+                                    <Eye className="w-4 h-4" />
+                                  </button>
                                   {m.isTask ? (
                                     <>
                                       {(m.status === "COMPLETED" || m.status === "REJECTED") && (
                                         <button
                                           disabled={actionLoading === `task-approve-${m.id}`}
                                           onClick={() => handleApproveTaskProof(m.id, true)}
-                                          className="px-2.5 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 font-bold text-2xs flex items-center gap-1 transition disabled:opacity-50"
+                                          title="Approve"
+                                          className="p-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 transition disabled:opacity-50"
                                         >
                                           {actionLoading === `task-approve-${m.id}` ? (
-                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                            <Loader2 className="w-4 h-4 animate-spin" />
                                           ) : (
-                                            "Approve"
+                                            <Check className="w-4 h-4" />
                                           )}
                                         </button>
                                       )}
@@ -2099,28 +2123,27 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                                             setRejectTaskForm({ id: m.id, reason: "" });
                                             setShowRejectTaskForm(true);
                                           }}
-                                          className="px-2.5 py-1.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 font-bold text-2xs flex items-center gap-1 transition disabled:opacity-50"
+                                          title="Reject"
+                                          className="p-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 transition disabled:opacity-50"
                                         >
                                           {actionLoading === `task-approve-${m.id}` ? (
-                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                            <Loader2 className="w-4 h-4 animate-spin" />
                                           ) : (
-                                            "Reject"
+                                            <X className="w-4 h-4" />
                                           )}
                                         </button>
                                       )}
-                                      {m.status === "APPROVED" && (
+                                      {(m.status === "APPROVED" || m.status === "REJECTED") && (
                                         <button
                                           disabled={actionLoading === `task-approve-${m.id}`}
-                                          onClick={() => {
-                                            setRejectTaskForm({ id: m.id, reason: "" });
-                                            setShowRejectTaskForm(true);
-                                          }}
-                                          className="px-2.5 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100 font-bold text-2xs flex items-center gap-1 transition disabled:opacity-50"
+                                          onClick={() => handleRevokeTaskProof(m.id)}
+                                          title="Revoke"
+                                          className="p-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100 transition disabled:opacity-50"
                                         >
                                           {actionLoading === `task-approve-${m.id}` ? (
-                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                            <Loader2 className="w-4 h-4 animate-spin" />
                                           ) : (
-                                            "Revoke"
+                                            <RotateCcw className="w-4 h-4" />
                                           )}
                                         </button>
                                       )}
@@ -2128,12 +2151,13 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                                         type="button"
                                         disabled={actionLoading === `task-delete-${m.id}`}
                                         onClick={() => handleDeleteTask(m.id)}
-                                        className="px-2.5 py-1.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 font-bold text-2xs flex items-center gap-1 transition disabled:opacity-50"
+                                        title="Delete"
+                                        className="p-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 transition disabled:opacity-50"
                                       >
                                         {actionLoading === `task-delete-${m.id}` ? (
-                                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                          <Loader2 className="w-4 h-4 animate-spin" />
                                         ) : (
-                                          "Delete"
+                                          <Trash2 className="w-4 h-4" />
                                         )}
                                       </button>
                                     </>
@@ -2143,24 +2167,26 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                                         <button
                                           disabled={actionLoading === `material-approve-${m.id}`}
                                           onClick={() => handleApproveMaterial(m.id, true)}
-                                          className="px-2.5 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 font-bold text-2xs flex items-center gap-1 transition disabled:opacity-50"
+                                          title="Approve"
+                                          className="p-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 transition disabled:opacity-50"
                                         >
                                           {actionLoading === `material-approve-${m.id}` ? (
-                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                            <Loader2 className="w-4 h-4 animate-spin" />
                                           ) : (
-                                            "Approve"
+                                            <Check className="w-4 h-4" />
                                           )}
                                         </button>
                                       ) : (
                                         <button
                                           disabled={actionLoading === `material-approve-${m.id}`}
                                           onClick={() => handleApproveMaterial(m.id, false)}
-                                          className="px-2.5 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100 font-bold text-2xs flex items-center gap-1 transition disabled:opacity-50"
+                                          title="Revoke"
+                                          className="p-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100 transition disabled:opacity-50"
                                         >
                                           {actionLoading === `material-approve-${m.id}` ? (
-                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                            <Loader2 className="w-4 h-4 animate-spin" />
                                           ) : (
-                                            "Revoke"
+                                            <RotateCcw className="w-4 h-4" />
                                           )}
                                         </button>
                                       )}
@@ -2168,12 +2194,13 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                                         type="button"
                                         disabled={actionLoading === `material-delete-${m.id}`}
                                         onClick={() => handleDeleteMaterial(m.id)}
-                                        className="px-2.5 py-1.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 font-bold text-2xs flex items-center gap-1 transition disabled:opacity-50"
+                                        title="Delete"
+                                        className="p-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 transition disabled:opacity-50"
                                       >
                                         {actionLoading === `material-delete-${m.id}` ? (
-                                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                          <Loader2 className="w-4 h-4 animate-spin" />
                                         ) : (
-                                          "Delete"
+                                          <Trash2 className="w-4 h-4" />
                                         )}
                                       </button>
                                     </>
@@ -4406,6 +4433,99 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                 type="button"
                 onClick={() => setViewReasonModal(null)}
                 className="px-5 py-2 rounded-xl bg-slate-850 hover:bg-slate-700 text-white font-bold text-2xs uppercase tracking-wider transition shadow-md"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {viewDetailsModal && (
+        <div className="fixed inset-0 z-[100] bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-2xl shadow-2xl border border-slate-200 animate-scale-up text-slate-800 relative max-h-[90vh] overflow-hidden flex flex-col">
+            <ModalCloseButton
+              onClick={() => setViewDetailsModal(null)}
+              className="absolute top-4 right-4"
+            />
+            <h3 className="font-sans text-lg font-extrabold text-slate-900 mb-4 pr-10 shrink-0">
+              {viewDetailsModal.isTask ? "Task Proof Details" : "Learning Material Details"}
+            </h3>
+
+            <div className="space-y-6 overflow-y-auto modern-scrollbar pr-2 flex-1">
+              <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                <p className="font-bold text-slate-900 text-xs mb-1">
+                  {viewDetailsModal.isTask ? "Assigned Task" : "Material"}
+                </p>
+                <div className="flex items-center gap-2 mb-2 flex-wrap">
+                  <span className="font-bold text-[#8AC926] text-sm">{viewDetailsModal.title}</span>
+                  <span className={`px-2 py-0.5 rounded text-4xs font-extrabold uppercase border ${
+                    viewDetailsModal.isApproved || viewDetailsModal.status === "APPROVED"
+                      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                      : viewDetailsModal.status === "REJECTED"
+                      ? "bg-rose-50 text-rose-700 border-rose-200"
+                      : viewDetailsModal.status === "COMPLETED"
+                      ? "bg-blue-50 text-blue-700 border-blue-200"
+                      : "bg-amber-50 text-amber-700 border-amber-200"
+                  }`}>
+                    {viewDetailsModal.isTask ? (viewDetailsModal.status === "COMPLETED" ? "Submitted" : viewDetailsModal.status) : (viewDetailsModal.isApproved ? "Approved" : "Pending Review")}
+                  </span>
+                </div>
+                {viewDetailsModal.isTask && viewDetailsModal.originalTask?.description && (
+                  <p className="text-xs text-slate-600 whitespace-pre-wrap mb-3">{viewDetailsModal.originalTask.description}</p>
+                )}
+                {!viewDetailsModal.isTask && viewDetailsModal.originalMaterial?.description && (
+                  <p className="text-xs text-slate-600 whitespace-pre-wrap mb-3">{viewDetailsModal.originalMaterial.description}</p>
+                )}
+                
+                <div className="flex items-center gap-4 mt-4 pt-3 border-t border-slate-200/60 flex-wrap">
+                  <span className="text-xs font-semibold text-slate-500 flex items-center gap-1">
+                    <Users className="w-3.5 h-3.5 shrink-0" />
+                    By: {viewDetailsModal.uploadedBy?.name || "Admin"} {viewDetailsModal.uploadedBy?.email ? `(${viewDetailsModal.uploadedBy.email})` : ""}
+                  </span>
+                  <span className="text-xs font-semibold text-slate-500 flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5 shrink-0" />
+                    Uploaded: {new Date(viewDetailsModal.createdAt).toLocaleDateString()}
+                  </span>
+                  {viewDetailsModal.isTask && viewDetailsModal.originalTask?.dueDate && (
+                    <span className="text-xs font-semibold text-slate-500 flex items-center gap-1">
+                      <Calendar className="w-3.5 h-3.5 shrink-0" />
+                      Due: {new Date(viewDetailsModal.originalTask.dueDate).toLocaleDateString()}
+                    </span>
+                  )}
+                </div>
+              </div>
+              
+              {(viewDetailsModal.description || viewDetailsModal.fileUrl) && (
+                <div>
+                  <h4 className="text-sm font-bold text-slate-800 mb-2">
+                    {viewDetailsModal.isTask ? (viewDetailsModal.status === "REJECTED" ? "Rejection Reason / Comments" : "Teacher Comments / Proof") : "Uploaded File"}
+                  </h4>
+                  {viewDetailsModal.description && (
+                    <div className={`p-4 rounded-xl border mb-3 ${viewDetailsModal.isTask && viewDetailsModal.status === "REJECTED" ? "bg-rose-50 border-rose-100 text-rose-800" : "bg-slate-50 border-slate-100 text-slate-700"}`}>
+                      <p className="text-xs font-medium whitespace-pre-wrap">{viewDetailsModal.description}</p>
+                    </div>
+                  )}
+                  {viewDetailsModal.fileUrl && (
+                    <a
+                      href={resolveStorageUrl(viewDetailsModal.fileUrl)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs transition shadow-sm"
+                    >
+                      <ExternalLink className="w-4 h-4 text-slate-400" />
+                      View Uploaded {viewDetailsModal.isTask ? "Proof" : "Material"}
+                    </a>
+                  )}
+                </div>
+              )}
+            </div>
+            
+            <div className="mt-4 pt-4 border-t border-slate-100 flex justify-end shrink-0">
+              <button
+                type="button"
+                onClick={() => setViewDetailsModal(null)}
+                className="px-6 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs transition"
               >
                 Close
               </button>

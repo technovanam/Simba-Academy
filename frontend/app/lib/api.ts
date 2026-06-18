@@ -302,7 +302,7 @@ export const api = {
       body: JSON.stringify(body),
     }, token),
 
-  approveTask: (token: string, id: string, body: { status: "APPROVED" | "REJECTED"; proofDesc?: string }) =>
+  approveTask: (token: string, id: string, body: { status: "APPROVED" | "REJECTED" | "COMPLETED"; proofDesc?: string }) =>
     request<Task>(`/api/admin/tasks/${id}/approve`, {
       method: "PATCH",
       body: JSON.stringify(body),
