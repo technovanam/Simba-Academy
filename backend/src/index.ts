@@ -4,6 +4,7 @@ import { prisma } from "./config/database.js";
 import { app, initApp, storagePath } from "./app.js";
 import { startGbpSyncScheduler } from "./services/gbpSyncService.js";
 import { startLessonPlanCleanupScheduler } from "./services/lessonPlanCleanup.js";
+import { initRecurringTasksCron } from "./services/recurringTasks.js";
 
 const PORT = env.PORT;
 
@@ -11,6 +12,7 @@ async function startServer() {
   await initApp();
   startGbpSyncScheduler();
   startLessonPlanCleanupScheduler();
+  initRecurringTasksCron();
 
   const server = app.listen(PORT, () => {
     console.log(`🚀 Simba Academy API running at http://localhost:${PORT}`);

@@ -170,6 +170,16 @@ function isDueDateTodayOrFuture(value: string): boolean {
 }
 
 // ── Task Assignment (Admin) ─────────────────────────────────────────
+export const createRecurringTaskSchema = z.object({
+  title: z.string().min(2, "Title must be at least 2 characters"),
+  description: z.string().optional(),
+  studentClass: z.string().min(1, "Class is required"),
+  repeatDay: z.enum(["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"]),
+  isActive: z.boolean().optional(),
+});
+
+export const updateRecurringTaskSchema = createRecurringTaskSchema.partial();
+
 export const createTaskSchema = z.object({
   title: z.string().min(2, "Title must be at least 2 characters"),
   description: z.string().optional(),

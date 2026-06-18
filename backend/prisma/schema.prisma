@@ -173,23 +173,39 @@ model FranchiseInquiry {
   createdAt DateTime @default(now())
 }
 
-// ── Teacher Tasks (Assigned by Admin) ───────────────────────────────
-model Task {
-  id          String    @id @default(cuid())
-  title       String
-  description String?   @db.Text
-  dueDate     DateTime?
-  status      String    @default("PENDING")
-  proofUrl    String?
-  proofDesc   String?   @db.Text
-  proofSubmittedAt DateTime?
-  teacherId   String
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+// ── Recurring Teacher Tasks (Class-Based) ───────────────────────────
+model RecurringTask {
+  id           String   @id @default(cuid())
+  title        String
+  description  String?  @db.Text
+  studentClass String
+  repeatDay    String
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  teacher       User                  @relation("TeacherTasks", fields: [teacherId], references: [id], onDelete: Cascade)
-  notifications TeacherNotification[]
-  adminNotifications   AdminNotification[]
+  tasks        Task[]
+}
+
+// ── Teacher Tasks (Assigned by Admin or Recurring) ──────────────────
+model Task {
+  id               String    @id @default(cuid())
+  title            String
+  description      String?   @db.Text
+  dueDate          DateTime?
+  status           String    @default("PENDING")
+  proofUrl         String?
+  proofDesc        String?   @db.Text
+  proofSubmittedAt DateTime?
+  teacherId        String
+  recurringTaskId  String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  teacher            User                  @relation("TeacherTasks", fields: [teacherId], references: [id], onDelete: Cascade)
+  recurringTask      RecurringTask?        @relation(fields: [recurringTaskId], references: [id], onDelete: SetNull)
+  notifications      TeacherNotification[]
+  adminNotifications AdminNotification[]
 }
 
 // ── Lesson Plans (Admin creates, teachers view) ─────────────────────

@@ -13,6 +13,7 @@ import {
   type Payment,
   type StoryBook,
   type Task,
+  type RecurringTask,
   type Testimonial,
   type DashboardStats,
   type GoogleLocationSummary,
@@ -62,9 +63,11 @@ import {
   FolderOpen,
   FolderInput,
   ChevronDown,
+  ChevronLeft,
   Home,
   MoreVertical,
   RotateCcw,
+  History as HistoryIcon,
   X,
 } from "lucide-react";
 import { AdminPeoplePanel } from "../AdminPeoplePanel";
@@ -238,7 +241,34 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
     teacherId: "",
   });
   const [showTaskForm, setShowTaskForm] = useState(false);
+  const [recurringTasks, setRecurringTasks] = useState<RecurringTask[]>([]);
+  const [selectedClassFolder, setSelectedClassFolder] = useState<string | null>(null);
+  const [showRecurringTaskForm, setShowRecurringTaskForm] = useState(false);
+  const [recurringTaskForm, setRecurringTaskForm] = useState({
+    id: "",
+    title: "",
+    description: "",
+    studentClass: "LKG",
+    repeatDay: "MONDAY",
+    isEditing: false,
+  });
+  const [viewingHistoryTaskId, setViewingHistoryTaskId] = useState<string | null>(null);
+  const [recurringTaskHistory, setRecurringTaskHistory] = useState<Task[]>([]);
+  const [selectedApprovalClassFolder, setSelectedApprovalClassFolder] = useState<string | null>(null);
   const [showRejectTaskForm, setShowRejectTaskForm] = useState(false);
+
+  // Approve Uploads filters
+  const [approvalSearch, setApprovalSearch] = useState("");
+  const [approvalClassFilter, setApprovalClassFilter] = useState("ALL");
+  const [approvalStatusFilter, setApprovalStatusFilter] = useState("ALL");
+  const [approvalTypeFilter, setApprovalTypeFilter] = useState("ALL");
+  const [approvalSort, setApprovalSort] = useState("newest");
+
+  // Assign Tasks (recurring tasks) filters
+  const [recurringTaskSearch, setRecurringTaskSearch] = useState("");
+  const [recurringTaskClassFilter, setRecurringTaskClassFilter] = useState("ALL");
+  const [recurringTaskStatusFilter, setRecurringTaskStatusFilter] = useState("ALL");
+  const [recurringTaskSort, setRecurringTaskSort] = useState("newest");
   const [rejectTaskForm, setRejectTaskForm] = useState({ id: "", reason: "" });
   const [taskFormErrors, setTaskFormErrors] = useState<Record<string, string>>({});
   const [teacherPickerSearch, setTeacherPickerSearch] = useState("");
@@ -280,7 +310,7 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
   const [bookFile, setBookFile] = useState<File | null>(null);
 
   const [confirmDelete, setConfirmDelete] = useState<{
-    type: "course" | "material" | "task" | "book" | "folder" | "gallery" | "testimonial";
+    type: "course" | "material" | "task" | "book" | "folder" | "gallery" | "testimonial" | "recurringTask";
     id: string;
     title: string;
     message: string;
@@ -289,6 +319,8 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
   // Fetch data specifically for the active tab
   useEffect(() => {
     if (!token) return;
+    setSelectedClassFolder(null);
+    setSelectedApprovalClassFolder(null);
     loadTabData(activeTab);
   }, [token, activeTab]);
 
@@ -617,6 +649,86 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
       }
     } finally {
       setActionLoading(null);
+    }
+  }
+
+  async function handleCreateRecurringTask(e: React.FormEvent) {
+    e.preventDefault();
+    if (!token || isActionBusy(actionLoading)) return;
+    setActionLoading("recurring-task-save");
+    setError("");
+    setMessage("");
+
+    if (!recurringTaskForm.title.trim()) {
+      setError("Please enter a task title.");
+      setActionLoading(null);
+      return;
+    }
+
+    try {
+      if (recurringTaskForm.isEditing && recurringTaskForm.id) {
+        const updated = await api.updateRecurringTask(token, recurringTaskForm.id, {
+          title: recurringTaskForm.title.trim(),
+          description: recurringTaskForm.description.trim() || undefined,
+          studentClass: recurringTaskForm.studentClass || "LKG",
+          repeatDay: recurringTaskForm.repeatDay,
+          isActive: true,
+        });
+        setRecurringTasks((prev) => prev.map((rt) => (rt.id === updated.id ? updated : rt)));
+        setMessage("Recurring task updated successfully.");
+      } else {
+        const created = await api.createRecurringTask(token, {
+          title: recurringTaskForm.title.trim(),
+          description: recurringTaskForm.description.trim() || undefined,
+          studentClass: recurringTaskForm.studentClass || "LKG",
+          repeatDay: recurringTaskForm.repeatDay,
+          isActive: true,
+        });
+        setRecurringTasks((prev) => [created, ...prev]);
+        setMessage("Recurring task created successfully.");
+      }
+      setRecurringTaskForm({ id: "", title: "", description: "", studentClass: "LKG", repeatDay: "MONDAY", isEditing: false });
+      setShowRecurringTaskForm(false);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Failed to save recurring task.");
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleToggleRecurringTask(id: string, currentStatus: boolean) {
+    if (!token || isActionBusy(actionLoading)) return;
+    setActionLoading(`rt-toggle-${id}`);
+    try {
+      const updated = await api.updateRecurringTask(token, id, { isActive: !currentStatus });
+      setRecurringTasks((prev) => prev.map((rt) => (rt.id === id ? updated : rt)));
+      setMessage(`Task automatically repeating ${!currentStatus ? 'enabled' : 'disabled'}.`);
+    } catch (err) {
+      setError("Failed to toggle task status.");
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleDeleteRecurringTask(id: string) {
+    if (!token || isActionBusy(actionLoading)) return;
+    setConfirmDelete({
+      type: "recurringTask",
+      id,
+      title: "Delete Recurring Task?",
+      message: "Are you sure? Future assignments will stop immediately. Existing assigned tasks will remain.",
+    });
+  }
+
+  async function loadRecurringTaskHistory(id: string) {
+    if (!token) return;
+    setViewingHistoryTaskId(id);
+    setRecurringTaskHistory([]);
+    try {
+      const history = await api.getRecurringTaskHistory(token, id);
+      setRecurringTaskHistory(history);
+    } catch (err) {
+      console.error("Failed to load history", err);
     }
   }
 
@@ -1269,6 +1381,20 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
     originalMaterial?: Material;
   }
 
+  function getApprovalClass(item: CombinedApprovalItem): string {
+    const title = item.course?.title || "";
+    const taskClass = item.originalTask?.recurringTask?.studentClass || item.originalTask?.teacher?.studentClass;
+    if (item.isTask && taskClass) {
+      return taskClass;
+    }
+    const lowerTitle = title.toLowerCase();
+    if (lowerTitle.includes("playgroup")) return "Playgroup";
+    if (lowerTitle.includes("nursery")) return "Nursery";
+    if (lowerTitle.includes("lkg") || lowerTitle.includes("lower kindergarten")) return "LKG";
+    if (lowerTitle.includes("ukg") || lowerTitle.includes("upper kindergarten")) return "UKG";
+    return "Others";
+  }
+
   const combinedApprovals: CombinedApprovalItem[] = [
     ...materials.map((m) => ({
       id: m.id,
@@ -1301,10 +1427,135 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
       })),
   ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
+  // Filters and sorting logic for Approve Uploads (constrained by folder)
+  const APPROVAL_STATUS_OPTIONS = [
+    { id: "ALL", label: "All Statuses" },
+    { id: "PENDING", label: "Pending Review" },
+    { id: "APPROVED", label: "Approved" },
+    { id: "REJECTED", label: "Rejected" },
+  ];
+
+  const APPROVAL_TYPE_OPTIONS = [
+    { id: "ALL", label: "All Types" },
+    { id: "MATERIAL", label: "Learning Materials" },
+    { id: "TASK_PROOF", label: "Task Proofs" },
+  ];
+
+  const APPROVAL_SORT_OPTIONS = [
+    { id: "newest", label: "Newest First" },
+    { id: "oldest", label: "Oldest First" },
+    { id: "title", label: "Title A-Z" },
+  ];
+
+  const filteredApprovals = combinedApprovals.filter((m) => {
+    // Must match selected folder
+    if (selectedApprovalClassFolder && getApprovalClass(m) !== selectedApprovalClassFolder) {
+      return false;
+    }
+
+    const matchesSearch =
+      m.title.toLowerCase().includes(approvalSearch.toLowerCase()) ||
+      (m.uploadedBy?.name ?? "").toLowerCase().includes(approvalSearch.toLowerCase()) ||
+      (m.uploadedBy?.email ?? "").toLowerCase().includes(approvalSearch.toLowerCase());
+
+    let matchesStatus = true;
+    if (approvalStatusFilter !== "ALL") {
+      const isApproved = m.isTask ? m.status === "APPROVED" : m.isApproved;
+      const isRejected = m.isTask ? m.status === "REJECTED" : false;
+      const isPending = m.isTask ? (m.status !== "APPROVED" && m.status !== "REJECTED") : !m.isApproved;
+
+      if (approvalStatusFilter === "APPROVED") matchesStatus = isApproved;
+      else if (approvalStatusFilter === "REJECTED") matchesStatus = isRejected;
+      else if (approvalStatusFilter === "PENDING") matchesStatus = isPending;
+    }
+
+    const matchesType =
+      approvalTypeFilter === "ALL" ||
+      (approvalTypeFilter === "TASK_PROOF" && m.isTask) ||
+      (approvalTypeFilter === "MATERIAL" && !m.isTask);
+
+    return matchesSearch && matchesStatus && matchesType;
+  });
+
+  const sortedFilteredApprovals = [...filteredApprovals].sort((a, b) => {
+    if (approvalSort === "title") {
+      return a.title.localeCompare(b.title);
+    }
+    const timeA = new Date(a.createdAt).getTime();
+    const timeB = new Date(b.createdAt).getTime();
+    return approvalSort === "oldest" ? timeA - timeB : timeB - timeA;
+  });
+
   const approvalPagination = useAdminPagination(
-    combinedApprovals,
-    [materials.length, tasks.length],
-    3
+    sortedFilteredApprovals,
+    [
+      selectedApprovalClassFolder,
+      approvalSearch,
+      approvalStatusFilter,
+      approvalTypeFilter,
+      approvalSort,
+      materials.length,
+      tasks.length,
+    ],
+    10
+  );
+
+  // Filters and sorting logic for Assign Tasks (recurringTasks) - flat list
+  const RECURRING_TASK_CLASS_OPTIONS = [
+    { id: "ALL", label: "All Classes" },
+    { id: "Playgroup", label: "Playgroup" },
+    { id: "Nursery", label: "Nursery" },
+    { id: "LKG", label: "LKG" },
+    { id: "UKG", label: "UKG" },
+  ];
+
+  const RECURRING_TASK_STATUS_OPTIONS = [
+    { id: "ALL", label: "All Statuses" },
+    { id: "ACTIVE", label: "Active" },
+    { id: "INACTIVE", label: "Inactive" },
+  ];
+
+  const RECURRING_TASK_SORT_OPTIONS = [
+    { id: "newest", label: "Newest First" },
+    { id: "oldest", label: "Oldest First" },
+    { id: "title", label: "Title A-Z" },
+  ];
+
+  const filteredRecurringTasks = recurringTasks.filter((rt) => {
+    const matchesSearch =
+      rt.title.toLowerCase().includes(recurringTaskSearch.toLowerCase()) ||
+      (rt.description ?? "").toLowerCase().includes(recurringTaskSearch.toLowerCase());
+
+    const matchesClass =
+      recurringTaskClassFilter === "ALL" || rt.studentClass === recurringTaskClassFilter;
+
+    const matchesStatus =
+      recurringTaskStatusFilter === "ALL" ||
+      (recurringTaskStatusFilter === "ACTIVE" && rt.isActive) ||
+      (recurringTaskStatusFilter === "INACTIVE" && !rt.isActive);
+
+    return matchesSearch && matchesClass && matchesStatus;
+  });
+
+  const sortedFilteredRecurringTasks = [...filteredRecurringTasks].sort((a, b) => {
+    if (recurringTaskSort === "title") {
+      return a.title.localeCompare(b.title);
+    }
+    const timeA = new Date(a.createdAt || 0).getTime();
+    const timeB = new Date(b.createdAt || 0).getTime();
+    return recurringTaskSort === "oldest" ? timeA - timeB : timeB - timeA;
+  });
+
+  const recurringTaskPagination = useAdminPagination(
+    sortedFilteredRecurringTasks,
+    [
+      recurringTaskSearch,
+      recurringTaskClassFilter,
+      recurringTaskStatusFilter,
+      recurringTaskSort,
+      recurringTasks.length,
+    ],
+    10
   );
 
   async function handleMarkAdminNotificationRead(notificationId: string) {
@@ -2013,204 +2264,294 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
               />
 
               <AdminPageBody className="flex-1 min-h-0 flex flex-col overflow-hidden">
-                {combinedApprovals.length === 0 ? (
-                  <AdminListEmpty message="No learning materials or task proofs have been uploaded for review." />
+                {!selectedApprovalClassFolder ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 p-4 overflow-y-auto modern-scrollbar bg-slate-50">
+                    {["Playgroup", "Nursery", "LKG", "UKG", "Others"].map((className) => {
+                      const classApprovals = combinedApprovals.filter(a => getApprovalClass(a) === className);
+                      const pendingCount = classApprovals.filter(a => a.isTask ? (a.status !== "APPROVED" && a.status !== "REJECTED") : !a.isApproved).length;
+                      return (
+                        <button
+                          key={className}
+                          onClick={() => setSelectedApprovalClassFolder(className)}
+                          className="flex flex-col p-5 bg-white border border-slate-200 rounded-2xl hover:border-[#8AC926] hover:shadow-md transition-all text-left group"
+                        >
+                          <div className="w-12 h-12 bg-emerald-50 text-[#8AC926] rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                            <Folder className="w-6 h-6" />
+                          </div>
+                          <h3 className="font-bold text-slate-800 text-lg">{className}</h3>
+                          <p className="text-xs text-slate-500 font-medium mt-1">
+                            {classApprovals.length} items ({pendingCount} pending)
+                          </p>
+                        </button>
+                      );
+                    })}
+                  </div>
                 ) : (
-                  <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex-1 min-h-0 flex flex-col">
-                    <div className="overflow-x-auto flex-1 min-h-0 overflow-y-auto modern-scrollbar">
-                      <table className="w-full text-left text-sm whitespace-nowrap">
-                        <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium text-xs sticky top-0 z-10">
-                          <tr>
-                            <th className="px-4 py-3 font-semibold w-[30%]">Material Uploaded</th>
-                            <th className="px-4 py-3 font-semibold w-[20%]">Name &amp; Email</th>
-                            <th className="px-4 py-3 font-semibold w-[15%]">Uploaded On</th>
-                            <th className="px-4 py-3 font-semibold w-[15%]">Status</th>
-                            <th className="px-4 py-3 font-semibold text-right">Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {combinedApprovals.map((m) => (
-                            <tr key={m.id} className="hover:bg-slate-50/80 transition-colors">
-                              {/* Column 1: Material Uploaded (title) */}
-                              <td className="px-4 py-3 align-middle w-[30%] min-w-0">
-                                <div className="flex flex-col space-y-1">
-                                  <span className="font-bold text-sm text-[#8AC926] break-all whitespace-normal">
-                                    {m.title}
-                                  </span>
-                                </div>
-                              </td>
-                              {/* Column 2: Uploader Name & Email */}
-                              <td className="px-4 py-3 align-middle w-[20%] min-w-0">
-                                <div className="flex flex-col space-y-0.5">
-                                  <p className="text-xs font-semibold text-slate-700 break-all whitespace-normal">
-                                    {m.uploadedBy?.name ?? "Admin"}
-                                  </p>
-                                  {m.uploadedBy?.email && (
-                                    <p className="text-2xs text-slate-400 break-all whitespace-normal">
-                                      {m.uploadedBy.email}
-                                    </p>
-                                  )}
-                                </div>
-                              </td>
-                              <td className="px-4 py-3 align-middle text-xs text-slate-500 w-[20%]">
-                                {new Date(m.createdAt).toLocaleDateString("en-IN", {
-                                  month: "short",
-                                  day: "numeric",
-                                  year: "numeric",
-                                })}
-                              </td>
-                              <td className="px-4 py-3 align-middle w-[15%]">
-                                <div className="flex items-center gap-1.5 flex-wrap">
-                                  {m.isTask ? (
-                                    <span
-                                      className={`px-2.5 py-0.5 rounded-lg text-2xs font-extrabold uppercase border shrink-0 ${
-                                        m.status === "APPROVED"
-                                          ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                          : m.status === "REJECTED"
-                                            ? "bg-rose-50 text-rose-700 border-rose-200"
-                                            : "bg-blue-50 text-blue-700 border-blue-200"
-                                      }`}
-                                    >
-                                      {m.status === "APPROVED"
-                                        ? "Approved"
-                                        : m.status === "REJECTED"
-                                          ? "Rejected"
-                                          : "Pending Review"}
-                                    </span>
-                                  ) : (
-                                    <span
-                                      className={`px-2.5 py-0.5 rounded-lg text-2xs font-extrabold uppercase border shrink-0 ${
-                                        m.isApproved
-                                          ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                          : "bg-amber-50 text-amber-700 border-amber-200"
-                                      }`}
-                                    >
-                                      {m.isApproved ? "Approved" : "Pending Review"}
-                                    </span>
-                                  )}
-                                </div>
-                              </td>
-                              <td className="px-4 py-2 text-right align-middle">
-                                <div className="flex items-center justify-end gap-1.5">
-                                  <button
-                                    type="button"
-                                    onClick={() => setViewDetailsModal(m)}
-                                    title="View"
-                                    className="p-1.5 rounded-lg bg-slate-100 border border-slate-200 text-slate-700 hover:bg-slate-200 transition"
-                                  >
-                                    <Eye className="w-4 h-4" />
-                                  </button>
-                                  {m.isTask ? (
-                                    <>
-                                      {(m.status === "COMPLETED" || m.status === "REJECTED") && (
-                                        <button
-                                          disabled={actionLoading === `task-approve-${m.id}`}
-                                          onClick={() => handleApproveTaskProof(m.id, true)}
-                                          title="Approve"
-                                          className="p-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 transition disabled:opacity-50"
-                                        >
-                                          {actionLoading === `task-approve-${m.id}` ? (
-                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                          ) : (
-                                            <Check className="w-4 h-4" />
-                                          )}
-                                        </button>
-                                      )}
-                                      {m.status === "COMPLETED" && (
-                                        <button
-                                          disabled={actionLoading === `task-approve-${m.id}`}
-                                          onClick={() => {
-                                            setRejectTaskForm({ id: m.id, reason: "" });
-                                            setShowRejectTaskForm(true);
-                                          }}
-                                          title="Reject"
-                                          className="p-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 transition disabled:opacity-50"
-                                        >
-                                          {actionLoading === `task-approve-${m.id}` ? (
-                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                          ) : (
-                                            <X className="w-4 h-4" />
-                                          )}
-                                        </button>
-                                      )}
-                                      {(m.status === "APPROVED" || m.status === "REJECTED") && (
-                                        <button
-                                          disabled={actionLoading === `task-approve-${m.id}`}
-                                          onClick={() => handleRevokeTaskProof(m.id)}
-                                          title="Revoke"
-                                          className="p-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100 transition disabled:opacity-50"
-                                        >
-                                          {actionLoading === `task-approve-${m.id}` ? (
-                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                          ) : (
-                                            <RotateCcw className="w-4 h-4" />
-                                          )}
-                                        </button>
-                                      )}
-                                      <button
-                                        type="button"
-                                        disabled={actionLoading === `task-delete-${m.id}`}
-                                        onClick={() => handleDeleteTask(m.id)}
-                                        title="Delete"
-                                        className="p-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 transition disabled:opacity-50"
-                                      >
-                                        {actionLoading === `task-delete-${m.id}` ? (
-                                          <Loader2 className="w-4 h-4 animate-spin" />
-                                        ) : (
-                                          <Trash2 className="w-4 h-4" />
+                  <div className="flex flex-col h-full overflow-hidden">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border-b border-slate-200 bg-white shrink-0">
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => setSelectedApprovalClassFolder(null)}
+                          className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 transition border border-slate-200"
+                          title="Back to folders"
+                        >
+                          <ChevronLeft className="w-5 h-5" />
+                        </button>
+                        <div className="flex items-center gap-2 text-slate-800">
+                          <FolderOpen className="w-5 h-5 text-[#8AC926]" />
+                          <h2 className="font-bold text-lg">{selectedApprovalClassFolder} Uploads</h2>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-2.5">
+                        <AdminSearchInput
+                          placeholder="Search uploads…"
+                          value={approvalSearch}
+                          onChange={setApprovalSearch}
+                          ariaLabel="Search learning materials and task proofs"
+                        />
+                        <PillSelect
+                          value={approvalTypeFilter}
+                          options={APPROVAL_TYPE_OPTIONS}
+                          onChange={setApprovalTypeFilter}
+                          ariaLabel="Filter by type"
+                        />
+                        <PillSelect
+                          value={approvalStatusFilter}
+                          options={APPROVAL_STATUS_OPTIONS}
+                          onChange={setApprovalStatusFilter}
+                          ariaLabel="Filter by status"
+                        />
+                        <PillSelect
+                          value={approvalSort}
+                          options={APPROVAL_SORT_OPTIONS}
+                          onChange={setApprovalSort}
+                          ariaLabel="Sort order"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex-1 min-h-0 flex flex-col overflow-hidden bg-slate-50 p-4">
+                      {sortedFilteredApprovals.length === 0 ? (
+                        <AdminListEmpty message={`No learning materials or task proofs match your search or filters for ${selectedApprovalClassFolder}.`} />
+                      ) : (
+                        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex-1 min-h-0 flex flex-col">
+                          <div className="overflow-x-auto flex-1 min-h-0 overflow-y-auto modern-scrollbar">
+                            <table className="w-full text-left text-sm whitespace-nowrap">
+                              <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium text-xs sticky top-0 z-10">
+                                <tr>
+                                  <th className="px-4 py-3 font-semibold w-[35%]">Material / Task Uploaded</th>
+                                  <th className="px-4 py-3 font-semibold w-[15%]">Type</th>
+                                  <th className="px-4 py-3 font-semibold w-[20%]">Uploaded By</th>
+                                  <th className="px-4 py-3 font-semibold w-[15%]">Uploaded On</th>
+                                  <th className="px-4 py-3 font-semibold w-[15%]">Status</th>
+                                  <th className="px-4 py-3 font-semibold text-right">Actions</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-100">
+                                {approvalPagination.paginatedItems.map((m) => (
+                                  <tr key={m.id} className="hover:bg-slate-50/80 transition-colors">
+                                    <td className="px-4 py-3 align-middle min-w-0">
+                                      <div className="flex flex-col space-y-1">
+                                        <span className="font-bold text-sm text-[#8AC926] break-all whitespace-normal">
+                                          {m.title}
+                                        </span>
+                                        {m.description && (
+                                          <p className="text-2xs text-slate-400 line-clamp-2 break-all whitespace-normal">
+                                            {m.description}
+                                          </p>
                                         )}
-                                      </button>
-                                    </>
-                                  ) : (
-                                    <>
-                                      {!m.isApproved ? (
-                                        <button
-                                          disabled={actionLoading === `material-approve-${m.id}`}
-                                          onClick={() => handleApproveMaterial(m.id, true)}
-                                          title="Approve"
-                                          className="p-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 transition disabled:opacity-50"
-                                        >
-                                          {actionLoading === `material-approve-${m.id}` ? (
-                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                          ) : (
-                                            <Check className="w-4 h-4" />
-                                          )}
-                                        </button>
-                                      ) : (
-                                        <button
-                                          disabled={actionLoading === `material-approve-${m.id}`}
-                                          onClick={() => handleApproveMaterial(m.id, false)}
-                                          title="Revoke"
-                                          className="p-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100 transition disabled:opacity-50"
-                                        >
-                                          {actionLoading === `material-approve-${m.id}` ? (
-                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                          ) : (
-                                            <RotateCcw className="w-4 h-4" />
-                                          )}
-                                        </button>
-                                      )}
-                                      <button
-                                        type="button"
-                                        disabled={actionLoading === `material-delete-${m.id}`}
-                                        onClick={() => handleDeleteMaterial(m.id)}
-                                        title="Delete"
-                                        className="p-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 transition disabled:opacity-50"
-                                      >
-                                        {actionLoading === `material-delete-${m.id}` ? (
-                                          <Loader2 className="w-4 h-4 animate-spin" />
-                                        ) : (
-                                          <Trash2 className="w-4 h-4" />
+                                      </div>
+                                    </td>
+                                    <td className="px-4 py-3 align-middle text-xs font-semibold text-slate-600">
+                                      {m.isTask ? "Task Proof" : "Learning Material"}
+                                    </td>
+                                    <td className="px-4 py-3 align-middle min-w-0">
+                                      <div className="flex flex-col space-y-0.5">
+                                        <p className="text-xs font-semibold text-slate-700 break-all whitespace-normal">
+                                          {m.uploadedBy?.name ?? "Admin"}
+                                        </p>
+                                        {m.uploadedBy?.email && (
+                                          <p className="text-2xs text-slate-450 break-all whitespace-normal">
+                                            {m.uploadedBy.email}
+                                          </p>
                                         )}
-                                      </button>
-                                    </>
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                                      </div>
+                                    </td>
+                                    <td className="px-4 py-3 align-middle text-xs text-slate-500">
+                                      {new Date(m.createdAt).toLocaleDateString("en-IN", {
+                                        month: "short",
+                                        day: "numeric",
+                                        year: "numeric",
+                                      })}
+                                    </td>
+                                    <td className="px-4 py-3 align-middle">
+                                      <div className="flex items-center gap-1.5">
+                                        {m.isTask ? (
+                                          <span
+                                            className={`px-2.5 py-0.5 rounded-lg text-2xs font-extrabold uppercase border shrink-0 ${
+                                              m.status === "APPROVED"
+                                                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                                : m.status === "REJECTED"
+                                                  ? "bg-rose-50 text-rose-700 border-rose-200"
+                                                  : "bg-blue-50 text-blue-700 border-blue-200"
+                                            }`}
+                                          >
+                                            {m.status === "APPROVED"
+                                              ? "Approved"
+                                              : m.status === "REJECTED"
+                                                ? "Rejected"
+                                                : "Pending Review"}
+                                          </span>
+                                        ) : (
+                                          <span
+                                            className={`px-2.5 py-0.5 rounded-lg text-2xs font-extrabold uppercase border shrink-0 ${
+                                              m.isApproved
+                                                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                                : "bg-amber-50 text-amber-700 border-amber-200"
+                                            }`}
+                                          >
+                                            {m.isApproved ? "Approved" : "Pending Review"}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </td>
+                                    <td className="px-4 py-2 text-right align-middle">
+                                      <div className="flex items-center justify-end gap-1.5">
+                                        <button
+                                          type="button"
+                                          onClick={() => setViewDetailsModal(m)}
+                                          title="View Details"
+                                          className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100 transition"
+                                        >
+                                          <Eye className="w-4 h-4" />
+                                        </button>
+                                        {m.isTask ? (
+                                          <>
+                                            {(m.status === "COMPLETED" || m.status === "REJECTED") && (
+                                              <button
+                                                disabled={actionLoading === `task-approve-${m.id}`}
+                                                onClick={() => handleApproveTaskProof(m.id, true)}
+                                                title="Approve"
+                                                className="p-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 transition disabled:opacity-50"
+                                              >
+                                                {actionLoading === `task-approve-${m.id}` ? (
+                                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                                ) : (
+                                                  <Check className="w-4 h-4" />
+                                                )}
+                                              </button>
+                                            )}
+                                            {m.status === "COMPLETED" && (
+                                              <button
+                                                disabled={actionLoading === `task-approve-${m.id}`}
+                                                onClick={() => {
+                                                  setRejectTaskForm({ id: m.id, reason: "" });
+                                                  setShowRejectTaskForm(true);
+                                                }}
+                                                title="Reject"
+                                                className="p-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 transition disabled:opacity-50"
+                                              >
+                                                {actionLoading === `task-approve-${m.id}` ? (
+                                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                                ) : (
+                                                  <X className="w-4 h-4" />
+                                                )}
+                                              </button>
+                                            )}
+                                            {(m.status === "APPROVED" || m.status === "REJECTED") && (
+                                              <button
+                                                disabled={actionLoading === `task-approve-${m.id}`}
+                                                onClick={() => handleRevokeTaskProof(m.id)}
+                                                title="Revoke Approval/Rejection"
+                                                className="p-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100 transition disabled:opacity-50"
+                                              >
+                                                {actionLoading === `task-approve-${m.id}` ? (
+                                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                                ) : (
+                                                  <RotateCcw className="w-4 h-4" />
+                                                )}
+                                              </button>
+                                            )}
+                                            <button
+                                              type="button"
+                                              disabled={actionLoading === `task-delete-${m.id}`}
+                                              onClick={() => handleDeleteTask(m.id)}
+                                              title="Delete Proof"
+                                              className="p-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 transition disabled:opacity-50"
+                                            >
+                                              {actionLoading === `task-delete-${m.id}` ? (
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                              ) : (
+                                                <Trash2 className="w-4 h-4" />
+                                              )}
+                                            </button>
+                                          </>
+                                        ) : (
+                                          <>
+                                            {!m.isApproved ? (
+                                              <button
+                                                disabled={actionLoading === `material-approve-${m.id}`}
+                                                onClick={() => handleApproveMaterial(m.id, true)}
+                                                title="Approve"
+                                                className="p-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 transition disabled:opacity-50"
+                                              >
+                                                {actionLoading === `material-approve-${m.id}` ? (
+                                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                                ) : (
+                                                  <Check className="w-4 h-4" />
+                                                )}
+                                              </button>
+                                            ) : (
+                                              <button
+                                                disabled={actionLoading === `material-approve-${m.id}`}
+                                                onClick={() => handleApproveMaterial(m.id, false)}
+                                                title="Revoke Approval"
+                                                className="p-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100 transition disabled:opacity-50"
+                                              >
+                                                {actionLoading === `material-approve-${m.id}` ? (
+                                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                                ) : (
+                                                  <RotateCcw className="w-4 h-4" />
+                                                )}
+                                              </button>
+                                            )}
+                                            <button
+                                              type="button"
+                                              disabled={actionLoading === `material-delete-${m.id}`}
+                                              onClick={() => handleDeleteMaterial(m.id)}
+                                              title="Delete Material"
+                                              className="p-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 transition disabled:opacity-50"
+                                            >
+                                              {actionLoading === `material-delete-${m.id}` ? (
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                              ) : (
+                                                <Trash2 className="w-4 h-4" />
+                                              )}
+                                            </button>
+                                          </>
+                                        )}
+                                      </div>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                          <div className="p-4 bg-slate-50 border-t border-slate-200">
+                            <AdminListPagination
+                              rangeStart={approvalPagination.rangeStart}
+                              rangeEnd={approvalPagination.rangeEnd}
+                              total={sortedFilteredApprovals.length}
+                              safePage={approvalPagination.safePage}
+                              totalPages={approvalPagination.totalPages}
+                              pageNumbers={approvalPagination.pageNumbers}
+                              onPageChange={approvalPagination.setCurrentPage}
+                              itemLabel="uploads"
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -2222,157 +2563,150 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
           {activeTab === "tasks" && (
             <AdminPageShell className="h-full flex flex-col min-h-0 overflow-hidden">
               <AdminPageHeader
-                title="Assign Tasks & Set Due Dates"
-                description="Delegate tasks to your teachers, set exact due dates, and track their activity."
+                title="Recurring Class Tasks"
+                description="Manage class-specific tasks that automatically assign to teachers every week."
                 actions={
                   <>
-                    <div className="relative w-full min-w-0 sm:w-[260px] max-w-full">
-                      <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                      <input
-                        placeholder="Search title, teacher…"
-                        value={taskSearch}
-                        onChange={(e) => setTaskSearch(e.target.value)}
-                        className="pl-8 pr-3 py-2 bg-white border border-slate-200 text-slate-900 rounded-full text-xs w-full outline-none focus:border-[#8AC926] placeholder-slate-400 transition-all"
-                        aria-label="Search tasks"
-                      />
-                    </div>
+                    <AdminSearchInput
+                      placeholder="Search tasks…"
+                      value={recurringTaskSearch}
+                      onChange={setRecurringTaskSearch}
+                      ariaLabel="Search recurring tasks"
+                    />
                     <PillSelect
-                      value={taskStatusFilter}
-                      options={taskStatusOptions}
-                      onChange={setTaskStatusFilter}
+                      value={recurringTaskClassFilter}
+                      options={RECURRING_TASK_CLASS_OPTIONS}
+                      onChange={setRecurringTaskClassFilter}
+                      ariaLabel="Filter by class"
+                    />
+                    <PillSelect
+                      value={recurringTaskStatusFilter}
+                      options={RECURRING_TASK_STATUS_OPTIONS}
+                      onChange={setRecurringTaskStatusFilter}
                       ariaLabel="Filter by status"
                     />
                     <PillSelect
-                      value={taskTeacherFilter}
-                      options={taskTeacherOptions}
-                      onChange={setTaskTeacherFilter}
-                      ariaLabel="Filter by teacher"
+                      value={recurringTaskSort}
+                      options={RECURRING_TASK_SORT_OPTIONS}
+                      onChange={setRecurringTaskSort}
+                      ariaLabel="Sort order"
                     />
                     <button
                       type="button"
                       onClick={() => {
-                        setTaskFormErrors({});
-                        setTeacherPickerSearch("");
-                        setShowTaskForm(true);
+                        setRecurringTaskForm({
+                          id: "",
+                          title: "",
+                          description: "",
+                          studentClass: "LKG",
+                          repeatDay: "MONDAY",
+                          isEditing: false,
+                        });
+                        setShowRecurringTaskForm(true);
                       }}
-                      className="px-4 py-2 rounded-xl bg-[#8AC926] text-white font-sans font-bold text-xs tracking-wider flex items-center gap-2 hover:bg-[#78B020] transition shadow-md shadow-[#8AC926]/10 whitespace-nowrap"
+                      className="px-4 py-2 rounded-xl bg-[#8AC926] text-white font-sans font-bold text-xs tracking-wider flex items-center gap-2 hover:bg-[#78B020] transition shadow-md shadow-[#8AC926]/10 whitespace-nowrap sm:ml-auto"
                     >
-                      <Plus className="w-4 h-4" /> Assign Task
+                      <Plus className="w-4 h-4" /> Create Recurring Task
                     </button>
                   </>
                 }
               />
 
               <AdminPageBody className="flex-1 min-h-0 flex flex-col overflow-hidden">
-                {sortedFilteredTasks.length === 0 ? (
-                  <AdminListEmpty message="No task assignments matched your search or filters." />
+                {sortedFilteredRecurringTasks.length === 0 ? (
+                  <AdminListEmpty message="No recurring tasks match your search or filters." />
                 ) : (
                   <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex-1 min-h-0 flex flex-col">
                     <div className="overflow-x-auto flex-1 min-h-0 overflow-y-auto modern-scrollbar">
                       <table className="w-full text-left text-sm whitespace-nowrap">
                         <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium text-xs sticky top-0 z-10">
                           <tr>
-                            <th className="px-4 py-3 font-semibold w-[45%]">Task Details</th>
-                            <th className="px-4 py-3 font-semibold w-[20%]">Assignee</th>
-                            <th className="px-4 py-3 font-semibold w-[15%]">Status</th>
-                            <th className="px-4 py-3 font-semibold w-[15%]">Due Date</th>
+                            <th className="px-4 py-3 font-semibold w-[15%]">Class</th>
+                            <th className="px-4 py-3 font-semibold w-[45%]">Task Title &amp; Details</th>
+                            <th className="px-4 py-3 font-semibold w-[15%]">Repeat Day</th>
+                            <th className="px-4 py-3 font-semibold w-[10%]">Status</th>
                             <th className="px-4 py-3 font-semibold text-right">Actions</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                          {sortedFilteredTasks.map((t) => (
-                            <tr key={t.id} className="hover:bg-slate-50/80 transition-colors">
-                              <td className="px-4 py-3 align-middle w-[45%] min-w-0">
-                                <div className="flex flex-col min-w-0">
-                                  <span className="font-bold text-sm text-slate-800">{t.title}</span>
-                                  {t.description && (
-                                    <span className="text-3xs text-slate-400 font-medium shrink-0 mt-0.5 whitespace-pre-wrap line-clamp-1">{t.description}</span>
+                          {recurringTaskPagination.paginatedItems.map((rt) => (
+                            <tr key={rt.id} className="hover:bg-slate-50/80 transition-colors">
+                              {/* Column 1: Class */}
+                              <td className="px-4 py-3 align-middle text-xs text-[#8AC926] font-bold">
+                                {rt.studentClass}
+                              </td>
+                              {/* Column 2: Task Title & Details */}
+                              <td className="px-4 py-3 align-middle min-w-0">
+                                <div className="flex flex-col space-y-1">
+                                  <span className="font-bold text-sm text-slate-800 break-all whitespace-normal">
+                                    {rt.title}
+                                  </span>
+                                  {rt.description && (
+                                    <p className="text-xs text-slate-500 line-clamp-2 break-all whitespace-normal">
+                                      {rt.description}
+                                    </p>
                                   )}
                                 </div>
                               </td>
-                              <td className="px-4 py-3 align-middle w-[20%] min-w-0 text-xs font-semibold text-slate-700">
-                                <div className="flex flex-col">
-                                  <span>{t.teacher?.name ?? "—"}</span>
-                                  {t.teacher?.email && (
-                                    <span className="text-3xs text-slate-400 font-normal mt-0.5">{t.teacher.email}</span>
-                                  )}
-                                </div>
+                              {/* Column 3: Repeat Day */}
+                              <td className="px-4 py-3 align-middle text-xs font-semibold text-slate-650">
+                                Repeats every <span className="font-bold text-indigo-650">{rt.repeatDay}</span>
                               </td>
-                              <td className="px-4 py-3 align-middle w-[15%]">
+                              {/* Column 4: Status */}
+                              <td className="px-4 py-3 align-middle">
                                 <span
-                                  className={`px-1.5 py-0.5 rounded text-4xs font-extrabold uppercase border shrink-0 ${
-                                    t.status === "APPROVED"
+                                  className={`px-2.5 py-0.5 rounded-lg text-2xs font-extrabold uppercase border shrink-0 ${
+                                    rt.isActive
                                       ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                      : t.status === "REJECTED"
-                                        ? "bg-rose-50 text-rose-700 border-rose-200"
-                                        : t.status === "COMPLETED"
-                                          ? "bg-blue-50 text-blue-700 border-blue-200"
-                                          : "bg-amber-50 text-amber-700 border-amber-200"
+                                      : "bg-slate-100 text-slate-500 border-slate-200"
                                   }`}
                                 >
-                                  {t.status}
+                                  {rt.isActive ? "Active" : "Inactive"}
                                 </span>
                               </td>
-                              <td className="px-4 py-3 align-middle w-[15%] text-xs font-semibold text-slate-700">
-                                {t.dueDate ? (
-                                  <span className="text-rose-600 font-semibold inline-flex items-center gap-1">
-                                    <Calendar className="w-3.5 h-3.5" />
-                                    {new Date(t.dueDate).toLocaleDateString("en-IN", {
-                                      month: "short",
-                                      day: "numeric",
-                                      year: "numeric",
-                                    })}
-                                  </span>
-                                ) : (
-                                  <span className="text-slate-450">—</span>
-                                )}
-                              </td>
+                              {/* Column 5: Actions */}
                               <td className="px-4 py-2 text-right align-middle">
                                 <div className="flex items-center justify-end gap-1.5">
                                   <button
-                                    type="button"
-                                    onClick={() => setViewingTask(t)}
-                                    className="px-2 py-1.5 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100 disabled:opacity-50 flex items-center justify-center"
-                                    title="View task details"
+                                    onClick={() => handleToggleRecurringTask(rt.id, rt.isActive)}
+                                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition ${
+                                      rt.isActive
+                                        ? "bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100"
+                                        : "bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100"
+                                    }`}
                                   >
-                                    <Eye className="w-3 h-3" />
+                                    {rt.isActive ? "Deactivate" : "Activate"}
                                   </button>
                                   <button
-                                    type="button"
+                                    onClick={() => loadRecurringTaskHistory(rt.id)}
+                                    className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-400 hover:text-blue-650 hover:bg-blue-50 transition"
+                                    title="View Assignment History"
+                                  >
+                                    <HistoryIcon className="w-4 h-4" />
+                                  </button>
+                                  <button
                                     onClick={() => {
-                                      if (t.status !== "PENDING") {
-                                        setAlertModal({
-                                          title: "Cannot Edit Task",
-                                          message: "Completed or reviewed tasks cannot be edited.",
-                                        });
-                                        return;
-                                      }
-                                      setEditingTask(t);
-                                      setTaskForm({
-                                        title: t.title,
-                                        description: t.description || "",
-                                        teacherId: t.teacherId,
-                                        dueDate: t.dueDate ? t.dueDate.substring(0, 10) : "",
+                                      setRecurringTaskForm({
+                                        id: rt.id,
+                                        title: rt.title,
+                                        description: rt.description || "",
+                                        studentClass: rt.studentClass || "LKG",
+                                        repeatDay: rt.repeatDay,
+                                        isEditing: true,
                                       });
-                                      setShowTaskForm(true);
+                                      setShowRecurringTaskForm(true);
                                     }}
-                                    className="px-2 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100 disabled:opacity-50 flex items-center justify-center"
-                                    title="Edit task"
+                                    className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-400 hover:text-indigo-650 hover:bg-indigo-50 transition"
+                                    title="Edit Task"
                                   >
-                                    <Edit2 className="w-3 h-3" />
+                                    <Edit2 className="w-4 h-4" />
                                   </button>
                                   <button
-                                    type="button"
-                                    disabled={actionLoading === `task-delete-${t.id}`}
-                                    onClick={() => handleDeleteTask(t.id)}
-                                    className="px-2 py-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 disabled:opacity-50 flex items-center justify-center"
-                                    title="Delete task"
+                                    onClick={() => handleDeleteRecurringTask(rt.id)}
+                                    className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-400 hover:text-rose-650 hover:bg-rose-50 transition"
+                                    title="Delete Task"
                                   >
-                                    {actionLoading === `task-delete-${t.id}` ? (
-                                      <Loader2 className="w-3 h-3 animate-spin" />
-                                    ) : (
-                                      <Trash2 className="w-3 h-3" />
-                                    )}
+                                    <Trash2 className="w-4 h-4" />
                                   </button>
                                 </div>
                               </td>
@@ -2381,333 +2715,169 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                         </tbody>
                       </table>
                     </div>
-                  </div>
-                )}
-
-                {/* ASSIGN TASK FORM MODAL */}
-                {showTaskForm && (
-                  <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl border border-slate-200 animate-scale-up text-slate-800 relative">
-                      <ModalCloseButton
-                        onClick={() => {
-                          setTaskFormErrors({});
-                          setTeacherPickerSearch("");
-                          setShowTaskForm(false);
-                        }}
-                        className="absolute top-4 right-4"
+                    <div className="p-4 bg-slate-50 border-t border-slate-200">
+                      <AdminListPagination
+                        rangeStart={recurringTaskPagination.rangeStart}
+                        rangeEnd={recurringTaskPagination.rangeEnd}
+                        total={sortedFilteredRecurringTasks.length}
+                        safePage={recurringTaskPagination.safePage}
+                        totalPages={recurringTaskPagination.totalPages}
+                        pageNumbers={recurringTaskPagination.pageNumbers}
+                        onPageChange={recurringTaskPagination.setCurrentPage}
+                        itemLabel="tasks"
                       />
-                      <h3 className="font-sans text-lg font-extrabold text-slate-900 mb-4 pr-10">
-                        Assign Task to Teacher
-                      </h3>
-                      <form onSubmit={handleAssignTask} noValidate className="space-y-4 text-xs">
-                        <div>
-                          <label className="block text-slate-700 font-bold mb-1.5">
-                            Select Teacher
-                          </label>
-                          {/* Custom teacher picker dropdown */}
-                          <div className="relative">
-                            {/* Trigger button */}
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setTeacherPickerOpen((o) => !o);
-                                setTeacherPickerSearch("");
-                              }}
-                              className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl border bg-white text-left transition ${
-                                taskFormErrors.teacherId
-                                  ? "border-rose-400"
-                                  : teacherPickerOpen
-                                  ? "border-[#8AC926] ring-2 ring-[#8AC926]/20"
-                                  : "border-slate-200 hover:border-slate-300"
-                              }`}
-                            >
-                              {taskForm.teacherId ? (() => {
-                                const sel = teachersList.find((t) => t.id === taskForm.teacherId);
-                                if (!sel) return null;
-                                const initials = sel.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
-                                return (
-                                  <>
-                                    <div className="w-6 h-6 rounded-lg bg-[#8AC926] text-white flex items-center justify-center text-[10px] font-bold shrink-0">
-                                      {initials}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                      <p className="text-xs font-bold text-slate-800 truncate">{sel.name}</p>
-                                      <p className="text-[10px] text-slate-400 truncate">{sel.email}</p>
-                                    </div>
-                                  </>
-                                );
-                              })() : (
-                                <span className="text-xs text-slate-400 flex-1">— Choose a teacher —</span>
-                              )}
-                              <ChevronDown className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform ${teacherPickerOpen ? "rotate-180" : ""}`} />
-                            </button>
-
-                            {/* Dropdown panel */}
-                            {teacherPickerOpen && (
-                              <div
-                                className="absolute z-30 mt-1 w-full rounded-xl border border-slate-200 shadow-xl bg-white overflow-hidden"
-                                onMouseDown={(e) => e.preventDefault()} /* keep focus on input */
-                              >
-                                {/* Search */}
-                                <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 border-b border-slate-100">
-                                  <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                                  <input
-                                    autoFocus
-                                    type="text"
-                                    placeholder="Search by name or email…"
-                                    value={teacherPickerSearch}
-                                    onChange={(e) => setTeacherPickerSearch(e.target.value)}
-                                    className="flex-1 bg-transparent text-xs text-slate-800 outline-none placeholder-slate-400"
-                                  />
-                                  {teacherPickerSearch && (
-                                    <button
-                                      type="button"
-                                      onClick={() => setTeacherPickerSearch("")}
-                                      className="text-slate-400 hover:text-slate-600 transition text-xs leading-none"
-                                    >
-                                      ✕
-                                    </button>
-                                  )}
-                                </div>
-                                {/* List */}
-                                <div className="max-h-44 overflow-y-auto modern-scrollbar divide-y divide-slate-100">
-                                  {teachersList.filter((t) =>
-                                    `${t.name} ${t.email}`.toLowerCase().includes(teacherPickerSearch.toLowerCase())
-                                  ).length === 0 ? (
-                                    <p className="text-center text-xs text-slate-400 py-4 font-medium">No teachers found.</p>
-                                  ) : (
-                                    teachersList.filter((t) =>
-                                      `${t.name} ${t.email}`.toLowerCase().includes(teacherPickerSearch.toLowerCase())
-                                    ).map((t) => {
-                                      const isSelected = taskForm.teacherId === t.id;
-                                      const initials = t.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
-                                      return (
-                                        <button
-                                          key={t.id}
-                                          type="button"
-                                          onClick={() => {
-                                            clearTaskFieldError("teacherId");
-                                            setTaskForm({ ...taskForm, teacherId: t.id });
-                                            setTeacherPickerOpen(false);
-                                            setTeacherPickerSearch("");
-                                          }}
-                                          className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors ${
-                                            isSelected
-                                              ? "bg-[#8AC926]/10 border-l-2 border-[#8AC926]"
-                                              : "hover:bg-slate-50 border-l-2 border-transparent"
-                                          }`}
-                                        >
-                                          <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 font-bold text-xs ${
-                                            isSelected ? "bg-[#8AC926] text-white" : "bg-slate-100 text-slate-600"
-                                          }`}>
-                                            {initials}
-                                          </div>
-                                          <div className="flex-1 min-w-0">
-                                            <p className={`text-xs font-bold truncate ${isSelected ? "text-[#6a9e1f]" : "text-slate-800"}`}>{t.name}</p>
-                                            <p className="text-[10px] text-slate-400 truncate font-medium">{t.email}</p>
-                                          </div>
-                                          {isSelected && <Check className="w-4 h-4 text-[#8AC926] shrink-0" />}
-                                        </button>
-                                      );
-                                    })
-                                  )}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                          {taskFormErrors.teacherId && (
-                            <p className="text-[10px] text-rose-600 font-semibold mt-1">
-                              {taskFormErrors.teacherId}
-                            </p>
-                          )}
-                        </div>
-
-
-                        <div>
-                          <label className="block text-slate-700 font-bold mb-1.5">
-                            Task Title
-                          </label>
-                          <input
-                            placeholder="e.g. Upload UKG Science lesson photos"
-                            value={taskForm.title}
-                            onChange={(e) => {
-                              clearTaskFieldError("title");
-                              setTaskForm({ ...taskForm, title: e.target.value });
-                            }}
-                            className={taskFieldClass(Boolean(taskFormErrors.title))}
-                          />
-                          <p className="text-[10px] text-slate-500 font-medium mt-1">
-                            Minimum {TASK_TITLE_MIN} characters.
-                          </p>
-                          {taskFormErrors.title && (
-                            <p className="text-[10px] text-rose-600 font-semibold mt-1">
-                              {taskFormErrors.title}
-                            </p>
-                          )}
-                        </div>
-
-                        <div>
-                          <label className="block text-slate-700 font-bold mb-1.5">
-                            Task Description / Instructions
-                          </label>
-                          <textarea
-                            rows={3}
-                            placeholder="Provide detailed instructions for the teacher..."
-                            value={taskForm.description}
-                            onChange={(e) => {
-                              clearTaskFieldError("description");
-                              setTaskForm({ ...taskForm, description: e.target.value });
-                            }}
-                            className={taskFieldClass(Boolean(taskFormErrors.description))}
-                          />
-                          <p className="text-[10px] text-slate-500 font-medium mt-1">
-                            Minimum {TASK_DESCRIPTION_MIN} characters.
-                          </p>
-                          {taskFormErrors.description && (
-                            <p className="text-[10px] text-rose-600 font-semibold mt-1">
-                              {taskFormErrors.description}
-                            </p>
-                          )}
-                        </div>
-
-                        <div>
-                          <label className="block text-slate-700 font-bold mb-1.5">Due Date</label>
-                          <input
-                            type="date"
-                            min={localDateInputMin()}
-                            value={taskForm.dueDate}
-                            onChange={(e) => {
-                              clearTaskFieldError("dueDate");
-                              setTaskForm({ ...taskForm, dueDate: e.target.value });
-                            }}
-                            className={taskFieldClass(Boolean(taskFormErrors.dueDate))}
-                          />
-                          <p className="text-[10px] text-slate-500 font-medium mt-1">
-                            Today or a future date only.
-                          </p>
-                          {taskFormErrors.dueDate && (
-                            <p className="text-[10px] text-rose-600 font-semibold mt-1">
-                              {taskFormErrors.dueDate}
-                            </p>
-                            )}
-                          </div>
-
-                          <button
-                            type="submit"
-                            disabled={actionLoading === "task-assign"}
-                            className="w-full py-3 rounded-xl bg-[#8AC926] text-white font-sans font-bold text-xs tracking-wider uppercase hover:bg-[#78B020] transition shadow-md shadow-[#8AC926]/10 disabled:opacity-60 disabled:cursor-not-allowed"
-                          >
-                            {actionLoading === "task-assign" ? (editingTask ? "Updating…" : "Assigning…") : (editingTask ? "Update Task" : "Assign Task")}
-                          </button>
-                        </form>
                     </div>
                   </div>
                 )}
 
-                {/* VIEW TASK MODAL */}
-                {viewingTask && (
+                {/* CREATE/EDIT MODAL */}
+                {showRecurringTaskForm && (
                   <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
                     <div className="bg-white w-full max-w-lg rounded-2xl shadow-xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
                       <div className="bg-slate-50 px-5 py-4 border-b border-slate-100 flex items-center justify-between shrink-0">
-                        <h3 className="font-bold text-slate-800 tracking-wide">Task Details</h3>
+                        <h3 className="font-bold text-slate-800 tracking-wide">
+                          {recurringTaskForm.isEditing ? "Edit Recurring Task" : "Create Recurring Task"}
+                        </h3>
                         <button
                           type="button"
-                          onClick={() => setViewingTask(null)}
+                          onClick={() => setShowRecurringTaskForm(false)}
                           className="text-slate-400 hover:text-slate-600 transition p-1"
                         >
-                          <Plus className="w-5 h-5 rotate-45" />
+                          <X className="w-5 h-5" />
                         </button>
                       </div>
 
-                      <div className="p-5 overflow-y-auto modern-scrollbar space-y-2">
-                        <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Title</p>
-                          <p className="text-sm font-semibold text-slate-800">{viewingTask.title}</p>
-                        </div>
-                        
-                        <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1.5">Description</p>
-                          <p className="text-xs text-slate-700 whitespace-pre-wrap leading-relaxed">
-                            {viewingTask.description || <span className="italic text-slate-400">No description provided</span>}
-                          </p>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Assignee</p>
-                            <div className="flex flex-col">
-                              <span className="text-sm font-semibold text-slate-800">{viewingTask.teacher?.name || "—"}</span>
-                              {viewingTask.teacher?.email && <span className="text-xs text-slate-500">{viewingTask.teacher.email}</span>}
-                            </div>
+                      <div className="p-5 overflow-y-auto modern-scrollbar">
+                        <form onSubmit={handleCreateRecurringTask} className="space-y-4 text-xs">
+                          <div>
+                            <label className="block text-slate-700 font-bold mb-1.5">Task Title</label>
+                            <input
+                              placeholder="e.g. Upload Weekly Craft Photos"
+                              value={recurringTaskForm.title}
+                              onChange={(e) =>
+                                setRecurringTaskForm({ ...recurringTaskForm, title: e.target.value })
+                              }
+                              className="w-full rounded-xl bg-white border border-slate-200 px-4 py-2.5 text-slate-900 outline-none focus:border-[#8AC926] transition"
+                            />
                           </div>
-                          
-                          <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Status</p>
-                            <span
-                              className={`px-2 py-1 rounded text-2xs font-extrabold uppercase border inline-block mt-0.5 ${
-                                viewingTask.status === "APPROVED"
-                                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                  : viewingTask.status === "REJECTED"
-                                    ? "bg-rose-50 text-rose-700 border-rose-200"
-                                    : viewingTask.status === "COMPLETED"
-                                      ? "bg-blue-50 text-blue-700 border-blue-200"
-                                      : "bg-amber-50 text-amber-700 border-amber-200"
-                              }`}
+                          <div>
+                            <label className="block text-slate-700 font-bold mb-1.5">Description</label>
+                            <textarea
+                              rows={3}
+                              placeholder="Instructions for teachers..."
+                              value={recurringTaskForm.description}
+                              onChange={(e) =>
+                                setRecurringTaskForm({ ...recurringTaskForm, description: e.target.value })
+                              }
+                              className="w-full rounded-xl bg-white border border-slate-200 px-4 py-2.5 text-slate-900 outline-none focus:border-[#8AC926] transition"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-slate-700 font-bold mb-1.5">Class / Level</label>
+                            <select
+                              value={recurringTaskForm.studentClass}
+                              onChange={(e) =>
+                                setRecurringTaskForm({ ...recurringTaskForm, studentClass: e.target.value })
+                              }
+                              className="w-full rounded-xl bg-white border border-slate-200 px-4 py-2.5 text-slate-900 outline-none focus:border-[#8AC926] transition"
                             >
-                              {viewingTask.status}
-                            </span>
+                              <option value="Playgroup">Playgroup</option>
+                              <option value="Nursery">Nursery</option>
+                              <option value="LKG">LKG</option>
+                              <option value="UKG">UKG</option>
+                            </select>
                           </div>
-                        </div>
-                        
-                        <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Due Date</p>
-                          {viewingTask.dueDate ? (
-                            <span className="text-sm font-semibold text-rose-600 inline-flex items-center gap-1.5">
-                              <Calendar className="w-4 h-4" />
-                              {new Date(viewingTask.dueDate).toLocaleDateString("en-IN", {
-                                month: "long",
-                                day: "numeric",
-                                year: "numeric",
-                              })}
-                            </span>
-                          ) : (
-                            <span className="text-sm text-slate-450">—</span>
-                          )}
-                        </div>
-
-                        {viewingTask.proofUrl && (
-                          <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-3">Teacher Proof</p>
-                            <a
-                              href={viewingTask.proofUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-2 px-3 py-2 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg text-xs font-semibold hover:bg-blue-100 transition"
+                          <div>
+                            <label className="block text-slate-700 font-bold mb-1.5">Repeat Day</label>
+                            <select
+                              value={recurringTaskForm.repeatDay}
+                              onChange={(e) =>
+                                setRecurringTaskForm({ ...recurringTaskForm, repeatDay: e.target.value })
+                              }
+                              className="w-full rounded-xl bg-white border border-slate-200 px-4 py-2.5 text-slate-900 outline-none focus:border-[#8AC926] transition appearance-none"
                             >
-                              <ExternalLink className="w-3.5 h-3.5" />
-                              View Submitted Proof
-                            </a>
-                            {viewingTask.proofDesc && (
-                              <p className="mt-3 text-xs text-slate-600 bg-white p-3 rounded-lg border border-slate-200 whitespace-pre-wrap">
-                                {viewingTask.proofDesc}
-                              </p>
-                            )}
+                              <option value="MONDAY">Monday</option>
+                              <option value="TUESDAY">Tuesday</option>
+                              <option value="WEDNESDAY">Wednesday</option>
+                              <option value="THURSDAY">Thursday</option>
+                              <option value="FRIDAY">Friday</option>
+                              <option value="SATURDAY">Saturday</option>
+                              <option value="SUNDAY">Sunday</option>
+                            </select>
                           </div>
-                        )}
+                          <button
+                            type="submit"
+                            disabled={actionLoading === "recurring-task-save"}
+                            className="w-full py-3 rounded-xl bg-[#8AC926] text-white font-sans font-bold text-xs tracking-wider uppercase hover:bg-[#78B020] transition shadow-md shadow-[#8AC926]/10 disabled:opacity-60"
+                          >
+                            {actionLoading === "recurring-task-save" ? "Saving..." : "Save Task"}
+                          </button>
+                        </form>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
-                        {viewingTask.status === "COMPLETED" && (
-                          <div className="pt-4 flex items-center justify-end">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setViewingTask(null);
-                                goToTab("materials");
-                              }}
-                              className="px-6 py-2.5 bg-[#8AC926] text-white rounded-xl font-bold text-xs uppercase tracking-wide hover:bg-[#78b020] transition shadow-md shadow-[#8AC926]/20"
-                            >
-                              REVIEW
-                            </button>
+                {/* HISTORY MODAL */}
+                {viewingHistoryTaskId && (
+                  <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+                    <div className="bg-white w-full max-w-2xl rounded-2xl shadow-xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
+                      <div className="bg-slate-50 px-5 py-4 border-b border-slate-100 flex items-center justify-between shrink-0">
+                        <div className="flex items-center gap-2">
+                          <HistoryIcon className="w-5 h-5 text-slate-400" />
+                          <h3 className="font-bold text-slate-800 tracking-wide">Assignment History</h3>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setViewingHistoryTaskId(null)}
+                          className="text-slate-400 hover:text-slate-600 transition p-1"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
+                      <div className="p-0 overflow-y-auto modern-scrollbar bg-slate-50">
+                        {recurringTaskHistory.length === 0 ? (
+                          <div className="p-8 text-center text-slate-500 font-medium text-sm">
+                            No tasks have been automatically generated yet.
                           </div>
+                        ) : (
+                          <table className="w-full text-left text-xs">
+                            <thead className="bg-slate-100 sticky top-0 text-slate-500 font-bold uppercase tracking-wider">
+                              <tr>
+                                <th className="px-4 py-3">Date</th>
+                                <th className="px-4 py-3">Teacher</th>
+                                <th className="px-4 py-3">Status</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                              {recurringTaskHistory.map((th) => (
+                                <tr key={th.id} className="bg-white hover:bg-slate-50">
+                                  <td className="px-4 py-3 font-medium text-slate-700">
+                                    {new Date(th.createdAt).toLocaleDateString()}
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <div className="font-bold text-slate-800">{th.teacher?.name}</div>
+                                    <div className="text-[10px] text-slate-500">{th.teacher?.email}</div>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <span
+                                      className={`px-2 py-1 rounded text-[9px] font-bold uppercase tracking-wider ${
+                                        th.status === "COMPLETED"
+                                          ? "bg-blue-50 text-blue-700"
+                                          : th.status === "APPROVED"
+                                            ? "bg-emerald-50 text-emerald-700"
+                                            : th.status === "REJECTED"
+                                              ? "bg-rose-50 text-rose-700"
+                                              : "bg-amber-50 text-amber-700"
+                                      }`}
+                                    >
+                                      {th.status}
+                                    </span>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
                         )}
                       </div>
                     </div>

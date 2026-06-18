@@ -9,6 +9,8 @@ import {
   createGallerySchema,
   updateGallerySchema,
   createTaskSchema,
+  createRecurringTaskSchema,
+  updateRecurringTaskSchema,
   approveTaskSchema,
   createStoryBookSchema,
   updateStoryBookSchema,
@@ -536,8 +538,90 @@ router.get("/payments", async (_req, res, next) => {
 });
 
 // ═════════════════════════════════════════════════════════════════════
-//  TASKS (Teacher Assignments)
+//  TASKS (Teacher Assignments & Recurring)
 // ═════════════════════════════════════════════════════════════════════
+
+// ── List All Recurring Tasks ─────────────────────────────────────────
+router.get("/recurring-tasks", async (_req, res, next) => {
+  try {
+    const rTasks = await prisma.recurringTask.findMany({
+      orderBy: { createdAt: "desc" },
+    });
+    res.json(rTasks);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── Create Recurring Task ───────────────────────────────────────────
+router.post("/recurring-tasks", validate(createRecurringTaskSchema), async (req, res, next) => {
+  try {
+    const { title, description, studentClass, repeatDay, isActive } = req.body;
+    const rTask = await prisma.recurringTask.create({
+      data: {
+        title: title.trim(),
+        description: description?.trim() || null,
+        studentClass,
+        repeatDay,
+        isActive: isActive !== undefined ? isActive : true,
+      },
+    });
+    res.status(201).json(rTask);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── Update Recurring Task ───────────────────────────────────────────
+router.patch("/recurring-tasks/:id", validate(updateRecurringTaskSchema), async (req, res, next) => {
+  try {
+    const id = req.params.id as string;
+    const { title, description, studentClass, repeatDay, isActive } = req.body;
+    
+    const rTask = await prisma.recurringTask.findUnique({ where: { id } });
+    if (!rTask) throw new AppError("Recurring task not found", 404);
+
+    const updated = await prisma.recurringTask.update({
+      where: { id },
+      data: {
+        ...(title !== undefined && { title: title.trim() }),
+        ...(description !== undefined && { description: description?.trim() || null }),
+        ...(studentClass !== undefined && { studentClass }),
+        ...(repeatDay !== undefined && { repeatDay }),
+        ...(isActive !== undefined && { isActive }),
+      },
+    });
+    res.json(updated);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── Delete Recurring Task ───────────────────────────────────────────
+router.delete("/recurring-tasks/:id", async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    await prisma.recurringTask.delete({ where: { id } });
+    res.json({ message: "Recurring task deleted successfully" });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── Get Recurring Task History ──────────────────────────────────────
+router.get("/recurring-tasks/:id/history", async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const tasks = await prisma.task.findMany({
+      where: { recurringTaskId: id },
+      orderBy: { createdAt: "desc" },
+      include: { teacher: { select: { name: true, email: true } } },
+    });
+    res.json(tasks);
+  } catch (err) {
+    next(err);
+  }
+});
 
 // ── List All Tasks ──────────────────────────────────────────────────
 router.get("/tasks", async (_req, res, next) => {
@@ -545,7 +629,8 @@ router.get("/tasks", async (_req, res, next) => {
     const tasks = await prisma.task.findMany({
       orderBy: { createdAt: "desc" },
       include: {
-        teacher: { select: { name: true, email: true } },
+        teacher: { select: { name: true, email: true, studentClass: true } },
+        recurringTask: { select: { studentClass: true } },
       },
     });
     res.json(tasks);
