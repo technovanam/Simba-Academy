@@ -54,6 +54,7 @@ import {
   Users,
   Mail,
   RefreshCw,
+  Plus,
 } from "lucide-react";
 
 const NOTIFICATION_POLL_MS = 12_000;
@@ -135,6 +136,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
   // Modal / Form States
   const [showProofModal, setShowProofModal] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [taskDetailsModal, setTaskDetailsModal] = useState<Task | null>(null);
   const [proofForm, setProofForm] = useState({ description: "" });
   const [selectedProofFile, setSelectedProofFile] = useState<File | null>(null);
   const [selectedStudentForBooks, setSelectedStudentForBooks] = useState<AuthUser | null>(null);
@@ -289,7 +291,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
     }
   };
 
-  // ── TASK PROOF SUBMISSION ─────────────────────────────────────────────
+  // ÔöÇÔöÇ TASK PROOF SUBMISSION ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
   async function handleProofSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!token || !selectedTask || isActionBusy(actionLoading)) return;
@@ -336,7 +338,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
     }
   }
 
-  // ── FILTERED DATA ARRAYS ──────────────────────────────────────────────
+  // ÔöÇÔöÇ FILTERED DATA ARRAYS ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
   const filteredTasks = tasks.filter((t) => {
     const matchesSearch = t.title.toLowerCase().includes(taskSearch.toLowerCase()) || 
                           (t.description ?? "").toLowerCase().includes(taskSearch.toLowerCase());
@@ -529,7 +531,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
             </div>
           ) : activeTab === "overview" ? (
             <div className={portalDashboardBodyClass}>
-              {/* ────────────────── OVERVIEW DASHBOARD ────────────────── */}
+              {/* ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ OVERVIEW DASHBOARD ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ */}
                 <div className={portalDashboardBodyClass}>
                   <div className="flex flex-wrap items-center justify-between gap-3 shrink-0">
                     <div className="min-w-0">
@@ -545,7 +547,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
 
                   {/* Three summary panels (matches admin dashboard style) */}
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch shrink-0">
-                    {/* Assigned tasks — light green */}
+                    {/* Assigned tasks ÔÇö light green */}
                     <div className="bg-[#F3FAEB] border border-green-100 rounded-2xl p-5 text-slate-800 select-none flex flex-col justify-between min-h-[190px]">
                       <div>
                         <div className="flex justify-between items-center mb-3">
@@ -604,7 +606,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                       </div>
                     </div>
 
-                    {/* Lesson plans — light blue */}
+                    {/* Lesson plans ÔÇö light blue */}
                     <div className="bg-[#EEF4FF] border border-blue-100 rounded-2xl p-5 text-slate-800 select-none flex flex-col justify-between min-h-[190px]">
                       <div>
                         <div className="flex justify-between items-center mb-3">
@@ -652,7 +654,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                       </div>
                     </div>
 
-                    {/* Upcoming deadlines — light violet */}
+                    {/* Upcoming deadlines ÔÇö light violet */}
                     <div className={`bg-[#F5F3FF] border border-violet-100 rounded-2xl p-5 text-slate-800 select-none flex flex-col ${
                       upcomingTasks.length === 0 ? "justify-between gap-2 self-start w-full min-h-[190px]" : "justify-between min-h-[190px]"
                     }`}>
@@ -806,7 +808,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
             </div>
           ) : (
             <div className="space-y-6 animate-fade-in">
-              {/* ────────────────── ASSIGNED TASKS Tab ────────────────── */}
+              {/* ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ ASSIGNED TASKS Tab ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ */}
               {activeTab === "tasks" && (
                 <AdminPageShell>
                   <AdminPageHeader
@@ -817,7 +819,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                         <AdminSearchInput
                           value={taskSearch}
                           onChange={setTaskSearch}
-                          placeholder="Search tasks…"
+                          placeholder="Search tasksÔÇª"
                           ariaLabel="Search tasks"
                         />
                         <PillSelect
@@ -833,125 +835,140 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                     {filteredTasks.length === 0 ? (
                       <AdminListEmpty message="No assigned tasks matched your search or filters." />
                     ) : (
-                      <AdminRecordList>
-                        {taskPagination.paginatedItems.map((t) => {
-                          const isOverdue =
-                            t.dueDate &&
-                            new Date(t.dueDate).getTime() < Date.now() &&
-                            (t.status === "PENDING" || t.status === "REJECTED");
-                          return (
-                            <div key={t.id} className={adminListRowClass}>
-                              <div className="flex-1 min-w-[180px]">
-                                <div className="flex flex-wrap items-center gap-2 mb-1">
-                                  <span
-                                    className={`px-2 py-0.5 rounded-md text-4xs font-extrabold uppercase border shrink-0 ${
-                                      t.status === "APPROVED"
-                                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                        : t.status === "REJECTED"
-                                        ? "bg-rose-50 text-rose-700 border-rose-200"
-                                        : t.status === "COMPLETED"
-                                        ? "bg-blue-50 text-blue-700 border-blue-200"
-                                        : "bg-amber-50 text-amber-700 border-amber-200"
-                                    }`}
-                                  >
-                                    {t.status === "COMPLETED" ? "Submitted" : t.status}
-                                  </span>
-                                </div>
-                                <p className="font-bold text-sm text-slate-800">{t.title}</p>
-                                {t.description && (
-                                  <p className="text-2xs text-slate-600 font-medium line-clamp-2">{t.description}</p>
-                                )}
-                                {t.dueDate && (
-                                  <p
-                                    className={`text-2xs font-semibold mt-0.5 inline-flex items-center gap-1 ${
-                                      isOverdue ? "text-rose-600" : "text-slate-600"
-                                    }`}
-                                  >
-                                    <Calendar className="w-3 h-3 shrink-0" />
-                                    Due:{" "}
-                                    {new Date(t.dueDate).toLocaleDateString("en-IN", {
-                                      month: "short",
-                                      day: "numeric",
-                                      year: "numeric",
-                                    })}
-                                    {isOverdue ? " (Overdue)" : ""}
-                                  </p>
-                                )}
-                                {t.proofUrl ? (
-                                  <div className="mt-1">
-                                    <a
-                                      href={resolveStorageUrl(t.proofUrl)}
-                                      target="_blank"
-                                      rel="noreferrer"
-                                      className="text-2xs font-bold text-[#8AC926] hover:underline inline-flex items-center gap-1"
-                                    >
-                                      View proof <ExternalLink className="w-3 h-3" />
-                                    </a>
-                                    {t.status !== "REJECTED" && t.proofDesc ? (
-                                      <p className="text-3xs text-slate-500 font-medium italic mt-0.5 line-clamp-1">
-                                        {t.proofDesc}
-                                      </p>
-                                    ) : null}
-                                  </div>
-                                ) : (
-                                  <p className="text-2xs text-slate-500 font-medium mt-0.5">No proof submitted yet</p>
-                                )}
-                              </div>
-                              <div className="flex flex-col items-end gap-2 shrink-0">
-                                {t.status === "PENDING" || t.status === "REJECTED" ? (
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setSelectedTask(t);
-                                      setProofForm({ description: "" });
-                                      setSelectedProofFile(null);
-                                      setShowProofModal(true);
-                                    }}
-                                    className="px-3 py-1.5 rounded-xl bg-[#8AC926] text-white font-sans font-bold text-2xs hover:bg-[#78B020] transition shadow-md shadow-[#8AC926]/10 whitespace-nowrap"
-                                  >
-                                    {t.status === "REJECTED" ? "Re-submit proof" : "Submit proof"}
-                                  </button>
-                                ) : t.status === "APPROVED" ? (
-                                  <span className="px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold text-2xs inline-flex items-center gap-1">
-                                    ✓ Approved
-                                  </span>
-                                ) : (
-                                  <span className="px-3 py-1.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 font-bold text-2xs">
-                                    Submitted
-                                  </span>
-                                )}
-                                {t.status === "REJECTED" && t.proofDesc && (
-                                  <div className="mt-1 p-2.5 rounded-xl bg-rose-50 border border-rose-100 max-w-[260px] text-left">
-                                    <span className="text-[9px] font-extrabold uppercase tracking-wider text-rose-800 block mb-0.5">Rejection Reason</span>
-                                    <p className="text-xs font-semibold text-rose-600 break-words">{t.proofDesc}</p>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
-                        <AdminListPagination
-                          rangeStart={taskPagination.rangeStart}
-                          rangeEnd={taskPagination.rangeEnd}
-                          total={filteredTasks.length}
-                          safePage={taskPagination.safePage}
-                          totalPages={taskPagination.totalPages}
-                          pageNumbers={taskPagination.pageNumbers}
-                          onPageChange={taskPagination.setCurrentPage}
-                          itemLabel="tasks"
-                        />
-                      </AdminRecordList>
+                      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex-1 min-h-0 flex flex-col">
+                        <div className="overflow-x-auto flex-1 min-h-0 overflow-y-auto modern-scrollbar">
+                          <table className="w-full text-left text-sm whitespace-nowrap">
+                            <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium text-xs sticky top-0 z-10 select-none">
+                              <tr>
+                                <th className="px-4 py-3 font-semibold w-[45%]">Task Details</th>
+                                <th className="px-4 py-3 font-semibold w-[20%]">Status</th>
+                                <th className="px-4 py-3 font-semibold w-[20%]">Due Date</th>
+                                <th className="px-4 py-3 font-semibold text-right w-[15%]">Actions</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                              {taskPagination.paginatedItems.map((t) => {
+                                const isOverdue =
+                                  t.dueDate &&
+                                  new Date(t.dueDate).getTime() < Date.now() &&
+                                  (t.status === "PENDING" || t.status === "REJECTED");
+                                return (
+                                  <tr key={t.id} className="hover:bg-slate-50/80 transition-colors">
+                                    <td className="px-4 py-3 align-middle w-[45%] min-w-0">
+                                      <div className="flex flex-col min-w-0">
+                                        <span className="font-bold text-sm text-slate-800">{t.title}</span>
+                                        {t.description && (
+                                          <span className="text-3xs text-slate-400 font-medium shrink-0 mt-0.5 whitespace-pre-wrap line-clamp-2">{t.description}</span>
+                                        )}
+                                      </div>
+                                    </td>
+                                    <td className="px-4 py-3 align-middle w-[20%]">
+                                      <div className="flex items-center gap-1.5 flex-wrap">
+                                        <span
+                                          className={`px-2 py-0.5 rounded text-4xs font-extrabold uppercase border shrink-0 ${
+                                            t.status === "APPROVED"
+                                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                              : t.status === "REJECTED"
+                                              ? "bg-rose-50 text-rose-700 border-rose-200"
+                                              : t.status === "COMPLETED"
+                                              ? "bg-blue-50 text-blue-700 border-blue-200"
+                                              : "bg-amber-50 text-amber-700 border-amber-200"
+                                          }`}
+                                        >
+                                          {t.status === "COMPLETED" ? "Submitted" : t.status}
+                                        </span>
+                                        {t.proofUrl && (
+                                          <a
+                                            href={resolveStorageUrl(t.proofUrl)}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="p-1 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 transition flex items-center justify-center shrink-0"
+                                            title="View proof"
+                                          >
+                                            <ExternalLink className="w-3.5 h-3.5" />
+                                          </a>
+                                        )}
+                                      </div>
+                                    </td>
+                                    <td className="px-4 py-3 align-middle w-[20%] text-xs font-semibold text-slate-700">
+                                      {t.dueDate ? (
+                                        <span className={`inline-flex items-center gap-1 ${isOverdue ? "text-rose-600" : "text-slate-600"}`}>
+                                          <Calendar className="w-3.5 h-3.5" />
+                                          {new Date(t.dueDate).toLocaleDateString("en-IN", {
+                                            month: "short",
+                                            day: "numeric",
+                                            year: "numeric",
+                                          })}
+                                          {isOverdue && <span className="text-[9px] font-bold">(Overdue)</span>}
+                                        </span>
+                                      ) : (
+                                        <span className="text-slate-450">—</span>
+                                      )}
+                                    </td>
+                                    <td className="px-4 py-2 text-right align-middle w-[15%]">
+                                      <div className="flex items-center justify-end gap-2">
+                                        <button
+                                          type="button"
+                                          onClick={() => setTaskDetailsModal(t)}
+                                          className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 transition shadow-sm"
+                                          title="View Task Details"
+                                        >
+                                          <Eye className="w-4 h-4" />
+                                        </button>
+                                        {t.status === "PENDING" || t.status === "REJECTED" || t.status === "COMPLETED" ? (
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setSelectedTask(t);
+                                              setProofForm({ description: t.proofDesc || "" });
+                                              setSelectedProofFile(null);
+                                              setShowProofModal(true);
+                                            }}
+                                            className="px-2.5 py-1.5 rounded-xl bg-[#8AC926] text-white font-sans font-bold text-2xs hover:bg-[#78B020] transition shadow-md shadow-[#8AC926]/10 whitespace-nowrap"
+                                          >
+                                            {t.status === "REJECTED" ? "Re-submit" : t.status === "COMPLETED" ? "Edit proof" : "Submit proof"}
+                                          </button>
+                                        ) : t.status === "APPROVED" ? (
+                                          <span className="px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-100 text-emerald-700 font-bold text-2xs inline-flex items-center gap-1 select-none">
+                                            ✓ Approved
+                                          </span>
+                                        ) : (
+                                          <span className="px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-100 text-blue-700 font-bold text-2xs select-none">
+                                            Submitted
+                                          </span>
+                                        )}
+                                      </div>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                        <div className="px-4 py-3 bg-slate-50 border-t border-slate-200">
+                          <AdminListPagination
+                            rangeStart={taskPagination.rangeStart}
+                            rangeEnd={taskPagination.rangeEnd}
+                            total={filteredTasks.length}
+                            safePage={taskPagination.safePage}
+                            totalPages={taskPagination.totalPages}
+                            pageNumbers={taskPagination.pageNumbers}
+                            onPageChange={taskPagination.setCurrentPage}
+                            itemLabel="tasks"
+                          />
+                        </div>
+                      </div>
                     )}
                   </AdminPageBody>
                 </AdminPageShell>
               )}
 
-              {/* ────────────────── STORY LIBRARY Tab ────────────────── */}
+              {/* ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ STORY LIBRARY Tab ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ */}
               {activeTab === "library" && token && (
                 <TeacherStoryLibrary books={books} token={token} />
               )}
 
-              {/* ────────────────── LESSON PLANNER Tab (view only) ────────────────── */}
+              {/* ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ LESSON PLANNER Tab (view only) ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ */}
               {activeTab === "planner" && (
                 <AdminPageShell>
                   <AdminPageHeader
@@ -961,7 +978,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                       <AdminSearchInput
                         value={plannerSearch}
                         onChange={setPlannerSearch}
-                        placeholder="Search lesson plans…"
+                        placeholder="Search lesson plansÔÇª"
                         ariaLabel="Search lesson plans"
                       />
                     }
@@ -1011,7 +1028,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                 </AdminPageShell>
               )}
 
-              {/* ────────────────── NOTIFICATIONS Tab ────────────────── */}
+              {/* ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ NOTIFICATIONS Tab ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ */}
               {activeTab === "notifications" && token && (
                 <TeacherNotificationsPage
                   token={token}
@@ -1020,7 +1037,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                 />
               )}
 
-              {/* ────────────────── ACCOUNT SETTINGS Tab ────────────────── */}
+              {/* ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ ACCOUNT SETTINGS Tab ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ */}
               {activeTab === "settings" && token && (
                 <TeacherSettingsPanel
                   token={token}
@@ -1036,7 +1053,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                 />
               )}
 
-              {/* ────────────────── STUDENTS Tab ────────────────── */}
+              {/* ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ STUDENTS Tab ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ */}
               {activeTab === "students" && (
                 <AdminPageShell>
                   <AdminPageHeader
@@ -1046,7 +1063,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                       <AdminSearchInput
                         value={studentSearch}
                         onChange={setStudentSearch}
-                        placeholder="Search students…"
+                        placeholder="Search studentsÔÇª"
                         ariaLabel="Search students"
                       />
                     }
@@ -1127,7 +1144,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
         </div>
       </main>
 
-      {/* ────────────────── PROOF SUBMISSION MODAL ────────────────── */}
+      {/* ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ PROOF SUBMISSION MODAL ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ */}
       {showProofModal && selectedTask && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl border border-slate-200 animate-scale-up text-slate-800 relative">
@@ -1212,7 +1229,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                   {selectedStudentForBooks.name}'s Reading Progress
                 </h3>
                 <p className="text-2xs font-semibold text-slate-500 mt-0.5">
-                  {selectedStudentForBooks.email} • {user?.studentClass} Class
+                  {selectedStudentForBooks.email} ÔÇó {user?.studentClass} Class
                 </p>
               </div>
               <button
@@ -1375,6 +1392,88 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                 type="button"
                 onClick={() => setSelectedStudentForBooks(null)}
                 className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {taskDetailsModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-2xl shadow-2xl border border-slate-200 animate-scale-up text-slate-800 relative max-h-[90vh] overflow-hidden flex flex-col">
+            <ModalCloseButton
+              onClick={() => setTaskDetailsModal(null)}
+              className="absolute top-4 right-4"
+            />
+            <h3 className="font-sans text-lg font-extrabold text-slate-900 mb-4 pr-10 shrink-0">Task Details</h3>
+
+            <div className="space-y-6 overflow-y-auto modern-scrollbar pr-2 flex-1">
+              <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                <p className="font-bold text-slate-900 text-xs mb-1">Active Task</p>
+                <div className="flex items-center gap-2 mb-2 flex-wrap">
+                  <span className="font-bold text-[#8AC926] text-sm">{taskDetailsModal.title}</span>
+                  <span className={`px-2 py-0.5 rounded text-4xs font-extrabold uppercase border ${
+                    taskDetailsModal.status === "APPROVED"
+                      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                      : taskDetailsModal.status === "REJECTED"
+                      ? "bg-rose-50 text-rose-700 border-rose-200"
+                      : taskDetailsModal.status === "COMPLETED"
+                      ? "bg-blue-50 text-blue-700 border-blue-200"
+                      : "bg-amber-50 text-amber-700 border-amber-200"
+                  }`}>
+                    {taskDetailsModal.status === "COMPLETED" ? "Submitted" : taskDetailsModal.status}
+                  </span>
+                </div>
+                {taskDetailsModal.description && (
+                  <p className="text-xs text-slate-600 whitespace-pre-wrap">{taskDetailsModal.description}</p>
+                )}
+                
+                <div className="flex items-center gap-4 mt-4 pt-3 border-t border-slate-200/60">
+                  {taskDetailsModal.dueDate && (
+                    <span className="text-xs font-semibold text-slate-500 flex items-center gap-1">
+                      <Calendar className="w-3.5 h-3.5" />
+                      Due: {new Date(taskDetailsModal.dueDate).toLocaleDateString()}
+                    </span>
+                  )}
+                  {taskDetailsModal.proofSubmittedAt && (
+                    <span className="text-xs font-semibold text-slate-500 flex items-center gap-1">
+                      <Clock className="w-3.5 h-3.5" />
+                      Submitted: {new Date(taskDetailsModal.proofSubmittedAt).toLocaleDateString()}
+                    </span>
+                  )}
+                </div>
+              </div>
+              
+              {(taskDetailsModal.proofDesc || taskDetailsModal.proofUrl) && (
+                <div>
+                  <h4 className="text-sm font-bold text-slate-800 mb-2">Submission / Proof</h4>
+                  {taskDetailsModal.proofDesc && (
+                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-3">
+                      <p className="text-xs font-medium text-slate-700 whitespace-pre-wrap">{taskDetailsModal.proofDesc}</p>
+                    </div>
+                  )}
+                  {taskDetailsModal.proofUrl && (
+                    <a
+                      href={resolveStorageUrl(taskDetailsModal.proofUrl)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs transition shadow-sm"
+                    >
+                      <ExternalLink className="w-4 h-4 text-slate-400" />
+                      View Uploaded Proof
+                    </a>
+                  )}
+                </div>
+              )}
+            </div>
+            
+            <div className="mt-4 pt-4 border-t border-slate-100 flex justify-end shrink-0">
+              <button
+                type="button"
+                onClick={() => setTaskDetailsModal(null)}
+                className="px-6 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs transition"
               >
                 Close
               </button>

@@ -474,15 +474,21 @@ router.get("/dashboard", async (_req, res, next) => {
       courseCount,
       materialCount,
       pendingMaterialCount,
+      taskProofCount,
+      pendingTaskProofCount,
       paymentCount,
       revenue,
       inquiryCount,
       unreadInquiryCount,
+      franchiseInquiryCount,
+      unreadFranchiseInquiryCount,
     ] = await Promise.all([
       prisma.user.count({ where: { isDeleted: false, status: "ACTIVE" } }),
       prisma.course.count({ where: { isActive: true } }),
       prisma.material.count(),
       prisma.material.count({ where: { isApproved: false } }),
+      prisma.task.count({ where: { NOT: { proofUrl: null } } }),
+      prisma.task.count({ where: { status: "COMPLETED", NOT: { proofUrl: null } } }),
       prisma.payment.count({ where: { status: "SUCCESS" } }),
       prisma.payment.aggregate({
         where: { status: "SUCCESS" },
@@ -490,17 +496,19 @@ router.get("/dashboard", async (_req, res, next) => {
       }),
       prisma.inquiry.count(),
       prisma.inquiry.count({ where: { isRead: false } }),
+      prisma.franchiseInquiry.count(),
+      prisma.franchiseInquiry.count({ where: { isRead: false } }),
     ]);
 
     res.json({
       users: userCount,
       courses: courseCount,
-      materials: materialCount,
-      pendingApprovals: pendingMaterialCount,
+      materials: materialCount + taskProofCount,
+      pendingApprovals: pendingMaterialCount + pendingTaskProofCount,
       payments: paymentCount,
       revenue: revenue._sum.amount ?? 0,
       inquiries: inquiryCount,
-      unreadInquiries: unreadInquiryCount,
+      unreadInquiries: unreadInquiryCount + unreadFranchiseInquiryCount,
     });
   } catch (err) {
     next(err);
