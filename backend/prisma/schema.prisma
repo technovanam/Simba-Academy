@@ -177,11 +177,12 @@ model FranchiseInquiry {
 model Task {
   id          String    @id @default(cuid())
   title       String
-  description String?
+  description String?   @db.Text
   dueDate     DateTime?
   status      String    @default("PENDING")
   proofUrl    String?
-  proofDesc   String?
+  proofDesc   String?   @db.Text
+  proofSubmittedAt DateTime?
   teacherId   String
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt

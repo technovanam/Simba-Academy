@@ -206,6 +206,10 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
   const [taskSearch, setTaskSearch] = useState("");
   const [taskStatusFilter, setTaskStatusFilter] = useState("ALL");
   const [taskTeacherFilter, setTaskTeacherFilter] = useState("ALL");
+  const [viewingTask, setViewingTask] = useState<Task | null>(null);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [alertModal, setAlertModal] = useState<{ title: string; message: string } | null>(null);
+  const [viewReasonModal, setViewReasonModal] = useState<{ title: string; message: string } | null>(null);
   const [bookSearch, setBookSearch] = useState("");
   const [inquirySearch, setInquirySearch] = useState("");
   const [leadView, setLeadView] = useState<{
@@ -234,6 +238,8 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
   const [showRejectTaskForm, setShowRejectTaskForm] = useState(false);
   const [rejectTaskForm, setRejectTaskForm] = useState({ id: "", reason: "" });
   const [taskFormErrors, setTaskFormErrors] = useState<Record<string, string>>({});
+  const [teacherPickerSearch, setTeacherPickerSearch] = useState("");
+  const [teacherPickerOpen, setTeacherPickerOpen] = useState(false);
 
   const [bookForm, setBookForm] = useState({
     title: "",
@@ -257,6 +263,8 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
   const [showGalleryForm, setShowGalleryForm] = useState(false);
   const [editingGallery, setEditingGallery] = useState<GalleryItem | null>(null);
   const [gallerySearch, setGallerySearch] = useState("");
+  const [bookAudienceFilter, setBookAudienceFilter] = useState("ALL");
+  const [bookClassFilter, setBookClassFilter] = useState("ALL");
   const [viewerImage, setViewerImage] = useState<string | null>(null);
   const [viewerTitle, setViewerTitle] = useState<string>("");
   const [viewerDownloading, setViewerDownloading] = useState(false);
@@ -571,17 +579,29 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
 
     setActionLoading("task-assign");
     try {
-      const created = await api.createTask(token, {
-        title: taskForm.title.trim(),
-        description: taskForm.description.trim(),
-        dueDate: new Date(`${taskForm.dueDate}T12:00:00`).toISOString(),
-        teacherId: taskForm.teacherId,
-      });
-      setTasks((prev) => [created, ...prev]);
-      setMessage("Task assigned successfully.");
+      if (editingTask) {
+        const updated = await api.updateTask(token, editingTask.id, {
+          title: taskForm.title.trim(),
+          description: taskForm.description.trim(),
+          dueDate: new Date(`${taskForm.dueDate}T12:00:00`).toISOString(),
+          teacherId: taskForm.teacherId,
+        });
+        setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
+        setMessage("Task updated successfully.");
+      } else {
+        const created = await api.createTask(token, {
+          title: taskForm.title.trim(),
+          description: taskForm.description.trim(),
+          dueDate: new Date(`${taskForm.dueDate}T12:00:00`).toISOString(),
+          teacherId: taskForm.teacherId,
+        });
+        setTasks((prev) => [created, ...prev]);
+        setMessage("Task assigned successfully.");
+      }
       setTaskForm({ title: "", description: "", dueDate: "", teacherId: "" });
       setTaskFormErrors({});
       setShowTaskForm(false);
+      setEditingTask(null);
     } catch (err) {
       if (err instanceof ApiError && err.errors) {
         const mapped: Record<string, string> = {};
@@ -590,7 +610,7 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
         }
         setTaskFormErrors(mapped);
       } else {
-        setError(err instanceof ApiError ? err.message : "Failed to assign task.");
+        setError(err instanceof ApiError ? err.message : `Failed to ${editingTask ? "update" : "assign"} task.`);
       }
     } finally {
       setActionLoading(null);
@@ -1125,12 +1145,17 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
-  const filteredBooks = books.filter(
-    (b) =>
+  const filteredBooks = books.filter((b) => {
+    const matchesSearch =
       b.title.toLowerCase().includes(bookSearch.toLowerCase()) ||
       (b.author ?? "").toLowerCase().includes(bookSearch.toLowerCase()) ||
-      b.category.toLowerCase().includes(bookSearch.toLowerCase())
-  );
+      b.category.toLowerCase().includes(bookSearch.toLowerCase());
+    const matchesAudience = bookAudienceFilter === "ALL" || b.audience === bookAudienceFilter;
+    const matchesClass =
+      bookClassFilter === "ALL" ||
+      b.category.split(",").map((c) => c.trim()).includes(bookClassFilter);
+    return matchesSearch && matchesAudience && matchesClass;
+  });
 
   const activeInquiries = inquirySubTab === "general" ? inquiries : franchiseInquiries;
   const filteredInquiries = activeInquiries.filter((item) => {
@@ -1155,11 +1180,20 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
       g.type.toLowerCase().includes(gallerySearch.toLowerCase())
   );
 
+  const filteredFolders = folders.filter((f) => {
+    const matchesSearch = f.name.toLowerCase().includes(bookSearch.toLowerCase());
+    const matchesAudience = bookAudienceFilter === "ALL" || f.audience === bookAudienceFilter;
+    const matchesClass =
+      bookClassFilter === "ALL" ||
+      (f.category ?? "").split(",").map((c) => c.trim()).includes(bookClassFilter);
+    return matchesSearch && matchesAudience && matchesClass;
+  });
+
   const combinedItems = [
-    ...folders.map((f) => ({ ...f, isFolder: true })),
+    ...filteredFolders.map((f) => ({ ...f, isFolder: true })),
     ...filteredBooks.map((b) => ({ ...b, isFolder: false })),
   ];
-  const bookPagination = useAdminPagination(combinedItems, [bookSearch, books.length, folders.length], 10);
+  const bookPagination = useAdminPagination(combinedItems, [bookSearch, bookAudienceFilter, bookClassFilter, books.length, folders.length], 10);
   const galleryPagination = useAdminPagination(filteredGallery, [gallerySearch, gallery.length]);
   const inquiryPagination = useAdminPagination(
     filteredInquiries,
@@ -1223,7 +1257,7 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
         course: { title: "N/A (Task Assignment)" },
         uploadedBy: t.teacher ? { name: t.teacher.name, email: t.teacher.email } : null,
         isApproved: t.status === "APPROVED",
-        createdAt: t.updatedAt || t.createdAt,
+        createdAt: t.proofSubmittedAt || t.updatedAt || t.createdAt,
         isTask: true,
         status: t.status,
       })),
@@ -1949,8 +1983,9 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                       <table className="w-full text-left text-sm whitespace-nowrap">
                         <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium text-xs sticky top-0 z-10">
                           <tr>
-                            <th className="px-4 py-3 font-semibold w-[45%]">Material Details</th>
-                            <th className="px-4 py-3 font-semibold w-[20%]">Uploaded On</th>
+                            <th className="px-4 py-3 font-semibold w-[30%]">Material Uploaded</th>
+                            <th className="px-4 py-3 font-semibold w-[20%]">Name &amp; Email</th>
+                            <th className="px-4 py-3 font-semibold w-[15%]">Uploaded On</th>
                             <th className="px-4 py-3 font-semibold w-[15%]">Status</th>
                             <th className="px-4 py-3 font-semibold text-right">Actions</th>
                           </tr>
@@ -1958,7 +1993,8 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                         <tbody className="divide-y divide-slate-100">
                           {combinedApprovals.map((m) => (
                             <tr key={m.id} className="hover:bg-slate-50/80 transition-colors">
-                              <td className="px-4 py-3 align-middle w-[45%] min-w-0">
+                              {/* Column 1: Material Uploaded (title) */}
+                              <td className="px-4 py-3 align-middle w-[30%] min-w-0">
                                 <div className="flex flex-col space-y-1">
                                   <a
                                     href={resolveStorageUrl(m.fileUrl)}
@@ -1969,14 +2005,19 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                                     <span>{m.title}</span>
                                     <ExternalLink className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                                   </a>
-                                  {m.description && (
-                                    <p className="text-2xs text-slate-500 line-clamp-2 break-all whitespace-normal">
-                                      {m.description}
+                                </div>
+                              </td>
+                              {/* Column 2: Uploader Name & Email */}
+                              <td className="px-4 py-3 align-middle w-[20%] min-w-0">
+                                <div className="flex flex-col space-y-0.5">
+                                  <p className="text-xs font-semibold text-slate-700 break-all whitespace-normal">
+                                    {m.uploadedBy?.name ?? "Admin"}
+                                  </p>
+                                  {m.uploadedBy?.email && (
+                                    <p className="text-2xs text-slate-400 break-all whitespace-normal">
+                                      {m.uploadedBy.email}
                                     </p>
                                   )}
-                                  <p className="text-4xs text-slate-400 font-bold uppercase tracking-wider mt-0.5">
-                                    By {m.uploadedBy?.name ?? "Admin"}{m.uploadedBy?.email ? ` · ${m.uploadedBy.email}` : ""}
-                                  </p>
                                 </div>
                               </td>
                               <td className="px-4 py-3 align-middle text-xs text-slate-500 w-[20%]">
@@ -1987,33 +2028,52 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                                 })}
                               </td>
                               <td className="px-4 py-3 align-middle w-[15%]">
-                                {m.isTask ? (
-                                  <span
-                                    className={`px-2.5 py-0.5 rounded-lg text-2xs font-extrabold uppercase border shrink-0 ${
-                                      m.status === "APPROVED"
-                                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  {m.isTask ? (
+                                    <span
+                                      className={`px-2.5 py-0.5 rounded-lg text-2xs font-extrabold uppercase border shrink-0 ${
+                                        m.status === "APPROVED"
+                                          ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                          : m.status === "REJECTED"
+                                            ? "bg-rose-50 text-rose-700 border-rose-200"
+                                            : "bg-blue-50 text-blue-700 border-blue-200"
+                                      }`}
+                                    >
+                                      {m.status === "APPROVED"
+                                        ? "Approved"
                                         : m.status === "REJECTED"
-                                          ? "bg-rose-50 text-rose-700 border-rose-200"
-                                          : "bg-blue-50 text-blue-700 border-blue-200"
-                                    }`}
-                                  >
-                                    {m.status === "APPROVED"
-                                      ? "Approved"
-                                      : m.status === "REJECTED"
-                                        ? "Rejected"
-                                        : "Pending Review"}
-                                  </span>
-                                ) : (
-                                  <span
-                                    className={`px-2.5 py-0.5 rounded-lg text-2xs font-extrabold uppercase border shrink-0 ${
-                                      m.isApproved
-                                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                        : "bg-amber-50 text-amber-700 border-amber-200"
-                                    }`}
-                                  >
-                                    {m.isApproved ? "Approved" : "Pending Review"}
-                                  </span>
-                                )}
+                                          ? "Rejected"
+                                          : "Pending Review"}
+                                    </span>
+                                  ) : (
+                                    <span
+                                      className={`px-2.5 py-0.5 rounded-lg text-2xs font-extrabold uppercase border shrink-0 ${
+                                        m.isApproved
+                                          ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                          : "bg-amber-50 text-amber-700 border-amber-200"
+                                      }`}
+                                    >
+                                      {m.isApproved ? "Approved" : "Pending Review"}
+                                    </span>
+                                  )}
+                                  {m.description && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setViewReasonModal({
+                                        title: m.isTask && m.status === "REJECTED" ? "Rejection Reason" : "Teacher Comments",
+                                        message: m.description!
+                                      })}
+                                      className={`text-[9px] font-bold uppercase tracking-wider hover:underline cursor-pointer flex items-center gap-1 transition-colors px-2 py-0.5 rounded ${
+                                        m.isTask && m.status === "REJECTED"
+                                          ? "text-rose-700 hover:text-rose-800 bg-rose-50 border border-rose-100"
+                                          : "text-slate-600 hover:text-slate-800 bg-slate-50 border border-slate-200"
+                                      }`}
+                                    >
+                                      <Eye className="w-3 h-3" />
+                                      View
+                                    </button>
+                                  )}
+                                </div>
                               </td>
                               <td className="px-4 py-2 text-right align-middle">
                                 <div className="flex items-center justify-end gap-1.5">
@@ -2165,6 +2225,7 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                       type="button"
                       onClick={() => {
                         setTaskFormErrors({});
+                        setTeacherPickerSearch("");
                         setShowTaskForm(true);
                       }}
                       className="px-4 py-2 rounded-xl bg-[#8AC926] text-white font-sans font-bold text-xs tracking-wider flex items-center gap-2 hover:bg-[#78B020] transition shadow-md shadow-[#8AC926]/10 whitespace-nowrap"
@@ -2198,7 +2259,7 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                                 <div className="flex flex-col min-w-0">
                                   <span className="font-bold text-sm text-slate-800">{t.title}</span>
                                   {t.description && (
-                                    <span className="text-2xs text-slate-500 font-medium line-clamp-2 mt-0.5 whitespace-pre-wrap">{t.description}</span>
+                                    <span className="text-3xs text-slate-400 font-medium shrink-0 mt-0.5 whitespace-pre-wrap line-clamp-1">{t.description}</span>
                                   )}
                                 </div>
                               </td>
@@ -2243,6 +2304,38 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                                 <div className="flex items-center justify-end gap-1.5">
                                   <button
                                     type="button"
+                                    onClick={() => setViewingTask(t)}
+                                    className="px-2 py-1.5 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100 disabled:opacity-50 flex items-center justify-center"
+                                    title="View task details"
+                                  >
+                                    <Eye className="w-3 h-3" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (t.status !== "PENDING") {
+                                        setAlertModal({
+                                          title: "Cannot Edit Task",
+                                          message: "Completed or reviewed tasks cannot be edited.",
+                                        });
+                                        return;
+                                      }
+                                      setEditingTask(t);
+                                      setTaskForm({
+                                        title: t.title,
+                                        description: t.description || "",
+                                        teacherId: t.teacherId,
+                                        dueDate: t.dueDate ? t.dueDate.substring(0, 10) : "",
+                                      });
+                                      setShowTaskForm(true);
+                                    }}
+                                    className="px-2 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100 disabled:opacity-50 flex items-center justify-center"
+                                    title="Edit task"
+                                  >
+                                    <Edit2 className="w-3 h-3" />
+                                  </button>
+                                  <button
+                                    type="button"
                                     disabled={actionLoading === `task-delete-${t.id}`}
                                     onClick={() => handleDeleteTask(t.id)}
                                     className="px-2 py-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 disabled:opacity-50 flex items-center justify-center"
@@ -2271,6 +2364,7 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                       <ModalCloseButton
                         onClick={() => {
                           setTaskFormErrors({});
+                          setTeacherPickerSearch("");
                           setShowTaskForm(false);
                         }}
                         className="absolute top-4 right-4"
@@ -2283,29 +2377,124 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                           <label className="block text-slate-700 font-bold mb-1.5">
                             Select Teacher
                           </label>
-                          <PortalSelect
-                            value={taskForm.teacherId}
-                            onChange={(e) => {
-                              clearTaskFieldError("teacherId");
-                              setTaskForm({ ...taskForm, teacherId: e.target.value });
-                            }}
-                            className={taskFieldClass(Boolean(taskFormErrors.teacherId))}
-                          >
-                            <option value="" className="bg-white text-slate-800">
-                              -- Choose a Teacher --
-                            </option>
-                            {teachersList.map((t) => (
-                              <option key={t.id} value={t.id} className="bg-white text-slate-800">
-                                {t.name} ({t.email})
-                              </option>
-                            ))}
-                          </PortalSelect>
+                          {/* Custom teacher picker dropdown */}
+                          <div className="relative">
+                            {/* Trigger button */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setTeacherPickerOpen((o) => !o);
+                                setTeacherPickerSearch("");
+                              }}
+                              className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl border bg-white text-left transition ${
+                                taskFormErrors.teacherId
+                                  ? "border-rose-400"
+                                  : teacherPickerOpen
+                                  ? "border-[#8AC926] ring-2 ring-[#8AC926]/20"
+                                  : "border-slate-200 hover:border-slate-300"
+                              }`}
+                            >
+                              {taskForm.teacherId ? (() => {
+                                const sel = teachersList.find((t) => t.id === taskForm.teacherId);
+                                if (!sel) return null;
+                                const initials = sel.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+                                return (
+                                  <>
+                                    <div className="w-6 h-6 rounded-lg bg-[#8AC926] text-white flex items-center justify-center text-[10px] font-bold shrink-0">
+                                      {initials}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-xs font-bold text-slate-800 truncate">{sel.name}</p>
+                                      <p className="text-[10px] text-slate-400 truncate">{sel.email}</p>
+                                    </div>
+                                  </>
+                                );
+                              })() : (
+                                <span className="text-xs text-slate-400 flex-1">— Choose a teacher —</span>
+                              )}
+                              <ChevronDown className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform ${teacherPickerOpen ? "rotate-180" : ""}`} />
+                            </button>
+
+                            {/* Dropdown panel */}
+                            {teacherPickerOpen && (
+                              <div
+                                className="absolute z-30 mt-1 w-full rounded-xl border border-slate-200 shadow-xl bg-white overflow-hidden"
+                                onMouseDown={(e) => e.preventDefault()} /* keep focus on input */
+                              >
+                                {/* Search */}
+                                <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 border-b border-slate-100">
+                                  <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                  <input
+                                    autoFocus
+                                    type="text"
+                                    placeholder="Search by name or email…"
+                                    value={teacherPickerSearch}
+                                    onChange={(e) => setTeacherPickerSearch(e.target.value)}
+                                    className="flex-1 bg-transparent text-xs text-slate-800 outline-none placeholder-slate-400"
+                                  />
+                                  {teacherPickerSearch && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setTeacherPickerSearch("")}
+                                      className="text-slate-400 hover:text-slate-600 transition text-xs leading-none"
+                                    >
+                                      ✕
+                                    </button>
+                                  )}
+                                </div>
+                                {/* List */}
+                                <div className="max-h-44 overflow-y-auto modern-scrollbar divide-y divide-slate-100">
+                                  {teachersList.filter((t) =>
+                                    `${t.name} ${t.email}`.toLowerCase().includes(teacherPickerSearch.toLowerCase())
+                                  ).length === 0 ? (
+                                    <p className="text-center text-xs text-slate-400 py-4 font-medium">No teachers found.</p>
+                                  ) : (
+                                    teachersList.filter((t) =>
+                                      `${t.name} ${t.email}`.toLowerCase().includes(teacherPickerSearch.toLowerCase())
+                                    ).map((t) => {
+                                      const isSelected = taskForm.teacherId === t.id;
+                                      const initials = t.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+                                      return (
+                                        <button
+                                          key={t.id}
+                                          type="button"
+                                          onClick={() => {
+                                            clearTaskFieldError("teacherId");
+                                            setTaskForm({ ...taskForm, teacherId: t.id });
+                                            setTeacherPickerOpen(false);
+                                            setTeacherPickerSearch("");
+                                          }}
+                                          className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors ${
+                                            isSelected
+                                              ? "bg-[#8AC926]/10 border-l-2 border-[#8AC926]"
+                                              : "hover:bg-slate-50 border-l-2 border-transparent"
+                                          }`}
+                                        >
+                                          <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 font-bold text-xs ${
+                                            isSelected ? "bg-[#8AC926] text-white" : "bg-slate-100 text-slate-600"
+                                          }`}>
+                                            {initials}
+                                          </div>
+                                          <div className="flex-1 min-w-0">
+                                            <p className={`text-xs font-bold truncate ${isSelected ? "text-[#6a9e1f]" : "text-slate-800"}`}>{t.name}</p>
+                                            <p className="text-[10px] text-slate-400 truncate font-medium">{t.email}</p>
+                                          </div>
+                                          {isSelected && <Check className="w-4 h-4 text-[#8AC926] shrink-0" />}
+                                        </button>
+                                      );
+                                    })
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
                           {taskFormErrors.teacherId && (
                             <p className="text-[10px] text-rose-600 font-semibold mt-1">
                               {taskFormErrors.teacherId}
                             </p>
                           )}
                         </div>
+
 
                         <div>
                           <label className="block text-slate-700 font-bold mb-1.5">
@@ -2373,17 +2562,127 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                             <p className="text-[10px] text-rose-600 font-semibold mt-1">
                               {taskFormErrors.dueDate}
                             </p>
+                            )}
+                          </div>
+
+                          <button
+                            type="submit"
+                            disabled={actionLoading === "task-assign"}
+                            className="w-full py-3 rounded-xl bg-[#8AC926] text-white font-sans font-bold text-xs tracking-wider uppercase hover:bg-[#78B020] transition shadow-md shadow-[#8AC926]/10 disabled:opacity-60 disabled:cursor-not-allowed"
+                          >
+                            {actionLoading === "task-assign" ? (editingTask ? "Updating…" : "Assigning…") : (editingTask ? "Update Task" : "Assign Task")}
+                          </button>
+                        </form>
+                    </div>
+                  </div>
+                )}
+
+                {/* VIEW TASK MODAL */}
+                {viewingTask && (
+                  <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+                    <div className="bg-white w-full max-w-lg rounded-2xl shadow-xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
+                      <div className="bg-slate-50 px-5 py-4 border-b border-slate-100 flex items-center justify-between shrink-0">
+                        <h3 className="font-bold text-slate-800 tracking-wide">Task Details</h3>
+                        <button
+                          type="button"
+                          onClick={() => setViewingTask(null)}
+                          className="text-slate-400 hover:text-slate-600 transition p-1"
+                        >
+                          <Plus className="w-5 h-5 rotate-45" />
+                        </button>
+                      </div>
+
+                      <div className="p-5 overflow-y-auto modern-scrollbar space-y-2">
+                        <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Title</p>
+                          <p className="text-sm font-semibold text-slate-800">{viewingTask.title}</p>
+                        </div>
+                        
+                        <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1.5">Description</p>
+                          <p className="text-xs text-slate-700 whitespace-pre-wrap leading-relaxed">
+                            {viewingTask.description || <span className="italic text-slate-400">No description provided</span>}
+                          </p>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Assignee</p>
+                            <div className="flex flex-col">
+                              <span className="text-sm font-semibold text-slate-800">{viewingTask.teacher?.name || "—"}</span>
+                              {viewingTask.teacher?.email && <span className="text-xs text-slate-500">{viewingTask.teacher.email}</span>}
+                            </div>
+                          </div>
+                          
+                          <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Status</p>
+                            <span
+                              className={`px-2 py-1 rounded text-2xs font-extrabold uppercase border inline-block mt-0.5 ${
+                                viewingTask.status === "APPROVED"
+                                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                  : viewingTask.status === "REJECTED"
+                                    ? "bg-rose-50 text-rose-700 border-rose-200"
+                                    : viewingTask.status === "COMPLETED"
+                                      ? "bg-blue-50 text-blue-700 border-blue-200"
+                                      : "bg-amber-50 text-amber-700 border-amber-200"
+                              }`}
+                            >
+                              {viewingTask.status}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Due Date</p>
+                          {viewingTask.dueDate ? (
+                            <span className="text-sm font-semibold text-rose-600 inline-flex items-center gap-1.5">
+                              <Calendar className="w-4 h-4" />
+                              {new Date(viewingTask.dueDate).toLocaleDateString("en-IN", {
+                                month: "long",
+                                day: "numeric",
+                                year: "numeric",
+                              })}
+                            </span>
+                          ) : (
+                            <span className="text-sm text-slate-450">—</span>
                           )}
                         </div>
 
-                        <button
-                          type="submit"
-                          disabled={actionLoading === "task-assign"}
-                          className="w-full py-3 rounded-xl bg-[#8AC926] text-white font-sans font-bold text-xs tracking-wider uppercase hover:bg-[#78B020] transition shadow-md shadow-[#8AC926]/10 disabled:opacity-60 disabled:cursor-not-allowed"
-                        >
-                          {actionLoading === "task-assign" ? "Assigning…" : "Assign Task"}
-                        </button>
-                      </form>
+                        {viewingTask.proofUrl && (
+                          <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-3">Teacher Proof</p>
+                            <a
+                              href={viewingTask.proofUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-2 px-3 py-2 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg text-xs font-semibold hover:bg-blue-100 transition"
+                            >
+                              <ExternalLink className="w-3.5 h-3.5" />
+                              View Submitted Proof
+                            </a>
+                            {viewingTask.proofDesc && (
+                              <p className="mt-3 text-xs text-slate-600 bg-white p-3 rounded-lg border border-slate-200 whitespace-pre-wrap">
+                                {viewingTask.proofDesc}
+                              </p>
+                            )}
+                          </div>
+                        )}
+
+                        {viewingTask.status === "COMPLETED" && (
+                          <div className="pt-4 flex items-center justify-end">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setViewingTask(null);
+                                goToTab("materials");
+                              }}
+                              className="px-6 py-2.5 bg-[#8AC926] text-white rounded-xl font-bold text-xs uppercase tracking-wide hover:bg-[#78b020] transition shadow-md shadow-[#8AC926]/20"
+                            >
+                              REVIEW
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}
@@ -2408,6 +2707,29 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                       onChange={setBookSearch}
                       placeholder="Search books…"
                       ariaLabel="Search story books"
+                    />
+                    <PillSelect
+                      value={bookAudienceFilter}
+                      options={[
+                        { id: "ALL", label: "All Audience" },
+                        { id: "STUDENT", label: "Students" },
+                        { id: "TEACHER", label: "Teachers" },
+                        { id: "BOTH", label: "Both" },
+                      ]}
+                      onChange={setBookAudienceFilter}
+                      ariaLabel="Filter by audience"
+                    />
+                    <PillSelect
+                      value={bookClassFilter}
+                      options={[
+                        { id: "ALL", label: "All Classes" },
+                        { id: "Playgroup", label: "Playgroup" },
+                        { id: "Pre-KG", label: "Pre-KG" },
+                        { id: "LKG", label: "LKG" },
+                        { id: "UKG", label: "UKG" },
+                      ]}
+                      onChange={setBookClassFilter}
+                      ariaLabel="Filter by class"
                     />
                     <button
                       type="button"
@@ -4034,6 +4356,59 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                 alt={viewerTitle}
                 className="max-w-full max-h-full object-contain rounded-lg shadow-md"
               />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {alertModal && (
+        <div className="fixed inset-0 z-[100] bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-sm rounded-2xl shadow-xl border border-slate-200 overflow-hidden flex flex-col text-center">
+            <div className="p-6">
+              <div className="w-12 h-12 rounded-full bg-amber-50 text-amber-500 mx-auto flex items-center justify-center mb-4">
+                <AlertCircle className="w-6 h-6" />
+              </div>
+              <h3 className="font-bold text-slate-800 text-lg mb-2">{alertModal.title}</h3>
+              <p className="text-sm text-slate-600 mb-6 leading-relaxed">{alertModal.message}</p>
+              <button
+                type="button"
+                onClick={() => setAlertModal(null)}
+                className="w-full py-2.5 rounded-xl bg-slate-800 text-white font-bold text-sm tracking-wide hover:bg-slate-700 transition"
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {viewReasonModal && (
+        <div className="fixed inset-0 z-[100] bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-lg rounded-2xl shadow-xl border border-slate-200 overflow-hidden flex flex-col animate-scale-up text-left">
+            <div className="bg-slate-50 px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0">
+              <h3 className="font-extrabold text-slate-900 tracking-wide text-sm">{viewReasonModal.title}</h3>
+              <button
+                type="button"
+                onClick={() => setViewReasonModal(null)}
+                className="text-slate-400 hover:text-slate-600 transition p-1"
+                aria-label="Close modal"
+              >
+                <Plus className="w-5 h-5 rotate-45" />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto max-h-[50vh] modern-scrollbar">
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 whitespace-pre-wrap text-slate-700 text-xs leading-relaxed font-semibold">
+                {viewReasonModal.message}
+              </div>
+            </div>
+            <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-100 flex justify-end shrink-0">
+              <button
+                type="button"
+                onClick={() => setViewReasonModal(null)}
+                className="px-5 py-2 rounded-xl bg-slate-850 hover:bg-slate-700 text-white font-bold text-2xs uppercase tracking-wider transition shadow-md"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>

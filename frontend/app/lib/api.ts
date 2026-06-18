@@ -311,6 +311,16 @@ export const api = {
   deleteTask: (token: string, id: string) =>
     request<{ message: string }>(`/api/admin/tasks/${id}`, { method: "DELETE" }, token),
 
+  updateTask: (
+    token: string,
+    id: string,
+    body: Partial<{ title: string; description: string | null; dueDate: string | null; teacherId: string }>
+  ) =>
+    request<Task>(`/api/admin/tasks/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }, token),
+
   getStoryBooks: (token: string, folderId?: string | null) => {
     const qs = folderId !== undefined ? `?folderId=${encodeURIComponent(folderId ?? "root")}` : "";
     return request<StoryBook[]>(`/api/admin/books${qs}`, {}, token);
@@ -812,6 +822,7 @@ export interface Task {
   status: string;
   proofUrl?: string | null;
   proofDesc?: string | null;
+  proofSubmittedAt?: string | null;
   teacherId: string;
   createdAt: string;
   updatedAt: string;

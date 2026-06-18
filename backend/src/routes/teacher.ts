@@ -206,6 +206,7 @@ router.patch("/tasks/:id/proof", validate(submitTaskProofSchema), async (req, re
         proofUrl,
         proofDesc,
         status: "COMPLETED",
+        proofSubmittedAt: new Date(),
       },
       include: { teacher: { select: { name: true, email: true } } },
     });

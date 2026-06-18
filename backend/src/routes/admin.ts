@@ -590,6 +590,44 @@ router.post("/tasks", validate(createTaskSchema), async (req, res, next) => {
   }
 });
 
+// ── Update Task ─────────────────────────────────────────────────────
+router.patch("/tasks/:id", async (req, res, next) => {
+  try {
+    const id = String(req.params.id);
+    const existing = await prisma.task.findUnique({ where: { id } });
+    if (!existing) {
+      throw new AppError("Task not found", 404);
+    }
+
+    const { title, description, dueDate, teacherId } = req.body;
+    const data: any = {};
+
+    if (title !== undefined) data.title = title.trim();
+    if (description !== undefined) data.description = description?.trim() || null;
+    if (dueDate !== undefined) {
+      const due = new Date(dueDate);
+      data.dueDate = due;
+    }
+    if (teacherId !== undefined) {
+      const teacher = await prisma.user.findFirst({
+        where: { id: teacherId, role: "TEACHER" },
+      });
+      if (!teacher) throw new AppError("Teacher not found", 404);
+      data.teacherId = teacherId;
+    }
+
+    const updated = await prisma.task.update({
+      where: { id },
+      data,
+      include: { teacher: { select: { id: true, name: true, email: true } } },
+    });
+
+    res.json(updated);
+  } catch (err) {
+    next(err);
+  }
+});
+
 // ── Approve / Reject Task Proof ─────────────────────────────────────
 router.patch("/tasks/:id/approve", validate(approveTaskSchema), async (req, res, next) => {
   try {
