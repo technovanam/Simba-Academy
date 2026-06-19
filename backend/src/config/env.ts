@@ -133,4 +133,6 @@ export const env = {
   BRANCH_ID_3: process.env.BRANCH_ID_3 ?? "",
   BRANCH_ID_4: process.env.BRANCH_ID_4 ?? "",
   BRANCH_ID_5: process.env.BRANCH_ID_5 ?? "",
+  GOOGLE_DRIVE_FOLDER_ID: process.env.GOOGLE_DRIVE_FOLDER_ID ?? "",
+  GOOGLE_SERVICE_ACCOUNT_JSON: process.env.GOOGLE_SERVICE_ACCOUNT_JSON ?? "",
 } as const;

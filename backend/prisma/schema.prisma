@@ -47,6 +47,7 @@ model User {
   notifications        StudentNotification[]
   teacherNotifications TeacherNotification[]
   adminNotifications   AdminNotification[]
+  auditLogs            AuditLog[]
 }
 
 model PasswordResetToken {
@@ -250,6 +251,17 @@ model LibraryFolder {
   @@index([parentId])
 }
 
+model DriveAccessRule {
+  id          String          @id @default(cuid())
+  fileId      String          @unique
+  audience    LibraryAudience @default(BOTH)
+  targetClass String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([fileId])
+}
+
 model StoryBook {
   id        String          @id @default(cuid())
   title     String
@@ -346,5 +358,19 @@ model AdminNotification {
   @@index([isRead])
   @@index([createdAt])
 }
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String   // e.g. "FILE_UPLOAD", "FILE_DELETE", "FILE_RENAME", "FOLDER_CREATE", "FILE_VIEW", "FILE_DOWNLOAD"
+  details   String   @db.Text
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
 
 
