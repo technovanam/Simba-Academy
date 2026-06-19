@@ -11,6 +11,7 @@ import {
   createTaskSchema,
   createRecurringTaskSchema,
   updateRecurringTaskSchema,
+  createTaskFolderSchema,
   approveTaskSchema,
   createStoryBookSchema,
   updateStoryBookSchema,
@@ -541,6 +542,94 @@ router.get("/payments", async (_req, res, next) => {
 //  TASKS (Teacher Assignments & Recurring)
 // ═════════════════════════════════════════════════════════════════════
 
+// ── List All Task Folders ──────────────────────────────────────────
+router.get("/task-folders", async (_req, res, next) => {
+  try {
+    const folders = await prisma.taskFolder.findMany({
+      orderBy: { name: "asc" },
+    });
+    res.json(folders);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── Create Task Folder ─────────────────────────────────────────────
+router.post("/task-folders", validate(createTaskFolderSchema), async (req, res, next) => {
+  try {
+    const { name, studentClass } = req.body;
+    const trimmedName = name.trim();
+
+    const existing = await prisma.taskFolder.findUnique({
+      where: { name: trimmedName },
+    });
+    if (existing) {
+      throw new AppError("Folder with this name already exists", 400);
+    }
+
+    const folder = await prisma.taskFolder.create({
+      data: {
+        name: trimmedName,
+        studentClass,
+      },
+    });
+    res.status(201).json(folder);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── Delete Task Folder ─────────────────────────────────────────────
+router.delete("/task-folders/:id", async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    // Find all recurring tasks in this folder
+    const recurringTasks = await prisma.recurringTask.findMany({
+      where: { folderId: id },
+    });
+    const recurringTaskIds = recurringTasks.map((rt) => rt.id);
+
+    if (recurringTaskIds.length > 0) {
+      // Find all tasks associated with these recurring tasks
+      const tasks = await prisma.task.findMany({
+        where: { recurringTaskId: { in: recurringTaskIds } },
+      });
+      const taskIds = tasks.map((t) => t.id);
+
+      if (taskIds.length > 0) {
+        for (const task of tasks) {
+          await removeStoredFile(task.proofUrl);
+        }
+        await prisma.teacherNotification.deleteMany({
+          where: { taskId: { in: taskIds } },
+        });
+        await prisma.adminNotification.deleteMany({
+          where: { taskId: { in: taskIds } },
+        });
+        await prisma.taskAudit.deleteMany({
+          where: { taskId: { in: taskIds } },
+        });
+        await prisma.task.deleteMany({
+          where: { id: { in: taskIds } },
+        });
+      }
+
+      // Delete recurring tasks explicitly to ensure clean cleanup
+      await prisma.recurringTask.deleteMany({
+        where: { folderId: id },
+      });
+    }
+
+    await prisma.taskFolder.delete({
+      where: { id },
+    });
+    res.json({ message: "Folder deleted successfully" });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // ── List All Recurring Tasks ─────────────────────────────────────────
 router.get("/recurring-tasks", async (_req, res, next) => {
   try {
@@ -556,7 +645,7 @@ router.get("/recurring-tasks", async (_req, res, next) => {
 // ── Create Recurring Task ───────────────────────────────────────────
 router.post("/recurring-tasks", validate(createRecurringTaskSchema), async (req, res, next) => {
   try {
-    const { title, description, studentClass, repeatDay, isActive } = req.body;
+    const { title, description, studentClass, repeatDay, isActive, folderId } = req.body;
     const rTask = await prisma.recurringTask.create({
       data: {
         title: title.trim(),
@@ -564,6 +653,7 @@ router.post("/recurring-tasks", validate(createRecurringTaskSchema), async (req,
         studentClass,
         repeatDay,
         isActive: isActive !== undefined ? isActive : true,
+        folderId: folderId || null,
       },
     });
     res.status(201).json(rTask);
@@ -576,7 +666,7 @@ router.post("/recurring-tasks", validate(createRecurringTaskSchema), async (req,
 router.patch("/recurring-tasks/:id", validate(updateRecurringTaskSchema), async (req, res, next) => {
   try {
     const id = req.params.id as string;
-    const { title, description, studentClass, repeatDay, isActive } = req.body;
+    const { title, description, studentClass, repeatDay, isActive, folderId } = req.body;
     
     const rTask = await prisma.recurringTask.findUnique({ where: { id } });
     if (!rTask) throw new AppError("Recurring task not found", 404);
@@ -589,6 +679,7 @@ router.patch("/recurring-tasks/:id", validate(updateRecurringTaskSchema), async 
         ...(studentClass !== undefined && { studentClass }),
         ...(repeatDay !== undefined && { repeatDay }),
         ...(isActive !== undefined && { isActive }),
+        ...(folderId !== undefined && { folderId: folderId || null }),
       },
     });
     res.json(updated);
@@ -601,6 +692,31 @@ router.patch("/recurring-tasks/:id", validate(updateRecurringTaskSchema), async 
 router.delete("/recurring-tasks/:id", async (req, res, next) => {
   try {
     const { id } = req.params;
+
+    // Find all tasks associated with this recurring task
+    const tasks = await prisma.task.findMany({
+      where: { recurringTaskId: id },
+    });
+    const taskIds = tasks.map((t) => t.id);
+
+    if (taskIds.length > 0) {
+      for (const task of tasks) {
+        await removeStoredFile(task.proofUrl);
+      }
+      await prisma.teacherNotification.deleteMany({
+        where: { taskId: { in: taskIds } },
+      });
+      await prisma.adminNotification.deleteMany({
+        where: { taskId: { in: taskIds } },
+      });
+      await prisma.taskAudit.deleteMany({
+        where: { taskId: { in: taskIds } },
+      });
+      await prisma.task.deleteMany({
+        where: { id: { in: taskIds } },
+      });
+    }
+
     await prisma.recurringTask.delete({ where: { id } });
     res.json({ message: "Recurring task deleted successfully" });
   } catch (err) {
@@ -671,6 +787,23 @@ router.post("/tasks", validate(createTaskSchema), async (req, res, next) => {
       include: { teacher: { select: { id: true, name: true, email: true } } },
     });
 
+    // Log Task Audit History
+    const adminUser = await prisma.user.findUnique({
+      where: { id: req.user!.userId },
+      select: { name: true },
+    });
+
+    await prisma.taskAudit.create({
+      data: {
+        taskId: task.id,
+        action: "CREATED",
+        statusTo: "PENDING",
+        changedById: req.user!.userId,
+        changedByName: adminUser?.name || "Admin",
+        comments: "Task manually assigned by Admin.",
+      },
+    });
+
     try {
       await notifyTeacherOfNewTask(teacher, task);
     } catch (notifyErr) {
@@ -732,13 +865,36 @@ router.patch("/tasks/:id/approve", validate(approveTaskSchema), async (req, res,
       throw new AppError("Task not found", 404);
     }
 
+    if (req.body.status === "REJECTED" && !req.body.rejectionReason?.trim()) {
+      throw new AppError("Rejection reason is required", 400);
+    }
+
     const updated = await prisma.task.update({
       where: { id: String(req.params.id) },
       data: {
         status: req.body.status,
         proofDesc: req.body.proofDesc || task.proofDesc,
+        rejectionReason: req.body.status === "REJECTED" ? req.body.rejectionReason : null,
       },
       include: { teacher: { select: { id: true, name: true, email: true } } },
+    });
+
+    // Log Task Audit History
+    const adminUser = await prisma.user.findUnique({
+      where: { id: req.user!.userId },
+      select: { name: true },
+    });
+
+    await prisma.taskAudit.create({
+      data: {
+        taskId: task.id,
+        action: req.body.status,
+        statusFrom: task.status,
+        statusTo: req.body.status,
+        changedById: req.user!.userId,
+        changedByName: adminUser?.name || "Admin",
+        comments: req.body.status === "REJECTED" ? req.body.rejectionReason : "Task proof reviewed and approved.",
+      },
     });
 
     try {
@@ -758,6 +914,19 @@ router.patch("/tasks/:id/approve", validate(approveTaskSchema), async (req, res,
   }
 });
 
+// ── Get Task Audit History ──────────────────────────────────────────
+router.get("/tasks/:id/audit", async (req, res, next) => {
+  try {
+    const audits = await prisma.taskAudit.findMany({
+      where: { taskId: String(req.params.id) },
+      orderBy: { createdAt: "desc" },
+    });
+    res.json(audits);
+  } catch (err) {
+    next(err);
+  }
+});
+
 // ── Delete Task Assignment ──────────────────────────────────────────
 router.delete("/tasks/:id", async (req, res, next) => {
   try {
@@ -767,6 +936,12 @@ router.delete("/tasks/:id", async (req, res, next) => {
     }
 
     await removeStoredFile(task.proofUrl);
+
+    // Delete associated notifications and audits
+    await prisma.teacherNotification.deleteMany({ where: { taskId: task.id } });
+    await prisma.adminNotification.deleteMany({ where: { taskId: task.id } });
+    await prisma.taskAudit.deleteMany({ where: { taskId: task.id } });
+
     await prisma.task.delete({ where: { id: task.id } });
     res.json({ message: "Task assignment deleted successfully" });
   } catch (err) {

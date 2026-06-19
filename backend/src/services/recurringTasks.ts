@@ -1,6 +1,5 @@
 import cron from "node-cron";
 import { prisma } from "../config/database.js";
-import { TeacherNotification } from "@prisma/client";
 
 const DAYS_OF_WEEK = ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"];
 
@@ -20,11 +19,15 @@ export async function processRecurringTasks() {
   const today = new Date();
   const dayName = DAYS_OF_WEEK[today.getDay()];
 
-  // Find all active recurring tasks for today
+  // Start and end of today (midnight to midnight)
+  const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0);
+  const endOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
+
+  // Find all active recurring tasks for today (specific day OR DAILY)
   const activeTasks = await prisma.recurringTask.findMany({
     where: {
-      repeatDay: dayName,
       isActive: true,
+      repeatDay: { in: [dayName, "DAILY"] },
     },
   });
 
@@ -35,21 +38,51 @@ export async function processRecurringTasks() {
 
   console.log(`[CRON] Found ${activeTasks.length} recurring tasks for ${dayName}.`);
 
+  let created = 0;
+  let skipped = 0;
+
   for (const rTask of activeTasks) {
-    // Find all teachers in this studentClass
-    const teachers = await prisma.user.findMany({
-      where: {
-        role: "TEACHER",
-        studentClass: rTask.studentClass,
-        status: "ACTIVE",
-        isDeleted: false,
-      },
-    });
+    // Find all teachers to assign the task to
+    let teachers;
+    if (!rTask.folderId) {
+      // General task outside folders: assign to all active teachers/staff
+      teachers = await prisma.user.findMany({
+        where: {
+          role: "TEACHER",
+          status: "ACTIVE",
+          isDeleted: false,
+        },
+      });
+    } else {
+      // Class-wise folder task: assign only to teachers of that specific class
+      teachers = await prisma.user.findMany({
+        where: {
+          role: "TEACHER",
+          studentClass: rTask.studentClass,
+          status: "ACTIVE",
+          isDeleted: false,
+        },
+      });
+    }
 
     if (teachers.length === 0) continue;
 
-    // Create a new task record for each teacher
+    // Create a new task record for each teacher — skip if already assigned today
     for (const teacher of teachers) {
+      // Duplicate guard: check if this recurring task was already assigned to this teacher today
+      const existing = await prisma.task.findFirst({
+        where: {
+          teacherId: teacher.id,
+          recurringTaskId: rTask.id,
+          createdAt: { gte: startOfToday, lte: endOfToday },
+        },
+      });
+
+      if (existing) {
+        skipped++;
+        continue;
+      }
+
       // Create the Task
       const newTask = await prisma.task.create({
         data: {
@@ -59,6 +92,17 @@ export async function processRecurringTasks() {
           dueDate: new Date(), // Due today
           teacherId: teacher.id,
           recurringTaskId: rTask.id,
+        },
+      });
+
+      // Log Task Audit History
+      await prisma.taskAudit.create({
+        data: {
+          taskId: newTask.id,
+          action: "CREATED",
+          statusTo: "PENDING",
+          changedByName: "System (Cron)",
+          comments: "Task automatically assigned via recurring schedule.",
         },
       });
 
@@ -72,8 +116,10 @@ export async function processRecurringTasks() {
           taskId: newTask.id,
         },
       });
+
+      created++;
     }
   }
 
-  console.log(`[CRON] Recurring tasks processing complete.`);
+  console.log(`[CRON] Recurring tasks processing complete. Created: ${created}, Skipped (already exists): ${skipped}.`);
 }

@@ -12,14 +12,16 @@ export const PAYMENTS_MOCK_MODE =
 export const PAYMENTS_ENABLED = PAYMENTS_LIVE_ZOHO || PAYMENTS_MOCK_MODE;
 
 /** Class levels for student signup & story book browsing */
-export const STUDENT_CLASS_LEVELS = ["Playgroup", "Pre-KG", "LKG", "UKG"] as const;
+export const STUDENT_CLASS_LEVELS = ["Playgroup", "Nursery", "Pre-KG", "LKG", "UKG", "Preschool"] as const;
 export type StudentClassLevel = (typeof STUDENT_CLASS_LEVELS)[number];
 
 export const STUDENT_CLASS_OPTIONS: { id: StudentClassLevel; label: string }[] = [
   { id: "Playgroup", label: "Playgroup" },
+  { id: "Nursery", label: "Nursery" },
   { id: "Pre-KG", label: "Pre-KG" },
   { id: "LKG", label: "LKG" },
   { id: "UKG", label: "UKG" },
+  { id: "Preschool", label: "Preschool" },
 ];
 
 export const STORY_BOOK_CLASS_FILTER_OPTIONS: { id: StudentClassLevel | "ALL"; label: string }[] = [

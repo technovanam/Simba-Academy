@@ -9,7 +9,7 @@ const urlOrUploadPath = z
     "Must be a valid URL or upload path"
   );
 
-export const STUDENT_CLASS_LEVELS = ["Playgroup", "Pre-KG", "LKG", "UKG"] as const;
+export const STUDENT_CLASS_LEVELS = ["Playgroup", "Nursery", "Pre-KG", "LKG", "UKG", "Preschool"] as const;
 export type StudentClassLevel = (typeof STUDENT_CLASS_LEVELS)[number];
 
 // ── Auth ────────────────────────────────────────────────────────────
@@ -170,12 +170,18 @@ function isDueDateTodayOrFuture(value: string): boolean {
 }
 
 // ── Task Assignment (Admin) ─────────────────────────────────────────
+export const createTaskFolderSchema = z.object({
+  name: z.string().min(2, "Folder name must be at least 2 characters"),
+  studentClass: z.string().min(1, "Class is required"),
+});
+
 export const createRecurringTaskSchema = z.object({
   title: z.string().min(2, "Title must be at least 2 characters"),
   description: z.string().optional(),
   studentClass: z.string().min(1, "Class is required"),
-  repeatDay: z.enum(["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"]),
+  repeatDay: z.enum(["DAILY", "SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"]),
   isActive: z.boolean().optional(),
+  folderId: z.string().optional().nullable(),
 });
 
 export const updateRecurringTaskSchema = createRecurringTaskSchema.partial();
@@ -191,8 +197,9 @@ export const createTaskSchema = z.object({
 });
 
 export const approveTaskSchema = z.object({
-  status: z.enum(["PENDING", "COMPLETED", "APPROVED", "REJECTED"]),
+  status: z.enum(["PENDING", "SUBMITTED", "UNDER_REVIEW", "APPROVED", "REJECTED", "RESUBMITTED"]),
   proofDesc: z.string().optional(),
+  rejectionReason: z.string().optional(),
 });
 
 

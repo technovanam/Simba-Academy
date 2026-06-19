@@ -1,3 +1,5 @@
+/// <reference types="node" />
+import process from "process";
 import { processRecurringTasks } from "./src/services/recurringTasks.js";
 import { prisma } from "./src/config/database.js";
 
@@ -41,11 +43,22 @@ async function verify() {
     console.log("❌ Failed to generate tasks.");
   }
 
-  // Cleanup
+  // Cleanup — delete notifications first (FK dependency), then tasks, then recurring task, then test user
+  const taskIds = tasks.map((task) => task.id);
+  if (taskIds.length > 0) {
+    await prisma.teacherNotification.deleteMany({ where: { taskId: { in: taskIds } } });
+  }
   await prisma.task.deleteMany({ where: { recurringTaskId: rt.id } });
   await prisma.recurringTask.delete({ where: { id: rt.id } });
   await prisma.user.delete({ where: { id: t.id } });
   console.log("Cleanup done.");
 }
 
-verify().catch(console.error).finally(() => process.exit(0));
+verify()
+  .then(() => {
+    process.exit(0);
+  })
+  .catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });

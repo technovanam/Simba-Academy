@@ -173,18 +173,33 @@ model FranchiseInquiry {
   createdAt DateTime @default(now())
 }
 
+// ── Task Folders (for Assign Tasks) ──────────────────────────────────
+model TaskFolder {
+  id           String          @id @default(cuid())
+  name         String          @unique
+  studentClass String          // e.g. "LKG", "UKG", "Playgroup", "Nursery"
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  recurringTasks RecurringTask[]
+}
+
 // ── Recurring Teacher Tasks (Class-Based) ───────────────────────────
 model RecurringTask {
-  id           String   @id @default(cuid())
+  id           String      @id @default(cuid())
   title        String
-  description  String?  @db.Text
+  description  String?     @db.Text
   studentClass String
   repeatDay    String
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  isActive     Boolean     @default(true)
+  folderId     String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
 
   tasks        Task[]
+  folder       TaskFolder? @relation(fields: [folderId], references: [id], onDelete: Cascade)
+
+  @@index([folderId])
 }
 
 // ── Teacher Tasks (Assigned by Admin or Recurring) ──────────────────
@@ -197,6 +212,7 @@ model Task {
   proofUrl         String?
   proofDesc        String?   @db.Text
   proofSubmittedAt DateTime?
+  rejectionReason  String?   @db.Text
   teacherId        String
   recurringTaskId  String?
   createdAt        DateTime  @default(now())
@@ -346,5 +362,21 @@ model AdminNotification {
   @@index([isRead])
   @@index([createdAt])
 }
+
+// ── Task Audit History ──────────────────────────────────────────────
+model TaskAudit {
+  id            String   @id @default(cuid())
+  taskId        String
+  action        String   // e.g. "CREATED", "SUBMITTED", "APPROVED", "REJECTED", "RESUBMITTED", "UPDATED"
+  statusFrom    String?
+  statusTo      String
+  changedById   String?
+  changedByName String?
+  comments      String?  @db.Text
+  createdAt     DateTime @default(now())
+
+  @@index([taskId])
+}
+
 
 
