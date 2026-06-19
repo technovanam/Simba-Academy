@@ -27,8 +27,10 @@ import {
   UserPlus,
   Users,
   Settings,
+  FolderOpen,
 } from "lucide-react";
 import { AdminOutletProvider } from "../../components/admin/AdminOutletContext";
+import { FullPortalSkeleton } from "../../components/DashboardSkeleton";
 
 export function meta({}: Route.MetaArgs) {
   return [{ title: "Admin Portal | Simba Academy" }];
@@ -46,6 +48,7 @@ const NAV_ITEMS: { id: AdminTab; label: string; icon: typeof Layers }[] = [
   { id: "inquiries", label: "General Enquiry", icon: Mail },
   { id: "reviews", label: "Parent Reviews", icon: Award },
   { id: "gallery", label: "Media Gallery", icon: Image },
+  
   { id: "settings", label: "Settings", icon: Settings },
 ];
 
@@ -105,12 +108,7 @@ export default function AdminLayout() {
   }
 
   if (!mounted) {
-    return (
-      <div className="min-h-screen bg-[#F8FAF6] font-sans text-[#3E2723] flex flex-col items-center justify-center gap-3">
-        <Loader2 className="w-10 h-10 animate-spin text-[#8AC926]" />
-        <p className="font-bold text-[#8C6D58]">Initializing Simba Admin Portal...</p>
-      </div>
-    );
+    return <FullPortalSkeleton />;
   }
 
   if (!token || user?.role !== "ADMIN") {
@@ -123,16 +121,16 @@ export default function AdminLayout() {
       <div className="space-y-4">
         <div className="flex items-center gap-2.5 bg-slate-100/80 p-2 rounded-xl border border-slate-200/80">
           <img
-            src="/favicon.png"
+            src="/Simba Logo 2025.pdf.png"
             alt="Simba Preschool"
-            className="w-7 h-7 shrink-0 object-contain"
+            className="w-15 h-8 shrink-0 object-contain"
           />
           <div className="flex flex-col min-w-0">
             <h3 className="text-sm font-bold text-slate-900 truncate leading-tight">
               Simba Preschool
             </h3>
             <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mt-0.5">
-              Academy Director
+              Admin
             </p>
           </div>
         </div>
@@ -171,7 +169,7 @@ export default function AdminLayout() {
   );
 
   return (
-    <PortalSidebarLayout sidebar={sidebar} mobileTitle="Academy Director">
+    <PortalSidebarLayout sidebar={sidebar} mobileTitle="Admin">
       <PortalToasts
         error={error}
         message={message}
@@ -180,9 +178,9 @@ export default function AdminLayout() {
       />
 
       <main className={`flex-1 min-h-0 w-full min-w-0 max-w-7xl mx-auto flex flex-col ${
-        activeTab === "users" || activeTab === "teachers" || activeTab === "books" || activeTab === "planner" || activeTab === "tasks" || activeTab === "gallery" || activeTab === "payments" || activeTab === "materials" ? "h-full overflow-hidden pb-4 lg:pb-4" : "portal-main-scroll overflow-y-auto overflow-x-hidden pb-6 lg:pb-8"
+        activeTab === "users" || activeTab === "teachers" || activeTab === "books" || activeTab === "planner" || activeTab === "tasks" || activeTab === "gallery" || activeTab === "payments" || activeTab === "materials" || activeTab === "documents" || activeTab === "settings" ? "h-full overflow-hidden pb-4 lg:pb-4" : "portal-main-scroll overflow-y-auto overflow-x-hidden pb-6 lg:pb-8"
       } p-3 sm:p-4 lg:p-6`}>
-        <AdminOutletProvider value={{ token, user, setMessage, setError }}>
+        <AdminOutletProvider value={{ token, user, setUser, setMessage, setError }}>
           <Outlet />
         </AdminOutletProvider>
       </main>

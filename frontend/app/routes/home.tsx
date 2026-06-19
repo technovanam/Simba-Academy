@@ -43,7 +43,7 @@ const PORTALS = [
   },
   {
     label: "Admin",
-    description: "Academy director",
+    description: "Admin",
     to: "/admin/login",
     icon: Shield,
     className: "bg-[#8AC926] hover:bg-[#78B020] text-white shadow-[#8AC926]/20",
@@ -66,9 +66,9 @@ export default function Home() {
         <div className="p-5 sm:p-8">
           <div className="flex flex-col items-center text-center mb-6">
             <img
-              src="/favicon.png"
+              src="/Simba Logo 2025.pdf.png"
               alt="Simba Preschool"
-              className="w-14 h-14 object-contain mb-3"
+              className="w-48 h-16 object-contain mb-3"
             />
             <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">
               Simba Preschool

@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { api, ApiError, type AuthUser } from "../lib/api";
-import { getUser, saveSession } from "../lib/auth";
+import { getUser, saveSession, clearSession } from "../lib/auth";
 import { PORTAL_AUTH } from "../lib/authPortalPaths";
 import { PasswordInput } from "./PasswordInput";
 import { AdminPageBody, AdminPageHeader, AdminPageShell } from "./AdminPageShell";
 import { AccountStatusBadge } from "./AccountStatusBadge";
-import { Loader2, Mail, Phone, Shield, User } from "lucide-react";
+import { Loader2, Mail, Phone, Shield, User, LogOut, GraduationCap } from "lucide-react";
 
 interface TeacherSettingsPanelProps {
   token: string;
@@ -27,6 +27,7 @@ export function TeacherSettingsPanel({
   onError,
   onProfileUpdated,
 }: TeacherSettingsPanelProps) {
+  const navigate = useNavigate();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -74,6 +75,11 @@ export function TeacherSettingsPanel({
       })
     : null;
 
+  function handleLogout() {
+    clearSession();
+    navigate("/login");
+  }
+
   return (
     <AdminPageShell>
       <AdminPageHeader
@@ -119,10 +125,10 @@ export function TeacherSettingsPanel({
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
-                  <User className="w-4 h-4 text-[#8AC926] mt-0.5 shrink-0" />
+                  <GraduationCap className="w-4 h-4 text-[#8AC926] mt-0.5 shrink-0" />
                   <div className="min-w-0">
-                    <dt className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Employee ID</dt>
-                    <dd className="font-semibold text-slate-800">{display?.employeeId?.trim() || "—"}</dd>
+                    <dt className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Class Assigned</dt>
+                    <dd className="font-semibold text-slate-800">{display?.studentClass?.trim() || "None"}</dd>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
@@ -206,6 +212,23 @@ export function TeacherSettingsPanel({
                 </button>
               </form>
             </section>
+          </div>
+        )}
+
+        {!profileLoading && (
+          <div className="mt-6 p-5 rounded-2xl bg-rose-50/50 border border-rose-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="space-y-1">
+              <h4 className="font-bold text-xs uppercase text-rose-800 tracking-wider">Active Session</h4>
+              <p className="text-2xs text-rose-600 font-semibold">Logout of the Teacher Portal securely.</p>
+            </div>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition shadow-md shadow-rose-600/10 cursor-pointer w-fit"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              LOGOUT
+            </button>
           </div>
         )}
       </AdminPageBody>

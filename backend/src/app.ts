@@ -24,6 +24,7 @@ import teacherRoutes from "./routes/teacher.js";
 import libraryRoutes from "./routes/library.js";
 import studentRoutes from "./routes/student.js";
 import healthRoutes from "./routes/health.js";
+import documentRoutes from "./routes/documents.js";
 import { prisma } from "./config/database.js";
 import { ensureDefaultAdmin } from "./config/seedAdmin.js";
 
@@ -125,6 +126,7 @@ app.use("/api/public", publicRoutes);
 app.use("/api/teacher", teacherRoutes);
 app.use("/api/library", libraryRoutes);
 app.use("/api/student", studentRoutes);
+app.use("/api/documents", documentRoutes);
 app.use("/api", healthRoutes);
 
 app.get("/", (req, res) => {

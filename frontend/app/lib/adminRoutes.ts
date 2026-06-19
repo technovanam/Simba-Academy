@@ -12,6 +12,7 @@ export type AdminTab =
   | "reviews"
   | "gallery"
   | "settings"
+  | "documents"
   | "notifications";
 
 /** URL segment after /admin/ */
@@ -29,6 +30,7 @@ export const ADMIN_TAB_SECTIONS: Record<AdminTab, string> = {
   reviews: "reviews",
   gallery: "gallery",
   settings: "settings",
+  documents: "documents",
   notifications: "notifications",
 };
 
@@ -45,6 +47,7 @@ export const ADMIN_SECTIONS = new Set(Object.values(ADMIN_TAB_SECTIONS));
 /** Legacy combined marketing URL */
 export const ADMIN_LEGACY_SECTION_REDIRECTS: Record<string, string> = {
   marketing: "/admin/reviews",
+  documents: "/admin/books",
 };
 
 export function adminTabFromSection(section: string | undefined): AdminTab {
@@ -70,6 +73,7 @@ export function adminTabTitle(tab: AdminTab): string {
     reviews: "Parent Reviews",
     gallery: "Media Gallery",
     settings: "Settings",
+    documents: "Document Vault",
     notifications: "Notifications",
   };
   return titles[tab];

@@ -15,7 +15,7 @@ import { isActionBusy } from "../lib/actionGuard";
 import { TEACHER_TAB_PATHS } from "../lib/teacherRoutes";
 import { PortalToasts } from "../components/Toast";
 import { PortalSidebarLayout } from "../components/PortalSidebarLayout";
-import { TeacherStoryLibrary } from "../components/teacher/TeacherStoryLibrary";
+import { DriveLibraryPanel } from "../components/DriveLibraryPanel";
 import { LessonPlanViewerModal } from "../components/LessonPlanViewerModal";
 import { ModalCloseButton } from "../components/ModalCloseButton";
 import { TeacherSettingsPanel } from "../components/TeacherSettingsPanel";
@@ -26,6 +26,7 @@ import {
   portalDashboardBodyClass,
   portalDashboardLowerGridClass,
 } from "../components/PortalPageShell";
+import { DashboardSkeleton, FullPortalSkeleton } from "../components/DashboardSkeleton";
 import {
   AdminListEmpty,
   AdminListPagination,
@@ -391,12 +392,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
     .slice(0, 2);
 
   if (!mounted) {
-    return (
-      <div className="min-h-screen bg-[#F8FAF6] font-sans text-[#3E2723] flex flex-col items-center justify-center gap-3">
-        <Loader2 className="w-10 h-10 animate-spin text-[#8AC926]" />
-        <p className="font-bold text-[#8C6D58]">Initializing Simba Teacher Portal...</p>
-      </div>
-    );
+    return <FullPortalSkeleton />;
   }
 
   const sidebar = (
@@ -405,9 +401,9 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
       <div className="space-y-4">
         <div className="flex items-center gap-2.5 bg-slate-100/80 p-2 rounded-xl border border-slate-200/80">
           <img
-            src="/favicon.png"
+            src="/Simba Logo 2025.pdf.png"
             alt="Simba Preschool"
-            className="w-7 h-7 shrink-0 object-contain"
+            className="w-15 h-8 shrink-0 object-contain"
           />
           <div className="flex flex-col min-w-0">
             <h3 className="text-sm font-bold text-slate-900 truncate leading-tight">Simba Preschool</h3>
@@ -458,16 +454,6 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
           })}
         </div>
       </div>
-      </div>
-
-      <div className="shrink-0 pt-3 mt-2 border-t border-slate-200/80 bg-[#F1F5F9]">
-        <button
-          type="button"
-          onClick={handleLogout}
-          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 font-bold text-xs tracking-wider uppercase hover:bg-rose-100 hover:text-rose-800 transition-all duration-300"
-        >
-          <LogOut className="w-3.5 h-3.5" /> Logout
-        </button>
       </div>
     </div>
   );
@@ -523,13 +509,12 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
         ) : null}
 
         {/* Tab view area */}
-        <div className="flex-1 min-h-0 bg-[#F8FAFC] focus:outline-none portal-main-scroll overflow-y-auto p-4 lg:p-6 pb-6 lg:pb-8">
+        <div className={`flex-1 min-h-0 bg-[#F8FAFC] focus:outline-none portal-main-scroll p-4 lg:p-6 pb-6 lg:pb-8 ${
+          activeTab === "library" ? "h-full flex flex-col overflow-hidden" : "overflow-y-auto"
+        }`}>
           
           {loading && activeTab !== "settings" && activeTab !== "notifications" ? (
-            <div className="flex-1 flex flex-col items-center justify-center min-h-0 gap-3">
-              <Loader2 className="w-10 h-10 animate-spin text-[#8AC926]" />
-              <p className="font-bold text-slate-600">Loading your academic workspace...</p>
-            </div>
+            <DashboardSkeleton />
           ) : activeTab === "overview" ? (
             <div className={portalDashboardBodyClass}>
               {/* ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ OVERVIEW DASHBOARD ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ */}
@@ -708,7 +693,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
 
                   {/* Split workspace */}
                   <div className={portalDashboardLowerGridClass}>
-                    <div className="lg:col-span-2 bg-white rounded-2xl p-5 border border-slate-200 flex flex-col">
+                    <div className="lg:col-span-2 bg-white rounded-2xl p-5 border border-slate-200 flex flex-col flex-1">
                       <div className="flex flex-wrap justify-between items-center gap-4 mb-4">
                         <div>
                           <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Recent Tasks</h3>
@@ -775,7 +760,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                       </div>
                     </div>
 
-                    <div className="bg-white rounded-2xl p-5 border border-slate-200 flex flex-col">
+                    <div className="bg-white rounded-2xl p-5 border border-slate-200 flex flex-col flex-1">
                       <div className="flex items-center justify-between pb-2 border-b border-slate-100 mb-4">
                         <h4 className="font-bold text-[10px] uppercase text-slate-800 tracking-wider">Workspace Summary</h4>
                         <TrendingUp className="w-4 h-4 text-[#8AC926]" />
@@ -986,9 +971,9 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                 </AdminPageShell>
               )}
 
-              {/* ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ STORY LIBRARY Tab ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ */}
+              {/* ────────────────── DRIVE LIBRARY Tab ────────────────── */}
               {activeTab === "library" && token && (
-                <TeacherStoryLibrary books={books} token={token} />
+                <DriveLibraryPanel token={token} role="TEACHER" />
               )}
 
               {/* ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ LESSON PLANNER Tab (view only) ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ */}

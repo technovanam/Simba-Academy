@@ -339,9 +339,9 @@ export function AuthLayout({
           {!isStudentParchment && (
             <div className="flex flex-col items-center text-center mb-6">
               <img
-                src="/favicon.png"
+                src="/Simba Logo 2025.pdf.png"
                 alt="Simba Preschool"
-                className="w-12 h-12 object-contain mb-2"
+                className="w-44 h-14 object-contain mb-2"
               />
               <span
                 className={`text-xs font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border mb-2 ${meta.badgeClass}`}
@@ -405,8 +405,8 @@ export function AuthSplitLayout({
           </div>
           <div className="relative z-10 px-4 py-5 sm:px-6 sm:py-6 flex flex-col gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-white/95 flex items-center justify-center shadow-sm shrink-0">
-                <img src="/favicon.png" alt="" className="w-7 h-7 sm:w-8 sm:h-8 object-contain" />
+              <div className="w-20 h-10 rounded-xl bg-white/95 px-2 flex items-center justify-center shadow-sm shrink-0">
+                <img src="/Simba Logo 2025.pdf.png" alt="" className="w-full h-full object-contain" />
               </div>
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/70">Simba Academy</p>
@@ -436,8 +436,8 @@ export function AuthSplitLayout({
 
           <div className="relative z-10 p-7 sm:p-8 lg:p-9 flex flex-col gap-6 lg:min-h-full lg:justify-center w-full">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-white/95 flex items-center justify-center shadow-sm shrink-0">
-                <img src="/favicon.png" alt="" className="w-8 h-8 object-contain" />
+              <div className="w-24 h-12 rounded-xl bg-white/95 px-2 flex items-center justify-center shadow-sm shrink-0">
+                <img src="/Simba Logo 2025.pdf.png" alt="" className="w-full h-full object-contain" />
               </div>
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/70">Simba Academy</p>

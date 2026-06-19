@@ -12,7 +12,8 @@ import { clearSession, getToken, getUser } from "../../lib/auth";
 import { PortalToasts } from "../../components/Toast";
 import { PortalSidebarLayout } from "../../components/PortalSidebarLayout";
 import { StudentOutletProvider } from "../../components/student/StudentOutletContext";
-import { Bell, Book, Compass, Loader2, LogOut, Settings } from "lucide-react";
+import { FullPortalSkeleton } from "../../components/DashboardSkeleton";
+import { Bell, Book, Compass, Loader2, LogOut, Settings, FolderOpen } from "lucide-react";
 
 const NOTIFICATION_POLL_MS = 12_000;
 
@@ -23,6 +24,7 @@ export function meta({}: Route.MetaArgs) {
 const NAV_ITEMS: { id: StudentTab; label: string; icon: typeof Compass }[] = [
   { id: "overview", label: "Dashboard", icon: Compass },
   { id: "library", label: "Story Books", icon: Book },
+  
   { id: "notifications", label: "Notifications", icon: Bell },
   { id: "settings", label: "Settings", icon: Settings },
 ];
@@ -132,12 +134,7 @@ export default function StudentLayout() {
   }
 
   if (!mounted) {
-    return (
-      <div className="min-h-screen bg-[#F8FAFC] font-sans text-slate-900 flex flex-col items-center justify-center gap-3">
-        <Loader2 className="w-10 h-10 animate-spin text-[#FF9F1C]" />
-        <p className="font-bold text-slate-600">Loading student portal…</p>
-      </div>
-    );
+    return <FullPortalSkeleton />;
   }
 
   if (!token || user?.role !== "STUDENT") {
@@ -149,7 +146,7 @@ export default function StudentLayout() {
       <div className="flex-1 min-h-0 overflow-y-auto scrollbar-hide px-2 -mx-2 py-1">
       <div className="space-y-4">
         <div className="flex items-center gap-2.5 bg-slate-100/80 p-2 rounded-xl border border-slate-200/80">
-          <img src="/favicon.png" alt="Simba Academy" className="w-7 h-7 shrink-0 object-contain" />
+          <img src="/Simba Logo 2025.pdf.png" alt="Simba Academy" className="w-15 h-8 shrink-0 object-contain" />
           <div className="flex flex-col min-w-0">
             <h3 className="text-sm font-bold text-slate-900 truncate leading-tight">{user?.name}</h3>
             <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mt-0.5">
@@ -197,16 +194,6 @@ export default function StudentLayout() {
         </div>
       </div>
       </div>
-
-      <div className="shrink-0 pt-3 mt-2 border-t border-slate-200/80 bg-[#F1F5F9]">
-        <button
-          type="button"
-          onClick={handleLogout}
-          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 font-bold text-xs tracking-wider uppercase hover:bg-rose-100 hover:text-rose-800 transition-all duration-300"
-        >
-          <LogOut className="w-3.5 h-3.5" /> Logout
-        </button>
-      </div>
     </div>
   );
 
@@ -219,7 +206,11 @@ export default function StudentLayout() {
         onDismissSuccess={() => setMessage("")}
       />
 
-      <main className="flex-1 min-h-0 w-full min-w-0 max-w-7xl mx-auto flex flex-col portal-main-scroll overflow-y-auto overflow-x-hidden p-3 sm:p-4 lg:p-6 pb-6 lg:pb-8">
+      <main className={`flex-1 min-h-0 w-full min-w-0 max-w-7xl mx-auto flex flex-col ${
+        activeTab === "library"
+          ? "h-full overflow-hidden p-3 sm:p-4 lg:p-6"
+          : "portal-main-scroll overflow-y-auto overflow-x-hidden p-3 sm:p-4 lg:p-6 pb-6 lg:pb-8"
+      }`}>
         <StudentOutletProvider
           value={{
             token,
