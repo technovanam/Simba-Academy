@@ -44,11 +44,19 @@ router.post(
 
       // Notify admin
       try {
-        await sendEmail({
-          to: env.EMAIL_TO,
-          subject: `New Inquiry from ${name} - Simba Academy`,
-          html: getAdminInquiryHtml({ name, email, phone, message: fullMessage }),
+        const admins = await prisma.user.findMany({
+          where: { role: "ADMIN", status: "ACTIVE", isDeleted: false },
+          select: { email: true },
         });
+        const recipients = admins.length > 0 ? admins.map((a) => a.email) : [env.EMAIL_TO];
+
+        for (const toEmail of recipients) {
+          await sendEmail({
+            to: toEmail,
+            subject: `New Inquiry from ${name} - Simba Academy`,
+            html: getAdminInquiryHtml({ name, email, phone, message: fullMessage }),
+          });
+        }
       } catch {
         console.error("Failed to send admin notification email");
       }
@@ -88,18 +96,26 @@ router.post(
 
       // Notify admin about franchise inquiry
       try {
-        await sendEmail({
-          to: env.EMAIL_TO,
-          subject: `Franchise Inquiry from ${name} - Simba Academy`,
-          html: getAdminInquiryHtml({
-            name,
-            email,
-            phone,
-            message: message ?? "Interested in Simba franchise opportunity.",
-            isFranchise: true,
-            location: location ?? "Not specified",
-          }),
+        const admins = await prisma.user.findMany({
+          where: { role: "ADMIN", status: "ACTIVE", isDeleted: false },
+          select: { email: true },
         });
+        const recipients = admins.length > 0 ? admins.map((a) => a.email) : [env.EMAIL_TO];
+
+        for (const toEmail of recipients) {
+          await sendEmail({
+            to: toEmail,
+            subject: `Franchise Inquiry from ${name} - Simba Academy`,
+            html: getAdminInquiryHtml({
+              name,
+              email,
+              phone,
+              message: message ?? "Interested in Simba franchise opportunity.",
+              isFranchise: true,
+              location: location ?? "Not specified",
+            }),
+          });
+        }
       } catch {
         console.error("Failed to send franchise inquiry email");
       }
