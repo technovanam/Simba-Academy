@@ -4,6 +4,7 @@ import type { AuthUser } from "../../lib/api";
 export type AdminOutletContextValue = {
   token: string;
   user: AuthUser | null;
+  setUser: (user: AuthUser | null) => void;
   setMessage: (message: string) => void;
   setError: (error: string) => void;
 };
