@@ -592,6 +592,9 @@ export const api = {
   getTeacherTasks: (token: string) =>
     request<Task[]>("/api/teacher/tasks", {}, token),
 
+  getTeacherTaskAuditHistory: (token: string, taskId: string) =>
+    request<TaskAudit[]>(`/api/teacher/tasks/${taskId}/audit`, {}, token),
+
   getTeacherStudents: (token: string) =>
     request<AuthUser[]>("/api/teacher/students", {}, token),
 

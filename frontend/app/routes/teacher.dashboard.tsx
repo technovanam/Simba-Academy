@@ -8,6 +8,7 @@ import {
   type Task,
   type StoryBook,
   type LessonPlan,
+  type TaskAudit,
 } from "../lib/api";
 import { clearSession, getToken, getUser, saveSession } from "../lib/auth";
 import { resolveStorageUrl } from "../lib/storage";
@@ -57,6 +58,7 @@ import {
   RefreshCw,
   Plus,
   AlertCircle,
+  History as HistoryIcon,
 } from "lucide-react";
 
 const NOTIFICATION_POLL_MS = 12_000;
@@ -139,6 +141,9 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
   const [showProofModal, setShowProofModal] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [taskDetailsModal, setTaskDetailsModal] = useState<Task | null>(null);
+  const [auditHistoryTaskId, setAuditHistoryTaskId] = useState<string | null>(null);
+  const [taskAuditHistory, setTaskAuditHistory] = useState<TaskAudit[]>([]);
+  const [loadingAudit, setLoadingAudit] = useState(false);
   const [proofForm, setProofForm] = useState({ description: "" });
   const [selectedProofFile, setSelectedProofFile] = useState<File | null>(null);
   const [selectedStudentForBooks, setSelectedStudentForBooks] = useState<AuthUser | null>(null);
@@ -337,6 +342,20 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
       setError(err instanceof ApiError ? err.message : "Failed to submit task proof. Please try again.");
     } finally {
       setActionLoading(null);
+    }
+  }
+
+  async function handleViewHistory(taskId: string) {
+    if (!token) return;
+    setAuditHistoryTaskId(taskId);
+    setLoadingAudit(true);
+    try {
+      const history = await api.getTeacherTaskAuditHistory(token, taskId);
+      setTaskAuditHistory(history);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Failed to load history.");
+    } finally {
+      setLoadingAudit(false);
     }
   }
 
@@ -921,6 +940,14 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                                         >
                                           <Eye className="w-4 h-4" />
                                         </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleViewHistory(t.id)}
+                                          className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 transition shadow-sm"
+                                          title="View Task History"
+                                        >
+                                          <HistoryIcon className="w-4 h-4 text-indigo-500" />
+                                        </button>
                                         {(t.status === "PENDING" || t.status === "REJECTED" || t.status === "COMPLETED" || t.status === "SUBMITTED" || t.status === "RESUBMITTED") ? (
                                           <button
                                             type="button"
@@ -1502,6 +1529,98 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
               <button
                 type="button"
                 onClick={() => setTaskDetailsModal(null)}
+                className="px-6 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs transition"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {auditHistoryTaskId && (
+        <div className="fixed inset-0 z-[100] bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-2xl shadow-2xl border border-slate-200 animate-scale-up text-slate-800 relative max-h-[80vh] flex flex-col">
+            <ModalCloseButton
+              onClick={() => {
+                setAuditHistoryTaskId(null);
+                setTaskAuditHistory([]);
+              }}
+              className="absolute top-4 right-4"
+            />
+            <h3 className="font-sans text-lg font-extrabold text-slate-900 mb-4 flex items-center gap-2">
+              <HistoryIcon className="w-5 h-5 text-indigo-500" /> Task Status History
+            </h3>
+
+            <div className="flex-1 overflow-y-auto modern-scrollbar pr-2 min-h-[200px]">
+              {loadingAudit ? (
+                <div className="flex flex-col items-center justify-center h-40 gap-3">
+                  <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
+                  <p className="text-xs font-semibold text-slate-500">Loading history...</p>
+                </div>
+              ) : taskAuditHistory.length === 0 ? (
+                <div className="flex items-center justify-center h-40 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                  <p className="text-sm font-semibold text-slate-500">No history found for this task.</p>
+                </div>
+              ) : (
+                <div className="relative border-l-2 border-indigo-100 ml-3 space-y-6 pb-4">
+                  {taskAuditHistory.map((audit) => (
+                    <div key={audit.id} className="relative pl-6">
+                      <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-white border-2 border-indigo-300 shadow-sm" />
+                      <div className="bg-white border border-slate-100 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                        <div className="flex justify-between items-start mb-2 gap-4">
+                          <div>
+                            <p className="text-xs font-bold text-slate-800">
+                              {audit.action === "CREATED" ? "Task Assigned" : "Status Changed"}
+                            </p>
+                            <p className="text-2xs text-slate-500 font-medium mt-0.5">
+                              {new Date(audit.createdAt).toLocaleString()}
+                            </p>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className="text-2xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                              {audit.changedByName ? `By ${audit.changedByName}` : "System / Admin"}
+                            </p>
+                            <div className="flex items-center gap-1.5 justify-end">
+                              {audit.statusFrom && (
+                                <>
+                                  <span className="px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-[9px] font-bold">
+                                    {audit.statusFrom}
+                                  </span>
+                                  <ChevronRight className="w-3 h-3 text-slate-400" />
+                                </>
+                              )}
+                              <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold border ${
+                                audit.statusTo === "APPROVED" ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
+                                audit.statusTo === "REJECTED" ? "bg-rose-50 text-rose-700 border-rose-200" :
+                                audit.statusTo === "RESUBMITTED" ? "bg-purple-50 text-purple-700 border-purple-200" :
+                                audit.statusTo === "UNDER_REVIEW" ? "bg-sky-50 text-sky-700 border-sky-200" :
+                                "bg-amber-50 text-amber-700 border-amber-200"
+                              }`}>
+                                {audit.statusTo}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        {audit.comments && (
+                          <div className="mt-3 pt-3 border-t border-slate-100">
+                            <p className="text-xs text-slate-600 whitespace-pre-wrap">{audit.comments}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="mt-4 pt-4 border-t border-slate-100 flex justify-end shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setAuditHistoryTaskId(null);
+                  setTaskAuditHistory([]);
+                }}
                 className="px-6 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs transition"
               >
                 Close

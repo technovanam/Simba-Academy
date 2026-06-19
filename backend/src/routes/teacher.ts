@@ -385,4 +385,24 @@ router.get("/students", async (req, res, next) => {
   }
 });
 
+// ── Get Task Audit History for Teacher ────────────────────────────────
+router.get("/tasks/:id/audit", async (req, res, next) => {
+  try {
+    const taskId = String(req.params.id);
+    const task = await prisma.task.findFirst({
+      where: { id: taskId, teacherId: req.user!.userId },
+    });
+    if (!task) {
+      throw new AppError("Task not found or not assigned to you", 404);
+    }
+    const audits = await prisma.taskAudit.findMany({
+      where: { taskId },
+      orderBy: { createdAt: "desc" },
+    });
+    res.json(audits);
+  } catch (err) {
+    next(err);
+  }
+});
+
 export default router;
