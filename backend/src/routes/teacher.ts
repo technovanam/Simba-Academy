@@ -227,15 +227,31 @@ router.patch("/tasks/:id/proof", validate(submitTaskProofSchema), async (req, re
       throw new AppError("Cannot modify proof for an already approved task", 400);
     }
 
+    const newStatus = task.status === "REJECTED" ? "RESUBMITTED" : "SUBMITTED";
+
     const updated = await prisma.task.update({
       where: { id: String(id) },
       data: {
         proofUrl,
         proofDesc,
-        status: "COMPLETED",
+        status: newStatus,
+        rejectionReason: null, // Clear any rejection reason on resubmission
         proofSubmittedAt: new Date(),
       },
       include: { teacher: { select: { name: true, email: true } } },
+    });
+
+    // Log Task Audit History
+    await prisma.taskAudit.create({
+      data: {
+        taskId: task.id,
+        action: newStatus,
+        statusFrom: task.status,
+        statusTo: newStatus,
+        changedById: req.user!.userId,
+        changedByName: updated.teacher.name || "Teacher",
+        comments: proofDesc,
+      },
     });
 
     void createAdminNotification({

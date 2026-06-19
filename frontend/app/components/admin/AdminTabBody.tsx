@@ -13,7 +13,9 @@ import {
   type Payment,
   type StoryBook,
   type Task,
+  type TaskAudit,
   type RecurringTask,
+  type TaskFolder,
   type Testimonial,
   type DashboardStats,
   type GoogleLocationSummary,
@@ -243,7 +245,10 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
   });
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [recurringTasks, setRecurringTasks] = useState<RecurringTask[]>([]);
-  const [selectedClassFolder, setSelectedClassFolder] = useState<string | null>(null);
+  const [taskFolders, setTaskFolders] = useState<TaskFolder[]>([]);
+  const [selectedTaskFolder, setSelectedTaskFolder] = useState<TaskFolder | null>(null);
+  const [showTaskFolderForm, setShowTaskFolderForm] = useState(false);
+  const [taskFolderForm, setTaskFolderForm] = useState({ name: "", studentClass: "LKG" });
   const [showRecurringTaskForm, setShowRecurringTaskForm] = useState(false);
   const [recurringTaskForm, setRecurringTaskForm] = useState({
     id: "",
@@ -310,17 +315,17 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
   const [courseImageFile, setCourseImageFile] = useState<File | null>(null);
   const [bookFile, setBookFile] = useState<File | null>(null);
 
-  const [confirmDelete, setConfirmDelete] = useState<{
-    type: "course" | "material" | "task" | "book" | "folder" | "gallery" | "testimonial" | "recurringTask";
-    id: string;
-    title: string;
-    message: string;
-  } | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<{ type: string; id: string; title?: string; message?: string } | null>(null);
+
+  // --- Audit History State ---
+  const [auditHistoryTaskId, setAuditHistoryTaskId] = useState<string | null>(null);
+  const [taskAuditHistory, setTaskAuditHistory] = useState<TaskAudit[]>([]);
+  const [loadingAudit, setLoadingAudit] = useState(false);
 
   // Fetch data specifically for the active tab
   useEffect(() => {
     if (!token) return;
-    setSelectedClassFolder(null);
+    setSelectedTaskFolder(null);
     setSelectedApprovalClassFolder(null);
     loadTabData(activeTab);
   }, [token, activeTab]);
@@ -419,12 +424,16 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
         setCourses(allCourses);
         setTasks(allTasks);
       } else if (tab === "tasks") {
-        const [allTasks, allUsers] = await Promise.all([
-          api.getTasks(token),
+        const [allRecurringTasks, allFolders, allUsers, allTasks] = await Promise.all([
+          api.getRecurringTasks(token),
+          api.getTaskFolders(token),
           api.getUsers(token), // To populate the assign-to-teacher select options
+          api.getTasks(token),
         ]);
-        setTasks(allTasks);
+        setRecurringTasks(allRecurringTasks);
+        setTaskFolders(allFolders);
         setUsers(allUsers);
+        setTasks(allTasks);
       } else if (tab === "books") {
         await loadFolderContents(currentFolderId);
       } else if (tab === "inquiries") {
@@ -674,6 +683,7 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
           studentClass: recurringTaskForm.studentClass || "LKG",
           repeatDay: recurringTaskForm.repeatDay,
           isActive: true,
+          folderId: selectedTaskFolder?.id || null,
         });
         setRecurringTasks((prev) => prev.map((rt) => (rt.id === updated.id ? updated : rt)));
         setMessage("Recurring task updated successfully.");
@@ -684,6 +694,7 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
           studentClass: recurringTaskForm.studentClass || "LKG",
           repeatDay: recurringTaskForm.repeatDay,
           isActive: true,
+          folderId: selectedTaskFolder?.id || null,
         });
         setRecurringTasks((prev) => [created, ...prev]);
         setMessage("Recurring task created successfully.");
@@ -695,6 +706,45 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
     } finally {
       setActionLoading(null);
     }
+  }
+
+  async function handleCreateTaskFolder(e: React.FormEvent) {
+    e.preventDefault();
+    if (!token || isActionBusy(actionLoading)) return;
+    setActionLoading("task-folder-save");
+    setError("");
+    setMessage("");
+
+    if (!taskFolderForm.name.trim()) {
+      setError("Please enter a folder name.");
+      setActionLoading(null);
+      return;
+    }
+
+    try {
+      const created = await api.createTaskFolder(token, {
+        name: taskFolderForm.name.trim(),
+        studentClass: taskFolderForm.studentClass,
+      });
+      setTaskFolders((prev) => [...prev, created]);
+      setMessage("Folder created successfully.");
+      setTaskFolderForm({ name: "", studentClass: "LKG" });
+      setShowTaskFolderForm(false);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Failed to create task folder.");
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleDeleteTaskFolder(id: string) {
+    if (!token || isActionBusy(actionLoading)) return;
+    setConfirmDelete({
+      type: "taskFolder",
+      id,
+      title: "Delete Folder?",
+      message: "Are you sure you want to delete this folder? All recurring tasks inside this folder will be permanently deleted.",
+    });
   }
 
   async function handleToggleRecurringTask(id: string, currentStatus: boolean) {
@@ -737,18 +787,14 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
     if (!token || isActionBusy(actionLoading)) return;
     setActionLoading(`task-approve-${taskId}`);
     try {
-      const task = tasks.find(t => t.id === taskId);
-      let newProofDesc: string | undefined = undefined;
-      
-      if (!approve) {
-        const reason = rejectReason || "Rejected by Admin";
-        newProofDesc = task?.proofDesc ? `${task.proofDesc}\n\n--- Admin Rejection ---\n${reason}` : `--- Admin Rejection ---\n${reason}`;
+      const payload: any = {
+        status: approve ? "APPROVED" : "REJECTED",
+      };
+      if (!approve && rejectReason) {
+        payload.rejectionReason = rejectReason;
       }
 
-      const updated = await api.approveTask(token, taskId, {
-        status: approve ? "APPROVED" : "REJECTED",
-        ...(newProofDesc !== undefined && { proofDesc: newProofDesc }),
-      });
+      const updated = await api.approveTask(token, taskId, payload);
       setTasks((prev) => prev.map((t) => (t.id === taskId ? updated : t)));
       setMessage(approve ? "Task proof approved!" : "Task proof rejected.");
     } catch (err) {
@@ -762,25 +808,32 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
     if (!token || isActionBusy(actionLoading)) return;
     setActionLoading(`task-approve-${taskId}`);
     try {
-      const task = tasks.find(t => t.id === taskId);
-      let cleanProofDesc: string | undefined = undefined;
-      
-      if (task?.proofDesc && task.proofDesc.includes("--- Admin Rejection ---")) {
-        cleanProofDesc = task.proofDesc.split("\n\n--- Admin Rejection ---")[0];
-      }
-
       const updated = await api.approveTask(token, taskId, {
-        status: "COMPLETED",
-        ...(cleanProofDesc !== undefined && { proofDesc: cleanProofDesc }),
+        status: "SUBMITTED",
       });
       setTasks((prev) => prev.map((t) => (t.id === taskId ? updated : t)));
-      setMessage("Task review revoked and set back to pending.");
+      setMessage("Task review revoked and set back to submitted status.");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Failed to revoke task review.");
     } finally {
       setActionLoading(null);
     }
   }
+
+  async function handleViewHistory(taskId: string) {
+    if (!token) return;
+    setAuditHistoryTaskId(taskId);
+    setLoadingAudit(true);
+    try {
+      const history = await api.getTaskAuditHistory(token, taskId);
+      setTaskAuditHistory(history);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Failed to load history.");
+    } finally {
+      setLoadingAudit(false);
+    }
+  }
+
   async function handleDeleteTask(taskId: string) {
     if (!token || isActionBusy(actionLoading)) return;
     setConfirmDelete({
@@ -1229,6 +1282,18 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
         await api.deleteTestimonial(token, id);
         setTestimonials((prev) => prev.filter((t) => t.id !== id));
         setMessage("Testimonial deleted.");
+      } else if (type === "recurringTask") {
+        await api.deleteRecurringTask(token, id);
+        setRecurringTasks((prev) => prev.filter((rt) => rt.id !== id));
+        setMessage("Recurring task deleted successfully.");
+      } else if (type === "taskFolder") {
+        await api.deleteTaskFolder(token, id);
+        setTaskFolders((prev) => prev.filter((f) => f.id !== id));
+        setRecurringTasks((prev) => prev.filter((rt) => rt.folderId !== id));
+        setMessage("Folder deleted successfully.");
+        if (selectedTaskFolder?.id === id) {
+          setSelectedTaskFolder(null);
+        }
       }
       setConfirmDelete(null);
     } catch (err) {
@@ -1351,7 +1416,9 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
   const taskStatusOptions = [
     { id: "ALL", label: "All Statuses" },
     { id: "PENDING", label: "Pending" },
-    { id: "COMPLETED", label: "Completed" },
+    { id: "SUBMITTED", label: "Submitted" },
+    { id: "UNDER_REVIEW", label: "Under Review" },
+    { id: "RESUBMITTED", label: "Resubmitted" },
     { id: "APPROVED", label: "Approved" },
     { id: "REJECTED", label: "Rejected" },
   ];
@@ -1393,6 +1460,7 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
     if (lowerTitle.includes("nursery")) return "Nursery";
     if (lowerTitle.includes("lkg") || lowerTitle.includes("lower kindergarten")) return "LKG";
     if (lowerTitle.includes("ukg") || lowerTitle.includes("upper kindergarten")) return "UKG";
+    if (lowerTitle.includes("preschool")) return "Preschool";
     return "Others";
   }
 
@@ -1523,6 +1591,12 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
   ];
 
   const filteredRecurringTasks = recurringTasks.filter((rt) => {
+    if (selectedTaskFolder) {
+      if (rt.folderId !== selectedTaskFolder.id) return false;
+    } else {
+      if (rt.folderId !== null && rt.folderId !== undefined) return false;
+    }
+
     const matchesSearch =
       rt.title.toLowerCase().includes(recurringTaskSearch.toLowerCase()) ||
       (rt.description ?? "").toLowerCase().includes(recurringTaskSearch.toLowerCase());
@@ -1550,6 +1624,7 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
   const recurringTaskPagination = useAdminPagination(
     sortedFilteredRecurringTasks,
     [
+      selectedTaskFolder,
       recurringTaskSearch,
       recurringTaskClassFilter,
       recurringTaskStatusFilter,
@@ -2263,8 +2338,8 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
 
               <AdminPageBody className="flex-1 min-h-0 flex flex-col overflow-hidden">
                 {!selectedApprovalClassFolder ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 p-4 overflow-y-auto modern-scrollbar bg-slate-50">
-                    {["Playgroup", "Nursery", "LKG", "UKG", "Others"].map((className) => {
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 p-4 overflow-y-auto modern-scrollbar bg-slate-50">
+                    {["Playgroup", "Nursery", "LKG", "UKG", "Preschool", "Others"].map((className) => {
                       const classApprovals = combinedApprovals.filter(a => getApprovalClass(a) === className);
                       const pendingCount = classApprovals.filter(a => a.isTask ? (a.status !== "APPROVED" && a.status !== "REJECTED") : !a.isApproved).length;
                       return (
@@ -2392,6 +2467,10 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                                                 ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                                                 : m.status === "REJECTED"
                                                   ? "bg-rose-50 text-rose-700 border-rose-200"
+                                                  : m.status === "RESUBMITTED"
+                                                  ? "bg-purple-50 text-purple-700 border-purple-200"
+                                                  : m.status === "UNDER_REVIEW"
+                                                  ? "bg-sky-50 text-sky-700 border-sky-200"
                                                   : "bg-blue-50 text-blue-700 border-blue-200"
                                             }`}
                                           >
@@ -2399,7 +2478,11 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                                               ? "Approved"
                                               : m.status === "REJECTED"
                                                 ? "Rejected"
-                                                : "Pending Review"}
+                                                : m.status === "RESUBMITTED"
+                                                ? "Resubmitted"
+                                                : m.status === "UNDER_REVIEW"
+                                                ? "Under Review"
+                                                : "Submitted"}
                                           </span>
                                         ) : (
                                           <span
@@ -2426,7 +2509,15 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                                         </button>
                                         {m.isTask ? (
                                           <>
-                                            {(m.status === "COMPLETED" || m.status === "REJECTED") && (
+                                            <button
+                                              type="button"
+                                              onClick={() => handleViewHistory(m.id)}
+                                              title="View History"
+                                              className="p-1.5 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 transition"
+                                            >
+                                              <HistoryIcon className="w-4 h-4" />
+                                            </button>
+                                            {(m.status === "SUBMITTED" || m.status === "RESUBMITTED" || m.status === "UNDER_REVIEW" || m.status === "REJECTED") && (
                                               <button
                                                 disabled={actionLoading === `task-approve-${m.id}`}
                                                 onClick={() => handleApproveTaskProof(m.id, true)}
@@ -2440,7 +2531,7 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                                                 )}
                                               </button>
                                             )}
-                                            {m.status === "COMPLETED" && (
+                                            {(m.status === "SUBMITTED" || m.status === "RESUBMITTED" || m.status === "UNDER_REVIEW") && (
                                               <button
                                                 disabled={actionLoading === `task-approve-${m.id}`}
                                                 onClick={() => {
@@ -2560,22 +2651,80 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
           {/* ────────────────── TASKS ASSIGNMENT ────────────────── */}
           {activeTab === "tasks" && (
             <AdminPageShell className="h-full flex flex-col min-h-0 overflow-hidden">
-              <AdminPageHeader
-                title="Recurring Class Tasks"
-                description="Manage class-specific tasks that automatically assign to teachers every week."
-                actions={
-                  <>
+              {/* HEADER AREA */}
+              {!selectedTaskFolder ? (
+                <AdminPageHeader
+                  title="Assign Tasks (Class Folders)"
+                  description="Organize tasks in class folders that assign to teachers automatically on scheduled days."
+                  actions={
+                    <>
+                      <AdminSearchInput
+                        placeholder="Search folders/tasks…"
+                        value={recurringTaskSearch}
+                        onChange={setRecurringTaskSearch}
+                        ariaLabel="Search recurring tasks"
+                      />
+                      <PillSelect
+                        value={recurringTaskClassFilter}
+                        options={RECURRING_TASK_CLASS_OPTIONS}
+                        onChange={setRecurringTaskClassFilter}
+                        ariaLabel="Filter by class"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTaskFolderForm({ name: "", studentClass: "LKG" });
+                          setShowTaskFolderForm(true);
+                        }}
+                        className="px-4 py-2 rounded-xl bg-indigo-600 text-white font-sans font-bold text-xs tracking-wider flex items-center gap-2 hover:bg-indigo-750 transition shadow-md whitespace-nowrap sm:ml-auto"
+                      >
+                        <FolderPlus className="w-4 h-4" /> New Folder
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setRecurringTaskForm({
+                            id: "",
+                            title: "",
+                            description: "",
+                            studentClass: "LKG",
+                            repeatDay: "MONDAY",
+                            isEditing: false,
+                          });
+                          setShowRecurringTaskForm(true);
+                        }}
+                        className="px-4 py-2 rounded-xl bg-[#8AC926] text-white font-sans font-bold text-xs tracking-wider flex items-center gap-2 hover:bg-[#78B020] transition shadow-md shadow-[#8AC926]/10 whitespace-nowrap"
+                      >
+                        <Plus className="w-4 h-4" /> Create General Task
+                      </button>
+                    </>
+                  }
+                />
+              ) : (
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border-b border-slate-200 bg-white shrink-0">
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => {
+                        setSelectedTaskFolder(null);
+                        setRecurringTaskSearch("");
+                      }}
+                      className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 transition border border-slate-200"
+                      title="Back to folders"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <div className="flex items-center gap-2 text-slate-800">
+                      <FolderOpen className="w-5 h-5 text-[#8AC926]" />
+                      <h2 className="font-bold text-lg">{selectedTaskFolder.name} ({selectedTaskFolder.studentClass})</h2>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2.5">
                     <AdminSearchInput
-                      placeholder="Search tasks…"
+                      placeholder="Search folder tasks…"
                       value={recurringTaskSearch}
                       onChange={setRecurringTaskSearch}
                       ariaLabel="Search recurring tasks"
-                    />
-                    <PillSelect
-                      value={recurringTaskClassFilter}
-                      options={RECURRING_TASK_CLASS_OPTIONS}
-                      onChange={setRecurringTaskClassFilter}
-                      ariaLabel="Filter by class"
                     />
                     <PillSelect
                       value={recurringTaskStatusFilter}
@@ -2596,135 +2745,303 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                           id: "",
                           title: "",
                           description: "",
-                          studentClass: "LKG",
+                          studentClass: selectedTaskFolder.studentClass,
                           repeatDay: "MONDAY",
                           isEditing: false,
                         });
                         setShowRecurringTaskForm(true);
                       }}
-                      className="px-4 py-2 rounded-xl bg-[#8AC926] text-white font-sans font-bold text-xs tracking-wider flex items-center gap-2 hover:bg-[#78B020] transition shadow-md shadow-[#8AC926]/10 whitespace-nowrap sm:ml-auto"
+                      className="px-4 py-2 rounded-xl bg-[#8AC926] text-white font-sans font-bold text-xs tracking-wider flex items-center gap-2 hover:bg-[#78B020] transition shadow-md shadow-[#8AC926]/10 whitespace-nowrap"
                     >
-                      <Plus className="w-4 h-4" /> Create Recurring Task
+                      <Plus className="w-4 h-4" /> Create Task in Folder
                     </button>
-                  </>
-                }
-              />
+                  </div>
+                </div>
+              )}
 
+              {/* BODY AREA */}
               <AdminPageBody className="flex-1 min-h-0 flex flex-col overflow-hidden">
-                {sortedFilteredRecurringTasks.length === 0 ? (
-                  <AdminListEmpty message="No recurring tasks match your search or filters." />
-                ) : (
-                  <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex-1 min-h-0 flex flex-col">
-                    <div className="overflow-x-auto flex-1 min-h-0 overflow-y-auto modern-scrollbar">
-                      <table className="w-full text-left text-sm whitespace-nowrap">
-                        <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium text-xs sticky top-0 z-10">
-                          <tr>
-                            <th className="px-4 py-3 font-semibold w-[15%]">Class</th>
-                            <th className="px-4 py-3 font-semibold w-[45%]">Task Title &amp; Details</th>
-                            <th className="px-4 py-3 font-semibold w-[15%]">Repeat Day</th>
-                            <th className="px-4 py-3 font-semibold w-[10%]">Status</th>
-                            <th className="px-4 py-3 font-semibold text-right">Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {recurringTaskPagination.paginatedItems.map((rt) => (
-                            <tr key={rt.id} className="hover:bg-slate-50/80 transition-colors">
-                              {/* Column 1: Class */}
-                              <td className="px-4 py-3 align-middle text-xs text-[#8AC926] font-bold">
-                                {rt.studentClass}
-                              </td>
-                              {/* Column 2: Task Title & Details */}
-                              <td className="px-4 py-3 align-middle min-w-0">
-                                <div className="flex flex-col space-y-1">
-                                  <span className="font-bold text-sm text-slate-800 break-all whitespace-normal">
-                                    {rt.title}
-                                  </span>
-                                  {rt.description && (
-                                    <p className="text-xs text-slate-500 line-clamp-2 break-all whitespace-normal">
-                                      {rt.description}
-                                    </p>
-                                  )}
-                                </div>
-                              </td>
-                              {/* Column 3: Repeat Day */}
-                              <td className="px-4 py-3 align-middle text-xs font-semibold text-slate-650">
-                                Repeats every <span className="font-bold text-indigo-650">{rt.repeatDay}</span>
-                              </td>
-                              {/* Column 4: Status */}
-                              <td className="px-4 py-3 align-middle">
-                                <span
-                                  className={`px-2.5 py-0.5 rounded-lg text-2xs font-extrabold uppercase border shrink-0 ${
-                                    rt.isActive
-                                      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                      : "bg-slate-100 text-slate-500 border-slate-200"
-                                  }`}
+                {!selectedTaskFolder ? (
+                  // ROOT LEVEL: Folders grid + Root tasks table
+                  <div className="p-4 bg-slate-50 flex-1 overflow-y-auto modern-scrollbar space-y-6">
+                    <div>
+                      <h3 className="font-bold text-slate-700 text-sm mb-3">Class Folders</h3>
+                      {taskFolders.filter(folder => recurringTaskClassFilter === "ALL" || folder.studentClass === recurringTaskClassFilter).length === 0 ? (
+                        <div className="p-8 text-center text-slate-500 font-medium bg-white border border-slate-200 rounded-2xl shadow-sm">
+                          No folders created yet. Click "New Folder" to start grouping tasks by class.
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                          {taskFolders
+                            .filter(folder => recurringTaskClassFilter === "ALL" || folder.studentClass === recurringTaskClassFilter)
+                            .filter(folder => !recurringTaskSearch || folder.name.toLowerCase().includes(recurringTaskSearch.toLowerCase()))
+                            .map((folder) => {
+                              const folderTasks = recurringTasks.filter(rt => rt.folderId === folder.id);
+                              return (
+                                <div
+                                  key={folder.id}
+                                  onClick={() => {
+                                    setSelectedTaskFolder(folder);
+                                    setRecurringTaskSearch("");
+                                  }}
+                                  className="flex flex-col p-5 bg-white border border-slate-200 rounded-2xl hover:border-[#8AC926] hover:shadow-md transition-all text-left relative group cursor-pointer"
                                 >
-                                  {rt.isActive ? "Active" : "Inactive"}
-                                </span>
-                              </td>
-                              {/* Column 5: Actions */}
-                              <td className="px-4 py-2 text-right align-middle">
-                                <div className="flex items-center justify-end gap-1.5">
+                                  <div className="w-12 h-12 bg-emerald-50 text-[#8AC926] rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                    <Folder className="w-6 h-6" />
+                                  </div>
+                                  <h3 className="font-bold text-slate-800 text-base line-clamp-1 pr-6">{folder.name}</h3>
+                                  <p className="text-xs text-slate-500 font-medium mt-1">
+                                    Class: <span className="font-semibold text-indigo-650">{folder.studentClass}</span> · {folderTasks.length} tasks
+                                  </p>
                                   <button
-                                    onClick={() => handleToggleRecurringTask(rt.id, rt.isActive)}
-                                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition ${
-                                      rt.isActive
-                                        ? "bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100"
-                                        : "bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100"
-                                    }`}
-                                  >
-                                    {rt.isActive ? "Deactivate" : "Activate"}
-                                  </button>
-                                  <button
-                                    onClick={() => loadRecurringTaskHistory(rt.id)}
-                                    className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-400 hover:text-blue-650 hover:bg-blue-50 transition"
-                                    title="View Assignment History"
-                                  >
-                                    <HistoryIcon className="w-4 h-4" />
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      setRecurringTaskForm({
-                                        id: rt.id,
-                                        title: rt.title,
-                                        description: rt.description || "",
-                                        studentClass: rt.studentClass || "LKG",
-                                        repeatDay: rt.repeatDay,
-                                        isEditing: true,
-                                      });
-                                      setShowRecurringTaskForm(true);
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDeleteTaskFolder(folder.id);
                                     }}
-                                    className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-400 hover:text-indigo-650 hover:bg-indigo-50 transition"
-                                    title="Edit Task"
-                                  >
-                                    <Edit2 className="w-4 h-4" />
-                                  </button>
-                                  <button
-                                    onClick={() => handleDeleteRecurringTask(rt.id)}
-                                    className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-400 hover:text-rose-650 hover:bg-rose-50 transition"
-                                    title="Delete Task"
+                                    className="absolute top-4 right-4 p-1.5 rounded-lg text-slate-400 hover:text-rose-650 hover:bg-rose-50 opacity-0 group-hover:opacity-100 transition"
+                                    title="Delete Folder"
                                   >
                                     <Trash2 className="w-4 h-4" />
                                   </button>
                                 </div>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                              );
+                            })}
+                        </div>
+                      )}
                     </div>
-                    <div className="p-4 bg-slate-50 border-t border-slate-200">
-                      <AdminListPagination
-                        rangeStart={recurringTaskPagination.rangeStart}
-                        rangeEnd={recurringTaskPagination.rangeEnd}
-                        total={sortedFilteredRecurringTasks.length}
-                        safePage={recurringTaskPagination.safePage}
-                        totalPages={recurringTaskPagination.totalPages}
-                        pageNumbers={recurringTaskPagination.pageNumbers}
-                        onPageChange={recurringTaskPagination.setCurrentPage}
-                        itemLabel="tasks"
-                      />
+
+                    <div>
+                      <h3 className="font-bold text-slate-700 text-sm mb-3">General Tasks (Not in Folders)</h3>
+                      {sortedFilteredRecurringTasks.length === 0 ? (
+                        <div className="p-8 text-center text-slate-500 font-medium bg-white border border-slate-200 rounded-2xl shadow-sm">
+                          No general/uncategorized tasks found.
+                        </div>
+                      ) : (
+                        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex flex-col">
+                          <div className="overflow-x-auto flex-1 min-h-0 overflow-y-auto modern-scrollbar">
+                            <table className="w-full text-left text-sm whitespace-nowrap">
+                              <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium text-xs sticky top-0 z-10">
+                                <tr>
+                                  <th className="px-4 py-3 font-semibold w-[15%]">Class</th>
+                                  <th className="px-4 py-3 font-semibold w-[45%]">Task Title &amp; Details</th>
+                                  <th className="px-4 py-3 font-semibold w-[15%]">Repeat Day</th>
+                                  <th className="px-4 py-3 font-semibold w-[10%]">Status</th>
+                                  <th className="px-4 py-3 font-semibold text-right">Actions</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-100">
+                                {recurringTaskPagination.paginatedItems.map((rt) => (
+                                  <tr key={rt.id} className="hover:bg-slate-50/80 transition-colors">
+                                    <td className="px-4 py-3 align-middle text-xs text-[#8AC926] font-bold">
+                                      {rt.studentClass}
+                                    </td>
+                                    <td className="px-4 py-3 align-middle min-w-0">
+                                      <div className="flex flex-col space-y-1">
+                                        <span className="font-bold text-sm text-slate-800 break-all whitespace-normal">
+                                          {rt.title}
+                                        </span>
+                                        {rt.description && (
+                                          <p className="text-xs text-slate-500 line-clamp-2 break-all whitespace-normal">
+                                            {rt.description}
+                                          </p>
+                                        )}
+                                      </div>
+                                    </td>
+                                    <td className="px-4 py-3 align-middle text-xs font-semibold text-slate-650">
+                                      Repeats every <span className="font-bold text-indigo-650">{rt.repeatDay === "DAILY" ? "Every Day" : rt.repeatDay}</span>
+                                    </td>
+                                    <td className="px-4 py-3 align-middle">
+                                      <span
+                                        className={`px-2.5 py-0.5 rounded-lg text-2xs font-extrabold uppercase border shrink-0 ${
+                                          rt.isActive
+                                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                            : "bg-slate-100 text-slate-500 border-slate-200"
+                                        }`}
+                                      >
+                                        {rt.isActive ? "Active" : "Inactive"}
+                                      </span>
+                                    </td>
+                                    <td className="px-4 py-2 text-right align-middle">
+                                      <div className="flex items-center justify-end gap-1.5">
+                                        <button
+                                          onClick={() => handleToggleRecurringTask(rt.id, rt.isActive)}
+                                          className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition ${
+                                            rt.isActive
+                                              ? "bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100"
+                                              : "bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100"
+                                          }`}
+                                        >
+                                          {rt.isActive ? "Deactivate" : "Activate"}
+                                        </button>
+                                        <button
+                                          onClick={() => loadRecurringTaskHistory(rt.id)}
+                                          className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-400 hover:text-blue-650 hover:bg-blue-50 transition"
+                                          title="View Assignment History"
+                                        >
+                                          <HistoryIcon className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                          onClick={() => {
+                                            setRecurringTaskForm({
+                                              id: rt.id,
+                                              title: rt.title,
+                                              description: rt.description || "",
+                                              studentClass: rt.studentClass || "LKG",
+                                              repeatDay: rt.repeatDay,
+                                              isEditing: true,
+                                            });
+                                            setShowRecurringTaskForm(true);
+                                          }}
+                                          className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-400 hover:text-indigo-650 hover:bg-indigo-50 transition"
+                                          title="Edit Task"
+                                        >
+                                          <Edit2 className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                          onClick={() => handleDeleteRecurringTask(rt.id)}
+                                          className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-400 hover:text-rose-650 hover:bg-rose-50 transition"
+                                          title="Delete Task"
+                                        >
+                                          <Trash2 className="w-4 h-4" />
+                                        </button>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                          <div className="p-4 bg-slate-50 border-t border-slate-200">
+                            <AdminListPagination
+                              rangeStart={recurringTaskPagination.rangeStart}
+                              rangeEnd={recurringTaskPagination.rangeEnd}
+                              total={sortedFilteredRecurringTasks.length}
+                              safePage={recurringTaskPagination.safePage}
+                              totalPages={recurringTaskPagination.totalPages}
+                              pageNumbers={recurringTaskPagination.pageNumbers}
+                              onPageChange={recurringTaskPagination.setCurrentPage}
+                              itemLabel="tasks"
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
+                  </div>
+                ) : (
+                  // INSIDE A CLASS FOLDER: Flat list of tasks in the folder
+                  <div className="flex-1 min-h-0 flex flex-col overflow-hidden bg-slate-50 p-4">
+                    {sortedFilteredRecurringTasks.length === 0 ? (
+                      <AdminListEmpty message={`No tasks inside the folder "${selectedTaskFolder.name}".`} />
+                    ) : (
+                      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex-1 min-h-0 flex flex-col">
+                        <div className="overflow-x-auto flex-1 min-h-0 overflow-y-auto modern-scrollbar">
+                          <table className="w-full text-left text-sm whitespace-nowrap">
+                            <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium text-xs sticky top-0 z-10">
+                              <tr>
+                                <th className="px-4 py-3 font-semibold w-[15%]">Class</th>
+                                <th className="px-4 py-3 font-semibold w-[45%]">Task Title &amp; Details</th>
+                                <th className="px-4 py-3 font-semibold w-[15%]">Repeat Day</th>
+                                <th className="px-4 py-3 font-semibold w-[10%]">Status</th>
+                                <th className="px-4 py-3 font-semibold text-right">Actions</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                              {recurringTaskPagination.paginatedItems.map((rt) => (
+                                <tr key={rt.id} className="hover:bg-slate-50/80 transition-colors">
+                                  <td className="px-4 py-3 align-middle text-xs text-[#8AC926] font-bold">
+                                    {rt.studentClass}
+                                  </td>
+                                  <td className="px-4 py-3 align-middle min-w-0">
+                                    <div className="flex flex-col space-y-1">
+                                      <span className="font-bold text-sm text-slate-800 break-all whitespace-normal">
+                                        {rt.title}
+                                      </span>
+                                      {rt.description && (
+                                        <p className="text-xs text-slate-500 line-clamp-2 break-all whitespace-normal">
+                                          {rt.description}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-3 align-middle text-xs font-semibold text-slate-650">
+                                    Repeats every <span className="font-bold text-indigo-650">{rt.repeatDay === "DAILY" ? "Every Day" : rt.repeatDay}</span>
+                                  </td>
+                                  <td className="px-4 py-3 align-middle">
+                                    <span
+                                      className={`px-2.5 py-0.5 rounded-lg text-2xs font-extrabold uppercase border shrink-0 ${
+                                        rt.isActive
+                                          ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                          : "bg-slate-100 text-slate-500 border-slate-200"
+                                      }`}
+                                    >
+                                      {rt.isActive ? "Active" : "Inactive"}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-2 text-right align-middle">
+                                    <div className="flex items-center justify-end gap-1.5">
+                                      <button
+                                        onClick={() => handleToggleRecurringTask(rt.id, rt.isActive)}
+                                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition ${
+                                          rt.isActive
+                                            ? "bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100"
+                                            : "bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100"
+                                        }`}
+                                      >
+                                        {rt.isActive ? "Deactivate" : "Activate"}
+                                      </button>
+                                      <button
+                                        onClick={() => loadRecurringTaskHistory(rt.id)}
+                                        className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-400 hover:text-blue-650 hover:bg-blue-50 transition"
+                                        title="View Assignment History"
+                                      >
+                                        <HistoryIcon className="w-4 h-4" />
+                                      </button>
+                                      <button
+                                        onClick={() => {
+                                          setRecurringTaskForm({
+                                            id: rt.id,
+                                            title: rt.title,
+                                            description: rt.description || "",
+                                            studentClass: rt.studentClass || "LKG",
+                                            repeatDay: rt.repeatDay,
+                                            isEditing: true,
+                                          });
+                                          setShowRecurringTaskForm(true);
+                                        }}
+                                        className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-400 hover:text-indigo-650 hover:bg-indigo-50 transition"
+                                        title="Edit Task"
+                                      >
+                                        <Edit2 className="w-4 h-4" />
+                                      </button>
+                                      <button
+                                        onClick={() => handleDeleteRecurringTask(rt.id)}
+                                        className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-400 hover:text-rose-650 hover:bg-rose-50 transition"
+                                        title="Delete Task"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                        <div className="p-4 bg-slate-50 border-t border-slate-200">
+                          <AdminListPagination
+                            rangeStart={recurringTaskPagination.rangeStart}
+                            rangeEnd={recurringTaskPagination.rangeEnd}
+                            total={sortedFilteredRecurringTasks.length}
+                            safePage={recurringTaskPagination.safePage}
+                            totalPages={recurringTaskPagination.totalPages}
+                            pageNumbers={recurringTaskPagination.pageNumbers}
+                            onPageChange={recurringTaskPagination.setCurrentPage}
+                            itemLabel="tasks"
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -2774,10 +3091,11 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                             <label className="block text-slate-700 font-bold mb-1.5">Class / Level</label>
                             <select
                               value={recurringTaskForm.studentClass}
+                              disabled={selectedTaskFolder !== null}
                               onChange={(e) =>
                                 setRecurringTaskForm({ ...recurringTaskForm, studentClass: e.target.value })
                               }
-                              className="w-full rounded-xl bg-white border border-slate-200 px-4 py-2.5 text-slate-900 outline-none focus:border-[#8AC926] transition"
+                              className="w-full rounded-xl bg-white border border-slate-200 px-4 py-2.5 text-slate-900 outline-none focus:border-[#8AC926] transition disabled:bg-slate-100 disabled:text-slate-500"
                             >
                               <option value="Playgroup">Playgroup</option>
                               <option value="Nursery">Nursery</option>
@@ -2794,6 +3112,7 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                               }
                               className="w-full rounded-xl bg-white border border-slate-200 px-4 py-2.5 text-slate-900 outline-none focus:border-[#8AC926] transition appearance-none"
                             >
+                              <option value="DAILY">Every Day (Daily)</option>
                               <option value="MONDAY">Monday</option>
                               <option value="TUESDAY">Tuesday</option>
                               <option value="WEDNESDAY">Wednesday</option>
@@ -2809,6 +3128,62 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                             className="w-full py-3 rounded-xl bg-[#8AC926] text-white font-sans font-bold text-xs tracking-wider uppercase hover:bg-[#78B020] transition shadow-md shadow-[#8AC926]/10 disabled:opacity-60"
                           >
                             {actionLoading === "recurring-task-save" ? "Saving..." : "Save Task"}
+                          </button>
+                        </form>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* CREATE FOLDER MODAL */}
+                {showTaskFolderForm && (
+                  <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+                    <div className="bg-white w-full max-w-lg rounded-2xl shadow-xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
+                      <div className="bg-slate-50 px-5 py-4 border-b border-slate-100 flex items-center justify-between shrink-0">
+                        <h3 className="font-bold text-slate-800 tracking-wide">Create Task Folder</h3>
+                        <button
+                          type="button"
+                          onClick={() => setShowTaskFolderForm(false)}
+                          className="text-slate-400 hover:text-slate-600 transition p-1"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
+
+                      <div className="p-5 overflow-y-auto modern-scrollbar">
+                        <form onSubmit={handleCreateTaskFolder} className="space-y-4 text-xs">
+                          <div>
+                            <label className="block text-slate-700 font-bold mb-1.5">Folder Name</label>
+                            <input
+                              placeholder="e.g. LKG Activities Folder"
+                              value={taskFolderForm.name}
+                              onChange={(e) =>
+                                setTaskFolderForm({ ...taskFolderForm, name: e.target.value })
+                              }
+                              className="w-full rounded-xl bg-white border border-slate-200 px-4 py-2.5 text-slate-900 outline-none focus:border-[#8AC926] transition"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-slate-700 font-bold mb-1.5">Class / Level</label>
+                            <select
+                              value={taskFolderForm.studentClass}
+                              onChange={(e) =>
+                                setTaskFolderForm({ ...taskFolderForm, studentClass: e.target.value })
+                              }
+                              className="w-full rounded-xl bg-white border border-slate-200 px-4 py-2.5 text-slate-900 outline-none focus:border-[#8AC926] transition"
+                            >
+                              <option value="Playgroup">Playgroup</option>
+                              <option value="Nursery">Nursery</option>
+                              <option value="LKG">LKG</option>
+                              <option value="UKG">UKG</option>
+                            </select>
+                          </div>
+                          <button
+                            type="submit"
+                            disabled={actionLoading === "task-folder-save"}
+                            className="w-full py-3 rounded-xl bg-[#8AC926] text-white font-sans font-bold text-xs tracking-wider uppercase hover:bg-[#78B020] transition shadow-md shadow-[#8AC926]/10 disabled:opacity-60"
+                          >
+                            {actionLoading === "task-folder-save" ? "Saving..." : "Create Folder"}
                           </button>
                         </form>
                       </div>
@@ -4161,6 +4536,98 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
               <button
                 type="button"
                 onClick={() => setViewDetailsModal(null)}
+                className="px-6 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs transition"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {auditHistoryTaskId && (
+        <div className="fixed inset-0 z-[100] bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-2xl shadow-2xl border border-slate-200 animate-scale-up text-slate-800 relative max-h-[80vh] flex flex-col">
+            <ModalCloseButton
+              onClick={() => {
+                setAuditHistoryTaskId(null);
+                setTaskAuditHistory([]);
+              }}
+              className="absolute top-4 right-4"
+            />
+            <h3 className="font-sans text-lg font-extrabold text-slate-900 mb-4 flex items-center gap-2">
+              <HistoryIcon className="w-5 h-5 text-indigo-500" /> Task Status History
+            </h3>
+
+            <div className="flex-1 overflow-y-auto modern-scrollbar pr-2 min-h-[200px]">
+              {loadingAudit ? (
+                <div className="flex flex-col items-center justify-center h-40 gap-3">
+                  <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
+                  <p className="text-xs font-semibold text-slate-500">Loading history...</p>
+                </div>
+              ) : taskAuditHistory.length === 0 ? (
+                <div className="flex items-center justify-center h-40 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                  <p className="text-sm font-semibold text-slate-500">No history found for this task.</p>
+                </div>
+              ) : (
+                <div className="relative border-l-2 border-indigo-100 ml-3 space-y-6 pb-4">
+                  {taskAuditHistory.map((audit, index) => (
+                    <div key={audit.id} className="relative pl-6">
+                      <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-white border-2 border-indigo-300 shadow-sm" />
+                      <div className="bg-white border border-slate-100 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                        <div className="flex justify-between items-start mb-2 gap-4">
+                          <div>
+                            <p className="text-xs font-bold text-slate-800">
+                              {audit.action === "CREATED" ? "Task Assigned" : "Status Changed"}
+                            </p>
+                            <p className="text-2xs text-slate-500 font-medium mt-0.5">
+                              {new Date(audit.createdAt).toLocaleString()}
+                            </p>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className="text-2xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                              {audit.changedByName ? `By ${audit.changedByName}` : "System / Admin"}
+                            </p>
+                            <div className="flex items-center gap-1.5 justify-end">
+                              {audit.statusFrom && (
+                                <>
+                                  <span className="px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-[9px] font-bold">
+                                    {audit.statusFrom}
+                                  </span>
+                                  <ChevronRight className="w-3 h-3 text-slate-400" />
+                                </>
+                              )}
+                              <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold border ${
+                                audit.statusTo === "APPROVED" ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
+                                audit.statusTo === "REJECTED" ? "bg-rose-50 text-rose-700 border-rose-200" :
+                                audit.statusTo === "RESUBMITTED" ? "bg-purple-50 text-purple-700 border-purple-200" :
+                                audit.statusTo === "UNDER_REVIEW" ? "bg-sky-50 text-sky-700 border-sky-200" :
+                                "bg-amber-50 text-amber-700 border-amber-200"
+                              }`}>
+                                {audit.statusTo}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        {audit.comments && (
+                          <div className="mt-3 pt-3 border-t border-slate-100">
+                            <p className="text-xs text-slate-600 whitespace-pre-wrap">{audit.comments}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            <div className="mt-4 pt-4 border-t border-slate-100 flex justify-end shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setAuditHistoryTaskId(null);
+                  setTaskAuditHistory([]);
+                }}
                 className="px-6 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs transition"
               >
                 Close

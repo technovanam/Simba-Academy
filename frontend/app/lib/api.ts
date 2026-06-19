@@ -299,13 +299,13 @@ export const api = {
   getRecurringTasks: (token: string) =>
     request<RecurringTask[]>("/api/admin/recurring-tasks", {}, token),
 
-  createRecurringTask: (token: string, body: { title: string; description?: string; studentClass: string; repeatDay: string; isActive?: boolean }) =>
+  createRecurringTask: (token: string, body: { title: string; description?: string; studentClass: string; repeatDay: string; isActive?: boolean; folderId?: string | null }) =>
     request<RecurringTask>("/api/admin/recurring-tasks", {
       method: "POST",
       body: JSON.stringify(body),
     }, token),
 
-  updateRecurringTask: (token: string, id: string, body: Partial<{ title: string; description: string | null; studentClass: string; repeatDay: string; isActive: boolean }>) =>
+  updateRecurringTask: (token: string, id: string, body: Partial<{ title: string; description: string | null; studentClass: string; repeatDay: string; isActive: boolean; folderId: string | null }>) =>
     request<RecurringTask>(`/api/admin/recurring-tasks/${id}`, {
       method: "PATCH",
       body: JSON.stringify(body),
@@ -317,17 +317,32 @@ export const api = {
   getRecurringTaskHistory: (token: string, id: string) =>
     request<Task[]>(`/api/admin/recurring-tasks/${id}/history`, {}, token),
 
+  getTaskFolders: (token: string) =>
+    request<TaskFolder[]>("/api/admin/task-folders", {}, token),
+
+  createTaskFolder: (token: string, body: { name: string; studentClass: string }) =>
+    request<TaskFolder>("/api/admin/task-folders", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }, token),
+
+  deleteTaskFolder: (token: string, id: string) =>
+    request<{ message: string }>(`/api/admin/task-folders/${id}`, { method: "DELETE" }, token),
+
   createTask: (token: string, body: { title: string; description?: string; dueDate?: string | null; teacherId: string }) =>
     request<Task>("/api/admin/tasks", {
       method: "POST",
       body: JSON.stringify(body),
     }, token),
 
-  approveTask: (token: string, id: string, body: { status: "APPROVED" | "REJECTED" | "COMPLETED"; proofDesc?: string }) =>
+  approveTask: (token: string, id: string, body: { status: "APPROVED" | "REJECTED" | "COMPLETED" | "SUBMITTED" | "UNDER_REVIEW" | "RESUBMITTED"; proofDesc?: string; rejectionReason?: string }) =>
     request<Task>(`/api/admin/tasks/${id}/approve`, {
       method: "PATCH",
       body: JSON.stringify(body),
     }, token),
+
+  getTaskAuditHistory: (token: string, taskId: string) =>
+    request<TaskAudit[]>(`/api/admin/tasks/${taskId}/audit`, {}, token),
 
   deleteTask: (token: string, id: string) =>
     request<{ message: string }>(`/api/admin/tasks/${id}`, { method: "DELETE" }, token),
@@ -908,6 +923,14 @@ export interface Payment {
   course?: { title: string; level?: string | null } | null;
 }
 
+export interface TaskFolder {
+  id: string;
+  name: string;
+  studentClass: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface RecurringTask {
   id: string;
   title: string;
@@ -915,6 +938,7 @@ export interface RecurringTask {
   studentClass: string;
   repeatDay: string;
   isActive: boolean;
+  folderId?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -928,12 +952,25 @@ export interface Task {
   proofUrl?: string | null;
   proofDesc?: string | null;
   proofSubmittedAt?: string | null;
+  rejectionReason?: string | null;
   teacherId: string;
   recurringTaskId?: string | null;
   createdAt: string;
   updatedAt: string;
   teacher?: { name: string; email: string; studentClass?: string | null } | null;
   recurringTask?: { studentClass: string } | null;
+}
+
+export interface TaskAudit {
+  id: string;
+  taskId: string;
+  action: string;
+  statusFrom?: string | null;
+  statusTo: string;
+  changedById?: string | null;
+  changedByName?: string | null;
+  comments?: string | null;
+  createdAt: string;
 }
 
 export interface StoryBook {
