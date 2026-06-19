@@ -7,8 +7,8 @@ import { useStudentOutlet } from "./StudentOutletContext";
 import { StudentSettingsPanel } from "./StudentSettingsPanel";
 import { PortalPageShell } from "../PortalPageShell";
 import { StudentOverviewPage } from "./pages/StudentOverviewPage";
-import { StudentLibraryPage } from "./pages/StudentLibraryPage";
 import { StudentNotificationsPage } from "./pages/StudentNotificationsPage";
+import { DriveLibraryPanel } from "../DriveLibraryPanel";
 
 export function StudentTabBody({ tab }: { tab: StudentTab }) {
   const navigate = useNavigate();
@@ -56,8 +56,9 @@ export function StudentTabBody({ tab }: { tab: StudentTab }) {
 
   if (tab === "library") {
     return (
-      <PortalPageShell>
-        <StudentLibraryPage />
+      <PortalPageShell className="h-full !overflow-hidden flex flex-col min-h-0">
+        {token && <DriveLibraryPanel token={token} role="STUDENT" />}
+        {!token && <div className="p-4 text-slate-500">Loading library...</div>}
       </PortalPageShell>
     );
   }
