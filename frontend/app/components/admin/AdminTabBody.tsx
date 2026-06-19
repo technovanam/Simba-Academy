@@ -80,7 +80,7 @@ import { ConfirmDialog } from "../ConfirmDialog";
 import { RecentPaymentCard, sortPaymentsNewestFirst } from "../RecentPaymentCard";
 import { StoryBookActions } from "../StoryBookActions";
 import { GalleryItemActions } from "../GalleryItemActions";
-import { PortalSelect } from "../PortalSelect";
+import { ThemeSelect } from "../ThemeSelect";
 import { PortalDateRangePicker } from "../PortalDateRangePicker";
 import { AdminSettingsPanel } from "../AdminSettingsPanel";
 import { LIBRARY_AUDIENCE_OPTIONS, audienceLabel } from "../../lib/library";
@@ -1457,11 +1457,10 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
     }
     const lowerTitle = title.toLowerCase();
     if (lowerTitle.includes("playgroup")) return "Playgroup";
-    if (lowerTitle.includes("nursery")) return "Nursery";
+    if (lowerTitle.includes("pre-kg") || lowerTitle.includes("pre kg")) return "Pre-KG";
     if (lowerTitle.includes("lkg") || lowerTitle.includes("lower kindergarten")) return "LKG";
     if (lowerTitle.includes("ukg") || lowerTitle.includes("upper kindergarten")) return "UKG";
-    if (lowerTitle.includes("preschool")) return "Preschool";
-    return "Others";
+    return "Playgroup";
   }
 
   const combinedApprovals: CombinedApprovalItem[] = [
@@ -1573,7 +1572,7 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
   const RECURRING_TASK_CLASS_OPTIONS = [
     { id: "ALL", label: "All Classes" },
     { id: "Playgroup", label: "Playgroup" },
-    { id: "Nursery", label: "Nursery" },
+    { id: "Pre-KG", label: "Pre-KG" },
     { id: "LKG", label: "LKG" },
     { id: "UKG", label: "UKG" },
   ];
@@ -2273,12 +2272,11 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                           }
                           className="w-full rounded-xl border border-slate-200 px-4 py-3 text-xs outline-none focus:border-[#8AC926] min-h-[80px]"
                         />
-                        <PortalSelect
+                        <ThemeSelect
                           value={courseForm.level}
-                          onChange={(e) => setCourseForm({ ...courseForm, level: e.target.value })}
-                          className="rounded-xl border border-slate-200 px-4 py-3 text-xs outline-none focus:border-[#8AC926]"
-                        >
-                          {[
+                          onChange={(val) => setCourseForm({ ...courseForm, level: val })}
+                          className="w-full"
+                          options={[
                             "Daycare",
                             "Playgroup",
                             "Pre-KG",
@@ -2287,14 +2285,9 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                             "Phonics",
                             "Handwriting",
                             "Spoken English",
-                            "Nursery",
                             "All",
-                          ].map((l) => (
-                            <option key={l} value={l}>
-                              {l}
-                            </option>
-                          ))}
-                        </PortalSelect>
+                          ].map(l => ({ id: l, label: l }))}
+                        />
                         <input
                           required
                           type="number"
@@ -2339,7 +2332,7 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
               <AdminPageBody className="flex-1 min-h-0 flex flex-col overflow-hidden">
                 {!selectedApprovalClassFolder ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 p-4 overflow-y-auto modern-scrollbar bg-slate-50">
-                    {["Playgroup", "Nursery", "LKG", "UKG", "Preschool", "Others"].map((className) => {
+                    {["Playgroup", "Pre-KG", "LKG", "UKG"].map((className) => {
                       const classApprovals = combinedApprovals.filter(a => getApprovalClass(a) === className);
                       const pendingCount = classApprovals.filter(a => a.isTask ? (a.status !== "APPROVED" && a.status !== "REJECTED") : !a.isApproved).length;
                       return (
@@ -3089,38 +3082,34 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                           </div>
                           <div>
                             <label className="block text-slate-700 font-bold mb-1.5">Class / Level</label>
-                            <select
+                            <ThemeSelect
                               value={recurringTaskForm.studentClass}
+                              onChange={(val) => setRecurringTaskForm({ ...recurringTaskForm, studentClass: val })}
                               disabled={selectedTaskFolder !== null}
-                              onChange={(e) =>
-                                setRecurringTaskForm({ ...recurringTaskForm, studentClass: e.target.value })
-                              }
-                              className="w-full rounded-xl bg-white border border-slate-200 px-4 py-2.5 text-slate-900 outline-none focus:border-[#8AC926] transition disabled:bg-slate-100 disabled:text-slate-500"
-                            >
-                              <option value="Playgroup">Playgroup</option>
-                              <option value="Nursery">Nursery</option>
-                              <option value="LKG">LKG</option>
-                              <option value="UKG">UKG</option>
-                            </select>
+                              options={[
+                                { id: "Playgroup", label: "Playgroup" },
+                                { id: "Pre-KG", label: "Pre-KG" },
+                                { id: "LKG", label: "LKG" },
+                                { id: "UKG", label: "UKG" },
+                              ]}
+                            />
                           </div>
                           <div>
                             <label className="block text-slate-700 font-bold mb-1.5">Repeat Day</label>
-                            <select
+                            <ThemeSelect
                               value={recurringTaskForm.repeatDay}
-                              onChange={(e) =>
-                                setRecurringTaskForm({ ...recurringTaskForm, repeatDay: e.target.value })
-                              }
-                              className="w-full rounded-xl bg-white border border-slate-200 px-4 py-2.5 text-slate-900 outline-none focus:border-[#8AC926] transition appearance-none"
-                            >
-                              <option value="DAILY">Every Day (Daily)</option>
-                              <option value="MONDAY">Monday</option>
-                              <option value="TUESDAY">Tuesday</option>
-                              <option value="WEDNESDAY">Wednesday</option>
-                              <option value="THURSDAY">Thursday</option>
-                              <option value="FRIDAY">Friday</option>
-                              <option value="SATURDAY">Saturday</option>
-                              <option value="SUNDAY">Sunday</option>
-                            </select>
+                              onChange={(val) => setRecurringTaskForm({ ...recurringTaskForm, repeatDay: val })}
+                              options={[
+                                { id: "DAILY", label: "Every Day (Daily)" },
+                                { id: "MONDAY", label: "Monday" },
+                                { id: "TUESDAY", label: "Tuesday" },
+                                { id: "WEDNESDAY", label: "Wednesday" },
+                                { id: "THURSDAY", label: "Thursday" },
+                                { id: "FRIDAY", label: "Friday" },
+                                { id: "SATURDAY", label: "Saturday" },
+                                { id: "SUNDAY", label: "Sunday" },
+                              ]}
+                            />
                           </div>
                           <button
                             type="submit"
@@ -3165,18 +3154,16 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                           </div>
                           <div>
                             <label className="block text-slate-700 font-bold mb-1.5">Class / Level</label>
-                            <select
+                            <ThemeSelect
                               value={taskFolderForm.studentClass}
-                              onChange={(e) =>
-                                setTaskFolderForm({ ...taskFolderForm, studentClass: e.target.value })
-                              }
-                              className="w-full rounded-xl bg-white border border-slate-200 px-4 py-2.5 text-slate-900 outline-none focus:border-[#8AC926] transition"
-                            >
-                              <option value="Playgroup">Playgroup</option>
-                              <option value="Nursery">Nursery</option>
-                              <option value="LKG">LKG</option>
-                              <option value="UKG">UKG</option>
-                            </select>
+                              onChange={(val) => setTaskFolderForm({ ...taskFolderForm, studentClass: val })}
+                              options={[
+                                { id: "Playgroup", label: "Playgroup" },
+                                { id: "Pre-KG", label: "Pre-KG" },
+                                { id: "LKG", label: "LKG" },
+                                { id: "UKG", label: "UKG" },
+                              ]}
+                            />
                           </div>
                           <button
                             type="submit"
@@ -3883,22 +3870,11 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                         <label className="block text-slate-700 font-bold mb-1.5">
                           Rating Stars (1 to 5)
                         </label>
-                        <PortalSelect
+                        <ThemeSelect
                           value={String(testimonialForm.rating)}
-                          onChange={(e) =>
-                            setTestimonialForm({
-                              ...testimonialForm,
-                              rating: Number(e.target.value),
-                            })
-                          }
-                          className="rounded-xl bg-white border border-slate-200 px-4 py-2.5 text-slate-900 outline-none focus:border-[#8AC926] transition"
-                        >
-                          {[5, 4, 3, 2, 1].map((r) => (
-                            <option key={r} value={r} className="bg-white text-slate-800">
-                              {r} Stars
-                            </option>
-                          ))}
-                        </PortalSelect>
+                          onChange={(val) => setTestimonialForm({ ...testimonialForm, rating: Number(val) })}
+                          options={[5, 4, 3, 2, 1].map(r => ({ id: String(r), label: `${r} Stars` }))}
+                        />
                       </div>
                       <div>
                         <label className="block text-slate-700 font-bold mb-1.5">

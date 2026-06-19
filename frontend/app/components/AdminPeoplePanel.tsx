@@ -12,6 +12,7 @@ import { isActionBusy } from "../lib/actionGuard";
 import { AdminModal } from "./AdminModal";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { AccountStatusBadge } from "./AccountStatusBadge";
+import { ThemeSelect } from "./ThemeSelect";
 import { AdminPageBody, AdminPageHeader, AdminPageShell } from "./AdminPageShell";
 import { adminListContainerClass, adminListRowStackClass } from "./AdminListUi";
 import { STUDENT_CLASS_OPTIONS } from "../lib/constants";
@@ -643,19 +644,12 @@ export function AdminPeoplePanel({
           />
           <div>
             <label className="block text-slate-700 font-bold mb-1 text-2xs uppercase tracking-wider">Assigned Class</label>
-            <select
-              required
+            <ThemeSelect
               value={teacherForm.studentClass}
-              onChange={(e) => setTeacherForm({ ...teacherForm, studentClass: e.target.value })}
-              className="w-full rounded-xl bg-white border border-slate-200 px-4 py-3 text-xs text-slate-900 outline-none focus:border-[#8AC926]"
-            >
-              <option value="">Select assigned class</option>
-              {STUDENT_CLASS_OPTIONS.map((opt) => (
-                <option key={opt.id} value={opt.id}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
+              onChange={(val) => setTeacherForm({ ...teacherForm, studentClass: val })}
+              options={STUDENT_CLASS_OPTIONS}
+              placeholder="Select assigned class"
+            />
           </div>
           <p className="text-2xs text-slate-500 font-medium">
             A secure temporary password will be generated automatically and emailed to the teacher via Resend.
@@ -715,19 +709,12 @@ export function AdminPeoplePanel({
           />
           <div>
             <label className="block text-slate-700 font-bold mb-1 text-2xs uppercase tracking-wider">Assigned Class</label>
-            <select
-              required
+            <ThemeSelect
               value={editForm.studentClass}
-              onChange={(e) => setEditForm({ ...editForm, studentClass: e.target.value })}
-              className="w-full rounded-xl bg-white border border-slate-200 px-4 py-3 text-xs text-slate-900 outline-none focus:border-[#8AC926]"
-            >
-              <option value="">Select assigned class</option>
-              {STUDENT_CLASS_OPTIONS.map((opt) => (
-                <option key={opt.id} value={opt.id}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
+              onChange={(val) => setEditForm({ ...editForm, studentClass: val })}
+              options={STUDENT_CLASS_OPTIONS}
+              placeholder="Select assigned class"
+            />
           </div>
           {editingTeacher?.employeeId && (
             <p className="text-2xs text-slate-500 font-semibold">Employee ID: {editingTeacher.employeeId}</p>

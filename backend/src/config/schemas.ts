@@ -9,7 +9,7 @@ const urlOrUploadPath = z
     "Must be a valid URL or upload path"
   );
 
-export const STUDENT_CLASS_LEVELS = ["Playgroup", "Nursery", "Pre-KG", "LKG", "UKG", "Preschool"] as const;
+export const STUDENT_CLASS_LEVELS = ["Playgroup", "Pre-KG", "LKG", "UKG"] as const;
 export type StudentClassLevel = (typeof STUDENT_CLASS_LEVELS)[number];
 
 // ── Auth ────────────────────────────────────────────────────────────
@@ -72,7 +72,6 @@ export const createCourseSchema = z.object({
     "Phonics",
     "Handwriting",
     "Spoken English",
-    "Nursery",
     "All",
   ]),
   price: z.number().positive("Price must be positive").optional(),
