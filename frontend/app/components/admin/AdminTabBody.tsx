@@ -675,6 +675,12 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
       return;
     }
 
+    if (!recurringTaskForm.studentClass.trim()) {
+      setError("Please select at least one class.");
+      setActionLoading(null);
+      return;
+    }
+
     try {
       if (recurringTaskForm.isEditing && recurringTaskForm.id) {
         const updated = await api.updateRecurringTask(token, recurringTaskForm.id, {
@@ -1451,7 +1457,7 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
 
   function getApprovalClass(item: CombinedApprovalItem): string {
     const title = item.course?.title || "";
-    const taskClass = item.originalTask?.recurringTask?.studentClass || item.originalTask?.teacher?.studentClass;
+    const taskClass = item.originalTask?.teacher?.studentClass || item.originalTask?.recurringTask?.studentClass;
     if (item.isTask && taskClass) {
       return taskClass;
     }
@@ -1517,7 +1523,7 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
 
   const filteredApprovals = combinedApprovals.filter((m) => {
     // Must match selected folder
-    if (selectedApprovalClassFolder && getApprovalClass(m) !== selectedApprovalClassFolder) {
+    if (selectedApprovalClassFolder && !getApprovalClass(m).split(",").map(c => c.trim()).filter(Boolean).includes(selectedApprovalClassFolder)) {
       return false;
     }
 
@@ -2331,23 +2337,40 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
 
               <AdminPageBody className="flex-1 min-h-0 flex flex-col overflow-hidden">
                 {!selectedApprovalClassFolder ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 p-4 overflow-y-auto modern-scrollbar bg-slate-50">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 p-6 overflow-y-auto modern-scrollbar bg-slate-50/50">
                     {["Playgroup", "Pre-KG", "LKG", "UKG"].map((className) => {
-                      const classApprovals = combinedApprovals.filter(a => getApprovalClass(a) === className);
+                      const classApprovals = combinedApprovals.filter(a =>
+                        getApprovalClass(a)
+                          .split(",")
+                          .map(c => c.trim())
+                          .filter(Boolean)
+                          .includes(className)
+                      );
                       const pendingCount = classApprovals.filter(a => a.isTask ? (a.status !== "APPROVED" && a.status !== "REJECTED") : !a.isApproved).length;
                       return (
                         <button
                           key={className}
                           onClick={() => setSelectedApprovalClassFolder(className)}
-                          className="flex flex-col p-5 bg-white border border-slate-200 rounded-2xl hover:border-[#8AC926] hover:shadow-md transition-all text-left group"
+                          className="flex flex-col p-6 bg-white border border-slate-100 rounded-2xl hover:border-indigo-500 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 text-left group relative shadow-sm"
                         >
-                          <div className="w-12 h-12 bg-emerald-50 text-[#8AC926] rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                            <Folder className="w-6 h-6" />
+                          <div className="w-12 h-12 bg-indigo-50 text-indigo-500 rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300">
+                            <Folder className="w-6 h-6 fill-indigo-100 text-indigo-500" />
                           </div>
-                          <h3 className="font-bold text-slate-800 text-lg">{className}</h3>
-                          <p className="text-xs text-slate-500 font-medium mt-1">
-                            {classApprovals.length} items ({pendingCount} pending)
-                          </p>
+                          <h3 className="font-bold text-slate-800 text-lg group-hover:text-indigo-650 transition-colors">{className}</h3>
+                          <div className="flex items-center justify-between w-full mt-3">
+                            <span className="text-xs text-slate-400 font-medium">
+                              {classApprovals.length} total items
+                            </span>
+                            {pendingCount > 0 ? (
+                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-50 text-rose-600 border border-rose-100 animate-pulse">
+                                {pendingCount} Pending
+                              </span>
+                            ) : (
+                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-600 border border-emerald-100">
+                                Clean
+                              </span>
+                            )}
+                          </div>
                         </button>
                       );
                     })}
@@ -2842,7 +2865,11 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                                       </div>
                                     </td>
                                     <td className="px-4 py-3 align-middle text-xs font-semibold text-slate-650">
-                                      Repeats every <span className="font-bold text-indigo-650">{rt.repeatDay === "DAILY" ? "Every Day" : rt.repeatDay}</span>
+                                      {rt.repeatDay === "TODAY" ? (
+                                        <span className="font-bold text-indigo-650">Today Only</span>
+                                      ) : (
+                                        <>Repeats every <span className="font-bold text-indigo-650">{rt.repeatDay === "DAILY" ? "Every Day" : rt.repeatDay}</span></>
+                                      )}
                                     </td>
                                     <td className="px-4 py-3 align-middle">
                                       <span
@@ -2958,7 +2985,11 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                                     </div>
                                   </td>
                                   <td className="px-4 py-3 align-middle text-xs font-semibold text-slate-650">
-                                    Repeats every <span className="font-bold text-indigo-650">{rt.repeatDay === "DAILY" ? "Every Day" : rt.repeatDay}</span>
+                                    {rt.repeatDay === "TODAY" ? (
+                                      <span className="font-bold text-indigo-650">Today Only</span>
+                                    ) : (
+                                      <>Repeats every <span className="font-bold text-indigo-650">{rt.repeatDay === "DAILY" ? "Every Day" : rt.repeatDay}</span></>
+                                    )}
                                   </td>
                                   <td className="px-4 py-3 align-middle">
                                     <span
@@ -3081,18 +3112,58 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                             />
                           </div>
                           <div>
-                            <label className="block text-slate-700 font-bold mb-1.5">Class / Level</label>
-                            <ThemeSelect
-                              value={recurringTaskForm.studentClass}
-                              onChange={(val) => setRecurringTaskForm({ ...recurringTaskForm, studentClass: val })}
-                              disabled={selectedTaskFolder !== null}
-                              options={[
-                                { id: "Playgroup", label: "Playgroup" },
-                                { id: "Pre-KG", label: "Pre-KG" },
-                                { id: "LKG", label: "LKG" },
-                                { id: "UKG", label: "UKG" },
-                              ]}
-                            />
+                            <label className="block text-slate-700 font-bold mb-2">Class / Level</label>
+                            {selectedTaskFolder !== null ? (
+                              <div className="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-500">
+                                {recurringTaskForm.studentClass}
+                              </div>
+                            ) : (
+                              <div className="flex flex-wrap gap-2">
+                                {["Playgroup", "Pre-KG", "LKG", "UKG"].map((cls) => {
+                                  const isChecked = recurringTaskForm.studentClass
+                                    .split(",")
+                                    .map((c) => c.trim())
+                                    .filter(Boolean)
+                                    .includes(cls);
+                                  return (
+                                    <label
+                                      key={cls}
+                                      className={`flex items-center gap-2 px-3 py-2 border rounded-xl cursor-pointer transition select-none ${
+                                        isChecked
+                                          ? "bg-indigo-50/50 border-indigo-200 text-indigo-700 font-bold"
+                                          : "bg-white border-slate-200 text-slate-650 hover:border-[#8AC926]/50"
+                                      }`}
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        checked={isChecked}
+                                        onChange={(e) => {
+                                          let currentClasses = recurringTaskForm.studentClass
+                                            ? recurringTaskForm.studentClass
+                                                .split(",")
+                                                .map((c) => c.trim())
+                                                .filter(Boolean)
+                                            : [];
+                                          if (e.target.checked) {
+                                            if (!currentClasses.includes(cls)) {
+                                              currentClasses.push(cls);
+                                            }
+                                          } else {
+                                            currentClasses = currentClasses.filter((c) => c !== cls);
+                                          }
+                                          setRecurringTaskForm({
+                                            ...recurringTaskForm,
+                                            studentClass: currentClasses.join(","),
+                                          });
+                                        }}
+                                        className="w-4 h-4 rounded border-slate-300 text-indigo-650 focus:ring-indigo-650/30"
+                                      />
+                                      <span className="text-xs">{cls}</span>
+                                    </label>
+                                  );
+                                })}
+                              </div>
+                            )}
                           </div>
                           <div>
                             <label className="block text-slate-700 font-bold mb-1.5">Repeat Day</label>
@@ -3101,6 +3172,7 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                               onChange={(val) => setRecurringTaskForm({ ...recurringTaskForm, repeatDay: val })}
                               options={[
                                 { id: "DAILY", label: "Every Day (Daily)" },
+                                { id: "TODAY", label: "Today Only" },
                                 { id: "MONDAY", label: "Monday" },
                                 { id: "TUESDAY", label: "Tuesday" },
                                 { id: "WEDNESDAY", label: "Wednesday" },

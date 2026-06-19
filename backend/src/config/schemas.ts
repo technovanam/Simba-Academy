@@ -178,7 +178,7 @@ export const createRecurringTaskSchema = z.object({
   title: z.string().min(2, "Title must be at least 2 characters"),
   description: z.string().optional(),
   studentClass: z.string().min(1, "Class is required"),
-  repeatDay: z.enum(["DAILY", "SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"]),
+  repeatDay: z.enum(["DAILY", "SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "TODAY"]),
   isActive: z.boolean().optional(),
   folderId: z.string().optional().nullable(),
 });

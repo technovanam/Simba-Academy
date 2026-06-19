@@ -510,7 +510,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
 
         {/* Tab view area */}
         <div className={`flex-1 min-h-0 bg-[#F8FAFC] focus:outline-none portal-main-scroll p-4 lg:p-6 pb-6 lg:pb-8 ${
-          activeTab === "library" ? "h-full flex flex-col overflow-hidden" : "overflow-y-auto"
+          activeTab === "library" || activeTab === "notifications" || activeTab === "tasks" ? "h-full flex flex-col overflow-visible" : "overflow-y-auto modern-scrollbar"
         }`}>
           
           {loading && activeTab !== "settings" && activeTab !== "notifications" ? (
@@ -793,10 +793,14 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                 </div>
             </div>
           ) : (
-            <div className="space-y-6 animate-fade-in">
+            <div className={`animate-fade-in ${
+              activeTab === "library" || activeTab === "notifications" || activeTab === "tasks"
+                ? "h-full flex flex-col min-h-0 overflow-visible"
+                : "space-y-6"
+            }`}>
               {/* ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ ASSIGNED TASKS Tab ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ */}
               {activeTab === "tasks" && (
-                <AdminPageShell>
+                <AdminPageShell className="h-full flex flex-col min-h-0 overflow-visible">
                   <AdminPageHeader
                     title="Assigned Tasks"
                     description="View assigned tasks and upload completion proof for admin review."
@@ -805,7 +809,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                         <AdminSearchInput
                           value={taskSearch}
                           onChange={setTaskSearch}
-                          placeholder="Search tasksÔÇª"
+                          placeholder="Search tasks..."
                           ariaLabel="Search tasks"
                         />
                         <PillSelect
@@ -817,7 +821,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                       </>
                     }
                   />
-                  <AdminPageBody>
+                  <AdminPageBody className="flex-1 min-h-0 flex flex-col overflow-hidden">
                     {filteredTasks.length === 0 ? (
                       <AdminListEmpty message="No assigned tasks matched your search or filters." />
                     ) : (
@@ -986,7 +990,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                       <AdminSearchInput
                         value={plannerSearch}
                         onChange={setPlannerSearch}
-                        placeholder="Search lesson plansÔÇª"
+                        placeholder="Search lesson plans..."
                         ariaLabel="Search lesson plans"
                       />
                     }
@@ -1071,7 +1075,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                       <AdminSearchInput
                         value={studentSearch}
                         onChange={setStudentSearch}
-                        placeholder="Search studentsÔÇª"
+                        placeholder="Search students"
                         ariaLabel="Search students"
                       />
                     }
@@ -1237,7 +1241,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                   {selectedStudentForBooks.name}'s Reading Progress
                 </h3>
                 <p className="text-2xs font-semibold text-slate-500 mt-0.5">
-                  {selectedStudentForBooks.email} ÔÇó {user?.studentClass} Class
+                  {selectedStudentForBooks.email} {user?.studentClass} Class
                 </p>
               </div>
               <button
