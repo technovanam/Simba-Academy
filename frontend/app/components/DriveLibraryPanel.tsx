@@ -237,7 +237,7 @@ export function DriveLibraryPanel({ token, role }: DriveLibraryPanelProps) {
       )}
 
       {/* Breadcrumb */}
-      <div className="flex items-center gap-1.5 text-xs text-slate-600 bg-white border border-slate-200 px-3.5 py-2 rounded-xl overflow-hidden select-none shadow-sm shrink-0 w-fit max-w-full">
+      <div className="flex items-center gap-1.5 text-xs text-slate-600 bg-white border border-slate-200 px-3.5 py-2 rounded-xl overflow-hidden shadow-sm shrink-0 w-fit max-w-full">
         <button
           type="button"
           onClick={() => handleFolderClick("root")}

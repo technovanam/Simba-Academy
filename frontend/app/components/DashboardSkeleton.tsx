@@ -1,6 +1,6 @@
 export function DashboardSkeleton() {
   return (
-    <div className="w-full flex-1 flex flex-col space-y-6 animate-pulse select-none pb-8">
+    <div className="w-full flex-1 flex flex-col space-y-6 animate-pulse pb-8">
       {/* Top Welcome Title skeleton */}
       <div className="flex flex-wrap justify-between items-center gap-4 border-b border-slate-100 pb-3 mb-2">
         <div className="space-y-2">
@@ -85,7 +85,7 @@ export function DashboardSkeleton() {
 
 export function FullPortalSkeleton() {
   return (
-    <div className="flex h-screen w-screen bg-[#F8FAFC] overflow-hidden animate-pulse select-none">
+    <div className="flex h-screen w-screen bg-[#F8FAFC] overflow-hidden animate-pulse">
       {/* Sidebar skeleton */}
       <aside className="w-72 bg-slate-100 border-r border-slate-200 p-5 flex flex-col justify-between shrink-0 hidden lg:flex">
         <div className="space-y-6">

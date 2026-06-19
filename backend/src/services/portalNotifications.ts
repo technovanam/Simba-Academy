@@ -205,7 +205,12 @@ export async function notifyTeachersOfNewLessonPlan(
   }
 
   const teachers = await prisma.user.findMany({
-    where: { role: "TEACHER", status: "ACTIVE", isDeleted: false },
+    where: {
+      role: "TEACHER",
+      status: "ACTIVE",
+      isDeleted: false,
+      ...(plan.targetClass ? { studentClass: plan.targetClass } : {}),
+    },
     select: { id: true, name: true, email: true },
   });
 

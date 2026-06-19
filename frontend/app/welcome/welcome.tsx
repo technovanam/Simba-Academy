@@ -25,7 +25,7 @@ import { FloatingWhatsApp } from "../components/FloatingWhatsApp";
 // Custom Animated Floating Butterfly
 function Butterfly({ className, color = "#FF70A6", delay = "0s" }: { className?: string; color?: string; delay?: string }) {
   return (
-    <div className={`absolute w-8 h-8 pointer-events-none select-none z-10 ${className}`} style={{ animationDelay: delay }}>
+    <div className={`absolute w-8 h-8 pointer-events-none z-10 ${className}`} style={{ animationDelay: delay }}>
       <div className="flex items-center justify-center h-full">
         {/* Left wing */}
         <div className="w-4 h-6 flap-left">
@@ -308,7 +308,7 @@ export function Welcome() {
       `}</style>
 
       {/* Floating Warm Golden Sunbeams/Dandelion Particles */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden select-none z-0">
+      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
         {fireflies.map((f, i) => (
           <div 
             key={i}
@@ -347,7 +347,7 @@ export function Welcome() {
       <Butterfly className="top-72 left-[38%] animate-butterfly-1" color="#FFD275" delay="2.5s" />
 
       {/* Main Interactive Navbar */}
-      <nav className="relative z-40 max-w-7xl mx-auto px-6 pt-6 flex justify-between items-center select-none">
+      <nav className="relative z-40 max-w-7xl mx-auto px-6 pt-6 flex justify-between items-center">
         
         {/* Simba Academy wood carved identity badge */}
         <div className="flex items-center gap-3 bg-[#FFFFFF] border-2 border-[#8AC926]/30 rounded-lg px-5 py-2.5 shadow-lg hover:scale-105 transition-transform cursor-pointer group">
@@ -376,7 +376,7 @@ export function Welcome() {
       </nav>
 
       {/* Hero Section Container */}
-      <header className="relative pt-20 pb-32 px-6 overflow-hidden select-none">
+      <header className="relative pt-20 pb-32 px-6 overflow-hidden">
         
         {/* Content & Layout split: Left Title, Right Interactive Mascot */}
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-center relative z-20">
@@ -523,7 +523,7 @@ export function Welcome() {
 
         <div className="max-w-7xl mx-auto">
           
-          <div className="text-center max-w-3xl mx-auto mb-16 select-none">
+          <div className="text-center max-w-3xl mx-auto mb-16">
             <h3 className="font-sans text-4xl sm:text-5xl font-extrabold text-[#3E2723] mb-5 tracking-wide">
               Savanna Expedition Map
             </h3>
@@ -536,7 +536,7 @@ export function Welcome() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
             
             {/* Left 8 Columns: Illustrated Winding SVG Safari Map */}
-            <div className="lg:col-span-8 bg-[#FAF6EE] border-3 border-[#8C6239]/40 rounded-lg p-6 shadow-xl relative select-none overflow-hidden h-[420px] md:h-[480px]">
+            <div className="lg:col-span-8 bg-[#FAF6EE] border-3 border-[#8C6239]/40 rounded-lg p-6 shadow-xl relative overflow-hidden h-[420px] md:h-[480px]">
               
               <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#8C6239 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
               
@@ -601,10 +601,10 @@ export function Welcome() {
                 );
               })}
 
-              <div className="absolute bottom-[28%] left-[25%] text-4xs font-bold text-[#2B86C5]/50 uppercase tracking-widest pointer-events-none select-none transform -rotate-12">
+              <div className="absolute bottom-[28%] left-[25%] text-4xs font-bold text-[#2B86C5]/50 uppercase tracking-widest pointer-events-none transform -rotate-12">
                 Simba River Savanna
               </div>
-              <div className="absolute top-[8%] right-[10%] text-4xs font-bold text-[#8C6239]/50 uppercase tracking-widest pointer-events-none select-none">
+              <div className="absolute top-[8%] right-[10%] text-4xs font-bold text-[#8C6239]/50 uppercase tracking-widest pointer-events-none">
                 Lion Ridge Summit
               </div>
 
@@ -688,7 +688,7 @@ export function Welcome() {
       {/* Feature Section */}
       <section className="py-24 px-6 relative z-20 overflow-hidden">
         
-        <div className="absolute inset-0 pointer-events-none select-none z-0 opacity-10">
+        <div className="absolute inset-0 pointer-events-none z-0 opacity-10">
           <div className="absolute top-[10%] left-[5%] w-12 h-12 text-[#8AC926]"><Leaf className="w-full h-full rotate-45" /></div>
           <div className="absolute top-[40%] right-[8%] w-16 h-16 text-[#FF9F1C]"><Leaf className="w-full h-full rotate-90" /></div>
         </div>
@@ -696,7 +696,7 @@ export function Welcome() {
         <div className="max-w-7xl mx-auto relative z-10">
           
           {/* Wooden signage title */}
-          <div className="flex flex-col items-center mb-16 text-center select-none">
+          <div className="flex flex-col items-center mb-16 text-center">
             <div className="flex gap-20 justify-center -mb-1">
               <div className="w-1.5 h-8 bg-[#8C6239] rounded-lg"></div>
               <div className="w-1.5 h-8 bg-[#8C6239] rounded-lg"></div>
@@ -713,7 +713,7 @@ export function Welcome() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             
             {/* Card 1: Creative Crafts */}
-            <div className="group glass-panel glass-panel-hover rounded-lg p-8 shadow-xl flex flex-col items-center text-center relative overflow-hidden select-none">
+            <div className="group glass-panel glass-panel-hover rounded-lg p-8 shadow-xl flex flex-col items-center text-center relative overflow-hidden">
               <div className="absolute top-0 right-0 w-24 h-24 bg-[#FFD275]/10 rounded-lg pointer-events-none"></div>
               <div className="w-20 h-20 bg-[#FFF8E1] border-2 border-[#FFD275] rounded-lg flex items-center justify-center mb-8 group-hover:scale-110 group-hover:rotate-12 transition-transform duration-300 shadow-sm">
                 <Palette className="w-10 h-10 text-[#FF9F1C]" />
@@ -729,7 +729,7 @@ export function Welcome() {
             </div>
 
             {/* Card 2: Nature Safaris */}
-            <div className="group glass-panel glass-panel-hover rounded-lg p-8 shadow-xl flex flex-col items-center text-center relative overflow-hidden select-none">
+            <div className="group glass-panel glass-panel-hover rounded-lg p-8 shadow-xl flex flex-col items-center text-center relative overflow-hidden">
               <div className="absolute top-0 right-0 w-24 h-24 bg-[#8AC926]/10 rounded-lg pointer-events-none"></div>
               <div className="w-20 h-20 bg-[#E8F5E9] border-2 border-[#8AC926] rounded-lg flex items-center justify-center mb-8 group-hover:scale-110 group-hover:-rotate-12 transition-transform duration-300 shadow-sm">
                 <Leaf className="w-10 h-10 text-[#4CAF50]" />
@@ -745,7 +745,7 @@ export function Welcome() {
             </div>
 
             {/* Card 3: Cub Collaboration */}
-            <div className="group glass-panel glass-panel-hover rounded-lg p-8 shadow-xl flex flex-col items-center text-center relative overflow-hidden select-none">
+            <div className="group glass-panel glass-panel-hover rounded-lg p-8 shadow-xl flex flex-col items-center text-center relative overflow-hidden">
               <div className="absolute top-0 right-0 w-24 h-24 bg-[#4EA8DE]/10 rounded-lg pointer-events-none"></div>
               <div className="w-20 h-20 bg-[#E0F7FA] border-2 border-[#4EA8DE] rounded-lg flex items-center justify-center mb-8 group-hover:scale-110 group-hover:rotate-12 transition-transform duration-300 shadow-sm">
                 <Users className="w-10 h-10 text-[#00BCD4]" />
@@ -766,7 +766,7 @@ export function Welcome() {
       </section>
 
       {/* Campfire testimonials section */}
-      <section className="max-w-6xl mx-auto px-6 py-20 text-center relative z-20 select-none">
+      <section className="max-w-6xl mx-auto px-6 py-20 text-center relative z-20">
         
         <div className="flex flex-col items-center mb-10 animate-float-gentle">
           <div className="relative w-28 h-28">
@@ -868,7 +868,7 @@ export function Welcome() {
       </section>
 
       {/* Premium Trust Accreditations */}
-      <section className="bg-[#EBF5EE] py-16 border-t border-b border-[#8AC926]/15 relative z-20 select-none text-center">
+      <section className="bg-[#EBF5EE] py-16 border-t border-b border-[#8AC926]/15 relative z-20 text-center">
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8">
           <div className="flex flex-col items-center">
             <ShieldCheck className="w-10 h-10 text-[#4CAF50] mb-3" />

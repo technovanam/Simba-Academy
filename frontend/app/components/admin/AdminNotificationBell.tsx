@@ -137,7 +137,7 @@ export function AdminNotificationBell({ token }: { token: string }) {
       {isOpen && (
         <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 overflow-hidden animate-fade-in flex flex-col max-h-[450px]">
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 bg-slate-50/80 border-b border-slate-200 select-none">
+          <div className="flex items-center justify-between px-4 py-3 bg-slate-50/80 border-b border-slate-200">
             <span className="font-bold text-slate-800 text-xs uppercase tracking-wider">
               Recent Alerts
             </span>
@@ -215,7 +215,7 @@ export function AdminNotificationBell({ token }: { token: string }) {
             )}
           </div>
           {/* Footer */}
-          <div className="p-2.5 bg-slate-50 border-t border-slate-200 text-center select-none shrink-0">
+          <div className="p-2.5 bg-slate-50 border-t border-slate-200 text-center shrink-0">
             <button
               type="button"
               onClick={() => {

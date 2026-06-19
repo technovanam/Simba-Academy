@@ -35,16 +35,12 @@ export async function cleanupExpiredLessonPlanFiles(): Promise<void> {
       }
 
       try {
-        await prisma.lessonPlan.update({
+        await prisma.lessonPlan.delete({
           where: { id: plan.id },
-          data: {
-            fileUrl: null,
-            fileName: null,
-          },
         });
-        console.info(`[LessonPlan Cleanup] Database updated: cleared file info for plan "${plan.title}" (${plan.id}).`);
+        console.info(`[LessonPlan Cleanup] Database record deleted: removed plan "${plan.title}" (${plan.id}).`);
       } catch (dbErr) {
-        console.error(`[LessonPlan Cleanup] Error updating database for plan ${plan.id}:`, dbErr);
+        console.error(`[LessonPlan Cleanup] Error deleting database record for plan ${plan.id}:`, dbErr);
       }
     }
   } catch (err) {

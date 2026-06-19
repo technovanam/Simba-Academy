@@ -111,7 +111,6 @@ import { clearSession } from "../../../lib/auth";`,
     <div className="flex flex-wrap justify-between items-center gap-4 border-b border-slate-100 pb-3 mb-5 select-none">
       <div>
         <h2 className="text-lg font-bold text-slate-900 tracking-wide uppercase">Simba Academy Workspace</h2>
-        <p className="text-[10px] text-slate-600 font-semibold tracking-wider mt-0.5 uppercase">Secure Administrator Command Center</p>
       </div>
       <div className="flex items-center gap-3">
         <a href="/" target="_blank" rel="noopener noreferrer" className="px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-800 font-bold text-2xs flex items-center gap-1.5 shadow-xs hover:bg-[#8AC926]/10 hover:border-[#8AC926]/40 transition-all duration-300">

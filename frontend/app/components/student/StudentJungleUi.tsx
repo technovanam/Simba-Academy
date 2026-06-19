@@ -479,7 +479,7 @@ function JungleButterfly({
 }) {
   return (
     <div
-      className={`absolute w-5 h-5 pointer-events-none select-none z-[2] opacity-50 ${
+      className={`absolute w-5 h-5 pointer-events-none z-[2] opacity-50 ${
         variant === 1 ? "animate-jungle-butterfly-1" : "animate-jungle-butterfly-2"
       } ${className}`}
       style={{ animationDelay: delay }}
@@ -517,7 +517,7 @@ export function JungleMainScene() {
   ];
 
   return (
-    <div className="absolute inset-0 pointer-events-none overflow-hidden select-none z-0">
+    <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
       <JungleDashboardStyles />
 
       {/* Deep forest base */}

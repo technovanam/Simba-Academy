@@ -15,7 +15,7 @@ export function SiteNav() {
   }, []);
 
   return (
-    <nav className="relative z-40 max-w-7xl mx-auto px-6 pt-6 flex flex-wrap justify-between items-center gap-4 select-none">
+    <nav className="relative z-40 max-w-7xl mx-auto px-6 pt-6 flex flex-wrap justify-between items-center gap-4">
       <Link
         to="/"
         className="flex items-center gap-3 bg-white border-2 border-[#8AC926]/30 rounded-md px-5 py-2.5 shadow-lg hover:scale-105 transition-transform group"

@@ -371,6 +371,7 @@ export const api = {
       isPublished?: boolean;
       fileUrl?: string | null;
       fileName?: string | null;
+      targetClass?: string | null;
     }
   ) =>
     request<LessonPlan>("/api/admin/lesson-plans", {
@@ -390,6 +391,7 @@ export const api = {
       isPublished: boolean;
       fileUrl: string | null;
       fileName: string | null;
+      targetClass: string | null;
     }>
   ) =>
     request<LessonPlan>(`/api/admin/lesson-plans/${id}`, {
@@ -1013,6 +1015,7 @@ export interface LessonPlan {
   isPublished: boolean;
   fileUrl?: string | null;
   fileName?: string | null;
+  targetClass?: string | null;
   createdAt: string;
   updatedAt: string;
   course?: { title: string; level?: string } | null;
@@ -1028,7 +1031,7 @@ export interface DriveItem {
   accessRule?: {
     audience: "BOTH" | "TEACHER" | "STUDENT";
     targetClass: string | null;
-  };
+  } | null;
 }
 
 export interface DriveAncestor {

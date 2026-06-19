@@ -4,7 +4,7 @@ import { AlertCircle, Check, LayoutGrid, Loader2 } from "lucide-react";
 import { STUDENT_AUTH_BG_DESKTOP, STUDENT_AUTH_BG_MOBILE } from "../lib/constants";
 
 const studentAuthBgImgClass =
-  "absolute inset-0 h-full w-full object-cover object-center pointer-events-none select-none";
+  "absolute inset-0 h-full w-full object-cover object-center pointer-events-none";
 
 /** Student auth content wrapper — no outer box; sits on jungle background */
 export const studentAuthCardClass = "overflow-hidden";
@@ -161,7 +161,7 @@ interface AuthPageShellProps {
 function AuthTechnoVanamCredit({ jungle = false }: { jungle?: boolean }) {
   return (
     <footer
-      className={`shrink-0 relative z-30 w-full px-4 pt-2 pb-[max(0.625rem,env(safe-area-inset-bottom,0px))] text-center text-[11px] sm:text-xs font-sans font-extrabold pointer-events-auto select-none ${
+      className={`shrink-0 relative z-30 w-full px-4 pt-2 pb-[max(0.625rem,env(safe-area-inset-bottom,0px))] text-center text-[11px] sm:text-xs font-sans font-extrabold pointer-events-auto ${
         jungle
           ? "text-amber-100/90 drop-shadow-[0_1px_3px_rgba(0,0,0,0.45)]"
           : "text-slate-500/80"

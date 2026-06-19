@@ -103,14 +103,11 @@ export function AdminOverviewPage() {
 
   return (
     <>
-      <div className="flex flex-wrap justify-between items-center gap-4 border-b border-slate-100 pb-3 mb-5 select-none w-full min-w-0">
+      <div className="flex flex-wrap justify-between items-center gap-4 border-b border-slate-100 pb-3 mb-5 w-full min-w-0">
         <div>
           <h2 className="text-lg font-bold text-slate-900 tracking-wide uppercase">
             Simba Academy Workspace
           </h2>
-          <p className="text-[10px] text-slate-600 font-semibold tracking-wider mt-0.5 uppercase">
-            Secure Administrator Command Center
-          </p>
         </div>
         <div className="flex items-center gap-3">
           <a
@@ -131,7 +128,7 @@ export function AdminOverviewPage() {
           {stats && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
               {/* Members overview — light green panel */}
-              <div className="bg-[#F3FAEB] border border-green-100 rounded-2xl p-5 relative overflow-hidden text-slate-800 select-none flex flex-col justify-between min-h-[170px] h-full shrink-0">
+              <div className="bg-[#F3FAEB] border border-green-100 rounded-2xl p-5 relative overflow-hidden text-slate-800 flex flex-col justify-between min-h-[170px] h-full shrink-0">
                 <div>
                   <div className="flex justify-between items-center mb-3">
                     <span className="font-bold tracking-wider text-[10px] uppercase text-green-800">
@@ -188,7 +185,7 @@ export function AdminOverviewPage() {
               </div>
 
               {/* Revenue / payments overview — light blue panel */}
-              <div className="bg-[#EEF4FF] border border-blue-100 rounded-2xl p-5 relative overflow-hidden text-slate-800 select-none flex flex-col justify-between min-h-[170px] h-full shrink-0">
+              <div className="bg-[#EEF4FF] border border-blue-100 rounded-2xl p-5 relative overflow-hidden text-slate-800 flex flex-col justify-between min-h-[170px] h-full shrink-0">
                 <div>
                   <div className="flex justify-between items-center mb-3">
                     <span className="font-bold tracking-wider text-[10px] uppercase text-blue-800">
@@ -242,7 +239,7 @@ export function AdminOverviewPage() {
               </div>
 
               {/* Today's Schedule — light purple panel */}
-              <div className="bg-[#F5F3FF] border border-violet-100 rounded-2xl p-5 relative overflow-hidden text-slate-800 select-none flex flex-col justify-between min-h-[170px] h-full shrink-0">
+              <div className="bg-[#F5F3FF] border border-violet-100 rounded-2xl p-5 relative overflow-hidden text-slate-800 flex flex-col justify-between min-h-[170px] h-full shrink-0">
                 <div>
                   <div className="flex justify-between items-center mb-3">
                     <span className="font-bold tracking-wider text-[10px] uppercase text-violet-800">

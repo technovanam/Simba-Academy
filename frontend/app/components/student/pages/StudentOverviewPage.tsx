@@ -106,7 +106,7 @@ export function StudentOverviewPage() {
 
   return (
     <div className="flex flex-col h-full min-h-0 flex-1">
-      <div className="flex flex-wrap justify-between items-center gap-4 border-b border-slate-100 pb-3 mb-5 shrink-0 select-none">
+      <div className="flex flex-wrap justify-between items-center gap-4 border-b border-slate-100 pb-3 mb-5 shrink-0">
         <div>
           <h2 className="text-lg font-bold text-slate-900 tracking-wide uppercase">
             Simba Academy Student Portal
@@ -121,7 +121,7 @@ export function StudentOverviewPage() {
       <div className={portalDashboardBodyClass}>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch shrink-0">
           {/* Story books — orange panel */}
-          <div className="bg-[#FFF7ED] border border-orange-100 rounded-2xl p-5 relative overflow-hidden text-slate-800 select-none flex flex-col justify-between min-h-[190px] h-full shrink-0">
+          <div className="bg-[#FFF7ED] border border-orange-100 rounded-2xl p-5 relative overflow-hidden text-slate-800 flex flex-col justify-between min-h-[190px] h-full shrink-0">
             <div>
               <div className="flex justify-between items-center mb-3">
                 <span className="font-bold tracking-wider text-[10px] uppercase text-[#c77a00]">
@@ -172,7 +172,7 @@ export function StudentOverviewPage() {
           </div>
 
           {/* My class — violet panel */}
-          <div className="bg-[#F5F3FF] border border-violet-100 rounded-2xl p-5 relative overflow-hidden text-slate-800 select-none flex flex-col justify-between min-h-[190px] h-full shrink-0">
+          <div className="bg-[#F5F3FF] border border-violet-100 rounded-2xl p-5 relative overflow-hidden text-slate-800 flex flex-col justify-between min-h-[190px] h-full shrink-0">
             <div>
               <div className="flex justify-between items-center mb-3">
                 <span className="font-bold tracking-wider text-[10px] uppercase text-violet-800">

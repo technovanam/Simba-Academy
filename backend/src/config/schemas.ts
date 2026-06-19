@@ -199,6 +199,7 @@ export const approveTaskSchema = z.object({
 // ── Lesson Plan (Admin) ───────────────────────────────────────────
 export const createLessonPlanSchema = z.object({
   title: z.string().min(2, "Title must be at least 2 characters"),
+  targetClass: z.string().optional().nullable(),
   courseId: z.string().optional().nullable(),
   planDate: z.string().optional().nullable(),
   content: z.string().optional().nullable(),

@@ -245,7 +245,7 @@ export function StoryBookViewerModal({
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex flex-col bg-slate-900/60 backdrop-blur-sm p-3 sm:p-6 select-none"
+      className="fixed inset-0 z-[100] flex flex-col bg-slate-900/60 backdrop-blur-sm p-3 sm:p-6"
       role="dialog"
       aria-modal="true"
       aria-label={`Viewing ${title}`}

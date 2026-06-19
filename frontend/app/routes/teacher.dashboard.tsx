@@ -470,7 +470,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
 
         {/* Workspace header */}
         {showWorkspaceHeader ? (
-          <header className="h-[4.25rem] border-b border-slate-100 bg-white px-4 lg:px-6 flex items-center justify-between shrink-0 z-20 select-none">
+          <header className="h-[4.25rem] border-b border-slate-100 bg-white px-4 lg:px-6 flex items-center justify-between shrink-0 z-20">
             <div className="min-w-0">
               <h1 className="text-sm lg:text-base font-bold text-slate-900 tracking-wide uppercase truncate">
                 {TEACHER_TAB_META[activeTab].title}
@@ -533,7 +533,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                   {/* Three summary panels (matches admin dashboard style) */}
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch shrink-0">
                     {/* Assigned tasks ÔÇö light green */}
-                    <div className="bg-[#F3FAEB] border border-green-100 rounded-2xl p-5 text-slate-800 select-none flex flex-col justify-between min-h-[190px]">
+                    <div className="bg-[#F3FAEB] border border-green-100 rounded-2xl p-5 text-slate-800 flex flex-col justify-between min-h-[190px]">
                       <div>
                         <div className="flex justify-between items-center mb-3">
                           <span className="font-bold tracking-wider text-[10px] uppercase text-green-800">Assigned Tasks</span>
@@ -592,7 +592,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                     </div>
 
                     {/* Lesson plans ÔÇö light blue */}
-                    <div className="bg-[#EEF4FF] border border-blue-100 rounded-2xl p-5 text-slate-800 select-none flex flex-col justify-between min-h-[190px]">
+                    <div className="bg-[#EEF4FF] border border-blue-100 rounded-2xl p-5 text-slate-800 flex flex-col justify-between min-h-[190px]">
                       <div>
                         <div className="flex justify-between items-center mb-3">
                           <span className="font-bold tracking-wider text-[10px] uppercase text-blue-800">Lesson Planner</span>
@@ -640,7 +640,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                     </div>
 
                     {/* Upcoming deadlines ÔÇö light violet */}
-                    <div className={`bg-[#F5F3FF] border border-violet-100 rounded-2xl p-5 text-slate-800 select-none flex flex-col ${
+                    <div className={`bg-[#F5F3FF] border border-violet-100 rounded-2xl p-5 text-slate-800 flex flex-col ${
                       upcomingTasks.length === 0 ? "justify-between gap-2 self-start w-full min-h-[190px]" : "justify-between min-h-[190px]"
                     }`}>
                       <div>
@@ -823,7 +823,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                       <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex-1 min-h-0 flex flex-col">
                         <div className="overflow-x-auto flex-1 min-h-0 overflow-y-auto modern-scrollbar">
                           <table className="w-full text-left text-sm whitespace-nowrap">
-                            <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium text-xs sticky top-0 z-10 select-none">
+                            <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium text-xs sticky top-0 z-10">
                               <tr>
                                 <th className="px-4 py-3 font-semibold w-[45%]">Task Details</th>
                                 <th className="px-4 py-3 font-semibold w-[20%]">Status</th>
@@ -914,11 +914,11 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                                             {t.status === "REJECTED" ? "Re-submit" : t.status === "COMPLETED" ? "Edit proof" : "Submit proof"}
                                           </button>
                                         ) : t.status === "APPROVED" ? (
-                                          <span className="px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-100 text-emerald-700 font-bold text-2xs inline-flex items-center gap-1 select-none">
+                                          <span className="px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-100 text-emerald-700 font-bold text-2xs inline-flex items-center gap-1">
                                             ✓ Approved
                                           </span>
                                         ) : (
-                                          <span className="px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-100 text-blue-700 font-bold text-2xs select-none">
+                                          <span className="px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-100 text-blue-700 font-bold text-2xs">
                                             Submitted
                                           </span>
                                         )}
@@ -1064,7 +1064,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                     ) : (
                       <div className="bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-2xs">
                         {/* Header Row */}
-                        <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-4 bg-slate-50 border-b border-slate-200/80 text-[10px] font-black text-slate-500 uppercase tracking-widest select-none">
+                        <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-4 bg-slate-50 border-b border-slate-200/80 text-[10px] font-black text-slate-500 uppercase tracking-widest">
                           <div className="col-span-5">Name</div>
                           <div className="col-span-4">Email</div>
                           <div className="col-span-3 text-right">Books</div>
@@ -1230,7 +1230,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
 
             <div className="overflow-y-auto flex-1 pr-1 space-y-4">
               {/* Summary Stats / Tabs */}
-              <div className="grid grid-cols-3 gap-2 select-none">
+              <div className="grid grid-cols-3 gap-2">
                 <button
                   type="button"
                   onClick={() => setActiveBookTab("COMPLETED")}
@@ -1290,7 +1290,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                     {/* 1. Currently Reading */}
                     {activeBookTab === "READING" && (
                       <div className="space-y-2">
-                        <h4 className="text-[10px] font-black text-amber-600 uppercase tracking-widest flex items-center gap-1.5 select-none">
+                        <h4 className="text-[10px] font-black text-amber-600 uppercase tracking-widest flex items-center gap-1.5">
                           <span className="relative flex h-2 w-2">
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
@@ -1298,7 +1298,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                           Currently Reading (Reading Now)
                         </h4>
                         {readingNow.length === 0 ? (
-                          <div className="text-center py-8 border border-dashed border-slate-200 rounded-xl text-slate-400 font-semibold text-xs bg-slate-50/5 select-none">
+                          <div className="text-center py-8 border border-dashed border-slate-200 rounded-xl text-slate-400 font-semibold text-xs bg-slate-50/5">
                             No books currently being read.
                           </div>
                         ) : (
@@ -1322,9 +1322,9 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                     {/* 2. Completed Books */}
                     {activeBookTab === "COMPLETED" && (
                       <div className="space-y-2">
-                        <h4 className="text-[10px] font-black text-emerald-600 uppercase tracking-widest select-none">Completed Books</h4>
+                        <h4 className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Completed Books</h4>
                         {completed.length === 0 ? (
-                          <div className="text-center py-8 border border-dashed border-slate-200 rounded-xl text-slate-400 font-semibold text-xs bg-slate-50/5 select-none">
+                          <div className="text-center py-8 border border-dashed border-slate-200 rounded-xl text-slate-400 font-semibold text-xs bg-slate-50/5">
                             No completed books yet.
                           </div>
                         ) : (
@@ -1348,9 +1348,9 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                     {/* 3. Not Completed */}
                     {activeBookTab === "UNREAD" && (
                       <div className="space-y-2">
-                        <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest select-none">Not Completed</h4>
+                        <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Not Completed</h4>
                         {unread.length === 0 ? (
-                          <div className="text-center py-8 border border-dashed border-slate-200 rounded-xl text-slate-400 font-semibold text-xs bg-slate-50/5 select-none">
+                          <div className="text-center py-8 border border-dashed border-slate-200 rounded-xl text-slate-400 font-semibold text-xs bg-slate-50/5">
                             All assigned books are completed or in progress!
                           </div>
                         ) : (

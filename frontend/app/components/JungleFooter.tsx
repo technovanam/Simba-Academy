@@ -176,7 +176,7 @@ export function JungleFooter() {
       `}</style>
 
       {/* Floating Sunbeam Particles inside Footer */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden select-none z-0">
+      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
         {footerFireflies.map((f, i) => (
           <div 
             key={i}
@@ -255,7 +255,7 @@ export function JungleFooter() {
       </div>
 
       {/* Parallax Canopy Transition */}
-      <div className="relative w-full h-32 md:h-48 z-10 select-none">
+      <div className="relative w-full h-32 md:h-48 z-10">
         <svg viewBox="0 0 1440 200" className="absolute bottom-0 w-full h-full" preserveAspectRatio="none">
           <path d="M0,80 Q150,0 300,80 T600,60 T900,90 T1200,40 T1440,80 L1440,200 L0,200 Z" fill="#EAEFEA" opacity="0.6"/>
           <path d="M0,120 Q200,40 400,100 T800,80 T1100,120 T1440,100 L1440,200 L0,200 Z" fill="#DCE3DC" opacity="0.8"/>
@@ -353,7 +353,7 @@ export function JungleFooter() {
       </div>
 
       {/* Main Footer Content */}
-      <div className="relative z-20 w-full bg-[#DCE3DC] select-none text-[#3E2723] pb-14 pt-12">
+      <div className="relative z-20 w-full bg-[#DCE3DC] text-[#3E2723] pb-14 pt-12">
         <div className="max-w-[1400px] mx-auto px-6 md:px-12">
           
           {/* Main 5-Column Grid Layout */}
@@ -449,7 +449,7 @@ export function JungleFooter() {
                 <Compass className="w-5 h-5 text-[#FF9F1C]" /> Quick Links
               </h4>
               
-              <div className="flex flex-col select-none">
+              <div className="flex flex-col">
                 {/* Hanging Ropes */}
                 <div className="flex gap-14 justify-center lg:justify-start lg:pl-10 -mb-1 z-10">
                   <div className="w-1 h-5 bg-[#8C6239]/50 rounded-lg"></div>
@@ -476,7 +476,7 @@ export function JungleFooter() {
 
             {/* Column 3: Courses (Spans 2) */}
             <div className="lg:col-span-2">
-              <h4 className="font-sans text-lg text-[#3E2723] mb-5 flex items-center justify-center lg:justify-start gap-2 select-none">
+              <h4 className="font-sans text-lg text-[#3E2723] mb-5 flex items-center justify-center lg:justify-start gap-2">
                 <GraduationCap className="w-5 h-5 text-[#FF9F1C]" /> Courses
               </h4>
               <div className="space-y-3">
@@ -500,7 +500,7 @@ export function JungleFooter() {
 
             {/* Column 4: Contact Information (Spans 3) */}
             <div className="lg:col-span-3">
-              <h4 className="font-sans text-lg text-[#3E2723] mb-5 flex items-center justify-center lg:justify-start gap-2 select-none">
+              <h4 className="font-sans text-lg text-[#3E2723] mb-5 flex items-center justify-center lg:justify-start gap-2">
                 <MapPin className="w-5 h-5 text-[#FF9F1C]" /> Contact Info
               </h4>
               <div 
@@ -592,11 +592,11 @@ export function JungleFooter() {
 
             {/* Column 5: Branch Locations (Spans 2) */}
             <div className="lg:col-span-2">
-              <h4 className="font-sans text-lg text-[#3E2723] mb-5 flex items-center justify-center lg:justify-start gap-2 select-none">
+              <h4 className="font-sans text-lg text-[#3E2723] mb-5 flex items-center justify-center lg:justify-start gap-2">
                 <Compass className="w-5 h-5 text-[#FF9F1C]" /> Branches
               </h4>
               
-              <div className="flex flex-col select-none">
+              <div className="flex flex-col">
                 {/* Hanging Ropes */}
                 <div className="flex gap-14 justify-center lg:justify-start lg:pl-10 -mb-1 z-10">
                   <div className="w-1 h-5 bg-[#8C6239]/50 rounded-lg"></div>
@@ -627,13 +627,13 @@ export function JungleFooter() {
           <div className="mt-16 pt-8 border-t border-[#2d5231]/20 flex flex-col md:flex-row justify-between items-center gap-6 relative">
             
             {/* Paw footprints leading through bottom bar */}
-            <div className="absolute top-[-15px] left-[8%] flex gap-6 text-[#8AC926]/30 pointer-events-none select-none animate-footprint">
+            <div className="absolute top-[-15px] left-[8%] flex gap-6 text-[#8AC926]/30 pointer-events-none animate-footprint">
                <PawPrint className="w-5 h-5 transform rotate-[25deg]" />
                <PawPrint className="w-5 h-5 transform rotate-[-25deg] mt-3" />
             </div>
 
             {/* Copyright */}
-            <p className="text-[13px] text-[#83a886] font-extrabold tracking-wide select-none">
+            <p className="text-[13px] text-[#83a886] font-extrabold tracking-wide">
               &copy; 2026 Simba Academy. All Rights Reserved.
             </p>
             
@@ -648,7 +648,7 @@ export function JungleFooter() {
             </div>
 
             {/* Techno Vanam Attribution */}
-            <div className="text-[13px] text-[#3E2723] font-sans font-extrabold flex items-center gap-1.5 select-none hover:scale-105 transition-transform duration-300">
+            <div className="text-[13px] text-[#3E2723] font-sans font-extrabold flex items-center gap-1.5 hover:scale-105 transition-transform duration-300">
               <span>Designed & Developed by</span>
               <a 
                 href="https://technovanam.com" 

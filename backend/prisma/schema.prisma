@@ -213,6 +213,7 @@ model Task {
 model LessonPlan {
   id              String    @id @default(cuid())
   title           String
+  targetClass     String?   // Class this plan is assigned to (e.g. Playgroup, Pre-KG, LKG, UKG)
   courseId        String?
   planDate        DateTime?
   content         String    @db.Text

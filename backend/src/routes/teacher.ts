@@ -124,10 +124,23 @@ router.get("/books", async (_req, res, next) => {
 });
 
 // ── Published lesson plans (view only) ───────────────────────────────
-router.get("/lesson-plans", async (_req, res, next) => {
+router.get("/lesson-plans", async (req, res, next) => {
   try {
+    const teacherId = req.user!.userId;
+    const teacher = await prisma.user.findFirst({
+      where: { id: teacherId, isDeleted: false },
+      select: { studentClass: true },
+    });
+
+    const targetClassFilter = teacher?.studentClass
+      ? { OR: [{ targetClass: null }, { targetClass: teacher.studentClass }] }
+      : { targetClass: null };
+
     const plans = await prisma.lessonPlan.findMany({
-      where: { isPublished: true },
+      where: {
+        isPublished: true,
+        ...targetClassFilter,
+      },
       orderBy: [{ planDate: "desc" }, { createdAt: "desc" }],
       include: { course: { select: { title: true, level: true } } },
     });
@@ -148,8 +161,22 @@ router.get("/lesson-plans", async (_req, res, next) => {
 
 router.get("/lesson-plans/:id", async (req, res, next) => {
   try {
+    const teacherId = req.user!.userId;
+    const teacher = await prisma.user.findFirst({
+      where: { id: teacherId, isDeleted: false },
+      select: { studentClass: true },
+    });
+
+    const targetClassFilter = teacher?.studentClass
+      ? { OR: [{ targetClass: null }, { targetClass: teacher.studentClass }] }
+      : { targetClass: null };
+
     const plan = await prisma.lessonPlan.findFirst({
-      where: { id: String(req.params.id), isPublished: true },
+      where: {
+        id: String(req.params.id),
+        isPublished: true,
+        ...targetClassFilter,
+      },
       include: { course: { select: { title: true, level: true } } },
     });
     if (!plan) {

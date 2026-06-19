@@ -66,7 +66,7 @@ export function PortalSidebarLayout({
     <PortalMenuContext.Provider value={{ openMenu, closeMenu, menuOpen }}>
       <div className="portal-app-shell w-full max-w-full h-[100dvh] max-h-[100dvh] bg-[#F8FAFC] font-sans text-sm text-slate-900 flex flex-col lg:flex-row overflow-hidden">
         {!hideMobileBar ? (
-          <header className="portal-mobile-topbar lg:hidden fixed top-0 left-0 right-0 z-[60] px-4 flex items-center justify-between gap-3 bg-white border-b border-slate-200 shadow-sm select-none">
+          <header className="portal-mobile-topbar lg:hidden fixed top-0 left-0 right-0 z-[60] px-4 flex items-center justify-between gap-3 bg-white border-b border-slate-200 shadow-sm">
             <button
               type="button"
               onClick={menuOpen ? closeMenu : openMenu}
@@ -95,7 +95,7 @@ export function PortalSidebarLayout({
         ) : null}
 
         <aside
-          className={`portal-drawer fixed lg:static inset-y-0 left-0 z-[58] lg:z-30 w-[min(20rem,92vw)] sm:w-80 lg:w-72 lg:max-w-none h-[100dvh] max-h-[100dvh] lg:sticky lg:top-0 bg-[#F1F5F9] border-r border-slate-200 flex flex-col shrink-0 overflow-hidden select-none shadow-2xl lg:shadow-none transition-transform duration-300 ease-out ${
+          className={`portal-drawer fixed lg:static inset-y-0 left-0 z-[58] lg:z-30 w-[min(20rem,92vw)] sm:w-80 lg:w-72 lg:max-w-none h-[100dvh] max-h-[100dvh] lg:sticky lg:top-0 bg-[#F1F5F9] border-r border-slate-200 flex flex-col shrink-0 overflow-hidden shadow-2xl lg:shadow-none transition-transform duration-300 ease-out ${
             menuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
           }`}
           role="dialog"

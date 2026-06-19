@@ -302,7 +302,7 @@ export function PortalDateRangePicker({
             }`}
           />
         </div>
-        <span className="text-[10px] font-bold text-slate-400 select-none">to</span>
+        <span className="text-[10px] font-bold text-slate-400">to</span>
         <div className="flex items-center gap-1 px-2.5 py-1">
           <input
             type="text"
@@ -333,7 +333,7 @@ export function PortalDateRangePicker({
 
       {/* Custom Calendar Dropdown Panel (Absolute Popover Overlay) */}
       {isOpen && (
-        <div className="absolute left-0 mt-2 w-72 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 overflow-hidden animate-fade-in p-4 select-none">
+        <div className="absolute left-0 mt-2 w-72 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 overflow-hidden animate-fade-in p-4">
           {/* Calendar Header */}
           <div className="flex items-center justify-between mb-4">
             <button

@@ -31,6 +31,7 @@ const emptyForm = {
   materialsNeeded: "",
   fileUrl: "",
   fileName: "",
+  targetClass: "",
 };
 
 export function AdminLessonPlansPanel({ token, onNotify, onError }: AdminLessonPlansPanelProps) {
@@ -80,6 +81,7 @@ export function AdminLessonPlansPanel({ token, onNotify, onError }: AdminLessonP
       materialsNeeded: plan.materialsNeeded ?? "",
       fileUrl: plan.fileUrl ?? "",
       fileName: plan.fileName ?? "",
+      targetClass: plan.targetClass ?? "",
     });
     setShowForm(true);
   }
@@ -130,6 +132,7 @@ export function AdminLessonPlansPanel({ token, onNotify, onError }: AdminLessonP
         isPublished: true,
         fileUrl: form.fileUrl || null,
         fileName: form.fileName || null,
+        targetClass: form.targetClass || null,
       };
 
       if (form.id) {
@@ -209,8 +212,9 @@ export function AdminLessonPlansPanel({ token, onNotify, onError }: AdminLessonP
               <table className="w-full text-left text-sm whitespace-nowrap">
                 <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium text-xs sticky top-0 z-10">
                   <tr>
-                    <th className="px-4 py-3 font-semibold w-[50%]">Title</th>
-                    <th className="px-4 py-3 font-semibold w-[30%]">Attachment</th>
+                    <th className="px-4 py-3 font-semibold w-[40%]">Title</th>
+                    <th className="px-4 py-3 font-semibold w-[20%]">Class</th>
+                    <th className="px-4 py-3 font-semibold w-[20%]">Attachment</th>
                     <th className="px-4 py-3 font-semibold w-[20%]">Date Added</th>
                     <th className="px-4 py-3 font-semibold text-right">Actions</th>
                   </tr>
@@ -218,10 +222,13 @@ export function AdminLessonPlansPanel({ token, onNotify, onError }: AdminLessonP
                 <tbody className="divide-y divide-slate-100">
                   {filtered.map((plan) => (
                     <tr key={plan.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="px-4 py-3 align-middle w-[50%] min-w-0">
+                      <td className="px-4 py-3 align-middle w-[40%] min-w-0">
                         <span className="font-bold text-sm text-slate-800 truncate block max-w-md">{plan.title}</span>
                       </td>
-                      <td className="px-4 py-3 align-middle text-xs w-[30%] min-w-0">
+                      <td className="px-4 py-3 align-middle text-xs text-slate-600 w-[20%] font-semibold">
+                        {plan.targetClass || "All Classes"}
+                      </td>
+                      <td className="px-4 py-3 align-middle text-xs w-[20%] min-w-0">
                         {plan.fileUrl ? (
                           <div className="flex items-center gap-1.5 max-w-xs">
                             <Paperclip className="w-3.5 h-3.5 text-slate-400 shrink-0" />
@@ -301,6 +308,20 @@ export function AdminLessonPlansPanel({ token, onNotify, onError }: AdminLessonP
                   className="w-full rounded-xl border border-slate-200 px-4 py-2.5 outline-none focus:border-[#8AC926]"
                   placeholder="e.g. UKG Phonics — Week 3"
                 />
+              </div>
+              <div>
+                <label className="block text-slate-700 font-bold mb-1.5">Class Assignment</label>
+                <select
+                  value={form.targetClass}
+                  onChange={(e) => setForm({ ...form, targetClass: e.target.value })}
+                  className="w-full rounded-xl border border-slate-200 px-4 py-2.5 outline-none focus:border-[#8AC926] bg-white text-xs font-semibold text-slate-700"
+                >
+                  <option value="">All Classes (Send to all teachers)</option>
+                  <option value="Playgroup">Playgroup</option>
+                  <option value="Pre-KG">Pre-KG</option>
+                  <option value="LKG">LKG</option>
+                  <option value="UKG">UKG</option>
+                </select>
               </div>
               <div>
                 <label className="block text-slate-700 font-bold mb-1.5">Materials needed (PDF or Word)</label>

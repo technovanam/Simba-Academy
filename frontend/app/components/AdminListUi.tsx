@@ -230,7 +230,7 @@ export function AdminListPagination({
         <div className="flex items-center gap-0.5 mx-1">
           {pageNumbers.map((item, idx) =>
             item === "ellipsis" ? (
-              <span key={`ellipsis-${idx}`} className="px-2 py-1.5 text-2xs font-bold text-slate-400 select-none">
+              <span key={`ellipsis-${idx}`} className="px-2 py-1.5 text-2xs font-bold text-slate-400">
                 …
               </span>
             ) : (
