@@ -648,7 +648,78 @@ export const api = {
 
   markAllAdminNotificationsRead: (token: string) =>
     request<{ message: string }>("/api/admin/notifications/read-all", { method: "PATCH" }, token),
+
+  browseDocuments: (token: string, folderId?: string | null, search?: string, type?: string) => {
+    const qs = new URLSearchParams();
+    if (folderId && folderId !== "root") qs.set("folderId", folderId);
+    if (search) qs.set("search", search);
+    if (type) qs.set("type", type);
+    const query = qs.toString();
+    return request<DriveItem[]>(`/api/documents/browse${query ? `?${query}` : ""}`, {}, token);
+  },
+
+  getDocumentAncestors: (token: string, folderId: string) =>
+    request<DriveAncestor[]>(`/api/documents/ancestors/${folderId}`, {}, token),
+
+  getRecentDocuments: (token: string) =>
+    request<DriveItem[]>("/api/documents/recent", {}, token),
+
+  createDriveFolder: (token: string, name: string, parentId?: string | null) =>
+    request<DriveItem>("/api/documents/folders", {
+      method: "POST",
+      body: JSON.stringify({ name, parentId }),
+    }, token),
+
+  uploadDriveFile: (token: string, file: File, parentId?: string | null, convert = true) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    if (parentId && parentId !== "root") formData.append("parentId", parentId);
+    formData.append("convert", String(convert));
+    return request<DriveItem>("/api/documents/upload", {
+      method: "POST",
+      body: formData,
+    }, token);
+  },
+
+  renameDriveItem: (token: string, id: string, name: string) =>
+    request<DriveItem>(`/api/documents/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ name }),
+    }, token),
+
+  deleteDriveItem: (token: string, id: string) =>
+    request<{ success: boolean; message: string }>(`/api/documents/${id}`, {
+      method: "DELETE",
+    }, token),
+
+  updateDriveAccessRule: (token: string, fileId: string, audience: "BOTH" | "TEACHER" | "STUDENT", targetClass: string | null) =>
+    request(`/api/documents/${fileId}/access`, {
+      method: "PUT",
+      body: JSON.stringify({ audience, targetClass }),
+    }, token),
+
+  revokeDriveAccessRule: (token: string, fileId: string) =>
+    request<{ success: boolean; message: string }>(`/api/documents/${fileId}/access`, {
+      method: "DELETE",
+    }, token),
+
+  getDocumentLogs: (token: string) =>
+    request<AuditLogItem[]>("/api/documents/logs", {}, token),
 };
+
+export interface AuditLogItem {
+  id: string;
+  userId: string | null;
+  action: string;
+  details: string;
+  createdAt: string;
+  user?: {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+  } | null;
+}
 
 export type AccountStatus = "ACTIVE" | "DEACTIVATED";
 export type UserListFilter = "ALL" | "ACTIVE" | "DEACTIVATED" | "TEACHERS" | "STUDENTS" | "ADMINS";
@@ -946,3 +1017,23 @@ export interface LessonPlan {
   updatedAt: string;
   course?: { title: string; level?: string } | null;
 }
+
+export interface DriveItem {
+  id: string;
+  name: string;
+  mimeType: string;
+  size?: string;
+  createdTime: string;
+  parents?: string[];
+  accessRule?: {
+    audience: "BOTH" | "TEACHER" | "STUDENT";
+    targetClass: string | null;
+  };
+}
+
+export interface DriveAncestor {
+  id: string;
+  name: string;
+  parentId: string | null;
+}
+
