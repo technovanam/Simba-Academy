@@ -640,9 +640,9 @@ export function JungleHeroBanner({
       <div className="relative z-10 flex flex-col sm:flex-row items-center sm:items-start gap-5">
         <div className="relative shrink-0">
           <img
-            src="/favicon.png"
+            src="/Simba Logo 2025.pdf.png"
             alt=""
-            className="w-20 h-20 md:w-24 md:h-24 object-contain drop-shadow-lg"
+            className="w-32 h-16 object-contain drop-shadow-lg"
           />
         </div>
         <div className="text-center sm:text-left space-y-2 flex-1 min-w-0">
