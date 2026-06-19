@@ -119,7 +119,7 @@ export function StudentOverviewPage() {
       </div>
 
       <div className={portalDashboardBodyClass}>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch shrink-0">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch shrink-0">
           {/* Story books — orange panel */}
           <div className="bg-[#FFF7ED] border border-orange-100 rounded-2xl p-5 relative overflow-hidden text-slate-800 select-none flex flex-col justify-between min-h-[190px] h-full shrink-0">
             <div>
@@ -171,52 +171,6 @@ export function StudentOverviewPage() {
             </div>
           </div>
 
-          {/* Registration / payments — blue panel */}
-          <div className="bg-[#EEF4FF] border border-blue-100 rounded-2xl p-5 relative overflow-hidden text-slate-800 select-none flex flex-col justify-between min-h-[190px] h-full shrink-0">
-            <div>
-              <div className="flex justify-between items-center mb-3">
-                <span className="font-bold tracking-wider text-[10px] uppercase text-blue-800">
-                  Platform Access
-                </span>
-                <div className="p-1.5 bg-blue-100 rounded-xl border border-blue-200">
-                  <Shield className="w-3.5 h-3.5 text-[#1364F1]" />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <div className="space-y-1">
-                  <span className="text-[9px] font-bold text-blue-600/80 tracking-widest block uppercase">
-                    Registration status
-                  </span>
-                  <h4 className="font-bold text-xs uppercase leading-tight tracking-wider text-slate-800">
-                    {successfulPayments.length > 0 ? "Active member" : "Pending payment"}
-                  </h4>
-                </div>
-
-                <div className="space-y-1.5">
-                  {recentPaymentsTop.length === 0 ? (
-                    <div className="bg-white rounded-xl p-2.5 border border-blue-100 text-xs text-center text-slate-600 font-semibold">
-                      No payment records yet.
-                    </div>
-                  ) : (
-                    recentPaymentsTop.map((p) => (
-                      <RecentPaymentCard key={p.id} payment={p} theme="blue" compact />
-                    ))
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-between items-center border-t border-blue-100 pt-2 mt-2 gap-2">
-              <span className="text-[9px] font-extrabold uppercase tracking-widest text-blue-700">
-                {successfulPayments.length > 0 ? "Verified" : "Incomplete"}
-              </span>
-              <span className="text-[9px] font-extrabold text-slate-500 text-right leading-tight">
-                {successfulPayments.length} payment{successfulPayments.length === 1 ? "" : "s"}
-              </span>
-            </div>
-          </div>
-
           {/* My class — violet panel */}
           <div className="bg-[#F5F3FF] border border-violet-100 rounded-2xl p-5 relative overflow-hidden text-slate-800 select-none flex flex-col justify-between min-h-[190px] h-full shrink-0">
             <div>
@@ -262,8 +216,8 @@ export function StudentOverviewPage() {
 
         {/* Split workspace — matches admin layout, fills remaining viewport */}
         <div className={portalDashboardLowerGridClass}>
-          <div className="lg:col-span-2 flex flex-col">
-            <div className="bg-white rounded-2xl p-5 border border-slate-200 flex flex-col">
+          <div className="lg:col-span-2 flex flex-col flex-1">
+            <div className="bg-white rounded-2xl p-5 border border-slate-200 flex flex-col flex-1">
               <div className="flex flex-wrap justify-between items-center gap-4 mb-4">
                 <div>
                   <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
@@ -316,8 +270,8 @@ export function StudentOverviewPage() {
             </div>
           </div>
 
-          <div className="flex flex-col">
-            <div className="bg-white rounded-2xl p-5 border border-slate-200 flex flex-col">
+          <div className="flex flex-col flex-1">
+            <div className="bg-white rounded-2xl p-5 border border-slate-200 flex flex-col flex-1">
               <div className="space-y-5">
                 <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                   <h4 className="font-bold text-[10px] uppercase text-slate-800 tracking-wider">

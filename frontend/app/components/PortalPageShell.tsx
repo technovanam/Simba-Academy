@@ -12,7 +12,7 @@ export function PortalPageShell({ children, className = "" }: { children: ReactN
 }
 
 export const portalDashboardBodyClass =
-  "space-y-5 animate-fade-in flex flex-col min-h-0 w-full min-w-0 max-w-full pb-6 lg:pb-8";
+  "space-y-5 animate-fade-in flex flex-col flex-1 min-h-0 w-full min-w-0 max-w-full pb-6 lg:pb-8";
 
 export const portalDashboardLowerGridClass =
-  "grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 items-stretch w-full min-w-0 max-w-full";
+  "grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 items-stretch w-full min-w-0 max-w-full flex-1";
