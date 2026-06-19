@@ -404,7 +404,18 @@ export function AdminPeoplePanel({
         studentClass: editForm.studentClass,
       });
       setRecords((prev) => prev.map((r) => (r.id === editingTeacher.id ? { ...r, ...updated } : r)));
-      onNotify("Teacher profile updated successfully.");
+      if (updated.emailSent !== undefined) {
+        if (updated.emailSent) {
+          onNotify(`Teacher profile updated. Welcome email with new temporary password sent to ${updated.email}.`);
+        } else {
+          onError(
+            updated.emailWarning ??
+            `Teacher profile updated, but welcome email failed. Check backend terminal for TEMPORARY PASSWORD, or check Resend API key in .env.`
+          );
+        }
+      } else {
+        onNotify("Teacher profile updated successfully.");
+      }
       setEditingTeacher(null);
     } catch (err) {
       onError(err instanceof ApiError ? err.message : "Failed to update teacher.");

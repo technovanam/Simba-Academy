@@ -251,15 +251,23 @@ router.patch("/teachers/:id", validate(updateTeacherSchema), async (req, res, ne
       if (req.body.firstName) data.firstName = req.body.firstName.trim();
       if (req.body.lastName) data.lastName = req.body.lastName.trim();
     }
+    let emailSent = false;
+    let temporaryPassword = "";
     if (req.body.email) {
       const normalizedEmail = req.body.email.toLowerCase().trim();
-      const duplicate = await prisma.user.findFirst({
-        where: { email: normalizedEmail, id: { not: teacher.id }, isDeleted: false },
-      });
-      if (duplicate) {
-        throw new AppError("Email already in use", 409);
+      if (normalizedEmail !== teacher.email) {
+        const duplicate = await prisma.user.findFirst({
+          where: { email: normalizedEmail, id: { not: teacher.id }, isDeleted: false },
+        });
+        if (duplicate) {
+          throw new AppError("Email already in use", 409);
+        }
+        data.email = normalizedEmail;
+
+        temporaryPassword = generateTemporaryPassword();
+        data.password = await bcrypt.hash(temporaryPassword, 12);
+        data.mustChangePassword = true;
       }
-      data.email = normalizedEmail;
     }
 
     const updated = await prisma.user.update({
@@ -268,7 +276,37 @@ router.patch("/teachers/:id", validate(updateTeacherSchema), async (req, res, ne
       select: userListSelect,
     });
 
-    res.json(updated);
+    if (temporaryPassword) {
+      try {
+        emailSent = await sendEmail({
+          to: updated.email,
+          subject: `Welcome to ${env.PLATFORM_NAME}`,
+          html: getTeacherWelcomeHtml({
+            teacherName: updated.name,
+            email: updated.email,
+            temporaryPassword,
+            loginUrl: `${env.FRONTEND_URL}/teacher/login`,
+            platformName: env.PLATFORM_NAME,
+          }),
+        });
+      } catch (emailErr) {
+        console.error("Failed to send updated teacher welcome email:", emailErr);
+      }
+
+      if (!emailSent && env.NODE_ENV === "development") {
+        console.warn(
+          `[Teacher updated] ${updated.email} — welcome email not sent. Temporary password is in the log above (TEMPORARY PASSWORD line).`
+        );
+      }
+    }
+
+    res.json({
+      ...updated,
+      emailSent: temporaryPassword ? emailSent : undefined,
+      emailWarning: (temporaryPassword && !emailSent)
+        ? "Welcome email could not be sent. Fix Resend API settings or read the backend log for the temporary password."
+        : undefined,
+    });
   } catch (err) {
     next(err);
   }
