@@ -3,6 +3,7 @@
 @theme {
   --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-fredoka: "Fredoka", sans-serif;
 
   --text-2xs: 0.625rem;
   --text-4xs: 0.5rem;

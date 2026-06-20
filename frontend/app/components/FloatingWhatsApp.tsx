@@ -7,11 +7,16 @@ export function FloatingWhatsApp() {
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Chat on WhatsApp"
-      className="fixed bottom-6 left-6 z-50 w-14 h-14 rounded-md bg-[#25D366] shadow-xl flex items-center justify-center hover:scale-110 transition-transform"
+      className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-[#25D366] text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-[#25D366]/40 cursor-pointer group"
     >
-      <svg viewBox="0 0 24 24" fill="white" className="w-7 h-7">
-        <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.003 5.324 5.328 0 11.859 0c3.166.001 6.141 1.233 8.377 3.469 2.235 2.237 3.465 5.214 3.464 8.384-.003 6.536-5.328 11.86-11.859 11.86-2.002-.001-3.973-.509-5.714-1.486L0 24zm6.529-3.722l.379.225c1.462.868 3.093 1.325 4.767 1.326 5.37 0 9.739-4.37 9.742-9.743.002-2.602-1.01-5.05-2.85-6.892-1.84-1.84-4.29-2.853-6.897-2.853-5.372 0-9.744 4.373-9.747 9.747-.001 1.769.467 3.498 1.354 5.023l.247.428-1.012 3.693 3.788-.992z" />
+      <svg className="w-7 h-7 animate-float-gentle" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M21.13 2.82a10.85 10.85 0 0 0-15.34 0 10.74 10.74 0 0 0-2.26 12.3L2 22l7.07-1.84a10.8 10.8 0 0 0 12.06-2 10.85 10.85 0 0 0 0-15.34z" />
+        <path d="M16.14 13a.76.76 0 0 1-.3-.08c-.46-.23-1.15-.57-1.3-.65a.55.55 0 0 0-.48 0c-.17.15-.53.53-.66.68a.33.33 0 0 1-.41.06c-.85-.35-1.52-1-1.86-1.86a.33.33 0 0 1 .06-.41c.15-.13.53-.49.68-.66a.55.55 0 0 0 0-.48c-.08-.15-.42-.84-.65-1.3a.76.76 0 0 1-.08-.3.44.44 0 0 0-.45-.44h-.35a1.18 1.18 0 0 0-1 .59 5.86 5.86 0 0 0-.82 2.65 8 8 0 0 0 2.21 4.7 9 9 0 0 0 4.7 2.21c.91.13 1.83-.15 2.65-.82a1.18 1.18 0 0 0 .59-1v-.35a.44.44 0 0 0-.44-.45z" />
       </svg>
+      {/* Soft tooltip */}
+      <span className="absolute right-16 scale-0 group-hover:scale-100 transition-all origin-right bg-slate-900 text-white font-bold text-[10px] px-3 py-1.5 rounded-lg whitespace-nowrap shadow-md">
+        Chat with intake Ranger 👋
+      </span>
     </a>
   );
 }
