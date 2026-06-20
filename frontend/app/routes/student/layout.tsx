@@ -207,9 +207,9 @@ export default function StudentLayout() {
       />
 
       <main className={`flex-1 min-h-0 w-full min-w-0 max-w-7xl mx-auto flex flex-col ${
-        activeTab === "library"
+        activeTab === "library" || activeTab === "notifications"
           ? "h-full overflow-hidden p-3 sm:p-4 lg:p-6"
-          : "portal-main-scroll overflow-y-auto overflow-x-hidden p-3 sm:p-4 lg:p-6 pb-6 lg:pb-8"
+          : "portal-main-scroll overflow-y-auto overflow-x-hidden p-3 sm:p-4 lg:p-6 pb-6 lg:pb-8 modern-scrollbar"
       }`}>
         <StudentOutletProvider
           value={{

@@ -15,6 +15,7 @@ import {
   adminListRowClass,
   useAdminPagination,
 } from "./AdminListUi";
+import { ThemeSelect } from "./ThemeSelect";
 import { ModalCloseButton } from "./ModalCloseButton";
 import { Compass, Loader2, Pencil, Plus, Trash2, Upload, Paperclip, FileText, X } from "lucide-react";
 import { ConfirmDialog } from "./ConfirmDialog";
@@ -311,17 +312,17 @@ export function AdminLessonPlansPanel({ token, onNotify, onError }: AdminLessonP
               </div>
               <div>
                 <label className="block text-slate-700 font-bold mb-1.5">Class Assignment</label>
-                <select
+                <ThemeSelect
                   value={form.targetClass}
-                  onChange={(e) => setForm({ ...form, targetClass: e.target.value })}
-                  className="w-full rounded-xl border border-slate-200 px-4 py-2.5 outline-none focus:border-[#8AC926] bg-white text-xs font-semibold text-slate-700"
-                >
-                  <option value="">All Classes (Send to all teachers)</option>
-                  <option value="Playgroup">Playgroup</option>
-                  <option value="Pre-KG">Pre-KG</option>
-                  <option value="LKG">LKG</option>
-                  <option value="UKG">UKG</option>
-                </select>
+                  onChange={(val) => setForm({ ...form, targetClass: val })}
+                  options={[
+                    { id: "", label: "All Classes (Send to all teachers)" },
+                    { id: "Playgroup", label: "Playgroup" },
+                    { id: "Pre-KG", label: "Pre-KG" },
+                    { id: "LKG", label: "LKG" },
+                    { id: "UKG", label: "UKG" },
+                  ]}
+                />
               </div>
               <div>
                 <label className="block text-slate-700 font-bold mb-1.5">Materials needed (PDF or Word)</label>

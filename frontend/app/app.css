@@ -282,28 +282,38 @@ input:-webkit-autofill:active {
   display: none;
 }
 
-/* Custom modern thin grey scrollbar */
-.modern-scrollbar {
-  background: linear-gradient(to bottom, #f8fafc 40px, #ffffff 40px);
+/* Global modern thin grey scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
 
-.modern-scrollbar::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
-}
-
-.modern-scrollbar::-webkit-scrollbar-track {
+::-webkit-scrollbar-track {
   background: transparent;
-  margin-top: 40px; /* Offset to start scrollbar below the table header */
 }
 
-.modern-scrollbar::-webkit-scrollbar-thumb {
+::-webkit-scrollbar-thumb {
   background: #cbd5e1; /* Slate 300 / Grey */
   border-radius: 9999px;
 }
 
-.modern-scrollbar::-webkit-scrollbar-thumb:hover {
+::-webkit-scrollbar-thumb:hover {
   background: #94a3b8; /* Slate 400 */
+}
+
+/* Firefox support */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+/* Table-specific scrollbar offset for table headers */
+div.overflow-x-auto.modern-scrollbar::-webkit-scrollbar-track {
+  margin-top: 40px;
+}
+
+.modern-scrollbar {
+  background: linear-gradient(to bottom, #f8fafc 40px, #ffffff 40px);
 }
 
 /* Portal main scroll — touch + pull-to-refresh friendly on phones/tablets */

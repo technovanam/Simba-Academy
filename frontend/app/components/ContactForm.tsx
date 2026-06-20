@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { api, ApiError } from "../lib/api";
 import { AlertCircle } from "lucide-react";
-import { PortalSelect } from "./PortalSelect";
+import { ThemeSelect } from "./ThemeSelect";
 import { Toast } from "./Toast";
 
 interface ContactFormProps {
@@ -149,16 +149,17 @@ export function ContactForm({ defaultType = "Preschool" }: ContactFormProps) {
           </div>
           <div>
             <label className="block text-sm font-bold mb-2">Inquiry Type *</label>
-            <PortalSelect
+            <ThemeSelect
               value={form.inquiryType}
-              onChange={(e) =>
-                setForm({ ...form, inquiryType: e.target.value as "Preschool" | "Franchise" })
+              onChange={(val) =>
+                setForm({ ...form, inquiryType: val as "Preschool" | "Franchise" })
               }
-              className="rounded-lg border-2 border-[#8AC926]/20 px-4 py-3 bg-white focus:border-[#8AC926] outline-none"
-            >
-              <option value="Preschool">Preschool</option>
-              <option value="Franchise">Franchise</option>
-            </PortalSelect>
+              className="rounded-lg border-2 border-[#8AC926]/20 bg-white"
+              options={[
+                { id: "Preschool", label: "Preschool" },
+                { id: "Franchise", label: "Franchise" },
+              ]}
+            />
           </div>
         </div>
 

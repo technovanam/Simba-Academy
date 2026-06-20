@@ -23,11 +23,11 @@ export async function processRecurringTasks() {
   const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0);
   const endOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
 
-  // Find all active recurring tasks for today (specific day OR DAILY)
+  // Find all active recurring tasks for today (specific day OR DAILY OR TODAY)
   const activeTasks = await prisma.recurringTask.findMany({
     where: {
       isActive: true,
-      repeatDay: { in: [dayName, "DAILY"] },
+      repeatDay: { in: [dayName, "DAILY", "TODAY"] },
     },
   });
 
@@ -44,8 +44,7 @@ export async function processRecurringTasks() {
   for (const rTask of activeTasks) {
     // Find all teachers to assign the task to
     let teachers;
-    if (!rTask.folderId) {
-      // General task outside folders: assign to all active teachers/staff
+    if (!rTask.studentClass) {
       teachers = await prisma.user.findMany({
         where: {
           role: "TEACHER",
@@ -54,18 +53,26 @@ export async function processRecurringTasks() {
         },
       });
     } else {
-      // Class-wise folder task: assign only to teachers of that specific class
       teachers = await prisma.user.findMany({
         where: {
           role: "TEACHER",
-          studentClass: rTask.studentClass,
+          studentClass: { in: rTask.studentClass.split(",") },
           status: "ACTIVE",
           isDeleted: false,
         },
       });
     }
 
-    if (teachers.length === 0) continue;
+    if (teachers.length === 0) {
+      if (rTask.repeatDay === "TODAY") {
+        // Set to inactive even if no teachers found so it doesn't get stuck active
+        await prisma.recurringTask.update({
+          where: { id: rTask.id },
+          data: { isActive: false },
+        });
+      }
+      continue;
+    }
 
     // Create a new task record for each teacher — skip if already assigned today
     for (const teacher of teachers) {
@@ -118,6 +125,14 @@ export async function processRecurringTasks() {
       });
 
       created++;
+    }
+
+    if (rTask.repeatDay === "TODAY") {
+      // Set to inactive so it doesn't run again tomorrow
+      await prisma.recurringTask.update({
+        where: { id: rTask.id },
+        data: { isActive: false },
+      });
     }
   }
 

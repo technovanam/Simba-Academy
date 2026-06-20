@@ -326,6 +326,12 @@ export const api = {
       body: JSON.stringify(body),
     }, token),
 
+  updateTaskFolder: (token: string, id: string, body: Partial<{ name: string; studentClass: string }>) =>
+    request<TaskFolder>(`/api/admin/task-folders/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }, token),
+
   deleteTaskFolder: (token: string, id: string) =>
     request<{ message: string }>(`/api/admin/task-folders/${id}`, { method: "DELETE" }, token),
 
@@ -585,6 +591,9 @@ export const api = {
 
   getTeacherTasks: (token: string) =>
     request<Task[]>("/api/teacher/tasks", {}, token),
+
+  getTeacherTaskAuditHistory: (token: string, taskId: string) =>
+    request<TaskAudit[]>(`/api/teacher/tasks/${taskId}/audit`, {}, token),
 
   getTeacherStudents: (token: string) =>
     request<AuthUser[]>("/api/teacher/students", {}, token),

@@ -57,38 +57,15 @@ export function StoryBookViewerModal({
     setBlobUrl(null);
   }, []);
 
-  const scrollTimeoutRef = useRef<number | null>(null);
-
-  const handleContainerWheel = () => {
-    if (role === "ADMIN" || !iframeRef.current) return;
-    iframeRef.current.style.pointerEvents = "auto";
-    if (scrollTimeoutRef.current) window.clearTimeout(scrollTimeoutRef.current);
-    scrollTimeoutRef.current = window.setTimeout(() => {
-      if (iframeRef.current) iframeRef.current.style.pointerEvents = "none";
-    }, 500);
-  };
-
   const handleContainerMouseDown = (e: React.MouseEvent) => {
     if (role === "ADMIN" || !iframeRef.current) return;
-    if (e.button === 0) {
-      iframeRef.current.style.pointerEvents = "auto";
-      setTimeout(() => {
-        if (iframeRef.current) iframeRef.current.style.pointerEvents = "none";
-      }, 350);
-    } else if (e.button === 2) {
-      iframeRef.current.style.pointerEvents = "none";
+    if (e.button === 2) {
       e.preventDefault();
       e.stopPropagation();
     }
   };
 
-  useEffect(() => {
-    return () => {
-      if (scrollTimeoutRef.current) {
-        window.clearTimeout(scrollTimeoutRef.current);
-      }
-    };
-  }, []);
+
 
   useEffect(() => {
     const prevOverflow = document.body.style.overflow;
@@ -106,13 +83,12 @@ export function StoryBookViewerModal({
     const onContextMenu = (e: MouseEvent) => {
       if (role !== "ADMIN") {
         e.preventDefault();
-        if (iframeRef.current) iframeRef.current.style.pointerEvents = "none";
       }
     };
 
     const onGlobalMouseDown = (e: MouseEvent) => {
       if (role !== "ADMIN" && e.button === 2) {
-        if (iframeRef.current) iframeRef.current.style.pointerEvents = "none";
+        e.preventDefault();
       }
     };
 
@@ -276,7 +252,6 @@ export function StoryBookViewerModal({
         <div 
           className="relative flex-1 min-h-0 bg-slate-800/95" 
           onContextMenu={(e) => role !== "ADMIN" && e.preventDefault()}
-          onWheel={handleContainerWheel}
           onMouseDown={handleContainerMouseDown}
         >
           {loading && (
@@ -294,10 +269,10 @@ export function StoryBookViewerModal({
             <iframe
               ref={iframeRef}
               title={title}
-              src={role === "ADMIN" ? blobUrl : `${blobUrl}#toolbar=0&navpanes=0&scrollbar=0`}
+              src={role === "ADMIN" ? blobUrl : `${blobUrl}#toolbar=0&navpanes=0`}
               className="absolute inset-0 w-full h-full border-0 bg-white"
               style={{
-                pointerEvents: role === "ADMIN" ? "auto" : "none"
+                pointerEvents: "auto"
               }}
             />
           )}

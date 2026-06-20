@@ -23,6 +23,7 @@ import {
 } from "../config/schemas.js";
 import { env } from "../config/env.js";
 import { AppError } from "../utils/errors.js";
+import { processRecurringTasks } from "../services/recurringTasks.js";
 import { removeStoredFile, removeStoredFiles } from "../services/removeStoredFile.js";
 import { sendEmail } from "../services/email.js";
 import {
@@ -579,6 +580,38 @@ router.post("/task-folders", validate(createTaskFolderSchema), async (req, res, 
   }
 });
 
+// ── Update Task Folder ─────────────────────────────────────────────
+router.patch("/task-folders/:id", async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { name, studentClass } = req.body;
+    
+    if (name !== undefined) {
+      const trimmedName = name.trim();
+      if (!trimmedName) {
+        throw new AppError("Folder name cannot be empty", 400);
+      }
+      const existing = await prisma.taskFolder.findFirst({
+        where: { name: trimmedName, NOT: { id } },
+      });
+      if (existing) {
+        throw new AppError("Folder with this name already exists", 400);
+      }
+    }
+
+    const folder = await prisma.taskFolder.update({
+      where: { id },
+      data: {
+        ...(name !== undefined && { name: name.trim() }),
+        ...(studentClass !== undefined && { studentClass }),
+      },
+    });
+    res.json(folder);
+  } catch (err) {
+    next(err);
+  }
+});
+
 // ── Delete Task Folder ─────────────────────────────────────────────
 router.delete("/task-folders/:id", async (req, res, next) => {
   try {
@@ -656,6 +689,10 @@ router.post("/recurring-tasks", validate(createRecurringTaskSchema), async (req,
         folderId: folderId || null,
       },
     });
+
+    // Run processing immediately in the background so "TODAY" or today's task assigns immediately
+    processRecurringTasks().catch((err) => console.error("Error processing tasks immediately:", err));
+
     res.status(201).json(rTask);
   } catch (err) {
     next(err);
@@ -682,6 +719,10 @@ router.patch("/recurring-tasks/:id", validate(updateRecurringTaskSchema), async 
         ...(folderId !== undefined && { folderId: folderId || null }),
       },
     });
+
+    // Run processing immediately in case they updated status or set to TODAY
+    processRecurringTasks().catch((err) => console.error("Error processing tasks immediately:", err));
+
     res.json(updated);
   } catch (err) {
     next(err);
@@ -876,7 +917,10 @@ router.patch("/tasks/:id/approve", validate(approveTaskSchema), async (req, res,
         proofDesc: req.body.proofDesc || task.proofDesc,
         rejectionReason: req.body.status === "REJECTED" ? req.body.rejectionReason : null,
       },
-      include: { teacher: { select: { id: true, name: true, email: true } } },
+      include: {
+        teacher: { select: { id: true, name: true, email: true, studentClass: true } },
+        recurringTask: { select: { studentClass: true } },
+      },
     });
 
     // Log Task Audit History

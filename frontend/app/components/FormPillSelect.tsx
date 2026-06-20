@@ -69,7 +69,7 @@ export function FormPillSelect<T extends string>({
         <ul
           role="listbox"
           aria-label={ariaLabel}
-          className="absolute left-0 right-0 top-[calc(100%+6px)] z-40 py-1.5 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden max-h-56 overflow-y-auto"
+          className="absolute left-0 right-0 top-[calc(100%+6px)] z-40 py-1.5 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden max-h-56 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
         >
           {options.map((o) => (
             <li key={o.id} role="option" aria-selected={o.id === value}>
