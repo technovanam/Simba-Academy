@@ -109,7 +109,7 @@ try {
 
   console.log("\n── Teacher portal API (DB) ──\n");
   const teacherEmail = process.env.TEST_TEACHER_EMAIL ?? "priya.teacher@simbapreschool.in";
-  const teacherPassword = process.env.TEST_TEACHER_PASSWORD ?? "Simba@Demo2026";
+  const teacherPassword = process.env.TEST_TEACHER_PASSWORD ?? "Simba@123!@#";
   const teacherSession = await login(teacherEmail, teacherPassword);
 
   if (teacherSession?.token) {
@@ -142,7 +142,7 @@ try {
 
   console.log("\n── Student portal API (DB) ──\n");
   const studentEmail = process.env.TEST_STUDENT_EMAIL ?? "demo.student@simbapreschool.in";
-  const studentPassword = process.env.TEST_STUDENT_PASSWORD ?? "Simba@Demo2026";
+  const studentPassword = process.env.TEST_STUDENT_PASSWORD ?? "Simba@123!@#";
   const studentSession =
     studentEmail && studentPassword ? await login(studentEmail, studentPassword) : null;
 

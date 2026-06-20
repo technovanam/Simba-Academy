@@ -30,7 +30,20 @@ export async function authenticate(req: Request, _res: Response, next: NextFunct
     }
 
     const token = authHeader.split(" ")[1];
-    const decoded = jwt.verify(token, env.JWT_SECRET) as JwtPayload;
+    const decoded = jwt.verify(token, env.JWT_SECRET) as JwtPayload & { exp?: number };
+
+    if (decoded.exp) {
+      const timeToExpiry = decoded.exp * 1000 - Date.now();
+      // If token expires in less than 10 minutes, issue a new one
+      if (timeToExpiry > 0 && timeToExpiry < 10 * 60 * 1000) {
+        const newToken = jwt.sign(
+          { userId: decoded.userId, email: decoded.email, role: decoded.role },
+          env.JWT_SECRET,
+          { expiresIn: env.JWT_EXPIRES_IN } as jwt.SignOptions
+        );
+        _res.setHeader("X-Refresh-Token", newToken);
+      }
+    }
 
     // Check if user still exists and is active. Role is read from the DB (not
     // the token) so demotions/promotions take effect immediately rather than

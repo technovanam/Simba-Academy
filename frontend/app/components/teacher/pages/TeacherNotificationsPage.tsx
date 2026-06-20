@@ -4,7 +4,7 @@ import { Bell, Book, Calendar, CheckCheck, Compass, Loader2 } from "lucide-react
 import { api, formatApiError, type TeacherNotification } from "../../../lib/api";
 import { TEACHER_TAB_PATHS } from "../../../lib/teacherRoutes";
 import { AdminPageBody, AdminPageHeader, AdminPageShell } from "../../AdminPageShell";
-import { AdminListEmpty, AdminRecordList, adminListRowClass } from "../../AdminListUi";
+import { AdminListEmpty, AdminRecordList, adminListRowStackClass } from "../../AdminListUi";
 import { portalDashboardBodyClass } from "../../PortalPageShell";
 
 interface TeacherNotificationsPageProps {
@@ -108,7 +108,7 @@ export function TeacherNotificationsPage({ token, onError, onRefresh }: TeacherN
                 {notifications.map((n) => (
                   <div
                     key={n.id}
-                    className={`${adminListRowClass} ${!n.isRead ? "bg-[#8AC926]/5 border-[#8AC926]/20" : ""}`}
+                    className={`${adminListRowStackClass} ${!n.isRead ? "bg-[#8AC926]/5 border-[#8AC926]/20" : ""}`}
                   >
                     <div className="flex-1 min-w-[200px] space-y-1">
                       <div className="flex flex-wrap items-center gap-2">

@@ -122,7 +122,13 @@ export function StoryBookInlineViewer({
         )}
       </div>
 
-      <div className="relative flex-1 min-h-[60vh] bg-slate-100">
+      <div 
+        className="relative flex-1 min-h-[60vh] bg-slate-100 overflow-y-auto"
+        style={{
+          WebkitOverflowScrolling: "touch",
+          scrollBehavior: "smooth",
+        }}
+      >
         {loading && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-slate-600">
             <Loader2 className={`w-8 h-8 animate-spin ${accentSpin}`} />
@@ -138,8 +144,13 @@ export function StoryBookInlineViewer({
           <iframe
             ref={iframeRef}
             title={title}
-            src={blobUrl}
+            src={`${blobUrl}#toolbar=0&navpanes=0&scrollbar=1`}
             className="absolute inset-0 w-full h-full border-0 bg-white"
+            style={{
+              pointerEvents: "auto",
+              WebkitOverflowScrolling: "touch",
+            }}
+            scrolling="yes"
           />
         )}
       </div>

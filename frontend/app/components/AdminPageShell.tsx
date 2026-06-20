@@ -17,7 +17,7 @@ export function AdminPageHeader({
   actions?: ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-between sm:items-center gap-x-4 gap-y-3 pb-3 w-full min-w-0">
+    <div className="flex flex-col gap-3 lg:flex-row lg:justify-between lg:items-center gap-x-4 gap-y-3 pb-3 w-full min-w-0">
       <div className="min-w-0 flex-1">
         <h2 className="font-sans text-lg sm:text-xl font-extrabold text-slate-900 break-words">{title}</h2>
         {description ? (
@@ -25,7 +25,7 @@ export function AdminPageHeader({
         ) : null}
       </div>
       {actions ? (
-        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto sm:max-w-full sm:ml-auto min-w-0">
+        <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto lg:max-w-full lg:ml-auto min-w-0">
           {actions}
         </div>
       ) : null}

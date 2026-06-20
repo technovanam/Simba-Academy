@@ -42,6 +42,11 @@ async function request<T>(
     headers,
   });
 
+  const refreshedToken = response.headers.get("x-refresh-token");
+  if (refreshedToken && typeof window !== "undefined") {
+    localStorage.setItem("simba_token", refreshedToken);
+  }
+
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {

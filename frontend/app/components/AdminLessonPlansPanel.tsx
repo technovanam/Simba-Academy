@@ -311,18 +311,46 @@ export function AdminLessonPlansPanel({ token, onNotify, onError }: AdminLessonP
                 />
               </div>
               <div>
-                <label className="block text-slate-700 font-bold mb-1.5">Class Assignment</label>
-                <ThemeSelect
-                  value={form.targetClass}
-                  onChange={(val) => setForm({ ...form, targetClass: val })}
-                  options={[
-                    { id: "", label: "All Classes (Send to all teachers)" },
-                    { id: "Playgroup", label: "Playgroup" },
-                    { id: "Pre-KG", label: "Pre-KG" },
-                    { id: "LKG", label: "LKG" },
-                    { id: "UKG", label: "UKG" },
-                  ]}
-                />
+                <label className="block text-slate-700 font-bold mb-2">Class Assignment</label>
+                <div className="flex flex-wrap gap-2">
+                  {["Playgroup", "Pre-KG", "LKG", "UKG"].map((cls) => {
+                    const classesList = form.targetClass
+                      ? form.targetClass.split(",").map((c) => c.trim()).filter(Boolean)
+                      : [];
+                    const isChecked = classesList.includes(cls);
+                    return (
+                      <label
+                        key={cls}
+                        className={`flex items-center gap-2 px-3 py-2 border rounded-xl cursor-pointer transition select-none ${
+                          isChecked
+                            ? "bg-[#8AC926]/10 border-[#8AC926] text-[#5a8218] font-bold"
+                            : "bg-white border-slate-200 text-slate-650 hover:border-[#8AC926]/50"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={(e) => {
+                            let nextClasses = [...classesList];
+                            if (e.target.checked) {
+                              if (!nextClasses.includes(cls)) {
+                                nextClasses.push(cls);
+                              }
+                            } else {
+                              nextClasses = nextClasses.filter((c) => c !== cls);
+                            }
+                            setForm({ ...form, targetClass: nextClasses.join(",") });
+                          }}
+                          className="w-4 h-4 rounded border-slate-300 text-[#8AC926] focus:ring-[#8AC926]/30"
+                        />
+                        <span className="text-xs">{cls}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+                <p className="text-[10px] text-slate-400 mt-1.5">
+                  Leave all unchecked to assign to **All Classes** (Send to all teachers).
+                </p>
               </div>
               <div>
                 <label className="block text-slate-700 font-bold mb-1.5">Materials needed (PDF or Word)</label>
