@@ -250,9 +250,13 @@ export function StoryBookViewerModal({
         </div>
 
         <div 
-          className="relative flex-1 min-h-0 bg-slate-800/95" 
+          className="relative flex-1 min-h-0 bg-slate-800/95 overflow-y-auto" 
           onContextMenu={(e) => role !== "ADMIN" && e.preventDefault()}
           onMouseDown={handleContainerMouseDown}
+          style={{
+            WebkitOverflowScrolling: "touch",
+            scrollBehavior: "smooth",
+          }}
         >
           {loading && (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-white/90 z-10">
@@ -269,11 +273,13 @@ export function StoryBookViewerModal({
             <iframe
               ref={iframeRef}
               title={title}
-              src={role === "ADMIN" ? blobUrl : `${blobUrl}#toolbar=0&navpanes=0`}
+              src={role === "ADMIN" ? blobUrl : `${blobUrl}#toolbar=0&navpanes=0&scrollbar=1`}
               className="absolute inset-0 w-full h-full border-0 bg-white"
               style={{
-                pointerEvents: "auto"
+                pointerEvents: "auto",
+                WebkitOverflowScrolling: "touch",
               }}
+              scrolling="yes"
             />
           )}
         </div>

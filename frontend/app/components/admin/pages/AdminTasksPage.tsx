@@ -2412,6 +2412,80 @@ export function AdminTasksPage() {
                   </div>
                 )}
 
+                {/* VIEW TASK DETAILS MODAL */}
+                {viewTaskDetailsModal && (
+                  <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+                    <div className="bg-white w-full max-w-lg rounded-2xl shadow-xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
+                      <div className="bg-slate-50 px-5 py-4 border-b border-slate-100 flex items-center justify-between shrink-0">
+                        <div className="flex items-center gap-2">
+                          <Eye className="w-5 h-5 text-[#8AC926]" />
+                          <h3 className="font-bold text-slate-800 tracking-wide">Task Details</h3>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setViewTaskDetailsModal(null)}
+                          className="text-slate-400 hover:text-slate-600 transition p-1"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
+                      <div className="p-6 overflow-y-auto modern-scrollbar space-y-4">
+                        <div>
+                          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Title</h4>
+                          <p className="text-slate-800 font-medium text-sm bg-slate-50 p-3 rounded-xl border border-slate-100">
+                            {viewTaskDetailsModal.title}
+                          </p>
+                        </div>
+                        {viewTaskDetailsModal.description && (
+                          <div>
+                            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Description</h4>
+                            <p className="text-slate-700 text-sm bg-slate-50 p-3 rounded-xl border border-slate-100 whitespace-pre-wrap">
+                              {viewTaskDetailsModal.description}
+                            </p>
+                          </div>
+                        )}
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Target Class</h4>
+                            <p className="text-indigo-650 font-bold text-sm bg-indigo-50/50 p-3 rounded-xl border border-indigo-100">
+                              {viewTaskDetailsModal.studentClass || "All Classes"}
+                            </p>
+                          </div>
+                          <div>
+                            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Repeat Schedule</h4>
+                            <p className="text-emerald-700 font-bold text-sm bg-emerald-50 p-3 rounded-xl border border-emerald-100">
+                              {viewTaskDetailsModal.repeatDay === "DAILY" ? "Every Day" : 
+                               viewTaskDetailsModal.repeatDay === "TODAY" ? "Today Only" : 
+                               `Every ${viewTaskDetailsModal.repeatDay}`}
+                            </p>
+                          </div>
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Status</h4>
+                          <span
+                            className={`inline-block px-3 py-1 rounded-lg text-xs font-extrabold uppercase border ${
+                              viewTaskDetailsModal.isActive
+                                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                : "bg-slate-100 text-slate-500 border-slate-200"
+                            }`}
+                          >
+                            {viewTaskDetailsModal.isActive ? "Active" : "Inactive"}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => setViewTaskDetailsModal(null)}
+                          className="px-5 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 font-bold text-xs tracking-wider uppercase hover:bg-slate-100 transition shadow-sm"
+                        >
+                          Close
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* HISTORY MODAL */}
                 {viewingHistoryTaskId && (
                   <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
