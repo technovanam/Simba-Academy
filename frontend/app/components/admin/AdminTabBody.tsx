@@ -3455,7 +3455,7 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                       return (
                         <div
                           key={item.id}
-                          className={`${adminListRowClass} cursor-pointer hover:border-[#8AC926]/50 hover:bg-[#8AC926]/5 transition`}
+                          className={`${adminListRowStackClass} cursor-pointer hover:border-[#8AC926]/50 hover:bg-[#8AC926]/5 transition`}
                           onClick={() =>
                             setLeadView({
                               kind: isFranchise ? "franchise" : "admission",
@@ -4351,7 +4351,7 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
                         return (
                           <div
                             key={n.id}
-                            className={`${adminListRowClass} flex items-center justify-between gap-4 p-4 border transition ${
+                            className={`${adminListRowStackClass} justify-between gap-4 border transition ${
                               isUnread
                                 ? "bg-[#8AC926]/5 border-[#8AC926]/20 shadow-xs"
                                 : "bg-white hover:bg-slate-50/50"
