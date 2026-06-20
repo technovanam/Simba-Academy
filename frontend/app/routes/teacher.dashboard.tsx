@@ -34,6 +34,7 @@ import {
   AdminRecordList,
   AdminSearchInput,
   PillSelect,
+  adminListContainerClass,
   adminListRowClass,
   useAdminPagination,
 } from "../components/AdminListUi";
@@ -528,7 +529,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
         ) : null}
 
         <div className={`flex-1 min-h-0 bg-[#F8FAFC] focus:outline-none portal-main-scroll p-4 lg:p-6 pb-6 lg:pb-8 ${
-          activeTab === "overview" || activeTab === "library" || activeTab === "notifications" || activeTab === "tasks" ? "h-full flex flex-col overflow-visible" : "overflow-y-auto modern-scrollbar"
+          activeTab !== "settings" ? "h-full flex flex-col overflow-visible" : "overflow-y-auto modern-scrollbar"
         }`}>
           
           {loading && activeTab !== "settings" && activeTab !== "notifications" ? (
@@ -549,7 +550,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                   </div>
 
                   {/* Three summary panels (matches admin dashboard style) */}
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch shrink-0">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch shrink-0">
                     {/* Assigned tasks ÔÇö light green */}
                     <div className="bg-[#F3FAEB] border border-green-100 rounded-2xl p-5 text-slate-800 flex flex-col justify-between min-h-[190px]">
                       <div>
@@ -658,7 +659,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                     </div>
 
                     {/* Upcoming deadlines ÔÇö light violet */}
-                    <div className={`bg-[#F5F3FF] border border-violet-100 rounded-2xl p-5 text-slate-800 flex flex-col ${
+                    <div className={`bg-[#F5F3FF] border border-violet-100 rounded-2xl p-5 text-slate-800 flex flex-col md:col-span-2 lg:col-span-1 ${
                       upcomingTasks.length === 0 ? "justify-between gap-2 self-start w-full min-h-[190px]" : "justify-between min-h-[190px]"
                     }`}>
                       <div>
@@ -810,7 +811,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
               </div>
           ) : (
             <div className={`animate-fade-in ${
-              activeTab === "library" || activeTab === "notifications" || activeTab === "tasks"
+              activeTab !== "settings"
                 ? "h-full flex flex-col min-h-0 overflow-visible"
                 : "space-y-6"
             }`}>
@@ -842,144 +843,275 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                       <AdminListEmpty message="No assigned tasks matched your search or filters." />
                     ) : (
                       <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex-1 min-h-0 flex flex-col">
-                        <div className="overflow-x-auto flex-1 min-h-0 overflow-y-auto modern-scrollbar">
-                          <table className="w-full text-left text-sm whitespace-nowrap">
-                            <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium text-xs sticky top-0 z-10">
-                              <tr>
-                                <th className="px-4 py-3 font-semibold w-[45%]">Task Details</th>
-                                <th className="px-4 py-3 font-semibold w-[20%]">Status</th>
-                                <th className="px-4 py-3 font-semibold w-[20%]">Due Date</th>
-                                <th className="px-4 py-3 font-semibold text-right w-[15%]">Actions</th>
-                              </tr>
-                            </thead>
-<tbody className="divide-y divide-slate-100">
-                              {taskPagination.paginatedItems.map((t) => {
-                                const isOverdue =
-                                  t.dueDate &&
-                                  new Date(t.dueDate).getTime() < Date.now() &&
-                                  (t.status === "PENDING" || t.status === "REJECTED" || t.status === "SUBMITTED" || t.status === "RESUBMITTED");
-                                return (
-                                  <tr key={t.id} className="hover:bg-slate-50/80 transition-colors">
-                                    <td className="px-4 py-3 align-middle w-[45%] min-w-0">
-                                      <div className="flex flex-col min-w-0">
-                                        <span className="font-bold text-sm text-slate-800">{t.title}</span>
-                                        {t.description && (
-                                          <span className="text-3xs text-slate-400 font-medium shrink-0 mt-0.5 line-clamp-1 truncate max-w-[450px] whitespace-normal">{t.description}</span>
-                                        )}
-                                      </div>
-                                    </td>
-                                    <td className="px-4 py-3 align-middle w-[20%]">
-                                      <div className="flex flex-col gap-1.5">
-                                        <div className="flex items-center gap-1.5 flex-wrap">
-                                          <span
-                                            className={`px-2 py-0.5 rounded text-4xs font-extrabold uppercase border shrink-0 ${
-                                              t.status === "APPROVED"
-                                                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                                : t.status === "REJECTED"
-                                                ? "bg-rose-50 text-rose-700 border-rose-200"
-                                                : t.status === "RESUBMITTED"
-                                                ? "bg-purple-50 text-purple-700 border-purple-200"
-                                                : t.status === "UNDER_REVIEW"
-                                                ? "bg-sky-50 text-sky-700 border-sky-200"
-                                                : t.status === "SUBMITTED" || t.status === "COMPLETED"
-                                                ? "bg-blue-50 text-blue-700 border-blue-200"
-                                                : "bg-amber-50 text-amber-700 border-amber-200"
-                                            }`}
-                                          >
-                                            {t.status === "COMPLETED" ? "Submitted" :
-                                             t.status === "SUBMITTED" ? "Submitted" :
-                                             t.status === "UNDER_REVIEW" ? "Under Review" :
-                                             t.status === "RESUBMITTED" ? "Resubmitted" :
-                                             t.status}
-                                          </span>
-                                          {t.proofUrl && (
-                                            <a
-                                              href={resolveStorageUrl(t.proofUrl)}
-                                              target="_blank"
-                                              rel="noreferrer"
-                                              className="p-1 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 transition flex items-center justify-center shrink-0"
-                                              title="View proof"
-                                            >
-                                              <ExternalLink className="w-3.5 h-3.5" />
-                                            </a>
+                        <div className="flex-1 min-h-0 overflow-y-auto modern-scrollbar flex flex-col">
+                          {/* Desktop/Tablet Table view */}
+                          <div className="hidden md:block overflow-x-auto flex-1 min-h-0">
+                            <table className="w-full text-left text-sm whitespace-nowrap">
+                              <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium text-xs sticky top-0 z-10">
+                                <tr>
+                                  <th className="px-4 py-3 font-semibold w-[45%]">Task Details</th>
+                                  <th className="px-4 py-3 font-semibold w-[20%]">Status</th>
+                                  <th className="px-4 py-3 font-semibold w-[20%]">Due Date</th>
+                                  <th className="px-4 py-3 font-semibold text-right w-[15%]">Actions</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-100">
+                                {taskPagination.paginatedItems.map((t) => {
+                                  const isOverdue =
+                                    t.dueDate &&
+                                    new Date(t.dueDate).getTime() < Date.now() &&
+                                    (t.status === "PENDING" || t.status === "REJECTED" || t.status === "SUBMITTED" || t.status === "RESUBMITTED");
+                                  return (
+                                    <tr key={t.id} className="hover:bg-slate-50/80 transition-colors">
+                                      <td className="px-4 py-3 align-middle w-[45%] min-w-0">
+                                        <div className="flex flex-col min-w-0">
+                                          <span className="font-bold text-sm text-slate-800">{t.title}</span>
+                                          {t.description && (
+                                            <span className="text-3xs text-slate-400 font-medium shrink-0 mt-0.5 line-clamp-1 truncate max-w-[450px] whitespace-normal">{t.description}</span>
                                           )}
                                         </div>
-                                        {t.status === "REJECTED" && t.rejectionReason && (
-                                          <div className="flex items-start gap-1 bg-rose-50 border border-rose-100 rounded-lg px-2 py-1.5 max-w-[200px]">
-                                            <AlertCircle className="w-3 h-3 text-rose-500 shrink-0 mt-0.5" />
-                                            <p className="text-[9px] font-semibold text-rose-700 leading-snug line-clamp-2">{t.rejectionReason}</p>
+                                      </td>
+                                      <td className="px-4 py-3 align-middle w-[20%]">
+                                        <div className="flex flex-col gap-1.5">
+                                          <div className="flex items-center gap-1.5 flex-wrap">
+                                            <span
+                                              className={`px-2 py-0.5 rounded text-4xs font-extrabold uppercase border shrink-0 ${
+                                                t.status === "APPROVED"
+                                                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                                  : t.status === "REJECTED"
+                                                  ? "bg-rose-50 text-rose-700 border-rose-200"
+                                                  : t.status === "RESUBMITTED"
+                                                  ? "bg-purple-50 text-purple-700 border-purple-200"
+                                                  : t.status === "UNDER_REVIEW"
+                                                  ? "bg-sky-50 text-sky-700 border-sky-200"
+                                                  : t.status === "SUBMITTED" || t.status === "COMPLETED"
+                                                  ? "bg-blue-50 text-blue-700 border-blue-200"
+                                                  : "bg-amber-50 text-amber-700 border-amber-200"
+                                              }`}
+                                            >
+                                              {t.status === "COMPLETED" ? "Submitted" :
+                                               t.status === "SUBMITTED" ? "Submitted" :
+                                               t.status === "UNDER_REVIEW" ? "Under Review" :
+                                               t.status === "RESUBMITTED" ? "Resubmitted" :
+                                               t.status}
+                                            </span>
+                                            {t.proofUrl && (
+                                              <a
+                                                href={resolveStorageUrl(t.proofUrl)}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="p-1 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 transition flex items-center justify-center shrink-0"
+                                                title="View proof"
+                                              >
+                                                <ExternalLink className="w-3.5 h-3.5" />
+                                              </a>
+                                            )}
                                           </div>
+                                          {t.status === "REJECTED" && t.rejectionReason && (
+                                            <div className="flex items-start gap-1 bg-rose-50 border border-rose-100 rounded-lg px-2 py-1.5 max-w-[200px]">
+                                              <AlertCircle className="w-3 h-3 text-rose-500 shrink-0 mt-0.5" />
+                                              <p className="text-[9px] font-semibold text-rose-700 leading-snug line-clamp-2">{t.rejectionReason}</p>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </td>
+                                      <td className="px-4 py-3 align-middle w-[20%] text-xs font-semibold text-slate-700">
+                                        {t.dueDate ? (
+                                          <span className={`inline-flex items-center gap-1 ${isOverdue ? "text-rose-600" : "text-slate-600"}`}>
+                                            <Calendar className="w-3.5 h-3.5" />
+                                            {new Date(t.dueDate).toLocaleDateString("en-IN", {
+                                              month: "short",
+                                              day: "numeric",
+                                              year: "numeric",
+                                            })}
+                                            {isOverdue && <span className="text-[9px] font-bold">(Overdue)</span>}
+                                          </span>
+                                        ) : (
+                                          <span className="text-slate-450">—</span>
+                                        )}
+                                      </td>
+                                      <td className="px-4 py-2 text-right align-middle w-[15%]">
+                                        <div className="flex items-center justify-end gap-2">
+                                          <button
+                                            type="button"
+                                            onClick={() => setTaskDetailsModal(t)}
+                                            className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 transition shadow-sm"
+                                            title="View Task Details"
+                                          >
+                                            <Eye className="w-4 h-4" />
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => handleViewHistory(t.id)}
+                                            className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 transition shadow-sm"
+                                            title="View Task History"
+                                          >
+                                            <HistoryIcon className="w-4 h-4 text-indigo-500" />
+                                          </button>
+                                          {(t.status === "PENDING" || t.status === "REJECTED" || t.status === "COMPLETED" || t.status === "SUBMITTED" || t.status === "RESUBMITTED") ? (
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                setSelectedTask(t);
+                                                setProofForm({ description: t.proofDesc || "" });
+                                                setSelectedProofFile(null);
+                                                setShowProofModal(true);
+                                              }}
+                                              className={`px-2.5 py-1.5 rounded-xl text-white font-sans font-bold text-2xs transition shadow-md whitespace-nowrap ${
+                                                t.status === "REJECTED"
+                                                  ? "bg-rose-500 hover:bg-rose-600 shadow-rose-500/20"
+                                                  : "bg-[#8AC926] hover:bg-[#78B020] shadow-[#8AC926]/10"
+                                              }`}
+                                            >
+                                              {t.status === "REJECTED" ? "Re-submit" :
+                                               t.status === "COMPLETED" || t.status === "SUBMITTED" || t.status === "RESUBMITTED" ? "Edit proof" :
+                                               "Submit proof"}
+                                            </button>
+                                          ) : t.status === "APPROVED" ? (
+                                            <span className="px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-100 text-emerald-700 font-bold text-2xs inline-flex items-center gap-1">
+                                              ✓ Approved
+                                            </span>
+                                          ) : (
+                                            <span className="px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-100 text-blue-700 font-bold text-2xs select-none">
+                                              Submitted
+                                            </span>
+                                          )}
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+
+                          {/* Mobile Cards list view */}
+                          <div className="md:hidden divide-y divide-slate-100 flex-1 overflow-y-auto modern-scrollbar">
+                            {taskPagination.paginatedItems.map((t) => {
+                              const isOverdue =
+                                t.dueDate &&
+                                new Date(t.dueDate).getTime() < Date.now() &&
+                                (t.status === "PENDING" || t.status === "REJECTED" || t.status === "SUBMITTED" || t.status === "RESUBMITTED");
+                              return (
+                                <div key={t.id} className="p-4 flex flex-col gap-3 hover:bg-slate-50/80 transition-colors">
+                                  <div className="flex flex-col gap-1">
+                                    <span className="font-bold text-sm text-slate-800">{t.title}</span>
+                                    {t.description && (
+                                      <p className="text-xs text-slate-500 font-medium whitespace-pre-wrap">{t.description}</p>
+                                    )}
+                                  </div>
+                                  <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100/60 pt-2.5">
+                                    <div className="flex flex-col gap-1">
+                                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Status</span>
+                                      <div className="flex items-center gap-1.5">
+                                        <span
+                                          className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase border ${
+                                            t.status === "APPROVED"
+                                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                              : t.status === "REJECTED"
+                                              ? "bg-rose-50 text-rose-700 border-rose-200"
+                                              : t.status === "RESUBMITTED"
+                                              ? "bg-purple-50 text-purple-700 border-purple-200"
+                                              : t.status === "UNDER_REVIEW"
+                                              ? "bg-sky-50 text-sky-700 border-sky-200"
+                                              : t.status === "SUBMITTED" || t.status === "COMPLETED"
+                                              ? "bg-blue-50 text-blue-700 border-blue-200"
+                                              : "bg-amber-50 text-amber-700 border-amber-200"
+                                          }`}
+                                        >
+                                          {t.status === "COMPLETED" ? "Submitted" :
+                                           t.status === "SUBMITTED" ? "Submitted" :
+                                           t.status === "UNDER_REVIEW" ? "Under Review" :
+                                           t.status === "RESUBMITTED" ? "Resubmitted" :
+                                           t.status}
+                                        </span>
+                                        {t.proofUrl && (
+                                          <a
+                                            href={resolveStorageUrl(t.proofUrl)}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="p-1 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 transition flex items-center justify-center shrink-0"
+                                            title="View proof"
+                                          >
+                                            <ExternalLink className="w-3.5 h-3.5" />
+                                          </a>
                                         )}
                                       </div>
-                                    </td>
-                                    <td className="px-4 py-3 align-middle w-[20%] text-xs font-semibold text-slate-700">
+                                      {t.status === "REJECTED" && t.rejectionReason && (
+                                        <div className="flex items-start gap-1 bg-rose-50 border border-rose-100 rounded-lg px-2 py-1 mt-1 max-w-[240px]">
+                                          <AlertCircle className="w-3 h-3 text-rose-500 shrink-0 mt-0.5" />
+                                          <p className="text-[10px] font-semibold text-rose-700 leading-snug">{t.rejectionReason}</p>
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    <div className="flex flex-col items-end gap-1">
+                                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Due Date</span>
                                       {t.dueDate ? (
-                                        <span className={`inline-flex items-center gap-1 ${isOverdue ? "text-rose-600" : "text-slate-600"}`}>
+                                        <span className={`inline-flex items-center gap-1 text-xs font-semibold ${isOverdue ? "text-rose-600" : "text-slate-600"}`}>
                                           <Calendar className="w-3.5 h-3.5" />
                                           {new Date(t.dueDate).toLocaleDateString("en-IN", {
                                             month: "short",
                                             day: "numeric",
                                             year: "numeric",
                                           })}
-                                          {isOverdue && <span className="text-[9px] font-bold">(Overdue)</span>}
                                         </span>
                                       ) : (
                                         <span className="text-slate-450">—</span>
                                       )}
-                                    </td>
-                                    <td className="px-4 py-2 text-right align-middle w-[15%]">
-                                      <div className="flex items-center justify-end gap-2">
-                                        <button
-                                          type="button"
-                                          onClick={() => setTaskDetailsModal(t)}
-                                          className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 transition shadow-sm"
-                                          title="View Task Details"
-                                        >
-                                          <Eye className="w-4 h-4" />
-                                        </button>
-                                        <button
-                                          type="button"
-                                          onClick={() => handleViewHistory(t.id)}
-                                          className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 transition shadow-sm"
-                                          title="View Task History"
-                                        >
-                                          <HistoryIcon className="w-4 h-4 text-indigo-500" />
-                                        </button>
-                                        {(t.status === "PENDING" || t.status === "REJECTED" || t.status === "COMPLETED" || t.status === "SUBMITTED" || t.status === "RESUBMITTED") ? (
-                                          <button
-                                            type="button"
-                                            onClick={() => {
-                                              setSelectedTask(t);
-                                              setProofForm({ description: t.proofDesc || "" });
-                                              setSelectedProofFile(null);
-                                              setShowProofModal(true);
-                                            }}
-                                            className={`px-2.5 py-1.5 rounded-xl text-white font-sans font-bold text-2xs transition shadow-md whitespace-nowrap ${
-                                              t.status === "REJECTED"
-                                                ? "bg-rose-500 hover:bg-rose-600 shadow-rose-500/20"
-                                                : "bg-[#8AC926] hover:bg-[#78B020] shadow-[#8AC926]/10"
-                                            }`}
-                                          >
-                                            {t.status === "REJECTED" ? "Re-submit" :
-                                             t.status === "COMPLETED" || t.status === "SUBMITTED" || t.status === "RESUBMITTED" ? "Edit proof" :
-                                             "Submit proof"}
-                                          </button>
-                                        ) : t.status === "APPROVED" ? (
-                                          <span className="px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-100 text-emerald-700 font-bold text-2xs inline-flex items-center gap-1">
-                                            ✓ Approved
-                                          </span>
-                                        ) : (
-                                          <span className="px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-100 text-blue-700 font-bold text-2xs select-none">
-                                            Submitted
-                                          </span>
-                                        )}
-                                      </div>
-                                    </td>
-                                  </tr>
-                                );
-                              })}
-                            </tbody>
-                          </table>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center justify-end gap-2 border-t border-slate-100/60 pt-2.5">
+                                    <button
+                                      type="button"
+                                      onClick={() => setTaskDetailsModal(t)}
+                                      className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 transition shadow-sm flex items-center justify-center"
+                                      title="View Task Details"
+                                    >
+                                      <Eye className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleViewHistory(t.id)}
+                                      className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 transition shadow-sm flex items-center justify-center"
+                                      title="View Task History"
+                                    >
+                                      <HistoryIcon className="w-4 h-4 text-indigo-500" />
+                                    </button>
+                                    {(t.status === "PENDING" || t.status === "REJECTED" || t.status === "COMPLETED" || t.status === "SUBMITTED" || t.status === "RESUBMITTED") ? (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setSelectedTask(t);
+                                          setProofForm({ description: t.proofDesc || "" });
+                                          setSelectedProofFile(null);
+                                          setShowProofModal(true);
+                                        }}
+                                        className={`px-4 py-2 rounded-xl text-white font-sans font-bold text-xs transition shadow-md whitespace-nowrap ${
+                                          t.status === "REJECTED"
+                                            ? "bg-rose-500 hover:bg-rose-600 shadow-rose-500/20"
+                                            : "bg-[#8AC926] hover:bg-[#78B020] shadow-[#8AC926]/10"
+                                        }`}
+                                      >
+                                        {t.status === "REJECTED" ? "Re-submit" :
+                                         t.status === "COMPLETED" || t.status === "SUBMITTED" || t.status === "RESUBMITTED" ? "Edit proof" :
+                                         "Submit proof"}
+                                      </button>
+                                    ) : t.status === "APPROVED" ? (
+                                      <span className="px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700 font-bold text-xs inline-flex items-center gap-1">
+                                        ✓ Approved
+                                      </span>
+                                    ) : (
+                                      <span className="px-3 py-2 rounded-xl bg-blue-50 border border-blue-100 text-blue-700 font-bold text-xs select-none">
+                                        Submitted
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
                         <div className="px-4 py-3 bg-slate-50 border-t border-slate-200">
                           <AdminListPagination
@@ -1006,7 +1138,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
 
               {/* ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ LESSON PLANNER Tab (view only) ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ */}
               {activeTab === "planner" && (
-                <AdminPageShell>
+                <AdminPageShell className="h-full flex flex-col min-h-0 overflow-visible">
                   <AdminPageHeader
                     title="Lesson Planner"
                     description="View and print lesson plans published by administrators."
@@ -1019,28 +1151,30 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                       />
                     }
                   />
-                  <AdminPageBody>
+                  <AdminPageBody className="flex-1 min-h-0 flex flex-col overflow-hidden">
                     {filteredLessonPlans.length === 0 ? (
                       <AdminListEmpty message="No published lesson plans matched your search." />
                     ) : (
-                      <AdminRecordList>
-                        {plannerPagination.paginatedItems.map((plan) => (
-                          <div key={plan.id} className={adminListRowClass}>
-                            <div className="flex-1 min-w-[180px]">
-                              <p className="font-bold text-sm text-slate-800 truncate max-w-md">{plan.title}</p>
+                      <div className={`${adminListContainerClass} flex-1 min-h-0 flex flex-col justify-between`}>
+                        <div className="space-y-1.5 flex-1 min-h-0 overflow-y-auto modern-scrollbar">
+                          {plannerPagination.paginatedItems.map((plan) => (
+                            <div key={plan.id} className={adminListRowClass}>
+                              <div className="flex-1 min-w-[180px]">
+                                <p className="font-bold text-sm text-slate-800 truncate max-w-md">{plan.title}</p>
+                              </div>
+                              <div className="flex flex-wrap items-center gap-2 shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={() => setLessonPlanViewer(plan)}
+                                  className="px-3 py-1.5 rounded-lg font-bold text-2xs flex items-center gap-1 border bg-blue-50 border-blue-200 text-blue-800 hover:bg-blue-100"
+                                >
+                                  <Eye className="w-3.5 h-3.5" />
+                                  View
+                                </button>
+                              </div>
                             </div>
-                            <div className="flex flex-wrap items-center gap-2 shrink-0">
-                              <button
-                                type="button"
-                                onClick={() => setLessonPlanViewer(plan)}
-                                className="px-3 py-1.5 rounded-lg font-bold text-2xs flex items-center gap-1 border bg-blue-50 border-blue-200 text-blue-800 hover:bg-blue-100"
-                              >
-                                <Eye className="w-3.5 h-3.5" />
-                                View
-                              </button>
-                            </div>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                         <AdminListPagination
                           rangeStart={plannerPagination.rangeStart}
                           rangeEnd={plannerPagination.rangeEnd}
@@ -1051,7 +1185,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                           onPageChange={plannerPagination.setCurrentPage}
                           itemLabel="plans"
                         />
-                      </AdminRecordList>
+                      </div>
                     )}
                   </AdminPageBody>
 
@@ -1091,7 +1225,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
 
               {/* ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ STUDENTS Tab ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ */}
               {activeTab === "students" && (
-                <AdminPageShell>
+                <AdminPageShell className="h-full flex flex-col min-h-0 overflow-visible">
                   <AdminPageHeader
                     title={user?.studentClass ? `${user.studentClass} Students` : "Students"}
                     description={user?.studentClass ? `View students registered in the ${user.studentClass} class.` : "View your class students."}
@@ -1104,7 +1238,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                       />
                     }
                   />
-                  <AdminPageBody>
+                  <AdminPageBody className="flex-1 min-h-0 flex flex-col overflow-hidden">
                     {!user?.studentClass ? (
                       <AdminListEmpty message="You are not currently assigned to a class. Please contact the administrator to assign a class to your account." />
                     ) : classStudents.filter(s => 
@@ -1113,16 +1247,16 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                     ).length === 0 ? (
                       <AdminListEmpty message={`No ${user?.studentClass} students found matching your search.`} />
                     ) : (
-                      <div className="bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-2xs">
+                      <div className="bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-2xs flex-1 min-h-0 flex flex-col">
                         {/* Header Row */}
-                        <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-4 bg-slate-50 border-b border-slate-200/80 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                        <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-4 bg-slate-50 border-b border-slate-200/80 text-[10px] font-black text-slate-500 uppercase tracking-widest shrink-0">
                           <div className="col-span-5">Name</div>
                           <div className="col-span-4">Email</div>
                           <div className="col-span-3 text-right">Books</div>
                         </div>
 
                         {/* List container */}
-                        <div className="divide-y divide-slate-100">
+                        <div className="divide-y divide-slate-100 flex-1 min-h-0 overflow-y-auto modern-scrollbar">
                           {classStudents
                             .filter(s => 
                               s.name.toLowerCase().includes(studentSearch.toLowerCase()) || 
@@ -1183,7 +1317,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
       {/* ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ PROOF SUBMISSION MODAL ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ */}
       {showProofModal && selectedTask && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl border border-slate-200 animate-scale-up text-slate-800 relative">
+          <div className="bg-white rounded-2xl p-4 sm:p-6 w-full max-w-md shadow-2xl border border-slate-200 animate-scale-up text-slate-800 relative max-h-[90vh] flex flex-col">
             <ModalCloseButton
               onClick={() => {
                 setShowProofModal(false);
@@ -1192,52 +1326,54 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
               }}
               className="absolute top-4 right-4"
             />
-            <h3 className="font-sans text-lg font-extrabold text-slate-900 mb-4 pr-10">Submit Task Completion Proof</h3>
+            <h3 className="font-sans text-lg font-extrabold text-slate-900 mb-4 pr-10 shrink-0">Submit Task Completion Proof</h3>
 
-            <form onSubmit={handleProofSubmit} noValidate className="space-y-4 text-xs">
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                <p className="font-bold text-slate-900 text-2xs">Active Task:</p>
-                <p className="font-bold text-[#8AC926] text-xs mt-0.5">{selectedTask.title}</p>
-                {selectedTask.description && <p className="text-3xs text-slate-600 mt-1 line-clamp-2">{selectedTask.description}</p>}
-              </div>
+            <form onSubmit={handleProofSubmit} noValidate className="space-y-4 text-xs flex-1 flex flex-col min-h-0">
+              <div className="overflow-y-auto flex-1 pr-1 space-y-4 min-h-0">
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 shrink-0">
+                  <p className="font-bold text-slate-900 text-2xs">Active Task:</p>
+                  <p className="font-bold text-[#8AC926] text-xs mt-0.5">{selectedTask.title}</p>
+                  {selectedTask.description && <p className="text-3xs text-slate-600 mt-1 line-clamp-2">{selectedTask.description}</p>}
+                </div>
 
-              <div>
-                <label className="block text-slate-700 font-bold mb-1.5">Proof Description / Comments</label>
-                <textarea
-                  required
-                  rows={3}
-                  placeholder="Describe your completion results (e.g. Completed worksheets uploaded, lesson photos attached...)"
-                  value={proofForm.description}
-                  onChange={(e) => setProofForm({ ...proofForm, description: e.target.value })}
-                  className="w-full rounded-xl bg-white border border-slate-200 px-4 py-2.5 text-slate-900 outline-none focus:border-[#8AC926] placeholder-slate-400 transition"
-                />
-              </div>
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1.5">Proof Description / Comments</label>
+                  <textarea
+                    required
+                    rows={3}
+                    placeholder="Describe your completion results (e.g. Completed worksheets uploaded, lesson photos attached...)"
+                    value={proofForm.description}
+                    onChange={(e) => setProofForm({ ...proofForm, description: e.target.value })}
+                    className="w-full rounded-xl bg-white border border-slate-200 px-4 py-2.5 text-slate-900 outline-none focus:border-[#8AC926] placeholder-slate-400 transition"
+                  />
+                </div>
 
-              <div>
-                <label className="block text-slate-700 font-bold mb-1.5">Attach File/Photo (Completion proof)</label>
-                <div className="flex items-center justify-center w-full">
-                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-300 rounded-xl cursor-pointer bg-slate-50 hover:bg-slate-100 hover:border-[#8AC926] transition">
-                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                      <Upload className="w-8 h-8 text-slate-400 mb-2" />
-                      <p className="text-xs text-slate-500 font-bold">
-                        {selectedProofFile ? selectedProofFile.name : "Select or drag file here"}
-                      </p>
-                      <p className="text-3xs text-slate-400 mt-0.5">PDF, Word, or image up to 50MB</p>
-                    </div>
-                    <input 
-                      type="file" 
-                      className="hidden" 
-                      required
-                      onChange={(e) => setSelectedProofFile(e.target.files?.[0] ?? null)}
-                    />
-                  </label>
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1.5">Attach File/Photo (Completion proof)</label>
+                  <div className="flex items-center justify-center w-full">
+                    <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-300 rounded-xl cursor-pointer bg-slate-50 hover:bg-slate-100 hover:border-[#8AC926] transition">
+                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                        <Upload className="w-8 h-8 text-slate-400 mb-2" />
+                        <p className="text-xs text-slate-500 font-bold px-2 text-center break-all">
+                          {selectedProofFile ? selectedProofFile.name : "Select or drag file here"}
+                        </p>
+                        <p className="text-3xs text-slate-400 mt-0.5">PDF, Word, or image up to 50MB</p>
+                      </div>
+                      <input 
+                        type="file" 
+                        className="hidden" 
+                        required
+                        onChange={(e) => setSelectedProofFile(e.target.files?.[0] ?? null)}
+                      />
+                    </label>
+                  </div>
                 </div>
               </div>
 
               <button 
                 type="submit" 
                 disabled={actionLoading === "proof-submit"}
-                className="w-full py-3 rounded-xl bg-[#8AC926] text-white font-sans font-bold text-xs tracking-wider uppercase hover:bg-[#78B020] transition shadow-md shadow-[#8AC926]/10 flex items-center justify-center gap-1.5"
+                className="w-full py-3 rounded-xl bg-[#8AC926] text-white font-sans font-bold text-xs tracking-wider uppercase hover:bg-[#78B020] transition shadow-md shadow-[#8AC926]/10 flex items-center justify-center gap-1.5 shrink-0"
               >
                 {actionLoading === "proof-submit" ? (
                   <>
@@ -1253,7 +1389,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
       )}
       {selectedStudentForBooks && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl border border-slate-200 animate-scale-up text-slate-800 relative flex flex-col max-h-[85vh]">
+          <div className="bg-white rounded-2xl p-4 sm:p-6 w-full max-w-lg shadow-2xl border border-slate-200 animate-scale-up text-slate-800 relative flex flex-col max-h-[85vh]">
             <ModalCloseButton
               onClick={() => setSelectedStudentForBooks(null)}
               className="absolute top-4 right-4"
@@ -1438,7 +1574,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
 
       {taskDetailsModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-2xl shadow-2xl border border-slate-200 animate-scale-up text-slate-800 relative max-h-[90vh] overflow-hidden flex flex-col">
+          <div className="bg-white rounded-2xl p-4 sm:p-6 w-full max-w-2xl shadow-2xl border border-slate-200 animate-scale-up text-slate-800 relative max-h-[90vh] overflow-hidden flex flex-col">
             <ModalCloseButton
               onClick={() => setTaskDetailsModal(null)}
               className="absolute top-4 right-4"
@@ -1537,7 +1673,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
 
       {auditHistoryTaskId && (
         <div className="fixed inset-0 z-[100] bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-2xl shadow-2xl border border-slate-200 animate-scale-up text-slate-800 relative max-h-[80vh] flex flex-col">
+          <div className="bg-white rounded-2xl p-4 sm:p-6 w-full max-w-2xl shadow-2xl border border-slate-200 animate-scale-up text-slate-800 relative max-h-[90vh] flex flex-col">
             <ModalCloseButton
               onClick={() => {
                 setAuditHistoryTaskId(null);

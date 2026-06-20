@@ -65,7 +65,7 @@ export function StudentTabBody({ tab }: { tab: StudentTab }) {
 
   if (tab === "notifications") {
     return (
-      <PortalPageShell className="overflow-y-auto">
+      <PortalPageShell className="h-full !overflow-hidden flex flex-col min-h-0">
         <StudentNotificationsPage />
       </PortalPageShell>
     );

@@ -119,7 +119,7 @@ export function StudentOverviewPage() {
       </div>
 
       <div className={portalDashboardBodyClass}>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch shrink-0">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch shrink-0">
           {/* Story books — orange panel */}
           <div className="bg-[#FFF7ED] border border-orange-100 rounded-2xl p-5 relative overflow-hidden text-slate-800 flex flex-col justify-between min-h-[190px] h-full shrink-0">
             <div>

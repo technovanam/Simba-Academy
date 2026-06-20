@@ -94,7 +94,7 @@ export function TeacherSettingsPanel({
             <p className="font-bold text-slate-600 text-sm">Loading profile…</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <section className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
               <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
                 <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-[#8AC926] to-[#78B020] p-0.5 shrink-0">

@@ -5,7 +5,7 @@ import { api, ApiError, formatApiError, type StudentNotification } from "../../.
 import { clearSession } from "../../../lib/auth";
 import { STUDENT_TAB_PATHS } from "../../../lib/studentRoutes";
 import { AdminPageBody, AdminPageHeader, AdminPageShell } from "../../AdminPageShell";
-import { AdminListEmpty, AdminRecordList, adminListRowClass } from "../../AdminListUi";
+import { AdminListEmpty, AdminRecordList, adminListRowStackClass } from "../../AdminListUi";
 import { portalDashboardBodyClass } from "../../PortalPageShell";
 import { useStudentOutlet } from "../StudentOutletContext";
 import { StudentTabLoader } from "../StudentTabLoader";
@@ -106,7 +106,7 @@ export function StudentNotificationsPage() {
                 {notifications.map((n) => (
                   <div
                     key={n.id}
-                    className={`${adminListRowClass} ${!n.isRead ? "bg-[#FF9F1C]/5 border-[#FF9F1C]/20" : ""}`}
+                    className={`${adminListRowStackClass} ${!n.isRead ? "bg-[#FF9F1C]/5 border-[#FF9F1C]/20" : ""}`}
                   >
                     <div className="flex-1 min-w-[200px] space-y-1">
                       <div className="flex flex-wrap items-center gap-2">

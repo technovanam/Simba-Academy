@@ -4063,7 +4063,7 @@ export function AdminTabBody({ tab }: { tab: AdminTab }) {
           {activeTab === "gallery" && (
             <AdminPageShell className="h-full flex flex-col min-h-0 overflow-hidden">
               <AdminPageHeader
-                title="Academy Media Gallery (cPanel Storage)"
+                title="Academy Media Gallery"
                 description="Manage photos for the public gallery — view, print, download, edit, or remove."
                 actions={
                   <>
