@@ -25,6 +25,7 @@ export function StoryBookInlineViewer({
   const accentSpin = accent === "orange" ? "text-[#FF9F1C]" : "text-[#8AC926]";
   const viewUrl = libraryStoryViewUrl(bookId, token);
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const [pdfPages, setPdfPages] = useState<number>(10);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -50,10 +51,25 @@ export function StoryBookInlineViewer({
           const text = await res.text().catch(() => "");
           throw new Error(text || `Failed to load (${res.status})`);
         }
-        return res.blob();
+        return res.arrayBuffer();
       })
-      .then((blob) => {
+      .then((arrayBuffer) => {
         if (cancelled) return;
+        
+        let pages = 10;
+        try {
+          const text = new TextDecoder("ascii").decode(new Uint8Array(arrayBuffer));
+          const matches = [...text.matchAll(/\/Count\s+(\d+)/g)];
+          if (matches.length > 0) {
+            const lastMatch = matches[matches.length - 1];
+            pages = parseInt(lastMatch[1], 10) || 10;
+          }
+        } catch (e) {
+          console.error("Failed to parse PDF page count:", e);
+        }
+        setPdfPages(pages);
+
+        const blob = new Blob([arrayBuffer], { type: "application/pdf" });
         const url = URL.createObjectURL(blob);
         blobUrlRef.current = url;
         setBlobUrl(url);
@@ -144,13 +160,14 @@ export function StoryBookInlineViewer({
           <iframe
             ref={iframeRef}
             title={title}
-            src={`${blobUrl}#toolbar=0&navpanes=0&scrollbar=1`}
-            className="absolute inset-0 w-full h-full border-0 bg-white"
+            src={`${blobUrl}#toolbar=0&navpanes=0&scrollbar=0`}
+            className="absolute inset-0 w-full border-0 bg-white"
             style={{
-              pointerEvents: "auto",
+              pointerEvents: "none",
               WebkitOverflowScrolling: "touch",
+              height: `${pdfPages * 100}%`,
             }}
-            scrolling="yes"
+            scrolling="no"
           />
         )}
       </div>

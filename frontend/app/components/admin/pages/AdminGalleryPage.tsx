@@ -1933,6 +1933,65 @@ export function AdminGalleryPage() {
                   </div>
                 </div>
               )}
+
+              {/* IMAGE VIEWER MODAL */}
+              {viewerImage && (
+                <div
+                  className="fixed inset-0 z-[100] flex flex-col bg-slate-900/60 backdrop-blur-sm p-3 sm:p-6 text-slate-800"
+                  role="dialog"
+                  aria-modal="true"
+                  aria-label={`Viewing ${viewerTitle}`}
+                  onClick={() => setViewerImage(null)}
+                >
+                  <div
+                    className="flex flex-col flex-1 min-h-0 max-w-6xl w-full mx-auto bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-slate-200 bg-slate-50 shrink-0">
+                      <h3 className="font-sans font-extrabold text-sm text-slate-900 truncate pr-2">{viewerTitle}</h3>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          disabled={viewerDownloading}
+                          onClick={() => handleDownloadViewer(resolveStorageUrl(viewerImage), viewerTitle)}
+                          className="px-3 py-1.5 rounded-lg font-bold text-2xs flex items-center gap-1 border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 transition disabled:opacity-50"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          {viewerDownloading ? "Downloading..." : "Download"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handlePrintViewer(resolveStorageUrl(viewerImage))}
+                          className="px-3 py-1.5 rounded-lg font-bold text-2xs flex items-center gap-1 border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 transition"
+                        >
+                          <Printer className="w-3.5 h-3.5" />
+                          Print
+                        </button>
+                        <ModalCloseButton onClick={() => setViewerImage(null)} />
+                      </div>
+                    </div>
+                    
+                    <div className="relative flex-1 min-h-0 bg-slate-50 flex items-center justify-center p-4 overflow-auto">
+                      <img
+                        src={resolveStorageUrl(viewerImage)}
+                        alt={viewerTitle}
+                        className="max-w-full max-h-full object-contain rounded-lg shadow-md"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <ConfirmDialog
+                open={confirmDelete !== null}
+                title={confirmDelete?.title || "Are you sure?"}
+                message={confirmDelete?.message || ""}
+                confirmLabel="Delete"
+                variant="danger"
+                loading={actionLoading !== null && actionLoading.includes("delete")}
+                onCancel={() => setConfirmDelete(null)}
+                onConfirm={handleConfirmDelete}
+              />
             </AdminPageShell>
     </>
   );
