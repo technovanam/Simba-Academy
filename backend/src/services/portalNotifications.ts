@@ -209,7 +209,16 @@ export async function notifyTeachersOfNewLessonPlan(
       role: "TEACHER",
       status: "ACTIVE",
       isDeleted: false,
-      ...(plan.targetClass ? { studentClass: plan.targetClass } : {}),
+      ...(plan.targetClass
+        ? {
+            studentClass: {
+              in: plan.targetClass
+                .split(",")
+                .map((c) => c.trim())
+                .filter(Boolean),
+            },
+          }
+        : {}),
     },
     select: { id: true, name: true, email: true },
   });

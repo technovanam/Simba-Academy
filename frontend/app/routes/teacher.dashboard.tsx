@@ -855,7 +855,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                                 <th className="px-4 py-3 font-semibold text-right w-[15%]">Actions</th>
                               </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-100">
+<tbody className="divide-y divide-slate-100">
                               {taskPagination.paginatedItems.map((t) => {
                                 const isOverdue =
                                   t.dueDate &&
@@ -867,7 +867,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                                       <div className="flex flex-col min-w-0">
                                         <span className="font-bold text-sm text-slate-800">{t.title}</span>
                                         {t.description && (
-                                          <span className="text-3xs text-slate-400 font-medium shrink-0 mt-0.5 whitespace-pre-wrap line-clamp-2">{t.description}</span>
+                                          <span className="text-3xs text-slate-400 font-medium shrink-0 mt-0.5 line-clamp-1 truncate max-w-[450px] whitespace-normal">{t.description}</span>
                                         )}
                                       </div>
                                     </td>

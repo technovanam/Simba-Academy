@@ -133,7 +133,7 @@ router.get("/lesson-plans", async (req, res, next) => {
     });
 
     const targetClassFilter = teacher?.studentClass
-      ? { OR: [{ targetClass: null }, { targetClass: teacher.studentClass }] }
+      ? { OR: [{ targetClass: null }, { targetClass: { contains: teacher.studentClass } }] }
       : { targetClass: null };
 
     const plans = await prisma.lessonPlan.findMany({
@@ -168,7 +168,7 @@ router.get("/lesson-plans/:id", async (req, res, next) => {
     });
 
     const targetClassFilter = teacher?.studentClass
-      ? { OR: [{ targetClass: null }, { targetClass: teacher.studentClass }] }
+      ? { OR: [{ targetClass: null }, { targetClass: { contains: teacher.studentClass } }] }
       : { targetClass: null };
 
     const plan = await prisma.lessonPlan.findFirst({
