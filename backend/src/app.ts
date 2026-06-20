@@ -60,6 +60,7 @@ app.use(
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
+    exposedHeaders: ["X-Refresh-Token"],
   })
 );
 app.use(morgan(env.NODE_ENV === "production" ? "combined" : "dev"));
