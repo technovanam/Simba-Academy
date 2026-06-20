@@ -527,9 +527,8 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
           </header>
         ) : null}
 
-        {/* Tab view area */}
         <div className={`flex-1 min-h-0 bg-[#F8FAFC] focus:outline-none portal-main-scroll p-4 lg:p-6 pb-6 lg:pb-8 ${
-          activeTab === "library" || activeTab === "notifications" || activeTab === "tasks" ? "h-full flex flex-col overflow-visible" : "overflow-y-auto modern-scrollbar"
+          activeTab === "overview" || activeTab === "library" || activeTab === "notifications" || activeTab === "tasks" ? "h-full flex flex-col overflow-visible" : "overflow-y-auto modern-scrollbar"
         }`}>
           
           {loading && activeTab !== "settings" && activeTab !== "notifications" ? (
@@ -537,7 +536,6 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
           ) : activeTab === "overview" ? (
             <div className={portalDashboardBodyClass}>
               {/* ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ OVERVIEW DASHBOARD ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ */}
-                <div className={portalDashboardBodyClass}>
                   <div className="flex flex-wrap items-center justify-between gap-3 shrink-0">
                     <div className="min-w-0">
                       <h2 className="text-sm lg:text-base font-bold text-slate-900 tracking-wide uppercase truncate">
@@ -809,8 +807,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                       </div>
                     </div>
                   </div>
-                </div>
-            </div>
+              </div>
           ) : (
             <div className={`animate-fade-in ${
               activeTab === "library" || activeTab === "notifications" || activeTab === "tasks"
