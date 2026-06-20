@@ -78,6 +78,14 @@ export const NAV_LINKS = [
   { label: "Contact", to: "/contact" },
 ];
 
+export const HEADER_LINKS = [
+  { label: "Home", to: "/" },
+  { label: "About", to: "/about" },
+  { label: "Franchise", to: "/franchise" },
+  { label: "Courses", to: "/courses" },
+  { label: "Contact", to: "/contact" },
+] as const;
+
 export const FOOTER_QUICK_LINKS = NAV_LINKS;
 
 export const SOCIAL_LINKS = {

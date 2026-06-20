@@ -140,7 +140,7 @@ export function AuthBackButton({ portal }: { portal?: AuthPortal }) {
   const iconClass = portal ? PORTAL_META[portal].iconClass : ORANGE.iconClass;
   return (
     <Link
-      to="/"
+      to="/portals"
       className="fixed top-[max(1rem,env(safe-area-inset-top))] right-[max(1rem,env(safe-area-inset-right))] z-50 inline-flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-sm font-bold shadow-md transition-colors bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300"
     >
       <LayoutGrid className={`w-4 h-4 ${iconClass}`} strokeWidth={2} />

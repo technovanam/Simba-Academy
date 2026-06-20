@@ -66,11 +66,11 @@ export function PortalSidebarLayout({
     <PortalMenuContext.Provider value={{ openMenu, closeMenu, menuOpen }}>
       <div className="portal-app-shell w-full max-w-full h-[100dvh] max-h-[100dvh] bg-[#F8FAFC] font-sans text-sm text-slate-900 flex flex-col lg:flex-row overflow-hidden">
         {!hideMobileBar ? (
-          <header className="portal-mobile-topbar lg:hidden fixed top-0 left-0 right-0 z-[60] px-4 flex items-center justify-between gap-3 bg-white border-b border-slate-200 shadow-sm">
+          <header className="portal-mobile-topbar lg:hidden fixed top-0 left-0 right-0 z-[60] px-4 flex items-center justify-between gap-3 bg-[#8AC926] border-b border-[#6fa01e] shadow-sm">
             <button
               type="button"
               onClick={menuOpen ? closeMenu : openMenu}
-              className="inline-flex items-center justify-center w-10 h-10 rounded-xl border border-slate-200 bg-[#F8FAFC] text-slate-700 hover:bg-slate-100 transition-colors"
+              className="inline-flex items-center justify-center w-10 h-10 rounded-xl border border-white/30 bg-white/20 text-white hover:bg-white/30 transition-colors"
               aria-label={menuOpen ? "Close menu" : "Open menu"}
               aria-expanded={menuOpen}
             >
@@ -80,7 +80,7 @@ export function PortalSidebarLayout({
                 <Menu className="w-5 h-5" strokeWidth={2} />
               )}
             </button>
-            <p className="text-sm font-bold text-slate-900 truncate flex-1 text-center">{mobileTitle}</p>
+            <p className="text-sm font-bold text-white truncate flex-1 text-center">{mobileTitle}</p>
             <div className="w-10 shrink-0" aria-hidden />
           </header>
         ) : null}

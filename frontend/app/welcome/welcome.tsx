@@ -19,7 +19,6 @@ import {
   ShieldCheck,
   Footprints
 } from "lucide-react";
-import { JungleFooter } from "../components/JungleFooter";
 import { FloatingWhatsApp } from "../components/FloatingWhatsApp";
 
 // Custom Animated Floating Butterfly
@@ -369,8 +368,8 @@ export function Welcome() {
           <Link to="/login" className="hidden sm:inline-flex px-6 py-2.5 rounded-md border-2 border-[#8C6239]/40 text-[#5D4037] font-sans font-bold hover:bg-[#FFFFFF] transition-colors text-sm shadow-sm bg-white/50">
             Parent Login
           </Link>
-          <Link to="/contact" className="px-6 py-2.5 rounded-md bg-[#FF9F1C] border-b-4 border-[#E07A00] text-white font-sans font-bold text-sm hover:translate-y-[-1px] active:translate-y-[1px] active:border-b-0 shadow-lg transition-all">
-            Join Expedition
+          <Link to="/portals" className="px-6 py-2.5 rounded-md bg-[#FF9F1C] border-b-4 border-[#E07A00] text-white font-sans font-bold text-sm hover:translate-y-[-1px] active:translate-y-[1px] active:border-b-0 shadow-lg transition-all">
+            Portals
           </Link>
         </div>
       </nav>
@@ -412,9 +411,9 @@ export function Welcome() {
 
             {/* CTA action buttons */}
             <div className="flex flex-col sm:flex-row gap-5 w-full justify-center lg:justify-start">
-              <Link to="/contact" className="px-8 py-4.5 rounded-md bg-[#FF9F1C] border-b-6 border-[#E07A00] font-sans font-extrabold text-lg text-white hover:bg-[#FFAE33] hover:translate-y-[-2px] active:translate-y-[2px] active:border-b-0 shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2.5 group">
+              <Link to="/portals" className="px-8 py-4.5 rounded-md bg-[#FF9F1C] border-b-6 border-[#E07A00] font-sans font-extrabold text-lg text-white hover:bg-[#FFAE33] hover:translate-y-[-2px] active:translate-y-[2px] active:border-b-0 shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2.5 group">
                 <Compass className="w-5.5 h-5.5 text-white group-hover:rotate-45 transition-transform" />
-                Book Safari Tour
+                Explore Portals
               </Link>
               <Link to="/register" className="px-8 py-4.5 rounded-md bg-[#8AC926] border-b-6 border-[#6FA31D] font-sans font-extrabold text-lg text-white hover:bg-[#9BE230] hover:translate-y-[-2px] active:translate-y-[2px] active:border-b-0 shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2.5 group">
                 <GraduationCap className="w-5.5 h-5.5 text-white group-hover:scale-110 transition-transform" />
@@ -893,8 +892,6 @@ export function Welcome() {
         </div>
       </section>
 
-      {/* JungleFooter is embedded beautifully at the bottom */}
-      <JungleFooter />
       <FloatingWhatsApp />
     </div>
   );

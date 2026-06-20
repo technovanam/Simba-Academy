@@ -119,17 +119,17 @@ export default function AdminLayout() {
     <div className="flex flex-col h-full min-h-0">
       <div className="flex-1 min-h-0 overflow-y-auto scrollbar-hide px-2 -mx-2 py-1">
       <div className="space-y-4">
-        <div className="flex items-center gap-2.5 bg-slate-100/80 p-2 rounded-xl border border-slate-200/80">
+        <div className="flex items-center gap-2.5 bg-[#8AC926] p-2 rounded-xl border border-[#6fa01e]">
           <img
             src="/Simba Logo 2025.pdf.png"
             alt="Simba Preschool"
             className="w-15 h-8 shrink-0 object-contain"
           />
           <div className="flex flex-col min-w-0">
-            <h3 className="text-sm font-bold text-slate-900 truncate leading-tight">
+            <h3 className="text-sm font-bold text-white truncate leading-tight">
               Simba Preschool
             </h3>
-            <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mt-0.5">
+            <p className="text-[10px] font-semibold text-white/80 uppercase tracking-wider mt-0.5">
               Admin
             </p>
           </div>
