@@ -4,7 +4,7 @@ import { SOCIAL_LINKS, WHATSAPP_URL } from "../lib/constants";
 
 export function JungleFooter() {
   return (
-    <footer className="bg-[#3E2723] text-white py-20 px-6 sm:px-12 border-t border-[#2d1b18] relative z-10">
+    <footer className="bg-slate-900 text-slate-300 py-16 px-6 sm:px-12 border-t border-slate-800 relative z-10">
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
         {/* Column 1: Identity */}
         <div className="space-y-5">
@@ -13,41 +13,41 @@ export function JungleFooter() {
               <img src="/Simba Logo 2025.pdf.png" alt="Simba Academy" className="w-full h-full object-contain" />
             </div>
             <div>
-              <h4 className="font-extrabold text-base tracking-tight text-white">Simba Academy</h4>
-              <p className="text-[10px] font-bold text-[#8AC926] uppercase tracking-widest mt-0.5">Sunny Preschool</p>
+              <h4 className="font-bold text-lg tracking-tight text-white">Simba Academy</h4>
+              <p className="text-xs font-bold text-blue-400 uppercase tracking-widest mt-0.5">Premium Preschool</p>
             </div>
           </div>
-          <p className="text-orange-100/70 text-xs leading-relaxed max-w-xs font-medium">
-            An immersive, premium early learning ecosystem designed to foster spatial development and academic growth.
+          <p className="text-slate-400 text-sm leading-relaxed max-w-xs">
+            An immersive early learning ecosystem designed to foster cognitive, spatial, and academic growth.
           </p>
         </div>
 
         {/* Column 2: Navigation Links */}
         <div className="space-y-4">
-          <h5 className="text-xs font-bold uppercase tracking-wider text-orange-200/95">Quick Links</h5>
-          <ul className="space-y-3.5 text-xs text-orange-100/70 font-semibold">
+          <h5 className="text-xs font-bold uppercase tracking-wider text-slate-100">Quick Links</h5>
+          <ul className="space-y-3 text-sm text-slate-400">
             <li>
-              <Link to="/about" className="hover:text-white transition-colors flex items-center gap-1 group">
+              <Link to="/about" className="hover:text-blue-400 transition-colors flex items-center gap-1 group">
                 <ChevronRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" /> About Us
               </Link>
             </li>
             <li>
-              <Link to="/courses" className="hover:text-white transition-colors flex items-center gap-1 group">
-                <ChevronRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" /> Expeditions
+              <Link to="/courses" className="hover:text-blue-400 transition-colors flex items-center gap-1 group">
+                <ChevronRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" /> Programs
               </Link>
             </li>
             <li>
-              <Link to="/franchise" className="hover:text-white transition-colors flex items-center gap-1 group">
+              <Link to="/franchise" className="hover:text-blue-400 transition-colors flex items-center gap-1 group">
                 <ChevronRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" /> Franchise
               </Link>
             </li>
             <li>
-              <Link to="/portals" className="hover:text-white transition-colors flex items-center gap-1 group">
+              <Link to="/portals" className="hover:text-blue-400 transition-colors flex items-center gap-1 group">
                 <ChevronRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" /> Portals
               </Link>
             </li>
             <li>
-              <Link to="/contact" className="hover:text-white transition-colors flex items-center gap-1 group">
+              <Link to="/contact" className="hover:text-blue-400 transition-colors flex items-center gap-1 group">
                 <ChevronRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" /> Contact Us
               </Link>
             </li>
@@ -56,18 +56,18 @@ export function JungleFooter() {
 
         {/* Column 3: Contact Info */}
         <div className="space-y-4">
-          <h5 className="text-xs font-bold uppercase tracking-wider text-orange-200/95">Contact Info</h5>
-          <ul className="space-y-3.5 text-xs text-orange-100/70 font-semibold">
-            <li className="flex gap-2.5 items-start">
-              <MapPin className="w-4.5 h-4.5 text-[#8AC926] shrink-0 mt-0.5" />
+          <h5 className="text-xs font-bold uppercase tracking-wider text-slate-100">Contact Info</h5>
+          <ul className="space-y-3 text-sm text-slate-400">
+            <li className="flex gap-3 items-start">
+              <MapPin className="w-4.5 h-4.5 text-blue-400 shrink-0 mt-0.5" />
               <span>Salem, Tamil Nadu, India</span>
             </li>
-            <li className="flex gap-2.5 items-center">
-              <Phone className="w-4.5 h-4.5 text-[#8AC926] shrink-0" />
+            <li className="flex gap-3 items-center">
+              <Phone className="w-4.5 h-4.5 text-blue-400 shrink-0" />
               <span>+91 98848 66727</span>
             </li>
-            <li className="flex gap-2.5 items-center">
-              <Mail className="w-4.5 h-4.5 text-[#8AC926] shrink-0" />
+            <li className="flex gap-3 items-center">
+              <Mail className="w-4.5 h-4.5 text-blue-400 shrink-0" />
               <span>support@simbapreschool.in</span>
             </li>
           </ul>
@@ -75,7 +75,7 @@ export function JungleFooter() {
 
         {/* Column 4: Socials / Credit */}
         <div className="space-y-5">
-          <h5 className="text-xs font-bold uppercase tracking-wider text-orange-200/95">Expeditions Social</h5>
+          <h5 className="text-xs font-bold uppercase tracking-wider text-slate-100">Social Connect</h5>
           <div className="flex gap-3 pt-1">
             {Object.entries(SOCIAL_LINKS).map(([name, url]) => {
               let svgIcon = <span>{name[0].toUpperCase()}</span>;
@@ -114,7 +114,7 @@ export function JungleFooter() {
                   href={url}
                   target="_blank"
                   rel="noreferrer"
-                  className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 hover:border-white/20 transition-all text-orange-200/80 hover:text-white shadow-2xs hover:scale-105"
+                  className="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center hover:bg-slate-700 hover:border-slate-600 transition-all text-slate-400 hover:text-white"
                   aria-label={`Visit our ${name}`}
                 >
                   {svgIcon}
@@ -122,21 +122,21 @@ export function JungleFooter() {
               );
             })}
           </div>
-          <p className="text-[10px] text-orange-200/50 pt-4 border-t border-white/[0.05] font-semibold leading-relaxed">
+          <p className="text-xs text-slate-500 pt-4 border-t border-slate-800 font-medium">
             Developed & Maintained by{" "}
-            <a href="https://technovanam.in" target="_blank" rel="noreferrer" className="text-[#8AC926] hover:underline font-bold">
+            <a href="https://technovanam.in" target="_blank" rel="noreferrer" className="text-blue-400 hover:underline font-bold">
               Techno Vanam
             </a>
           </p>
         </div>
       </div>
-      <div className="max-w-7xl mx-auto pt-10 mt-12 border-t border-white/[0.05] flex flex-col sm:flex-row justify-between items-center gap-4 text-[10px] text-orange-200/40 font-bold">
+      <div className="max-w-7xl mx-auto pt-8 mt-12 border-t border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-slate-500">
         <p>© {new Date().getFullYear()} Simba Academy. All rights reserved.</p>
-        <div className="flex gap-4">
-          <a href="#privacy" className="hover:text-slate-400">
+        <div className="flex gap-6">
+          <a href="#privacy" className="hover:text-slate-300 transition-colors">
             Privacy Policy
           </a>
-          <a href="#terms" className="hover:text-slate-400">
+          <a href="#terms" className="hover:text-slate-300 transition-colors">
             Terms of Service
           </a>
         </div>

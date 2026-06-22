@@ -13,7 +13,6 @@ export function PageShell({ children }: PageShellProps) {
       <JungleHeader variant="solid" />
       <main>{children}</main>
       <JungleFooter />
-      <FloatingWhatsApp />
     </div>
   );
 }
