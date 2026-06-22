@@ -606,6 +606,8 @@ export function StoryBookViewerModal({
                     className="w-full h-full border-0 bg-white"
                     style={{ pointerEvents: "auto" }}
                   />
+                  {/* Overlay to hide branding and prevent pop-out click */}
+                  <div className="absolute bottom-0 right-0 h-[36px] w-[150px] sm:w-[200px] bg-[#F8FAFD] z-10 pointer-events-auto" />
                 </div>
               ) : (
                 <div className="absolute inset-0 w-full h-full flex flex-col items-center justify-center p-4 sm:p-8">

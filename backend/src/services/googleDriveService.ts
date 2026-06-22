@@ -126,7 +126,7 @@ export async function listItems(folderId?: string | null, search?: string, type?
 
   const res = await drive.files.list({
     q,
-    fields: "files(id, name, mimeType, size, createdTime, parents)",
+    fields: "files(id, name, mimeType, size, createdTime, parents, thumbnailLink)",
     orderBy: "folder, name",
   });
 
@@ -378,7 +378,7 @@ export async function getRecentDocuments() {
     q: `trashed = false and mimeType != 'application/vnd.google-apps.folder'`,
     orderBy: "createdTime desc",
     pageSize: 10,
-    fields: "files(id, name, mimeType, size, createdTime, parents)",
+    fields: "files(id, name, mimeType, size, createdTime, parents, thumbnailLink)",
   });
 
   const items = res.data.files || [];

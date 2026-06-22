@@ -1078,6 +1078,7 @@ export interface DriveItem {
   mimeType: string;
   size?: string;
   createdTime: string;
+  thumbnailLink?: string;
   parents?: string[];
   accessRule?: {
     audience: "BOTH" | "TEACHER" | "STUDENT";
