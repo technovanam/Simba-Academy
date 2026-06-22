@@ -65,7 +65,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
+    const TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
     const LAST_ACTIVITY_KEY = "simba_last_activity";
 
     // Set initial activity on mount if logged in

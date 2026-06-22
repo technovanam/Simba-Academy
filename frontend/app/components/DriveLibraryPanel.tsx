@@ -270,7 +270,7 @@ export function DriveLibraryPanel({ token, role }: DriveLibraryPanelProps) {
                     <th className="px-4 py-3 font-semibold">Name</th>
                     <th className="px-4 py-3 font-semibold">Type</th>
                     <th className="px-4 py-3 font-semibold">Date Modified</th>
-                    <th className="px-4 py-3 font-semibold">Access</th>
+                    {role === "ADMIN" && <th className="px-4 py-3 font-semibold">Access</th>}
                     <th className="px-4 py-3 font-semibold text-right">Actions</th>
                   </tr>
                 </thead>
@@ -289,9 +289,11 @@ export function DriveLibraryPanel({ token, role }: DriveLibraryPanelProps) {
                       <td className="px-4 py-4">
                         <div className="h-3.5 bg-slate-200 rounded w-24"></div>
                       </td>
-                      <td className="px-4 py-4">
-                        <div className="h-3.5 bg-slate-200 rounded w-28"></div>
-                      </td>
+                      {role === "ADMIN" && (
+                        <td className="px-4 py-4">
+                          <div className="h-3.5 bg-slate-200 rounded w-28"></div>
+                        </td>
+                      )}
                       <td className="px-4 py-4 text-right">
                         <div className="flex justify-end gap-1.5">
                           <div className="h-7 bg-slate-200 rounded-lg w-16"></div>
@@ -317,7 +319,7 @@ export function DriveLibraryPanel({ token, role }: DriveLibraryPanelProps) {
                     <th className="px-4 py-3 font-semibold">Name</th>
                     <th className="px-4 py-3 font-semibold">Type</th>
                     <th className="px-4 py-3 font-semibold">Date Modified</th>
-                    <th className="px-4 py-3 font-semibold">Access</th>
+                    {role === "ADMIN" && <th className="px-4 py-3 font-semibold">Access</th>}
                     <th className="px-4 py-3 font-semibold text-right">Actions</th>
                   </tr>
                 </thead>
@@ -380,9 +382,11 @@ export function DriveLibraryPanel({ token, role }: DriveLibraryPanelProps) {
                             {displayDate}
                           </span>
                         </td>
-                        <td className="px-4 py-3 align-middle text-xs font-medium">
-                          {renderAccessBadge(item)}
-                        </td>
+                        {role === "ADMIN" && (
+                          <td className="px-4 py-3 align-middle text-xs font-medium">
+                            {renderAccessBadge(item)}
+                          </td>
+                        )}
                         <td className="px-4 py-2 text-right align-middle">
                           <div className="flex items-center justify-end gap-1.5">
                             {role === "ADMIN" && (
@@ -442,6 +446,7 @@ export function DriveLibraryPanel({ token, role }: DriveLibraryPanelProps) {
         <DocumentViewerModal
           fileId={viewerFile.id}
           title={viewerFile.name}
+          mimeType={viewerFile.mimeType}
           token={token}
           onClose={() => setViewerFile(null)}
           role={role}

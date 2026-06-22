@@ -12,6 +12,7 @@ import {
   deleteItem,
   getFileStream,
   getRecentDocuments,
+  getDriveClient,
 } from "../services/googleDriveService.js";
 
 const router = Router();
@@ -513,6 +514,39 @@ router.delete("/:id/access", authenticate, adminOnly, async (req, res, next) => 
     );
 
     res.json({ success: true, message: "Access rule removed successfully" });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * Share a presentation document and return its Google Slides embed URL.
+ */
+router.get("/:id/embed-url", authenticate, allRoles, async (req, res, next) => {
+  try {
+    const fileId = req.params.id as string;
+    const allowed = await hasFolderAccess(fileId, req.user!);
+    if (!allowed) {
+      throw new AppError("Access denied", 403);
+    }
+
+    const drive = await getDriveClient();
+    try {
+      // Ensure the file is shared with "anyone with the link as reader" so Google Slides player can load it
+      await drive.permissions.create({
+        fileId,
+        requestBody: {
+          role: "reader",
+          type: "anyone",
+        },
+      });
+    } catch (err: any) {
+      console.warn("Failed to share file on Drive:", err.message);
+    }
+
+    res.json({
+      embedUrl: `https://docs.google.com/presentation/d/${fileId}/embed?start=false&loop=false`,
+    });
   } catch (err) {
     next(err);
   }

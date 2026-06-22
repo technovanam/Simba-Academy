@@ -10,7 +10,7 @@ let driveInstance: any = null;
 const folderAccessCache = new Map<string, { allowed: boolean; expiry: number }>();
 const CACHE_TTL_MS = 60 * 60 * 1000;
 
-async function getDriveClient() {
+export async function getDriveClient() {
   if (driveInstance) return driveInstance;
 
   const credentialsStringOrPath = env.GOOGLE_SERVICE_ACCOUNT_JSON;
