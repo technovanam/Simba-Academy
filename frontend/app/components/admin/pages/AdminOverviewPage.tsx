@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
-import { Calendar, ChevronRight, CreditCard, ExternalLink, TrendingUp, Users } from "lucide-react";
+import { Calendar, ChevronRight, CreditCard, ExternalLink, TrendingUp, Users, Bell } from "lucide-react";
 import {
   api,
   ApiError,
@@ -110,6 +110,15 @@ export function AdminOverviewPage() {
           </h2>
         </div>
         <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => goToTab("notifications")}
+            className="p-2 rounded-xl bg-white border border-slate-200 text-slate-800 shadow-xs hover:bg-slate-50 transition-all duration-300 relative"
+            title="Notifications"
+          >
+            <Bell className="w-4 h-4 text-slate-600" />
+            {/* Optional unread dot indicator can go here if needed in future */}
+          </button>
           <a
             href="/"
             target="_blank"

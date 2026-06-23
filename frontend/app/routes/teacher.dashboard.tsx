@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router";
 import type { Route } from "./+types/teacher.dashboard";
 import {
@@ -346,13 +346,26 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
     }
   }
 
-  async function handleViewHistory(taskId: string) {
+  const [taskOccurrenceHistory, setTaskOccurrenceHistory] = useState<Task[]>([]);
+
+  async function handleViewHistory(t: Task) {
     if (!token) return;
-    setAuditHistoryTaskId(taskId);
+    setAuditHistoryTaskId(t.id);
     setLoadingAudit(true);
+    setTaskAuditHistory([]);
+    setTaskOccurrenceHistory([]);
     try {
-      const history = await api.getTeacherTaskAuditHistory(token, taskId);
-      setTaskAuditHistory(history);
+      if (t.recurringTaskId) {
+        const [occHistory, auditHistory] = await Promise.all([
+          api.getRecurringTaskOccurrences(token, t.recurringTaskId),
+          api.getTeacherTaskAuditHistory(token, t.id)
+        ]);
+        setTaskOccurrenceHistory(occHistory);
+        setTaskAuditHistory(auditHistory);
+      } else {
+        const history = await api.getTeacherTaskAuditHistory(token, t.id);
+        setTaskAuditHistory(history);
+      }
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Failed to load history.");
     } finally {
@@ -361,12 +374,43 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
   }
 
   // ÔöÇÔöÇ FILTERED DATA ARRAYS ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
-  const filteredTasks = tasks.filter((t) => {
+  const groupedTasks = useMemo(() => {
+    const map = new Map<string, Task>();
+    const standalone: Task[] = [];
+    for (const t of tasks) {
+      if (t.recurringTaskId) {
+        const existing = map.get(t.recurringTaskId);
+        if (!existing || new Date(t.createdAt).getTime() > new Date(existing.createdAt).getTime()) {
+          map.set(t.recurringTaskId, t);
+        }
+      } else {
+        standalone.push(t);
+      }
+    }
+    return [...Array.from(map.values()), ...standalone].sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }, [tasks]);
+
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const todayEnd = new Date();
+  todayEnd.setHours(23, 59, 59, 999);
+
+  const isToday = (dateStr: string | Date) => {
+    const d = new Date(dateStr).getTime();
+    return d >= todayStart.getTime() && d <= todayEnd.getTime();
+  };
+
+  const filteredGroupedTasks = groupedTasks.filter((t) => {
     const matchesSearch = t.title.toLowerCase().includes(taskSearch.toLowerCase()) || 
                           (t.description ?? "").toLowerCase().includes(taskSearch.toLowerCase());
     const matchesStatus = taskStatusFilter === "ALL" || t.status === taskStatusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  const todayTasks = filteredGroupedTasks.filter(t => isToday(t.createdAt) || (t.dueDate && isToday(t.dueDate)));
+  const oldTasks = filteredGroupedTasks.filter(t => !(isToday(t.createdAt) || (t.dueDate && isToday(t.dueDate))));
 
   const taskStatusOptions = [
     { id: "ALL" as const, label: "All Statuses" },
@@ -386,7 +430,6 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
     );
   });
 
-  const taskPagination = useAdminPagination(filteredTasks, [taskSearch, taskStatusFilter], 3);
   const plannerPagination = useAdminPagination(filteredLessonPlans, [plannerSearch]);
 
   const recentLessonPlans = [...lessonPlans]
@@ -839,7 +882,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                     }
                   />
                   <AdminPageBody className="flex-1 min-h-0 flex flex-col overflow-hidden">
-                    {filteredTasks.length === 0 ? (
+                    {filteredGroupedTasks.length === 0 ? (
                       <AdminListEmpty message="No assigned tasks matched your search or filters." />
                     ) : (
                       <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex-1 min-h-0 flex flex-col">
@@ -855,8 +898,15 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                                   <th className="px-4 py-3 font-semibold text-right w-[15%]">Actions</th>
                                 </tr>
                               </thead>
-                              <tbody className="divide-y divide-slate-100">
-                                {taskPagination.paginatedItems.map((t) => {
+                              {[ 
+                                { title: "Today's Tasks", items: todayTasks },
+                                { title: "Previous Tasks", items: oldTasks }
+                              ].map(group => group.items.length > 0 && (
+                                <tbody key={group.title} className="divide-y divide-slate-100">
+                                  <tr className="bg-slate-50/80">
+                                    <td colSpan={4} className="px-4 py-2 text-xs font-black text-slate-600 uppercase tracking-widest border-b border-slate-200">{group.title}</td>
+                                  </tr>
+                                  {group.items.map((t) => {
                                   const isOverdue =
                                     t.dueDate &&
                                     new Date(t.dueDate).getTime() < Date.now() &&
@@ -930,7 +980,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                                           <span className="text-slate-450">—</span>
                                         )}
                                       </td>
-                                      <td className="px-4 py-2 text-right align-middle w-[15%]">
+                                      <td className="px-4 py-3 text-right align-middle w-[15%]">
                                         <div className="flex items-center justify-end gap-2">
                                           <button
                                             type="button"
@@ -942,7 +992,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                                           </button>
                                           <button
                                             type="button"
-                                            onClick={() => handleViewHistory(t.id)}
+                                            onClick={() => handleViewHistory(t)}
                                             className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 transition shadow-sm"
                                             title="View Task History"
                                           >
@@ -957,7 +1007,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                                                 setSelectedProofFile(null);
                                                 setShowProofModal(true);
                                               }}
-                                              className={`px-2.5 py-1.5 rounded-xl text-white font-sans font-bold text-2xs transition shadow-md whitespace-nowrap ${
+                                              className={`w-28 h-[30px] flex items-center justify-center rounded-xl text-white font-sans font-bold text-2xs transition shadow-md whitespace-nowrap ${
                                                 t.status === "REJECTED"
                                                   ? "bg-rose-500 hover:bg-rose-600 shadow-rose-500/20"
                                                   : "bg-[#8AC926] hover:bg-[#78B020] shadow-[#8AC926]/10"
@@ -968,11 +1018,11 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                                                "Submit proof"}
                                             </button>
                                           ) : t.status === "APPROVED" ? (
-                                            <span className="px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-100 text-emerald-700 font-bold text-2xs inline-flex items-center gap-1">
+                                            <span className="w-28 h-[30px] flex items-center justify-center rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold text-2xs inline-flex items-center gap-1 select-none">
                                               ✓ Approved
                                             </span>
                                           ) : (
-                                            <span className="px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-100 text-blue-700 font-bold text-2xs select-none">
+                                            <span className="w-28 h-[30px] flex items-center justify-center rounded-xl bg-blue-50 border border-blue-200 text-blue-700 font-bold text-2xs select-none">
                                               Submitted
                                             </span>
                                           )}
@@ -980,14 +1030,24 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                                       </td>
                                     </tr>
                                   );
-                                })}
-                              </tbody>
+                                  })}
+                                </tbody>
+                              ))}
                             </table>
                           </div>
 
                           {/* Mobile Cards list view */}
-                          <div className="md:hidden divide-y divide-slate-100 flex-1 overflow-y-auto modern-scrollbar">
-                            {taskPagination.paginatedItems.map((t) => {
+                          <div className="md:hidden flex-1 overflow-y-auto modern-scrollbar">
+                            {[ 
+                              { title: "Today's Tasks", items: todayTasks },
+                              { title: "Previous Tasks", items: oldTasks }
+                            ].map(group => group.items.length > 0 && (
+                              <div key={group.title} className="mb-2">
+                                <div className="px-4 py-2 bg-slate-50/80 text-xs font-black text-slate-600 uppercase tracking-widest border-y border-slate-200">
+                                  {group.title}
+                                </div>
+                                <div className="divide-y divide-slate-100">
+                                  {group.items.map((t) => {
                               const isOverdue =
                                 t.dueDate &&
                                 new Date(t.dueDate).getTime() < Date.now() &&
@@ -1073,7 +1133,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                                     </button>
                                     <button
                                       type="button"
-                                      onClick={() => handleViewHistory(t.id)}
+                                      onClick={() => handleViewHistory(t)}
                                       className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 transition shadow-sm flex items-center justify-center"
                                       title="View Task History"
                                     >
@@ -1110,20 +1170,11 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                                   </div>
                                 </div>
                               );
-                            })}
+                                  })}
+                                </div>
+                              </div>
+                            ))}
                           </div>
-                        </div>
-                        <div className="px-4 py-3 bg-slate-50 border-t border-slate-200">
-                          <AdminListPagination
-                            rangeStart={taskPagination.rangeStart}
-                            rangeEnd={taskPagination.rangeEnd}
-                            total={filteredTasks.length}
-                            safePage={taskPagination.safePage}
-                            totalPages={taskPagination.totalPages}
-                            pageNumbers={taskPagination.pageNumbers}
-                            onPageChange={taskPagination.setCurrentPage}
-                            itemLabel="tasks"
-                          />
                         </div>
                       </div>
                     )}
@@ -1691,12 +1742,67 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                   <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
                   <p className="text-xs font-semibold text-slate-500">Loading history...</p>
                 </div>
-              ) : taskAuditHistory.length === 0 ? (
-                <div className="flex items-center justify-center h-40 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                  <p className="text-sm font-semibold text-slate-500">No history found for this task.</p>
-                </div>
               ) : (
-                <div className="relative border-l-2 border-indigo-100 ml-3 space-y-6 pb-4">
+                <div className="space-y-8">
+                  {taskOccurrenceHistory.length > 0 && (
+                    <div>
+                      <h4 className="text-sm font-bold text-slate-800 mb-3">Task Occurrences</h4>
+                      <div className="relative border-l-2 border-indigo-100 ml-3 space-y-6 pb-4">
+                        {taskOccurrenceHistory.map((occ) => (
+                          <div key={occ.id} className="relative pl-6">
+                            <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-white border-2 border-indigo-300 shadow-sm" />
+                            <div className="bg-white border border-slate-100 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                              <div className="flex justify-between items-start mb-2 gap-4">
+                                <div>
+                                  <p className="text-xs font-bold text-slate-800">
+                                    Task Occurrence
+                                  </p>
+                                  <p className="text-2xs text-slate-500 font-medium mt-0.5">
+                                    Assigned: {new Date(occ.createdAt).toLocaleString()}
+                                  </p>
+                                </div>
+                                <div className="text-right shrink-0">
+                                  <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold border ${
+                                    occ.status === "APPROVED" ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
+                                    occ.status === "REJECTED" ? "bg-rose-50 text-rose-700 border-rose-200" :
+                                    occ.status === "RESUBMITTED" ? "bg-purple-50 text-purple-700 border-purple-200" :
+                                    occ.status === "UNDER_REVIEW" ? "bg-sky-50 text-sky-700 border-sky-200" :
+                                    "bg-amber-50 text-amber-700 border-amber-200"
+                                  }`}>
+                                    {occ.status}
+                                  </span>
+                                </div>
+                              </div>
+                              {occ.status === "REJECTED" && occ.rejectionReason && (
+                                <div className="mt-3 pt-3 border-t border-rose-100 bg-rose-50 rounded p-2">
+                                  <p className="text-[10px] font-bold text-rose-800 mb-1 flex items-center gap-1">
+                                    <AlertCircle className="w-3 h-3" /> Rejection Reason
+                                  </p>
+                                  <p className="text-xs text-rose-700 whitespace-pre-wrap">{occ.rejectionReason}</p>
+                                </div>
+                              )}
+                              {occ.proofDesc && (
+                                <div className="mt-3 pt-3 border-t border-slate-100">
+                                  <p className="text-xs text-slate-600 whitespace-pre-wrap">{occ.proofDesc}</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-800 mb-3">
+                      {taskOccurrenceHistory.length > 0 ? "Audit History (Latest Occurrence)" : "Audit History"}
+                    </h4>
+                    {taskAuditHistory.length === 0 ? (
+                      <div className="flex items-center justify-center h-40 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                        <p className="text-sm font-semibold text-slate-500">No history found for this task.</p>
+                      </div>
+                    ) : (
+                      <div className="relative border-l-2 border-indigo-100 ml-3 space-y-6 pb-4">
                   {taskAuditHistory.map((audit) => (
                     <div key={audit.id} className="relative pl-6">
                       <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-white border-2 border-indigo-300 shadow-sm" />
@@ -1743,6 +1849,9 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                       </div>
                     </div>
                   ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>

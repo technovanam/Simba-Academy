@@ -600,6 +600,9 @@ export const api = {
   getTeacherTaskAuditHistory: (token: string, taskId: string) =>
     request<TaskAudit[]>(`/api/teacher/tasks/${taskId}/audit`, {}, token),
 
+  getRecurringTaskOccurrences: (token: string, recurringTaskId: string) =>
+    request<Task[]>(`/api/teacher/tasks/recurring/${recurringTaskId}/history`, {}, token),
+
   getTeacherStudents: (token: string) =>
     request<AuthUser[]>("/api/teacher/students", {}, token),
 

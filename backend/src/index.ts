@@ -5,6 +5,7 @@ import { app, initApp, storagePath } from "./app.js";
 import { startGbpSyncScheduler } from "./services/gbpSyncService.js";
 import { startLessonPlanCleanupScheduler } from "./services/lessonPlanCleanup.js";
 import { initRecurringTasksCron } from "./services/recurringTasks.js";
+import { startOverdueTaskNotifier } from "./services/overdueTaskNotifier.js";
 
 const PORT = env.PORT;
 
@@ -13,6 +14,7 @@ async function startServer() {
   startGbpSyncScheduler();
   startLessonPlanCleanupScheduler();
   initRecurringTasksCron();
+  startOverdueTaskNotifier();
 
   const server = app.listen(PORT, () => {
     console.log(`🚀 Simba Academy API running at http://localhost:${PORT}`);

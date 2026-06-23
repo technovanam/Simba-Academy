@@ -202,8 +202,34 @@ router.get("/tasks", async (req, res, next) => {
     const tasks = await prisma.task.findMany({
       where: { teacherId: String(req.user!.userId) },
       orderBy: { createdAt: "desc" },
+      include: {
+        recurringTask: { select: { repeatDay: true, isActive: true } },
+      },
     });
     res.json(tasks);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── Get Task Occurrences for a Recurring Task ───────────────────────
+router.get("/tasks/recurring/:recurringTaskId/history", async (req, res, next) => {
+  try {
+    const recurringTaskId = String(req.params.recurringTaskId);
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    
+    const occurrences = await prisma.task.findMany({
+      where: {
+        recurringTaskId,
+        teacherId: String(req.user!.userId),
+        createdAt: { gte: thirtyDaysAgo },
+      },
+      orderBy: { createdAt: "desc" },
+      include: {
+        recurringTask: { select: { repeatDay: true } },
+      },
+    });
+    res.json(occurrences);
   } catch (err) {
     next(err);
   }

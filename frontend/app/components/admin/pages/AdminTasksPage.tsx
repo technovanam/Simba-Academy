@@ -2553,6 +2553,14 @@ export function AdminTasksPage() {
                 )}
               </AdminPageBody>
             </AdminPageShell>
+            <ConfirmDialog
+              open={!!confirmDelete}
+              title={confirmDelete?.title || "Confirm Delete"}
+              message={confirmDelete?.message || "Are you sure you want to delete this item?"}
+              onConfirm={handleConfirmDelete}
+              onCancel={() => setConfirmDelete(null)}
+              loading={!!actionLoading && actionLoading.includes("delete")}
+            />
     </>
   );
 }

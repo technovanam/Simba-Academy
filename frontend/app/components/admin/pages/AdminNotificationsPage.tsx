@@ -1729,12 +1729,6 @@ export function AdminNotificationsPage() {
     })
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-  const notificationPagination = useAdminPagination(
-    filteredNotifications,
-    [notificationSearch, notificationFilter, notificationTypeFilter, notificationDateFilter, notificationStartDate, notificationEndDate, adminNotifications.length],
-    4
-  );
-
   const notificationFilterOptions = [
     { id: "ALL", label: "All Statuses" },
     { id: "UNREAD", label: "Unread" },
@@ -1758,7 +1752,7 @@ export function AdminNotificationsPage() {
 
   return (
     <>
-<AdminPageShell className="!overflow-visible">
+<AdminPageShell className="h-full flex flex-col min-h-0 overflow-hidden">
               <AdminPageHeader
                 title="System Notifications & Alerts"
                 description="View automated security logs, registration events, and workspace alerts."
@@ -1805,7 +1799,7 @@ export function AdminNotificationsPage() {
                   </div>
                 }
               />
-              <AdminPageBody>
+              <AdminPageBody className="flex-1 min-h-0 flex flex-col overflow-hidden">
                 {notificationDateFilter === "CUSTOM" && (
                   <div className="mb-5 animate-fade-in">
                     <PortalDateRangePicker
@@ -1823,9 +1817,9 @@ export function AdminNotificationsPage() {
                 {filteredNotifications.length === 0 ? (
                   <AdminListEmpty message="No alerts match your search/filter." />
                 ) : (
-                  <>
-                    <AdminRecordList>
-                      {notificationPagination.paginatedItems.map((n) => {
+                  <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex-1 min-h-0 flex flex-col">
+                    <div className="flex-1 min-h-0 overflow-y-auto modern-scrollbar p-2 sm:p-3 space-y-1.5">
+                      {filteredNotifications.map((n) => {
                         const isUnread = !n.isRead;
                         const dateText = new Date(n.createdAt).toLocaleDateString("en-IN", {
                           month: "short",
@@ -1909,19 +1903,8 @@ export function AdminNotificationsPage() {
                           </div>
                         );
                       })}
-                    </AdminRecordList>
-
-                    <AdminListPagination
-                      rangeStart={notificationPagination.rangeStart}
-                      rangeEnd={notificationPagination.rangeEnd}
-                      total={filteredNotifications.length}
-                      safePage={notificationPagination.safePage}
-                      totalPages={notificationPagination.totalPages}
-                      pageNumbers={notificationPagination.pageNumbers}
-                      onPageChange={notificationPagination.setCurrentPage}
-                      itemLabel="alerts"
-                    />
-                  </>
+                    </div>
+                  </div>
                 )}
               </AdminPageBody>
             </AdminPageShell>

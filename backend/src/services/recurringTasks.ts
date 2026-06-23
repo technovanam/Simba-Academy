@@ -13,6 +13,16 @@ export function initRecurringTasksCron() {
       console.error("[CRON] Error running recurring tasks:", err);
     }
   });
+
+  // Run every day at 16:05 (4:05 PM) to mark unsubmitted tasks as OVERDUE
+  cron.schedule("5 16 * * *", async () => {
+    console.log("[CRON] Running overdue tasks job...");
+    try {
+      await markOverdueTasks();
+    } catch (err) {
+      console.error("[CRON] Error running overdue tasks:", err);
+    }
+  });
 }
 
 export async function processRecurringTasks() {
@@ -91,12 +101,13 @@ export async function processRecurringTasks() {
       }
 
       // Create the Task
+      const dueTime = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 16, 0, 0, 0); // 4:00 PM
       const newTask = await prisma.task.create({
         data: {
           title: rTask.title,
           description: rTask.description,
           status: "PENDING",
-          dueDate: new Date(), // Due today
+          dueDate: dueTime,
           teacherId: teacher.id,
           recurringTaskId: rTask.id,
         },
@@ -137,4 +148,36 @@ export async function processRecurringTasks() {
   }
 
   console.log(`[CRON] Recurring tasks processing complete. Created: ${created}, Skipped (already exists): ${skipped}.`);
+}
+
+export async function markOverdueTasks() {
+  const now = new Date();
+  const overdueTasks = await prisma.task.findMany({
+    where: {
+      status: "PENDING",
+      dueDate: { lt: now },
+    },
+  });
+
+  if (overdueTasks.length === 0) return;
+
+  console.log(`[CRON] Found ${overdueTasks.length} overdue tasks.`);
+
+  for (const task of overdueTasks) {
+    await prisma.task.update({
+      where: { id: task.id },
+      data: { status: "OVERDUE" },
+    });
+
+    await prisma.taskAudit.create({
+      data: {
+        taskId: task.id,
+        action: "OVERDUE",
+        statusFrom: "PENDING",
+        statusTo: "OVERDUE",
+        changedByName: "System (Cron)",
+        comments: "Task not submitted before due date.",
+      },
+    });
+  }
 }
