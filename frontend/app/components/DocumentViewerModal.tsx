@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Loader2, Printer, Download, ChevronLeft, ChevronRight } from "lucide-react";
+import { Loader2, Printer, Download, ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { api, API_URL } from "../lib/api";
 import { ModalCloseButton } from "./ModalCloseButton";
 
@@ -41,8 +41,11 @@ export function DocumentViewerModal({
   role = "STUDENT",
   mimeType,
 }: DocumentViewerModalProps) {
+  const [isFinished, setIsFinished] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+
   const handleClose = useCallback(async () => {
-    if (role === "STUDENT" && token && fileId) {
+    if (role === "STUDENT" && token && fileId && !isFinished) {
       try {
         await api.updateBookStatus(token, fileId, "UNREAD", title);
       } catch (err) {
@@ -50,12 +53,22 @@ export function DocumentViewerModal({
       }
     }
     onClose();
-  }, [role, token, fileId, title, onClose]);
+  }, [role, token, fileId, title, isFinished, onClose]);
 
-  const handleMarkAsRead = useCallback(async () => {
+  const handleMarkAsRead = useCallback(() => {
+    if (isFinished) {
+      onClose();
+      return;
+    }
+    setShowConfirmModal(true);
+  }, [isFinished, onClose]);
+
+  const confirmMarkAsRead = useCallback(async () => {
+    setShowConfirmModal(false);
     if (role === "STUDENT" && token && fileId) {
       try {
         await api.updateBookStatus(token, fileId, "READ", title);
+        setIsFinished(true);
       } catch (err) {
         console.error("Failed to update reading status to READ:", err);
       }
@@ -66,6 +79,11 @@ export function DocumentViewerModal({
   useEffect(() => {
     if (role === "STUDENT" && token && fileId) {
       api.updateBookStatus(token, fileId, "READING", title)
+        .then((res) => {
+          if (res?.status === "READ") {
+            setIsFinished(true);
+          }
+        })
         .catch(console.error);
     }
   }, [role, token, fileId, title]);
@@ -418,8 +436,9 @@ export function DocumentViewerModal({
   };
 
   return (
-    <div
-      className="fixed inset-0 z-[100] flex flex-col bg-slate-900/60 backdrop-blur-sm p-3 sm:p-6 select-none"
+    <>
+      <div
+        className="fixed inset-0 z-[100] flex flex-col bg-slate-900/60 backdrop-blur-sm p-3 sm:p-6 select-none"
       role="dialog"
       aria-modal="true"
       aria-label={`Viewing ${title}`}
@@ -458,8 +477,13 @@ export function DocumentViewerModal({
               <button
                 type="button"
                 onClick={handleMarkAsRead}
-                className="px-3 py-1.5 rounded-lg font-bold text-2xs bg-[#8AC926] text-white hover:bg-[#72ad1e] transition-colors shadow-sm flex items-center gap-1"
+                className={`px-3 py-1.5 rounded-lg font-bold text-2xs flex items-center gap-1 transition-colors shadow-sm ${
+                  isFinished 
+                    ? "border border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100" 
+                    : "bg-[#8AC926] text-white hover:bg-[#72ad1e]"
+                }`}
               >
+                {isFinished && <Check className="w-3.5 h-3.5" />}
                 Finished Reading
               </button>
             )}
@@ -623,6 +647,14 @@ export function DocumentViewerModal({
                   />
                   {/* Overlay to hide branding and prevent pop-out click */}
                   <div className="absolute bottom-0 right-0 h-[36px] w-[150px] sm:w-[200px] bg-[#F8FAFD] z-10 pointer-events-auto" />
+                  
+                  {/* Anti-right-click overlay for the slide area */}
+                  {role !== "ADMIN" && (
+                    <div 
+                      className="absolute inset-x-0 top-0 bottom-[36px] z-10" 
+                      onContextMenu={(e) => e.preventDefault()} 
+                    />
+                  )}
                 </div>
               ) : (
                 <div className="absolute inset-0 w-full h-full flex flex-col items-center justify-center p-4 sm:p-8">
@@ -792,5 +824,42 @@ export function DocumentViewerModal({
         </div>
       </div>
     </div>
+
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl p-6 max-w-sm w-full relative overflow-hidden animate-in fade-in zoom-in-95 duration-200 text-center">
+            <div className={`absolute top-0 inset-x-0 h-1 ${accent === "orange" ? "bg-[#FF9F1C]" : "bg-[#8AC926]"}`} />
+            
+            <div className="mx-auto w-12 h-12 bg-emerald-50 rounded-full flex items-center justify-center text-xl mb-4 mt-2">
+              📖
+            </div>
+
+            <h3 className="text-base font-bold text-slate-800 mb-2">Finished Reading?</h3>
+            <p className="text-xs text-slate-500 font-semibold mb-6 leading-relaxed">
+              Are you sure you have finished reading this book?
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowConfirmModal(false)}
+                className="flex-1 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold transition-colors text-xs cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmMarkAsRead}
+                className={`flex-1 py-2.5 rounded-xl text-white font-bold transition-colors shadow-md text-xs cursor-pointer ${
+                  accent === "orange" ? "bg-[#FF9F1C] hover:bg-[#e88f0a]" : "bg-[#8AC926] hover:bg-[#72ad1e]"
+                }`}
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

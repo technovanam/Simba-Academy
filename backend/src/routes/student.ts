@@ -21,7 +21,7 @@ router.get("/notifications/unread-count", async (req, res, next) => {
     assertNotificationModel();
     const userId = req.user!.userId;
     const count = await prisma.studentNotification.count({
-      where: { userId, isRead: false },
+      where: { userId, isRead: false, type: { not: "SYSTEM_STATUS" } },
     });
     res.json({ count });
   } catch (err) {
@@ -34,7 +34,7 @@ router.get("/notifications", async (req, res, next) => {
     assertNotificationModel();
     const userId = req.user!.userId;
     const notifications = await prisma.studentNotification.findMany({
-      where: { userId },
+      where: { userId, type: { not: "SYSTEM_STATUS" } },
       orderBy: { createdAt: "desc" },
       take: 100,
       include: {
@@ -136,11 +136,11 @@ router.post("/books/:bookId/status", async (req, res, next) => {
           data: {
             userId,
             storyBookId: bookId,
-            type: "STORY_BOOK",
-            title: "New story book available",
-            message: `"${book.title}"${authorSuffix} was added to your ${book.category} library.`,
+            type: "SYSTEM_STATUS",
+            title: "System Status Update",
+            message: `Reading status updated for "${book.title}"${authorSuffix}.`,
             readingStatus: status,
-            isRead: status === "READ",
+            isRead: true, // Auto-read since it's hidden
           },
         });
         return res.json({ success: true, status: created.readingStatus });
@@ -158,11 +158,11 @@ router.post("/books/:bookId/status", async (req, res, next) => {
           data: {
             userId,
             fileId: bookId,
-            type: "STORY_BOOK",
-            title: "New story book available",
-            message: `"${bookTitle}" was added to your ${bookCategory} library.`,
+            type: "SYSTEM_STATUS",
+            title: "System Status Update",
+            message: `Reading status updated for "${bookTitle}".`,
             readingStatus: status,
-            isRead: status === "READ",
+            isRead: true, // Auto-read since it's hidden
           },
         });
         return res.json({ success: true, status: created.readingStatus });

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { Book, ChevronRight, GraduationCap, Shield, TrendingUp } from "lucide-react";
-import { api, ApiError, type AuthUser, type Payment, type StoryBook } from "../../../lib/api";
+import { api, ApiError, type AuthUser, type Payment, type DriveItem } from "../../../lib/api";
 import { clearSession, saveSession } from "../../../lib/auth";
 import { PAYMENTS_ENABLED } from "../../../lib/constants";
 import { STUDENT_TAB_PATHS } from "../../../lib/studentRoutes";
@@ -10,15 +10,16 @@ import { RecentPaymentCard, sortPaymentsNewestFirst } from "../../RecentPaymentC
 import { useStudentOutlet } from "../StudentOutletContext";
 import { StudentNotificationBell } from "../StudentNotificationBell";
 import { StudentTabLoader } from "../StudentTabLoader";
+import { DocumentViewerModal } from "../../DocumentViewerModal";
 
 export function StudentOverviewPage() {
   const navigate = useNavigate();
-  const { token, user, setError } = useStudentOutlet();
+  const { token, user, setError, driveBooks, driveBooksLoading, loadDriveBooks } = useStudentOutlet();
 
   const [profile, setProfile] = useState<AuthUser | null>(user);
-  const [books, setBooks] = useState<StoryBook[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [viewerFile, setViewerFile] = useState<DriveItem | null>(null);
 
   useEffect(() => {
     if (!token) return;
@@ -29,24 +30,22 @@ export function StudentOverviewPage() {
       setError("");
 
       try {
-        const [profileResult, booksResult, paymentsResult] = await Promise.allSettled([
+        const [profileResult, paymentsResult] = await Promise.allSettled([
           api.profile(token),
-          api.getPublicStoryBooks(token),
           api.getStudentPayments(token),
         ]);
 
         if (cancelled) return;
 
+        let activeProfile = profile;
         if (profileResult.status === "fulfilled") {
-          setProfile(profileResult.value);
-          saveSession(token, profileResult.value);
+          activeProfile = profileResult.value;
+          setProfile(activeProfile);
+          saveSession(token, activeProfile);
         }
 
-        if (booksResult.status === "fulfilled") {
-          setBooks(booksResult.value);
-        } else {
-          throw booksResult.reason;
-        }
+        // Kick off loading files from layout cache
+        await loadDriveBooks(token);
 
         if (paymentsResult.status === "fulfilled") {
           setPayments(paymentsResult.value);
@@ -74,15 +73,12 @@ export function StudentOverviewPage() {
     return () => {
       cancelled = true;
     };
-  }, [token, navigate, setError]);
+  }, [token, navigate, setError, loadDriveBooks]);
 
   const studentClass = profile?.studentClass ?? null;
   const displayName = profile?.name ?? user?.name ?? "Student";
 
-  const classBooks = useMemo(
-    () => books.filter((b) => !studentClass || b.category === studentClass),
-    [books, studentClass]
-  );
+  const classBooks = driveBooks;
 
   const successfulPayments = useMemo(
     () => payments.filter((p) => p.status === "SUCCESS"),
@@ -96,13 +92,15 @@ export function StudentOverviewPage() {
 
   const recentBooks = useMemo(
     () =>
-      [...classBooks]
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      [...driveBooks]
+        .sort((a, b) => new Date(b.createdTime).getTime() - new Date(a.createdTime).getTime())
         .slice(0, 3),
-    [classBooks]
+    [driveBooks]
   );
 
-  if (loading) return <StudentTabLoader />;
+  const isDataLoading = (loading && !profile) || (driveBooksLoading && driveBooks.length === 0);
+
+  if (isDataLoading) return <StudentTabLoader />;
 
   return (
     <div className="flex flex-col h-full min-h-0 flex-1">
@@ -144,7 +142,7 @@ export function StudentOverviewPage() {
 
                 <div className="bg-white rounded-xl p-2.5 border border-orange-100 flex items-center gap-2">
                   <div className="flex -space-x-1.5">
-                    {[0, 1, 2].map((i) => (
+                    {Array.from({ length: Math.min(3, classBooks.length) }).map((_, i) => (
                       <div
                         key={i}
                         className="w-7 h-7 rounded-full border-2 border-white bg-[#FF9F1C]/15 flex items-center justify-center"
@@ -152,6 +150,11 @@ export function StudentOverviewPage() {
                         <Book className="w-3 h-3 text-[#FF9F1C]" />
                       </div>
                     ))}
+                    {classBooks.length === 0 && (
+                      <div className="w-7 h-7 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center">
+                        <Book className="w-3 h-3 text-slate-400" />
+                      </div>
+                    )}
                   </div>
                   <span className="text-[9px] font-bold text-slate-600 leading-none uppercase tracking-wider">
                     {studentClass ?? "Class not set"}
@@ -167,7 +170,6 @@ export function StudentOverviewPage() {
               >
                 Browse Library <ChevronRight className="w-2.5 h-2.5" />
               </Link>
-              <span className="text-[9px] font-extrabold text-slate-500">View &amp; print</span>
             </div>
           </div>
 
@@ -242,28 +244,20 @@ export function StudentOverviewPage() {
                   </div>
                 ) : (
                   recentBooks.map((b) => (
-                    <div
+                    <button
                       key={b.id}
-                      className="bg-white rounded-xl p-2.5 border border-slate-200 text-xs flex flex-col gap-1"
+                      onClick={() => setViewerFile(b)}
+                      className="bg-white rounded-xl p-2.5 border border-slate-200 text-xs flex flex-col gap-1 text-left hover:bg-slate-50 transition-colors w-full cursor-pointer"
                     >
-                      <div className="flex justify-between items-start gap-1">
+                      <div className="flex justify-between items-start gap-1 w-full">
                         <span className="font-bold text-slate-800 text-2xs truncate max-w-[200px]">
-                          {b.title}
-                        </span>
-                        <span className="px-1 py-0.5 rounded-md text-[8px] font-extrabold uppercase shrink-0 bg-[#FF9F1C]/10 text-[#c77a00] border border-[#FF9F1C]/20">
-                          {b.category}
+                          {b.name}
                         </span>
                       </div>
-                      <div className="flex justify-between items-center text-[9px] text-slate-600 font-semibold">
+                      <div className="flex justify-between items-center text-[9px] text-slate-600 font-semibold w-full">
                         <span className="truncate">Story book</span>
-                        <span>
-                          {new Date(b.createdAt).toLocaleDateString("en-IN", {
-                            month: "short",
-                            day: "numeric",
-                          })}
-                        </span>
                       </div>
-                    </div>
+                    </button>
                   ))
                 )}
               </div>
@@ -318,6 +312,18 @@ export function StudentOverviewPage() {
           </div>
         </div>
       </div>
+      
+      {viewerFile && (
+        <DocumentViewerModal
+          fileId={viewerFile.id}
+          title={viewerFile.name}
+          token={token!}
+          role="STUDENT"
+          mimeType={viewerFile.mimeType}
+          onClose={() => setViewerFile(null)}
+          accent="orange"
+        />
+      )}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import {
   Folder,
   FileText,
@@ -93,6 +93,9 @@ export function DriveLibraryPanel({ token, role }: DriveLibraryPanelProps) {
 
   const [viewerFile, setViewerFile] = useState<DriveItem | null>(null);
 
+  // Cache to make folder navigation instant
+  const cacheRef = useRef<Record<string, { items: DriveItem[]; ancestors: DriveAncestor[] }>>({});
+
   // Access Rule Modal State
   const [accessItem, setAccessItem] = useState<DriveItem | null>(null);
   const [accessForm, setAccessForm] = useState<{
@@ -104,36 +107,57 @@ export function DriveLibraryPanel({ token, role }: DriveLibraryPanelProps) {
   });
   const [isSavingAccess, setIsSavingAccess] = useState(false);
 
-  const fetchDocuments = useCallback(async () => {
+  const fetchDocuments = useCallback(async (signal: { cancelled: boolean }) => {
     if (!token) return;
+
+    const cacheKey = `${currentFolderId || "root"}|${searchQuery}|${fileTypeFilter}`;
+    if (cacheRef.current[cacheKey]) {
+      const cached = cacheRef.current[cacheKey];
+      setItems(cached.items);
+      setAncestors(cached.ancestors);
+      if (!signal.cancelled) setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError("");
     try {
       const data = await api.browseDocuments(token, currentFolderId, searchQuery);
+      if (signal.cancelled) return;
 
+      let finalItems = data;
       if (fileTypeFilter !== "ALL") {
         const matcher = MIME_MATCHERS[fileTypeFilter];
-        setItems(data.filter(item => matcher(item.mimeType)));
-      } else {
-        setItems(data);
+        finalItems = data.filter(item => matcher(item.mimeType));
       }
 
+      let pathAncestors: DriveAncestor[] = [];
       if (currentFolderId && currentFolderId !== "root") {
-        const pathAncestors = await api.getDocumentAncestors(token, currentFolderId);
-        setAncestors(pathAncestors);
-      } else {
-        setAncestors([]);
+        pathAncestors = await api.getDocumentAncestors(token, currentFolderId);
       }
+      if (signal.cancelled) return;
+
+      cacheRef.current[cacheKey] = { items: finalItems, ancestors: pathAncestors };
+      
+      setItems(finalItems);
+      setAncestors(pathAncestors);
     } catch (err) {
+      if (signal.cancelled) return;
       console.error("Failed to load documents:", err);
       setError("Failed to load documents. Please check your Google Drive configurations.");
     } finally {
-      setLoading(false);
+      if (!signal.cancelled) {
+        setLoading(false);
+      }
     }
   }, [token, currentFolderId, searchQuery, fileTypeFilter]);
 
   useEffect(() => {
-    fetchDocuments();
+    const signal = { cancelled: false };
+    fetchDocuments(signal);
+    return () => {
+      signal.cancelled = true;
+    };
   }, [fetchDocuments]);
 
   const handleSaveAccess = async (e: React.FormEvent) => {

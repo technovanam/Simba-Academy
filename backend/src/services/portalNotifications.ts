@@ -37,7 +37,7 @@ export async function notifyStudentsOfNewStoryBook(book: StoryBook): Promise<num
   }
 
   const authorSuffix = book.author ? ` by ${book.author}` : "";
-  const message = `"${book.title}"${authorSuffix} was added to your ${book.category} library.`;
+  const message = `"${book.title}"${authorSuffix} was added to your library.`;
 
   await prisma.studentNotification.createMany({
     data: students.map((student: Recipient) => ({
@@ -61,6 +61,57 @@ export async function notifyStudentsOfNewStoryBook(book: StoryBook): Promise<num
         { label: "Title", value: book.title },
         ...(book.author ? [{ label: "Author", value: book.author }] : []),
         { label: "Class", value: book.category },
+      ],
+      ctaLabel: "Open Story Library",
+      ctaUrl: studentLibraryUrl,
+      footerNote: "You will also see this alert inside your portal notifications.",
+    })
+  );
+
+  return students.length;
+}
+
+/** Notify students when an admin grants them access to a Google Drive file/folder. */
+export async function notifyStudentsOfDriveAccess(fileId: string, title: string, targetClass: string | null): Promise<number> {
+  const classes = targetClass ? targetClass.split(",").map((c) => c.trim()).filter(Boolean) : [];
+
+  const students = await prisma.user.findMany({
+    where: {
+      role: "STUDENT",
+      status: "ACTIVE",
+      isDeleted: false,
+      ...(classes.length > 0 ? { studentClass: { in: classes } } : {}),
+    },
+    select: { id: true, name: true, email: true },
+  });
+
+  if (students.length === 0) {
+    return 0;
+  }
+
+  const message = `"${title}" was added to your library.`;
+
+  await prisma.studentNotification.createMany({
+    data: students.map((student: Recipient) => ({
+      userId: student.id,
+      type: "STORY_BOOK",
+      title: "New story book available",
+      message,
+      fileId, // This is a Drive file, so we use fileId instead of storyBookId
+    })),
+  });
+
+  await emailRecipients(students, (student) =>
+    sendPortalNotificationEmail({
+      to: student.email,
+      subject: `New story book added — ${title}`,
+      theme: "student",
+      recipientName: student.name,
+      headline: "New Story Book Available",
+      intro: `An administrator has given you access to a new story book (${title}). You can view it from your student portal.`,
+      rows: [
+        { label: "Title", value: title },
+        ...(targetClass ? [{ label: "Class", value: targetClass }] : []),
       ],
       ctaLabel: "Open Story Library",
       ctaUrl: studentLibraryUrl,

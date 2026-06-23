@@ -7,7 +7,7 @@ import {
   studentTabTitle,
   type StudentTab,
 } from "../../lib/studentRoutes";
-import { api, type AuthUser } from "../../lib/api";
+import { api, type AuthUser, type DriveItem } from "../../lib/api";
 import { clearSession, getToken, getUser } from "../../lib/auth";
 import { PortalToasts } from "../../components/Toast";
 import { PortalSidebarLayout } from "../../components/PortalSidebarLayout";
@@ -48,6 +48,38 @@ export default function StudentLayout() {
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const knownNotificationIdsRef = useRef<Set<string>>(new Set());
   const notificationsInitializedRef = useRef(false);
+
+  const [driveBooks, setDriveBooks] = useState<DriveItem[]>([]);
+  const [driveBooksLoading, setDriveBooksLoading] = useState(false);
+  const driveBooksFetchedRef = useRef(false);
+
+  const loadDriveBooks = useCallback(async (authToken: string) => {
+    if (driveBooksFetchedRef.current || driveBooksLoading) return;
+    setDriveBooksLoading(true);
+    try {
+      const fetchAllFilesRecursively = async (folderId: string | null = null): Promise<DriveItem[]> => {
+        const items = await api.browseDocuments(authToken, folderId);
+        const files = items.filter(
+          (item) => item.mimeType !== "application/vnd.google-apps.folder"
+        );
+        const folders = items.filter(
+          (item) => item.mimeType === "application/vnd.google-apps.folder"
+        );
+
+        const subPromises = folders.map((folder) => fetchAllFilesRecursively(folder.id));
+        const subResults = await Promise.all(subPromises);
+        return [...files, ...subResults.flat()];
+      };
+
+      const fetched = await fetchAllFilesRecursively(null);
+      setDriveBooks(fetched);
+      driveBooksFetchedRef.current = true;
+    } catch (err) {
+      console.error("Failed to load drive books recursively:", err);
+    } finally {
+      setDriveBooksLoading(false);
+    }
+  }, [driveBooksLoading]);
 
   const refreshNotifications = useCallback(async () => {
     if (!token) return;
@@ -219,6 +251,9 @@ export default function StudentLayout() {
             setError,
             unreadNotificationCount,
             refreshNotifications,
+            driveBooks,
+            driveBooksLoading,
+            loadDriveBooks,
           }}
         >
           <Outlet />

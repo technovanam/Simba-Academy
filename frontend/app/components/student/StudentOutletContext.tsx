@@ -1,5 +1,5 @@
 import { createContext, useContext } from "react";
-import type { AuthUser } from "../../lib/api";
+import type { AuthUser, DriveItem } from "../../lib/api";
 
 export type StudentOutletContextValue = {
   token: string;
@@ -8,6 +8,9 @@ export type StudentOutletContextValue = {
   setError: (error: string) => void;
   unreadNotificationCount: number;
   refreshNotifications: () => Promise<void>;
+  driveBooks: DriveItem[];
+  driveBooksLoading: boolean;
+  loadDriveBooks: (token: string) => Promise<void>;
 };
 
 const StudentOutletContext = createContext<StudentOutletContextValue | null>(null);

@@ -14,6 +14,7 @@ import {
   getRecentDocuments,
   getDriveClient,
 } from "../services/googleDriveService.js";
+import { notifyStudentsOfDriveAccess } from "../services/portalNotifications.js";
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -526,6 +527,8 @@ router.put("/:id/access", authenticate, adminOnly, async (req, res, next) => {
       throw new AppError("Invalid audience", 400);
     }
 
+    const existingRule = await prisma.driveAccessRule.findUnique({ where: { fileId } });
+
     const rule = await prisma.driveAccessRule.upsert({
       where: { fileId },
       update: {
@@ -540,6 +543,19 @@ router.put("/:id/access", authenticate, adminOnly, async (req, res, next) => {
         title: title || "Untitled Document",
       },
     });
+
+    // Notify students if access is newly granted or classes changed
+    const nowHasStudents = audience === "BOTH" || audience === "STUDENT";
+    const didnHaveStudents = !existingRule || existingRule.audience === "TEACHER";
+    const classesChanged = existingRule && existingRule.targetClass !== (targetClass || null);
+    
+    if (nowHasStudents && (didnHaveStudents || classesChanged)) {
+      try {
+        await notifyStudentsOfDriveAccess(fileId, rule.title, rule.targetClass);
+      } catch (err) {
+        console.error("Failed to notify students of drive access:", err);
+      }
+    }
 
     await logActivity(
       req.user!.userId,
