@@ -161,7 +161,7 @@ export async function getAncestors(folderId: string) {
     throw new AppError("Access denied", 403);
   }
 
-  const ancestors: Array<{ id: string; name: string; parentId: string | null }> = [];
+  const ancestors: Array<{ id: string; name: string; parentId: string | null; mimeType?: string }> = [];
   let currentId = folderId;
   const visited = new Set<string>();
 
@@ -170,13 +170,14 @@ export async function getAncestors(folderId: string) {
     try {
       const res = await drive.files.get({
         fileId: currentId,
-        fields: "id, name, parents",
+        fields: "id, name, parents, mimeType",
       });
       const name = res.data.name!;
       const parents = res.data.parents;
       const parentId = parents && parents.length > 0 ? parents[0]! : null;
+      const mimeType = res.data.mimeType || undefined;
 
-      ancestors.unshift({ id: currentId, name, parentId });
+      ancestors.unshift({ id: currentId, name, parentId, mimeType });
       currentId = parentId!;
     } catch (err: any) {
       console.error(`Error fetching ancestor metadata: ${err.message}`);
@@ -334,33 +335,57 @@ export async function getFileStream(id: string) {
     mimeType === "application/vnd.google-apps.document" ||
     mimeType === "application/vnd.google-apps.presentation"
   ) {
-    const res = await drive.files.export(
+    try {
+      const res = await drive.files.export(
+        {
+          fileId: id,
+          mimeType: "application/pdf",
+        },
+        { responseType: "stream" }
+      );
+      return {
+        stream: res.data,
+        contentType: "application/pdf",
+        filename: `${name!.replace(/\.[^/.]+$/, "")}.pdf`,
+      };
+    } catch (err: any) {
+      if (err.message?.includes("cannot be exported") || err.errors?.[0]?.reason === "cannotExportFile") {
+        throw new AppError(
+          "This file is restricted in Google Drive. You must enable 'Viewers and commenters can see the option to download, print, and copy' in the Google Drive share settings for this file.",
+          403
+        );
+      }
+      throw err;
+    }
+  }
+
+  try {
+    const res = await drive.files.get(
       {
         fileId: id,
-        mimeType: "application/pdf",
+        alt: "media",
       },
       { responseType: "stream" }
     );
+
     return {
       stream: res.data,
-      contentType: "application/pdf",
-      filename: `${name!.replace(/\.[^/.]+$/, "")}.pdf`,
+      contentType: mimeType!,
+      filename: name!,
     };
+  } catch (err: any) {
+    if (
+      err.message?.includes("cannot be downloaded") ||
+      err.errors?.[0]?.reason === "cannotDownloadFile" ||
+      err.errors?.[0]?.reason === "cannotExportFile"
+    ) {
+      throw new AppError(
+        "This file is restricted in Google Drive. You must enable 'Viewers and commenters can see the option to download, print, and copy' in the Google Drive share settings for this file.",
+        403
+      );
+    }
+    throw err;
   }
-
-  const res = await drive.files.get(
-    {
-      fileId: id,
-      alt: "media",
-    },
-    { responseType: "stream" }
-  );
-
-  return {
-    stream: res.data,
-    contentType: mimeType!,
-    filename: name!,
-  };
 }
 
 /**
@@ -393,4 +418,30 @@ export async function getRecentDocuments() {
   }
 
   return filtered;
+}
+
+const mimeTypeCache = new Map<string, string>();
+
+/**
+ * Fetches and caches the mimeType of a Google Drive item.
+ */
+export async function getFileMimeType(fileId: string): Promise<string | null> {
+  const cached = mimeTypeCache.get(fileId);
+  if (cached) return cached;
+
+  try {
+    const drive = await getDriveClient();
+    const res = await drive.files.get({
+      fileId,
+      fields: "mimeType",
+    });
+    const mimeType = res.data.mimeType || null;
+    if (mimeType) {
+      mimeTypeCache.set(fileId, mimeType);
+    }
+    return mimeType;
+  } catch (err: any) {
+    console.error(`Error fetching mimeType for ${fileId}:`, err.message);
+    return null;
+  }
 }

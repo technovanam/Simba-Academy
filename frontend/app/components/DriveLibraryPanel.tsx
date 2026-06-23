@@ -155,7 +155,7 @@ export function DriveLibraryPanel({ token, role }: DriveLibraryPanelProps) {
         ? accessForm.classes.join(",") 
         : null;
 
-      await api.updateDriveAccessRule(token, accessItem.id, audience, targetClass);
+      await api.updateDriveAccessRule(token, accessItem.id, audience, targetClass, accessItem.name);
       
       // Update local item
       setItems((prev) => prev.map((item) => 

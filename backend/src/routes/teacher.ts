@@ -7,6 +7,7 @@ import { AppError } from "../utils/errors.js";
 import { sendEmail, getTaskCompletionAdminHtml } from "../services/email.js";
 import { env } from "../config/env.js";
 import { createAdminNotification } from "../services/adminNotifications.js";
+import { getFileMimeType } from "../services/googleDriveService.js";
 
 const router = Router();
 
@@ -307,19 +308,29 @@ router.get("/students", async (req, res, next) => {
     if (!teacher || !teacher.studentClass) {
       return res.json([]);
     }
-    const classBooks = await prisma.storyBook.findMany({
+    const classRules = await prisma.driveAccessRule.findMany({
       where: {
-        category: teacher.studentClass,
         audience: { in: ["STUDENT", "BOTH"] },
+        OR: [
+          { targetClass: null },
+          { targetClass: "" },
+          { targetClass: { contains: teacher.studentClass } }
+        ]
       },
       select: {
-        id: true,
+        fileId: true,
         title: true,
-        author: true,
-        category: true,
-        fileUrl: true,
+        targetClass: true,
       },
     });
+
+    const classBooks: Array<{ fileId: string; title: string; targetClass: string | null }> = [];
+    for (const rule of classRules) {
+      const mimeType = await getFileMimeType(rule.fileId);
+      if (mimeType !== "application/vnd.google-apps.folder") {
+        classBooks.push(rule);
+      }
+    }
 
     const students = await prisma.user.findMany({
       where: {
@@ -344,6 +355,7 @@ router.get("/students", async (req, res, next) => {
             isRead: true,
             readingStatus: true,
             storyBookId: true,
+            fileId: true,
           },
         },
       },
@@ -351,16 +363,16 @@ router.get("/students", async (req, res, next) => {
     });
 
     const mappedStudents = students.map((student) => {
-      const bookNotifications = student.notifications.filter((n) => n.storyBookId);
+      const bookNotifications = student.notifications.filter((n) => n.storyBookId || n.fileId);
 
       const booksProgress = classBooks.map((book) => {
-        const notif = bookNotifications.find((n) => n.storyBookId === book.id);
+        const notif = bookNotifications.find((n) => n.fileId === book.fileId);
         return {
-          id: book.id,
+          id: book.fileId,
           title: book.title,
-          author: book.author,
-          category: book.category,
-          fileUrl: book.fileUrl,
+          author: null,
+          category: book.targetClass || "Library",
+          fileUrl: `/api/documents/${book.fileId}/view`,
           readingStatus: notif ? notif.readingStatus : "UNREAD",
           isRead: notif ? notif.readingStatus === "READ" : false,
         };

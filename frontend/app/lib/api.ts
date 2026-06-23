@@ -637,10 +637,10 @@ export const api = {
   getPublicStoryBooks: (token: string) =>
     request<StoryBook[]>("/api/library/storybooks", {}, token),
 
-  updateBookStatus: (token: string, bookId: string, status: "READING" | "READ" | "UNREAD") =>
+  updateBookStatus: (token: string, bookId: string, status: "READING" | "READ" | "UNREAD", title?: string, category?: string) =>
     request<{ success: boolean; status: string }>(
       `/api/student/books/${bookId}/status`,
-      { method: "POST", body: JSON.stringify({ status }) },
+      { method: "POST", body: JSON.stringify({ status, title, category }) },
       token
     ),
 
@@ -723,10 +723,10 @@ export const api = {
       method: "DELETE",
     }, token),
 
-  updateDriveAccessRule: (token: string, fileId: string, audience: "BOTH" | "TEACHER" | "STUDENT", targetClass: string | null) =>
+  updateDriveAccessRule: (token: string, fileId: string, audience: "BOTH" | "TEACHER" | "STUDENT", targetClass: string | null, title?: string) =>
     request(`/api/documents/${fileId}/access`, {
       method: "PUT",
-      body: JSON.stringify({ audience, targetClass }),
+      body: JSON.stringify({ audience, targetClass, title }),
     }, token),
 
   revokeDriveAccessRule: (token: string, fileId: string) =>

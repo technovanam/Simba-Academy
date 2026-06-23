@@ -271,6 +271,7 @@ model LibraryFolder {
 model DriveAccessRule {
   id          String          @id @default(cuid())
   fileId      String          @unique
+  title       String          @default("Untitled Document")
   audience    LibraryAudience @default(BOTH)
   targetClass String?
   createdAt   DateTime        @default(now())
@@ -305,6 +306,7 @@ model StudentNotification {
   title       String
   message     String   @db.Text
   storyBookId String?
+  fileId      String?
   isRead      Boolean  @default(false)
   readingStatus String @default("UNREAD")
   createdAt   DateTime @default(now())

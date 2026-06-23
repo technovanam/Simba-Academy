@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, Printer, Download, ChevronLeft, ChevronRight } from "lucide-react";
-import { API_URL } from "../lib/api";
+import { api, API_URL } from "../lib/api";
 import { ModalCloseButton } from "./ModalCloseButton";
 
 export interface DocumentViewerModalProps {
@@ -41,6 +41,35 @@ export function DocumentViewerModal({
   role = "STUDENT",
   mimeType,
 }: DocumentViewerModalProps) {
+  const handleClose = useCallback(async () => {
+    if (role === "STUDENT" && token && fileId) {
+      try {
+        await api.updateBookStatus(token, fileId, "UNREAD", title);
+      } catch (err) {
+        console.error("Failed to reset reading status on close:", err);
+      }
+    }
+    onClose();
+  }, [role, token, fileId, title, onClose]);
+
+  const handleMarkAsRead = useCallback(async () => {
+    if (role === "STUDENT" && token && fileId) {
+      try {
+        await api.updateBookStatus(token, fileId, "READ", title);
+      } catch (err) {
+        console.error("Failed to update reading status to READ:", err);
+      }
+    }
+    onClose();
+  }, [role, token, fileId, title, onClose]);
+
+  useEffect(() => {
+    if (role === "STUDENT" && token && fileId) {
+      api.updateBookStatus(token, fileId, "READING", title)
+        .catch(console.error);
+    }
+  }, [role, token, fileId, title]);
+
   const accentSpin = accent === "orange" ? "text-[#FF9F1C]" : "text-[#8AC926]";
   const isPpt =
     mimeType?.includes("presentation") ||
@@ -189,7 +218,7 @@ export function DocumentViewerModal({
     document.body.style.overflow = "hidden";
     
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") handleClose();
       
       // Page turning keyboard navigation
       if (e.key === "ArrowRight" || e.key === "PageDown") {
@@ -229,7 +258,7 @@ export function DocumentViewerModal({
       window.removeEventListener("contextmenu", onContextMenu, true);
       window.removeEventListener("mousedown", onGlobalMouseDown, true);
     };
-  }, [onClose, role]);
+  }, [handleClose, role]);
 
   // Render individual PDF pages dynamically
   const renderPage = useCallback(async (pdfInstance: any, pageNum: number) => {
@@ -394,7 +423,7 @@ export function DocumentViewerModal({
       role="dialog"
       aria-modal="true"
       aria-label={`Viewing ${title}`}
-      onClick={onClose}
+      onClick={handleClose}
       onContextMenu={(e) => role !== "ADMIN" && e.preventDefault()}
       onMouseDown={preventDoubleClick}
     >
@@ -425,7 +454,16 @@ export function DocumentViewerModal({
                 </button>
               </>
             )}
-            <ModalCloseButton onClick={onClose} />
+            {role === "STUDENT" && (
+              <button
+                type="button"
+                onClick={handleMarkAsRead}
+                className="px-3 py-1.5 rounded-lg font-bold text-2xs bg-[#8AC926] text-white hover:bg-[#72ad1e] transition-colors shadow-sm flex items-center gap-1"
+              >
+                Finished Reading
+              </button>
+            )}
+            <ModalCloseButton onClick={handleClose} />
           </div>
         </div>
 

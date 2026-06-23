@@ -39,26 +39,55 @@ async function logActivity(userId: string | undefined, action: string, details: 
  * Check if the user has access to a specific file or folder by inspecting
  * its own rules and all of its ancestor folders' rules recursively.
  */
-async function hasFolderAccess(fileId: string | null, user: any): Promise<boolean> {
-  if (user.role === "ADMIN") return true;
-  if (!fileId || fileId === "root") return true;
-
+async function getAllowedFolderIds(user: any, studentClass: string | null): Promise<Set<string>> {
+  const allowedFolderIds = new Set<string>();
   try {
-    const dbUser = await prisma.user.findUnique({
-      where: { id: user.userId },
-      select: { studentClass: true },
+    const rules = await prisma.driveAccessRule.findMany({
+      where: {
+        audience: { in: [user.role === "TEACHER" ? "TEACHER" : "STUDENT", "BOTH"] },
+      }
     });
-    const studentClass = dbUser?.studentClass;
 
+    const filteredRules = rules.filter(rule => {
+      if (!rule.targetClass) return true;
+      if (!studentClass) return false;
+      const classes = rule.targetClass.split(",").map((c: string) => c.trim());
+      return classes.includes(studentClass);
+    });
+
+    for (const rule of filteredRules) {
+      try {
+        const ancestors = await getAncestors(rule.fileId);
+        for (const a of ancestors) {
+          allowedFolderIds.add(a.id);
+        }
+        allowedFolderIds.add(rule.fileId);
+      } catch (err) {
+        // Skip failed folders
+      }
+    }
+  } catch (err) {
+    console.error("Error gathering allowed folder IDs:", err);
+  }
+  return allowedFolderIds;
+}
+
+async function isExplicitlyAllowed(fileId: string | null, user: any, studentClass: string | null): Promise<boolean> {
+  if (!fileId || fileId === "root") return false;
+  try {
     const ancestors = await getAncestors(fileId);
-    // Ordered from the item itself, parent, grandparent, ..., up to root
-    const idsToCheck = [fileId, ...[...ancestors].reverse().map((a) => a.id)];
+    const targetItem = ancestors.find((a) => a.id === fileId);
+    const isFolder = targetItem ? targetItem.mimeType === "application/vnd.google-apps.folder" : false;
+
+    // If it's not a folder, we only check the file itself. We don't check ancestor rules.
+    const idsToCheck = isFolder
+      ? [fileId, ...[...ancestors].reverse().map((a) => a.id)]
+      : [fileId];
 
     const rules = await prisma.driveAccessRule.findMany({
       where: { fileId: { in: idsToCheck } },
     });
 
-    // Find the first rule in the hierarchy starting from the item up to root
     let activeRule = null;
     for (const id of idsToCheck) {
       const rule = rules.find((r) => r.fileId === id);
@@ -74,16 +103,40 @@ async function hasFolderAccess(fileId: string | null, user: any): Promise<boolea
 
       if (user.role === "TEACHER") {
         if (audience !== "BOTH" && audience !== "TEACHER") return false;
-        if (targetClass && (!studentClass || !targetClass.split(",").includes(studentClass))) return false;
+        if (targetClass && studentClass && !targetClass.split(",").map((c: string) => c.trim()).includes(studentClass)) return false;
       } else if (user.role === "STUDENT") {
         if (audience !== "BOTH" && audience !== "STUDENT") return false;
-        if (targetClass && (!studentClass || !targetClass.split(",").includes(studentClass))) return false;
+        if (targetClass && (!studentClass || !targetClass.split(",").map((c: string) => c.trim()).includes(studentClass))) return false;
       }
       return true;
     }
+  } catch (err) {
+    console.error("Error verifying explicit access rules:", err);
+  }
+  return false;
+}
 
-    // By default, if no access rule is found in the path, deny access to students/teachers
-    return false;
+/**
+ * Check if the user has access to a specific file or folder by inspecting
+ * its own rules and all of its ancestor folders' rules recursively.
+ */
+async function hasFolderAccess(fileId: string | null, user: any): Promise<boolean> {
+  if (user.role === "ADMIN") return true;
+  if (!fileId || fileId === "root") return true;
+
+  try {
+    const dbUser = await prisma.user.findUnique({
+      where: { id: user.userId },
+      select: { studentClass: true },
+    });
+    const studentClass = dbUser?.studentClass || null;
+
+    const allowedFolderIds = await getAllowedFolderIds(user, studentClass);
+    if (allowedFolderIds.has(fileId)) {
+      return true;
+    }
+
+    return await isExplicitlyAllowed(fileId, user, studentClass);
   } catch (err) {
     console.error("Error verifying folder access rules:", err);
     return false;
@@ -120,7 +173,9 @@ async function applyAccessControls(items: any[], user: any, folderId: string | n
     where: { id: user.userId },
     select: { studentClass: true },
   });
-  const studentClass = dbUser?.studentClass;
+  const studentClass = dbUser?.studentClass || null;
+
+  const allowedFolderIds = await getAllowedFolderIds(user, studentClass);
 
   const itemIds = items.map((i) => i.id);
   const rules = await prisma.driveAccessRule.findMany({
@@ -143,33 +198,32 @@ async function applyAccessControls(items: any[], user: any, folderId: string | n
 
       if (user.role === "TEACHER") {
         if (audience === "BOTH" || audience === "TEACHER") {
-          if (!targetClass || (studentClass && targetClass.split(",").includes(studentClass))) {
+          if (!targetClass || !studentClass || targetClass.split(",").map((c: string) => c.trim()).includes(studentClass)) {
             result.push(item);
           }
         }
       } else if (user.role === "STUDENT") {
         if (audience === "BOTH" || audience === "STUDENT") {
-          if (!targetClass || (studentClass && targetClass.split(",").includes(studentClass))) {
+          if (!targetClass || (studentClass && targetClass.split(",").map((c: string) => c.trim()).includes(studentClass))) {
             result.push(item);
           }
         }
       }
     } else {
-      // Inherit rule
-      if (isSearchOrRecent) {
-        // For search/recent, check access to the item's parent recursively
-        const parentId = item.parents && item.parents.length > 0 ? item.parents[0] : null;
-        const parentAllowed = await hasFolderAccess(parentId, user);
-        if (parentAllowed) {
-          item.accessRule = { audience: "BOTH", targetClass: null };
-          result.push(item);
-        }
-      } else if (folderId && folderId !== "root") {
-        // If browsing inside an allowed subfolder, inherit access from it
+      if (allowedFolderIds.has(item.id)) {
         item.accessRule = { audience: "BOTH", targetClass: null };
         result.push(item);
+      } else {
+        const isFolder = item.mimeType === "application/vnd.google-apps.folder";
+        if (isFolder) {
+          const parentId = item.parents && item.parents.length > 0 ? item.parents[0] : folderId;
+          const parentExplicitlyAllowed = await isExplicitlyAllowed(parentId, user, studentClass);
+          if (parentExplicitlyAllowed) {
+            item.accessRule = { audience: "BOTH", targetClass: null };
+            result.push(item);
+          }
+        }
       }
-      // If at root (folderId is null/root), default is deny, so item is not pushed.
     }
   }
 
@@ -465,7 +519,7 @@ router.delete("/:id", authenticate, adminOnly, async (req, res, next) => {
 router.put("/:id/access", authenticate, adminOnly, async (req, res, next) => {
   try {
     const fileId = req.params.id as string;
-    const { audience, targetClass } = req.body;
+    const { audience, targetClass, title } = req.body;
 
     const allowedAudiences = ["BOTH", "TEACHER", "STUDENT"];
     if (!allowedAudiences.includes(audience)) {
@@ -477,11 +531,13 @@ router.put("/:id/access", authenticate, adminOnly, async (req, res, next) => {
       update: {
         audience: audience as any,
         targetClass: targetClass || null,
+        title: title || undefined,
       },
       create: {
         fileId,
         audience: audience as any,
         targetClass: targetClass || null,
+        title: title || "Untitled Document",
       },
     });
 

@@ -74,10 +74,32 @@ try {
     console.log("· StoryBook table not found — skipped audience migration.");
   }
 
+  // ── DriveAccessRule: title ──────────────────────────────────────────
+  try {
+    const ruleCols = await columnNames(conn, "DriveAccessRule");
+    if (ruleCols.includes("title")) {
+      console.log("✓ DriveAccessRule.title already exists.");
+    } else {
+      await conn.query(
+        "ALTER TABLE DriveAccessRule ADD COLUMN title VARCHAR(191) NOT NULL DEFAULT 'Untitled Document'"
+      );
+      console.log("✓ Added DriveAccessRule.title column.");
+    }
+  } catch {
+    console.log("· DriveAccessRule table not found — skipped title migration.");
+  }
+
   // ── StudentNotification table ─────────────────────────────────────
   try {
     await conn.query("SELECT 1 FROM StudentNotification LIMIT 1");
     console.log("✓ StudentNotification table already exists.");
+    const notifCols = await columnNames(conn, "StudentNotification");
+    if (!notifCols.includes("fileId")) {
+      await conn.query(
+        "ALTER TABLE StudentNotification ADD COLUMN fileId VARCHAR(191) NULL"
+      );
+      console.log("✓ Added StudentNotification.fileId column.");
+    }
   } catch {
     await conn.query(`
       CREATE TABLE StudentNotification (
@@ -87,7 +109,9 @@ try {
         title VARCHAR(191) NOT NULL,
         message TEXT NOT NULL,
         storyBookId VARCHAR(191) NULL,
+        fileId VARCHAR(191) NULL,
         isRead TINYINT(1) NOT NULL DEFAULT 0,
+        readingStatus VARCHAR(191) NOT NULL DEFAULT 'UNREAD',
         createdAt DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
         PRIMARY KEY (id),
         INDEX StudentNotification_userId_isRead_idx (userId, isRead),

@@ -94,37 +94,45 @@ router.post("/books/:bookId/status", async (req, res, next) => {
   try {
     const userId = req.user!.userId;
     const bookId = String(req.params.bookId);
-    const { status } = req.body;
+    const { status, title, category } = req.body;
 
     if (status !== "READING" && status !== "READ" && status !== "UNREAD") {
       throw new AppError("Invalid status", 400);
     }
 
-    // Find any STORY_BOOK notification for this user and book
+    // Find any STORY_BOOK notification for this user and book (checking both database storyBookId and Google Drive fileId)
     const notification = await prisma.studentNotification.findFirst({
       where: {
         userId,
-        storyBookId: bookId,
         type: "STORY_BOOK",
+        OR: [
+          { storyBookId: bookId },
+          { fileId: bookId }
+        ]
       },
     });
 
     if (notification) {
-      await prisma.studentNotification.update({
+      if (notification.readingStatus === "READ" && status !== "READ") {
+        // Once marked as READ, do not revert to READING or UNREAD
+        return res.json({ success: true, status: "READ" });
+      }
+      const updated = await prisma.studentNotification.update({
         where: { id: notification.id },
         data: { 
           readingStatus: status,
           isRead: notification.isRead || status === "READ",
         },
       });
+      return res.json({ success: true, status: updated.readingStatus });
     } else {
-      // Find the story book to get category, title, author
+      // Find the story book in DB first
       const book = await prisma.storyBook.findUnique({
         where: { id: bookId }
       });
       if (book) {
         const authorSuffix = book.author ? ` by ${book.author}` : "";
-        await prisma.studentNotification.create({
+        const created = await prisma.studentNotification.create({
           data: {
             userId,
             storyBookId: bookId,
@@ -135,6 +143,29 @@ router.post("/books/:bookId/status", async (req, res, next) => {
             isRead: status === "READ",
           },
         });
+        return res.json({ success: true, status: created.readingStatus });
+      }
+
+      // Check if it's a Google Drive file with an access rule, or if title was provided
+      const driveRule = await prisma.driveAccessRule.findUnique({
+        where: { fileId: bookId }
+      });
+
+      if (driveRule || title) {
+        const bookTitle = title || driveRule?.title || "Story Book";
+        const bookCategory = category || driveRule?.targetClass || "Library";
+        const created = await prisma.studentNotification.create({
+          data: {
+            userId,
+            fileId: bookId,
+            type: "STORY_BOOK",
+            title: "New story book available",
+            message: `"${bookTitle}" was added to your ${bookCategory} library.`,
+            readingStatus: status,
+            isRead: status === "READ",
+          },
+        });
+        return res.json({ success: true, status: created.readingStatus });
       }
     }
 
