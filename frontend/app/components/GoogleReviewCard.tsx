@@ -14,7 +14,7 @@ export function GoogleReviewCard({ review }: { review: PublicReview }) {
   const hasText = review.content && review.content !== "—";
 
   return (
-    <article className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-sm text-left h-full flex flex-col">
+    <article className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-sm text-left h-full flex flex-col min-w-0">
       <div className="flex items-start gap-3">
         {review.profilePhotoUrl ? (
           <img
@@ -31,7 +31,7 @@ export function GoogleReviewCard({ review }: { review: PublicReview }) {
         <div className="flex-1 min-w-0">
           <h5 className="font-bold text-sm text-slate-900 truncate">{review.name}</h5>
           <Stars rating={review.rating} />
-          <p className="text-2xs text-slate-500 font-medium mt-0.5">
+          <p className="text-2xs text-slate-500 font-medium mt-0.5 break-words">
             {[review.relativeTime, review.placeName].filter(Boolean).join(" · ") ||
               (review.source === "google" ? "Google Review" : "Simba Academy Parent")}
           </p>

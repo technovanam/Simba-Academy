@@ -167,28 +167,30 @@ export function AdminPaymentsPanel({ token, onError }: AdminPaymentsPanelProps) 
           />
         ) : (
           <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex-1 min-h-0 flex flex-col">
-            <div className="overflow-x-auto flex-1 min-h-0 overflow-y-auto modern-scrollbar">
-              <table className="w-full text-left text-sm whitespace-nowrap">
+
+            {/* Desktop Table — md and above */}
+            <div className="hidden md:block overflow-x-auto flex-1 min-h-0 overflow-y-auto modern-scrollbar">
+              <table className="w-full text-left text-sm">
                 <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium text-xs sticky top-0 z-10">
                   <tr>
-                    <th className="px-4 py-3 font-semibold">Payer</th>
-                    <th className="px-4 py-3 font-semibold">Class</th>
-                    <th className="px-4 py-3 font-semibold">Amount</th>
-                    <th className="px-4 py-3 font-semibold">Status</th>
-                    <th className="px-4 py-3 font-semibold">Date</th>
-                    <th className="px-4 py-3 font-semibold text-right">Actions</th>
+                    <th className="px-4 py-3 font-semibold whitespace-nowrap">Payer</th>
+                    <th className="px-4 py-3 font-semibold whitespace-nowrap">Class</th>
+                    <th className="px-4 py-3 font-semibold whitespace-nowrap">Amount</th>
+                    <th className="px-4 py-3 font-semibold whitespace-nowrap">Status</th>
+                    <th className="px-4 py-3 font-semibold whitespace-nowrap">Date</th>
+                    <th className="px-4 py-3 font-semibold text-right whitespace-nowrap">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {sorted.map((p) => (
                     <tr key={p.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="px-4 py-3 align-middle">
-                        <div className="flex flex-col min-w-0">
+                      <td className="px-4 py-3 align-middle whitespace-nowrap">
+                        <div className="flex flex-col">
                           <span className="font-bold text-sm text-slate-800">{p.user?.name ?? "Unknown payer"}</span>
                           <span className="text-2xs text-slate-500 font-medium">{p.user?.email ?? "—"}</span>
                         </div>
                       </td>
-                      <td className="px-4 py-3 align-middle text-xs font-semibold">
+                      <td className="px-4 py-3 align-middle text-xs font-semibold whitespace-nowrap">
                         {(() => {
                           const cls = p.course?.level || p.user?.studentClass;
                           return cls ? (
@@ -200,22 +202,22 @@ export function AdminPaymentsPanel({ token, onError }: AdminPaymentsPanelProps) 
                           );
                         })()}
                       </td>
-                      <td className="px-4 py-3 align-middle text-sm font-extrabold text-emerald-700">
+                      <td className="px-4 py-3 align-middle text-sm font-extrabold text-emerald-700 whitespace-nowrap">
                         ₹{p.amount.toLocaleString("en-IN")}
                       </td>
-                      <td className="px-4 py-3 align-middle">
+                      <td className="px-4 py-3 align-middle whitespace-nowrap">
                         <span className={`px-2 py-0.5 rounded-md text-4xs font-extrabold uppercase border ${statusBadgeClass(p.status)}`}>
                           {p.status}
                         </span>
                       </td>
-                      <td className="px-4 py-3 align-middle text-xs text-slate-500">
+                      <td className="px-4 py-3 align-middle text-xs text-slate-500 whitespace-nowrap">
                         {new Date(p.createdAt).toLocaleDateString("en-IN", {
                           month: "short",
                           day: "numeric",
                           year: "numeric",
                         })}
                       </td>
-                      <td className="px-4 py-2 text-right align-middle">
+                      <td className="px-4 py-2 text-right align-middle whitespace-nowrap">
                         <button
                           type="button"
                           onClick={() => setViewPayment(p)}
@@ -229,6 +231,60 @@ export function AdminPaymentsPanel({ token, onError }: AdminPaymentsPanelProps) 
                 </tbody>
               </table>
             </div>
+
+            {/* Mobile Card Layout — below md */}
+            <div className="md:hidden divide-y divide-slate-200/50 flex-1 overflow-y-auto modern-scrollbar bg-slate-50/50">
+              {sorted.map((p) => {
+                const cls = p.course?.level || p.user?.studentClass;
+                return (
+                  <div key={p.id} className="p-4 hover:bg-slate-50 transition-colors flex flex-col gap-2.5">
+                    {/* Name + email + action */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-extrabold text-sm text-slate-800 leading-tight">{p.user?.name ?? "Unknown payer"}</p>
+                        <p className="text-2xs text-slate-500 font-semibold mt-0.5 truncate">{p.user?.email ?? "—"}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setViewPayment(p)}
+                        className="px-2.5 py-1.5 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100 text-2xs font-bold flex items-center gap-1 shrink-0 transition"
+                      >
+                        <Eye className="w-3 h-3" /> View
+                      </button>
+                    </div>
+
+                    {/* Info grid */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-50 p-3 rounded-xl border border-slate-200/30 text-[11px]">
+                      <div>
+                        <span className="text-slate-400 font-semibold block uppercase text-[9px] tracking-wider mb-0.5">Amount</span>
+                        <span className="text-emerald-700 font-extrabold text-sm">₹{p.amount.toLocaleString("en-IN")}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 font-semibold block uppercase text-[9px] tracking-wider mb-0.5">Status</span>
+                        <span className={`px-2 py-0.5 rounded-md text-4xs font-extrabold uppercase border inline-block ${statusBadgeClass(p.status)}`}>
+                          {p.status}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 font-semibold block uppercase text-[9px] tracking-wider mb-0.5">Class</span>
+                        {cls ? (
+                          <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-100 font-extrabold text-[10px] uppercase inline-block">{cls}</span>
+                        ) : (
+                          <span className="text-slate-400">—</span>
+                        )}
+                      </div>
+                      <div>
+                        <span className="text-slate-400 font-semibold block uppercase text-[9px] tracking-wider mb-0.5">Date</span>
+                        <span className="text-slate-600 font-medium">
+                          {new Date(p.createdAt).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" })}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
           </div>
         )}
       </AdminPageBody>

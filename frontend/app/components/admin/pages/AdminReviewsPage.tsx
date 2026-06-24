@@ -1977,7 +1977,7 @@ export function AdminReviewsPage() {
                       testimonials.map((t) => (
                         <div
                           key={t.id}
-                          className="bg-white rounded-2xl p-5 border border-slate-200 shadow-md flex flex-col justify-between hover:shadow-lg transition group/review"
+                          className="bg-white rounded-2xl p-5 border border-slate-200 shadow-md flex flex-col justify-between hover:shadow-lg transition group/review min-w-0"
                         >
                           <div>
                             <div className="flex justify-between items-center mb-3">
@@ -1996,10 +1996,10 @@ export function AdminReviewsPage() {
                                 {t.isApproved ? "PUBLISHED" : "HIDDEN"}
                               </span>
                             </div>
-                            <p className="text-xs italic text-slate-700">
+                            <p className="text-xs italic text-slate-700 break-words">
                               &ldquo;{t.content}&rdquo;
                             </p>
-                            <h5 className="font-sans font-bold text-xs text-[#8AC926] mt-3">
+                            <h5 className="font-sans font-bold text-xs text-[#8AC926] mt-3 break-words">
                               — {t.name}
                             </h5>
                           </div>

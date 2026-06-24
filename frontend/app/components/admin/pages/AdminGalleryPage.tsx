@@ -1864,7 +1864,7 @@ export function AdminGalleryPage() {
                     </div>
 
                     {/* Mobile/Tablet Card Layout */}
-                    <div className="md:hidden divide-y divide-slate-150 flex-1 overflow-y-auto modern-scrollbar bg-slate-50/50">
+                    <div className="md:hidden divide-y divide-slate-200/40 flex-1 overflow-y-auto modern-scrollbar bg-white">
                       {filteredGallery.map((g) => (
                         <div key={g.id} className="p-4 hover:bg-slate-50 transition-colors flex flex-col gap-2.5">
                           <div className="flex items-start justify-between gap-3">
@@ -1910,14 +1910,6 @@ export function AdminGalleryPage() {
                                 )}
                               </button>
                             </div>
-                          </div>
-
-                          <div className="rounded-xl overflow-hidden border border-slate-200 bg-white max-w-[120px] aspect-video">
-                            <img
-                              src={resolveStorageUrl(g.imageUrl)}
-                              alt={g.title || "Gallery thumbnail"}
-                              className="w-full h-full object-cover"
-                            />
                           </div>
                         </div>
                       ))}
@@ -2005,7 +1997,7 @@ export function AdminGalleryPage() {
                   onClick={() => setViewerImage(null)}
                 >
                   <div
-                    className="flex flex-col flex-1 min-h-0 max-w-6xl w-full mx-auto bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden"
+                    className="flex flex-col max-h-[92vh] h-fit my-auto max-w-6xl w-full mx-auto bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-slate-200 bg-slate-50 shrink-0">
@@ -2032,11 +2024,11 @@ export function AdminGalleryPage() {
                       </div>
                     </div>
                     
-                    <div className="relative flex-1 min-h-0 bg-slate-50 flex items-center justify-center p-4 overflow-auto">
+                    <div className="relative bg-slate-50 flex items-center justify-center p-4 overflow-auto h-fit w-full">
                       <img
                         src={resolveStorageUrl(viewerImage)}
                         alt={viewerTitle}
-                        className="max-w-full max-h-full object-contain rounded-lg shadow-md"
+                        className="max-w-full h-auto max-h-[75vh] object-contain rounded-lg shadow-md"
                       />
                     </div>
                   </div>
