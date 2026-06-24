@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { api, ApiError } from "../lib/api";
+import { api, ApiError, formatApiError } from "../lib/api";
 import { AlertCircle } from "lucide-react";
 import { ThemeSelect } from "./ThemeSelect";
 import { Toast } from "./Toast";
@@ -23,6 +23,7 @@ export function ContactForm({ defaultType = "Preschool" }: ContactFormProps) {
   // Field errors
   const [nameError, setNameError] = useState("");
   const [emailError, setEmailError] = useState("");
+  const [phoneError, setPhoneError] = useState("");
   const [messageError, setMessageError] = useState("");
 
   async function handleSubmit(e: React.FormEvent) {
@@ -33,6 +34,7 @@ export function ContactForm({ defaultType = "Preschool" }: ContactFormProps) {
     setSuccessMessage("");
     setNameError("");
     setEmailError("");
+    setPhoneError("");
     setMessageError("");
 
     let hasErrors = false;
@@ -58,6 +60,11 @@ export function ContactForm({ defaultType = "Preschool" }: ContactFormProps) {
       hasErrors = true;
     }
 
+    if (!form.phone.trim()) {
+      setPhoneError("Please enter your phone number");
+      hasErrors = true;
+    }
+
     if (hasErrors) {
       return;
     }
@@ -71,7 +78,15 @@ export function ContactForm({ defaultType = "Preschool" }: ContactFormProps) {
       setForm({ name: "", email: "", phone: "", inquiryType: defaultType, message: "" });
     } catch (err) {
       setStatus("error");
-      setError(err instanceof ApiError ? err.message : "Failed to submit inquiry");
+      if (err instanceof ApiError && err.errors) {
+        if (err.errors.name) setNameError(err.errors.name[0]);
+        if (err.errors.email) setEmailError(err.errors.email[0]);
+        if (err.errors.phone) setPhoneError(err.errors.phone[0]);
+        if (err.errors.message) setMessageError(err.errors.message[0]);
+        setError("Please check the fields for errors.");
+      } else {
+        setError(formatApiError(err, "Failed to submit inquiry"));
+      }
     } finally {
       setStatus("idle");
     }
@@ -82,10 +97,10 @@ export function ContactForm({ defaultType = "Preschool" }: ContactFormProps) {
       <Toast message={error} variant="error" onDismiss={() => setError("")} />
       <Toast message={successMessage} variant="success" onDismiss={() => setSuccessMessage("")} />
 
-      <form onSubmit={handleSubmit} noValidate autoComplete="off" className="glass-panel rounded-lg p-8 space-y-5 shadow-xl">
+      <form onSubmit={handleSubmit} noValidate autoComplete="off" className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div>
-            <label className={`block text-sm font-bold mb-2 transition-colors ${nameError ? "text-red-500" : ""}`}>Name *</label>
+            <label className={`block text-sm font-bold mb-2 transition-colors ${nameError ? "text-red-500" : "text-slate-700"}`}>Full Name *</label>
             <div className="relative">
               <input
                 type="text"
@@ -95,10 +110,10 @@ export function ContactForm({ defaultType = "Preschool" }: ContactFormProps) {
                   setForm({ ...form, name: e.target.value });
                   if (nameError) setNameError("");
                 }}
-                className={`w-full rounded-lg border px-4 py-3 pr-10 bg-white outline-none transition-all ${
+                className={`w-full rounded-xl px-4 py-3.5 outline-none transition-all ${
                   nameError 
-                    ? "border-red-500 focus:border-red-500 shadow-xs shadow-red-100 text-red-900 placeholder-red-300" 
-                    : "border-[#8AC926]/20 focus:border-[#8AC926]"
+                    ? "bg-red-50 border-2 border-red-500 text-red-900 placeholder-red-300" 
+                    : "bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#E8AF34] focus:ring-4 focus:ring-[#E8AF34]/10"
                 }`}
               />
               {nameError && (
@@ -110,7 +125,7 @@ export function ContactForm({ defaultType = "Preschool" }: ContactFormProps) {
             )}
           </div>
           <div>
-            <label className={`block text-sm font-bold mb-2 transition-colors ${emailError ? "text-red-500" : ""}`}>Email *</label>
+            <label className={`block text-sm font-bold mb-2 transition-colors ${emailError ? "text-red-500" : "text-slate-700"}`}>Email Address *</label>
             <div className="relative">
               <input
                 type="email"
@@ -120,10 +135,10 @@ export function ContactForm({ defaultType = "Preschool" }: ContactFormProps) {
                   setForm({ ...form, email: e.target.value });
                   if (emailError) setEmailError("");
                 }}
-                className={`w-full rounded-lg border px-4 py-3 pr-10 bg-white outline-none transition-all ${
+                className={`w-full rounded-xl px-4 py-3.5 outline-none transition-all ${
                   emailError 
-                    ? "border-red-500 focus:border-red-500 shadow-xs shadow-red-100 text-red-900 placeholder-red-300" 
-                    : "border-[#8AC926]/20 focus:border-[#8AC926]"
+                    ? "bg-red-50 border-2 border-red-500 text-red-900 placeholder-red-300" 
+                    : "bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#E8AF34] focus:ring-4 focus:ring-[#E8AF34]/10"
                 }`}
               />
               {emailError && (
@@ -136,35 +151,34 @@ export function ContactForm({ defaultType = "Preschool" }: ContactFormProps) {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <div>
-            <label className="block text-sm font-bold mb-2">Phone</label>
+        <div>
+          <label className={`block text-sm font-bold mb-2 transition-colors ${phoneError ? "text-red-500" : "text-slate-700"}`}>Phone Number *</label>
+          <div className="relative">
             <input
               type="tel"
               autoComplete="off"
               value={form.phone}
-              onChange={(e) => setForm({ ...form, phone: e.target.value })}
-              className="w-full rounded-lg border-2 border-[#8AC926]/20 px-4 py-3 bg-white focus:border-[#8AC926] outline-none"
+              onChange={(e) => {
+                setForm({ ...form, phone: e.target.value });
+                if (phoneError) setPhoneError("");
+              }}
+              className={`w-full rounded-xl px-4 py-3.5 outline-none transition-all ${
+                phoneError 
+                  ? "bg-red-50 border-2 border-red-500 text-red-900 placeholder-red-300" 
+                  : "bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#E8AF34] focus:ring-4 focus:ring-[#E8AF34]/10"
+              }`}
             />
+            {phoneError && (
+              <AlertCircle className="w-5 h-5 text-red-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            )}
           </div>
-          <div>
-            <label className="block text-sm font-bold mb-2">Inquiry Type *</label>
-            <ThemeSelect
-              value={form.inquiryType}
-              onChange={(val) =>
-                setForm({ ...form, inquiryType: val as "Preschool" | "Franchise" })
-              }
-              className="rounded-lg border-2 border-[#8AC926]/20 bg-white"
-              options={[
-                { id: "Preschool", label: "Preschool" },
-                { id: "Franchise", label: "Franchise" },
-              ]}
-            />
-          </div>
+          {phoneError && (
+            <p className="mt-1.5 text-xs text-red-500 font-semibold text-left">{phoneError}</p>
+          )}
         </div>
 
         <div>
-          <label className={`block text-sm font-bold mb-2 transition-colors ${messageError ? "text-red-500" : ""}`}>Message *</label>
+          <label className={`block text-sm font-bold mb-2 transition-colors ${messageError ? "text-red-500" : "text-slate-700"}`}>Message or Questions *</label>
           <div className="relative">
             <textarea
               rows={5}
@@ -174,10 +188,10 @@ export function ContactForm({ defaultType = "Preschool" }: ContactFormProps) {
                 setForm({ ...form, message: e.target.value });
                 if (messageError) setMessageError("");
               }}
-              className={`w-full rounded-lg border px-4 py-3 pr-10 bg-white outline-none transition-all resize-none ${
+              className={`w-full rounded-xl px-4 py-3.5 outline-none transition-all resize-none ${
                 messageError 
-                  ? "border-red-500 focus:border-red-500 shadow-xs shadow-red-100 text-red-900 placeholder-red-300" 
-                  : "border-[#8AC926]/20 focus:border-[#8AC926]"
+                  ? "bg-red-50 border-2 border-red-500 text-red-900 placeholder-red-300" 
+                  : "bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#E8AF34] focus:ring-4 focus:ring-[#E8AF34]/10"
               }`}
             />
             {messageError && (
@@ -192,7 +206,7 @@ export function ContactForm({ defaultType = "Preschool" }: ContactFormProps) {
         <button
           type="submit"
           disabled={status === "loading"}
-          className="w-full py-4 rounded-md bg-[#FF9F1C] border-b-4 border-[#E07A00] text-white font-sans font-extrabold text-lg hover:bg-[#FFAE33] disabled:opacity-60 transition-all cursor-pointer"
+          className="w-full py-4 mt-4 rounded-xl bg-[#E8AF34] text-white font-extrabold text-base hover:bg-[#d69f2e] disabled:opacity-60 transition-all cursor-pointer shadow-md shadow-[#E8AF34]/20 hover:-translate-y-1"
         >
           {status === "loading" ? "Sending..." : "Send Inquiry"}
         </button>
