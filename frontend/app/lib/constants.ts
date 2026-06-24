@@ -70,7 +70,6 @@ export const COURSE_LEVELS = [
 export const NAV_LINKS = [
   { label: "Home", to: "/" },
   { label: "About", to: "/about" },
-  { label: "Courses", to: "/courses" },
   { label: "Franchise", to: "/franchise" },
   { label: "Gallery", to: "/gallery" },
   { label: "Contact", to: "/contact" },
@@ -80,7 +79,6 @@ export const HEADER_LINKS = [
   { label: "Home", to: "/" },
   { label: "About", to: "/about" },
   { label: "Franchise", to: "/franchise" },
-  { label: "Courses", to: "/courses" },
   { label: "Contact", to: "/contact" },
 ] as const;
 
