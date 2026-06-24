@@ -287,6 +287,26 @@ input:-webkit-autofill:active {
   height: 6px;
 }
 
+/* Thin scrollbar for PDF Viewer */
+.pdf-scrollbar::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+.pdf-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.pdf-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+.pdf-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+.pdf-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
