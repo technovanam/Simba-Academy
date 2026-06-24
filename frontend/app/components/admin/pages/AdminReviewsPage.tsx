@@ -198,8 +198,9 @@ export function AdminReviewsPage() {
     rating?: number;
     totalRatings?: number;
     placeName?: string;
-    fetchMode?: "business_profile" | "places" | "oauth_pending" | "none";
+    fetchMode?: "places_api" | "business_profile" | "oauth_pending";
   }>({ configured: false });
+  const [selectedLocationForReviews, setSelectedLocationForReviews] = useState<GoogleLocationSummary | null>(null);
   const [gallery, setGallery] = useState<GalleryItem[]>([]);
   const [adminNotifications, setAdminNotifications] = useState<AdminNotification[]>([]);
   const [notificationSearch, setNotificationSearch] = useState("");
@@ -1899,25 +1900,29 @@ export function AdminReviewsPage() {
                       {googleLocations.length > 0 && (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-5">
                           {googleLocations.map((loc) => (
-                            <div
+                            <button
                               key={loc.placeId}
-                              className="bg-white rounded-xl border border-slate-200 px-4 py-3 shadow-xs"
+                              onClick={() => setSelectedLocationForReviews(loc)}
+                              className="bg-white rounded-xl border border-slate-200 px-4 py-3 shadow-xs text-left hover:shadow-md hover:border-slate-300 transition cursor-pointer flex flex-col justify-center"
                             >
                               <p className="font-bold text-2xs text-slate-900 truncate">
                                 {loc.placeName}
                               </p>
-                              <p className="text-3xs text-slate-600 mt-1 font-medium">
-                                {loc.rating != null && (
-                                  <span className="text-[#FF9F1C] mr-1">★ {loc.rating}</span>
-                                )}
-                                {loc.totalRatings ?? 0} ratings · {loc.reviewsReturned} loaded here
+                              <p className="text-3xs text-slate-600 mt-1 font-medium flex items-center justify-between">
+                                <span>
+                                  {loc.rating != null && (
+                                    <span className="text-[#FF9F1C] mr-1">★ {loc.rating}</span>
+                                  )}
+                                  {loc.totalRatings ?? 0} ratings · {loc.reviewsReturned} loaded here
+                                </span>
+                                <span className="text-slate-400 font-bold group-hover:text-blue-500 transition">View →</span>
                               </p>
-                            </div>
+                            </button>
                           ))}
                         </div>
                       )}
 
-                      {googleReviews.length === 0 ? (
+                      {googleReviews.length === 0 && (
                         <div className="bg-white rounded-2xl p-8 text-center text-sm font-semibold text-slate-600 border border-slate-200">
                           {googleReviewsMeta.fetchMode === "oauth_pending" ? (
                             <>
@@ -1940,22 +1945,6 @@ export function AdminReviewsPage() {
                               location(s). Connect Google Business or check Places API settings in
                               backend .env.
                             </>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="grid md:grid-cols-2 gap-4 max-h-[65vh] overflow-y-auto pr-1">
-                          {googleReviews
-                            .filter((r) => r.content && r.content !== "—")
-                            .map((r) => (
-                              <GoogleReviewCard key={r.id} review={r} />
-                            ))}
-                          {googleReviews.filter((r) => !r.content || r.content === "—").length >
-                            0 && (
-                            <p className="md:col-span-2 text-2xs text-slate-500 font-medium text-center py-2">
-                              {googleReviews.filter((r) => !r.content || r.content === "—").length}{" "}
-                              additional star-only rating(s) hidden — Google did not include written
-                              text.
-                            </p>
                           )}
                         </div>
                       )}
@@ -2094,6 +2083,40 @@ export function AdminReviewsPage() {
                         {actionLoading === "testimonial-save" ? "Saving…" : "Register Testimonial"}
                       </button>
                     </form>
+                  </div>
+                </div>
+              )}
+              {selectedLocationForReviews && (
+                <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+                  <div className="bg-white rounded-2xl p-6 w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl border border-slate-200 animate-scale-up relative">
+                    <ModalCloseButton
+                      onClick={() => setSelectedLocationForReviews(null)}
+                      className="absolute top-4 right-4"
+                    />
+                    <h3 className="font-sans text-lg font-extrabold text-slate-900 mb-1 pr-10">
+                      Reviews for {selectedLocationForReviews.placeName}
+                    </h3>
+                    <p className="text-xs text-slate-500 mb-4 font-medium">
+                      {selectedLocationForReviews.reviewsReturned} review(s) loaded from this location.
+                    </p>
+                    <div className="flex-1 overflow-y-auto pr-2 grid md:grid-cols-2 gap-4">
+                      {googleReviews
+                        .filter((r) => r.placeId === selectedLocationForReviews.placeId)
+                        .filter((r) => r.content && r.content !== "—")
+                        .map((r) => (
+                          <GoogleReviewCard key={r.id} review={r} />
+                        ))}
+                      {googleReviews.filter((r) => r.placeId === selectedLocationForReviews.placeId && (!r.content || r.content === "—")).length > 0 && (
+                        <p className="md:col-span-2 text-2xs text-slate-500 font-medium text-center py-2 mt-4">
+                          {googleReviews.filter((r) => r.placeId === selectedLocationForReviews.placeId && (!r.content || r.content === "—")).length} additional star-only rating(s) hidden — Google did not include written text.
+                        </p>
+                      )}
+                      {googleReviews.filter((r) => r.placeId === selectedLocationForReviews.placeId && r.content && r.content !== "—").length === 0 && (
+                        <p className="md:col-span-2 text-sm text-slate-500 font-semibold text-center py-8">
+                          No written reviews loaded for this location.
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
