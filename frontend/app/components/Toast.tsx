@@ -76,9 +76,25 @@ export function Toast({
   useEffect(() => {
     if (!message) return;
     setClosing(false);
-    if (dismissMs <= 0) return;
+    
+    const handleGlobalClick = () => dismiss();
+    const clickDelayTimer = setTimeout(() => {
+      window.addEventListener("click", handleGlobalClick);
+    }, 100);
+
+    if (dismissMs <= 0) {
+      return () => {
+        clearTimeout(clickDelayTimer);
+        window.removeEventListener("click", handleGlobalClick);
+      };
+    }
+    
     const timer = setTimeout(dismiss, dismissMs);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(clickDelayTimer);
+      window.removeEventListener("click", handleGlobalClick);
+    };
   }, [message, dismissMs, dismiss]);
 
   if (!mounted || !message) return null;
