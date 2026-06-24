@@ -122,6 +122,7 @@ export function AdminPaymentsPanel({ token, onError }: AdminPaymentsPanelProps) 
               options={classOptions}
               onChange={setClassFilter}
               ariaLabel="Class filter"
+              align="right"
             />
           </>
         }

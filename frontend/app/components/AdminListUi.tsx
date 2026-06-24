@@ -115,14 +115,14 @@ export function PillSelect<T extends string>({
   }, [open]);
 
   return (
-    <div ref={ref} className="relative w-full min-w-0 sm:w-fit sm:shrink-0">
+    <div ref={ref} className="relative shrink-0">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-label={ariaLabel}
         aria-expanded={open}
         aria-haspopup="listbox"
-        className={`inline-flex items-center gap-1.5 pl-3.5 pr-2.5 py-2 rounded-full border ${tone.border} bg-white text-xs font-bold text-slate-800 ${tone.hover} transition w-full sm:w-auto sm:min-w-[128px] sm:max-w-[168px] justify-between leading-none`}
+        className={`inline-flex items-center gap-1.5 pl-3.5 pr-2.5 py-2 rounded-full border ${tone.border} bg-white text-xs font-bold text-slate-800 ${tone.hover} transition min-w-[128px] max-w-[168px] justify-between leading-none`}
       >
         <span className="truncate leading-none">{selected?.label}</span>
         <ChevronDown
@@ -133,7 +133,7 @@ export function PillSelect<T extends string>({
         <ul
           role="listbox"
           aria-label={ariaLabel}
-          className={`absolute ${align === "right" ? "right-0" : "left-0"} top-[calc(100%+6px)] z-30 min-w-[168px] py-1.5 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden`}
+          className={`absolute ${align === "right" ? "left-0 right-auto sm:right-0 sm:left-auto" : "left-0"} top-[calc(100%+6px)] z-30 min-w-[168px] py-1.5 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden`}
         >
           {options.map((o) => (
             <li key={o.id} role="option" aria-selected={o.id === value}>

@@ -1775,6 +1775,7 @@ export function AdminInquiriesPage() {
                       options={inquiryTabOptions}
                       onChange={(id) => setInquirySubTab(id as "general" | "franchise")}
                       ariaLabel="Lead type"
+                      align="right"
                     />
                   </>
                 }

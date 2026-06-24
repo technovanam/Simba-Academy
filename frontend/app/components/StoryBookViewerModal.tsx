@@ -431,7 +431,7 @@ export function StoryBookViewerModal({
       onMouseDown={preventDoubleClick}
     >
       <div
-        className="flex flex-col flex-1 min-h-0 max-w-6xl w-full mx-auto bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden"
+        className="flex flex-col max-h-[92vh] h-fit my-auto max-w-6xl w-full mx-auto bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-slate-200 bg-white shrink-0">
@@ -474,9 +474,9 @@ export function StoryBookViewerModal({
             <ModalCloseButton onClick={handleClose} />
           </div>
         </div>
-
         <div 
-          className="relative flex-1 min-h-0 bg-slate-950 overflow-hidden" 
+          className="relative w-full bg-white overflow-hidden" 
+          style={isPpt ? { aspectRatio: "16 / 9" } : { aspectRatio: "1.414 / 1" }}
           onContextMenu={(e) => role !== "ADMIN" && e.preventDefault()}
           onMouseDown={(e) => {
             handleContainerMouseDown(e);
@@ -503,9 +503,9 @@ export function StoryBookViewerModal({
               height: 100%;
               max-width: 900px;
               aspect-ratio: 1.414 / 1;
-              background: #0f172a;
+              background: #f8fafc;
               border-radius: 12px;
-              box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.7);
+              box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.15);
               transform-style: preserve-3d;
             }
             @media (max-width: 1023px) {
@@ -521,7 +521,7 @@ export function StoryBookViewerModal({
               bottom: 0;
               width: 4px;
               transform: translateX(-50%) translateZ(1px);
-              background: linear-gradient(to right, rgba(0,0,0,0.3), rgba(255,255,255,0.1) 50%, rgba(0,0,0,0.3));
+              background: linear-gradient(to right, rgba(0,0,0,0.15), rgba(255,255,255,0.1) 50%, rgba(0,0,0,0.15));
               z-index: 50;
             }
             .book-sheet {
@@ -588,10 +588,10 @@ export function StoryBookViewerModal({
               top: 0;
               width: 50%;
               height: 100%;
-              background: linear-gradient(135deg, #1e293b, #0f172a);
+              background: linear-gradient(135deg, #f1f5f9, #cbd5e1);
               border-radius: 8px 0 0 8px;
-              border: 1px solid rgba(255,255,255,0.05);
-              box-shadow: inset -2px 0 10px rgba(0,0,0,0.4);
+              border: 1px solid rgba(0,0,0,0.05);
+              box-shadow: inset -2px 0 10px rgba(0,0,0,0.1);
             }
             .book-cover-right {
               position: absolute;
@@ -599,22 +599,22 @@ export function StoryBookViewerModal({
               top: 0;
               width: 50%;
               height: 100%;
-              background: linear-gradient(135deg, #1e293b, #0f172a);
+              background: linear-gradient(135deg, #f1f5f9, #cbd5e1);
               border-radius: 0 8px 8px 0;
-              border: 1px solid rgba(255,255,255,0.05);
-              box-shadow: inset 2px 0 10px rgba(0,0,0,0.4);
+              border: 1px solid rgba(0,0,0,0.05);
+              box-shadow: inset 2px 0 10px rgba(0,0,0,0.1);
             }
           ` }} />
 
           {loading && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-white/90 z-10 bg-slate-950">
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-slate-700 z-10 bg-white">
               <Loader2 className={`w-8 h-8 animate-spin ${accentSpin}`} />
               <p className="text-xs font-semibold">Loading story book…</p>
             </div>
           )}
           {loadError && !loading && (
-            <div className="absolute inset-0 flex items-center justify-center p-6 z-10 bg-slate-950">
-              <p className="text-sm font-semibold text-red-300 text-center">{loadError}</p>
+            <div className="absolute inset-0 flex items-center justify-center p-6 z-10 bg-white">
+              <p className="text-sm font-semibold text-rose-500 text-center">{loadError}</p>
             </div>
           )}
           

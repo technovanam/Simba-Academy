@@ -1792,24 +1792,25 @@ export function AdminGalleryPage() {
                   />
                 ) : (
                   <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex-1 min-h-0 flex flex-col">
-                    <div className="overflow-x-auto flex-1 min-h-0 overflow-y-auto modern-scrollbar">
-                      <table className="w-full text-left text-sm whitespace-nowrap">
+                    {/* Desktop Table View */}
+                    <div className="hidden md:block overflow-x-auto flex-1 min-h-0 overflow-y-auto modern-scrollbar">
+                      <table className="w-full text-left text-sm table-auto">
                         <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium text-xs sticky top-0 z-10">
                           <tr>
                             <th className="px-4 py-3 font-semibold w-[35%]">Title</th>
-                            <th className="px-4 py-3 font-semibold w-[20%]">Date Added</th>
-                            <th className="px-4 py-3 font-semibold text-right">Actions</th>
+                            <th className="px-4 py-3 font-semibold w-[20%] whitespace-nowrap">Date Added</th>
+                            <th className="px-4 py-3 font-semibold text-right whitespace-nowrap">Actions</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                           {filteredGallery.map((g) => (
                             <tr key={g.id} className="hover:bg-slate-50/80 transition-colors">
                               <td className="px-4 py-3 align-middle w-[35%] min-w-0">
-                                <span className="font-bold text-sm text-slate-800 truncate block max-w-md">
+                                <span className="font-bold text-sm text-slate-800 block break-words">
                                   {g.title || "Academy Activity"}
                                 </span>
                               </td>
-                              <td className="px-4 py-3 align-middle text-xs text-slate-500 w-[20%]">
+                              <td className="px-4 py-3 align-middle text-xs text-slate-500 w-[20%] whitespace-nowrap">
                                 {g.createdAt ? (
                                   new Date(g.createdAt).toLocaleDateString("en-IN", {
                                     month: "short",
@@ -1820,7 +1821,7 @@ export function AdminGalleryPage() {
                                   <span className="text-slate-450">—</span>
                                 )}
                               </td>
-                              <td className="px-4 py-2 text-right align-middle">
+                              <td className="px-4 py-2 text-right align-middle whitespace-nowrap">
                                 <div className="flex items-center justify-end gap-1.5">
                                   <button
                                     type="button"
@@ -1860,6 +1861,66 @@ export function AdminGalleryPage() {
                           ))}
                         </tbody>
                       </table>
+                    </div>
+
+                    {/* Mobile/Tablet Card Layout */}
+                    <div className="md:hidden divide-y divide-slate-150 flex-1 overflow-y-auto modern-scrollbar bg-slate-50/50">
+                      {filteredGallery.map((g) => (
+                        <div key={g.id} className="p-4 hover:bg-slate-50 transition-colors flex flex-col gap-2.5">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0 flex-1">
+                              <h4 className="font-extrabold text-sm text-slate-800 break-words leading-tight">
+                                {g.title || "Academy Activity"}
+                              </h4>
+                              <p className="text-2xs text-slate-500 font-semibold mt-1">
+                                Added: {g.createdAt ? new Date(g.createdAt).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" }) : "—"}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setViewerImage(g.imageUrl);
+                                  setViewerTitle(g.title || "Academy Activity");
+                                }}
+                                className="p-1.5 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100 flex items-center justify-center"
+                                title="View"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => openGalleryEdit(g)}
+                                className="p-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100 flex items-center justify-center"
+                                title="Edit"
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                disabled={actionLoading === `gallery-delete-${g.id}`}
+                                onClick={() => handleDeleteGallery(g.id)}
+                                className="p-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 disabled:opacity-50 flex items-center justify-center"
+                                title="Delete"
+                              >
+                                {actionLoading === `gallery-delete-${g.id}` ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                )}
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="rounded-xl overflow-hidden border border-slate-200 bg-white max-w-[120px] aspect-video">
+                            <img
+                              src={resolveStorageUrl(g.imageUrl)}
+                              alt={g.title || "Gallery thumbnail"}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}

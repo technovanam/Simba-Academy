@@ -89,11 +89,13 @@ function PillSelect<T extends string>({
   options,
   onChange,
   ariaLabel,
+  align = "left",
 }: {
   value: T;
   options: { id: T; label: string }[];
   onChange: (id: T) => void;
   ariaLabel: string;
+  align?: "left" | "right";
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -136,7 +138,7 @@ function PillSelect<T extends string>({
         <ul
           role="listbox"
           aria-label={ariaLabel}
-          className="absolute right-0 top-[calc(100%+6px)] z-30 min-w-[168px] py-1.5 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden"
+          className={`absolute ${align === "right" ? "left-0 right-auto sm:right-0 sm:left-auto" : "left-0"} top-[calc(100%+6px)] z-30 min-w-[168px] py-1.5 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden`}
         >
           {options.map((o) => (
             <li key={o.id} role="option" aria-selected={o.id === value}>
@@ -483,6 +485,7 @@ export function AdminPeoplePanel({
               options={SORT_OPTIONS}
               onChange={setSort}
               ariaLabel="Sort order"
+              align="right"
             />
             {mode === "teachers" && (
               <button
@@ -508,50 +511,48 @@ export function AdminPeoplePanel({
           </div>
         ) : (
           <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex-1 min-h-0 flex flex-col">
-            <div className="overflow-x-auto flex-1 min-h-0 overflow-y-auto modern-scrollbar">
-              <table className="w-full text-left text-sm whitespace-nowrap">
+            <div className="hidden md:block overflow-x-auto flex-1 min-h-0 overflow-y-auto modern-scrollbar">
+              <table className="w-full text-left text-sm">
                 <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium text-xs sticky top-0 z-10">
                   <tr>
-                    <th className="px-4 py-3 font-semibold">Name</th>
-                    <th className="px-4 py-3 font-semibold">Email</th>
-                    <th className="px-4 py-3 font-semibold">Class</th>
-                    <th className="px-4 py-3 font-semibold">Phone Number</th>
-                    {mode === "users" && <th className="px-4 py-3 font-semibold">Joining Date</th>}
-                    {mode === "teachers" && <th className="px-4 py-3 font-semibold">Joined Date</th>}
-                    {mode === "teachers" && <th className="px-4 py-3 font-semibold">Class Strength</th>}
-                    <th className="px-4 py-3 font-semibold text-right">Actions</th>
+                    <th className="px-4 py-3 font-semibold whitespace-nowrap">Name</th>
+                    <th className="px-4 py-3 font-semibold whitespace-nowrap">Email</th>
+                    <th className="px-4 py-3 font-semibold whitespace-nowrap">Class</th>
+                    <th className="px-4 py-3 font-semibold whitespace-nowrap">Phone Number</th>
+                    {mode === "users" && <th className="px-4 py-3 font-semibold whitespace-nowrap">Joining Date</th>}
+                    {mode === "teachers" && <th className="px-4 py-3 font-semibold whitespace-nowrap">Joined Date</th>}
+                    {mode === "teachers" && <th className="px-4 py-3 font-semibold whitespace-nowrap">Strength</th>}
+                    <th className="px-4 py-3 font-semibold text-right whitespace-nowrap">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {paginatedRecords.map((u) => (
                     <tr key={u.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="px-4 py-3 align-middle">
+                      <td className="px-4 py-3 align-middle whitespace-nowrap">
                         <div className="flex items-center gap-2">
                           {u.role === "ADMIN" && (
-                            <span
-                              className="px-1.5 py-0.5 rounded text-4xs font-extrabold uppercase border shrink-0 bg-purple-50 text-purple-700 border-purple-200"
-                            >
+                            <span className="px-1.5 py-0.5 rounded text-4xs font-extrabold uppercase border shrink-0 bg-purple-50 text-purple-700 border-purple-200">
                               {u.role}
                             </span>
                           )}
                           <span className="font-bold text-sm text-slate-800">{u.name}</span>
                         </div>
                       </td>
-                      <td className="px-4 py-3 align-middle text-xs text-slate-600 font-medium">
+                      <td className="px-4 py-3 align-middle text-xs text-slate-600 font-medium whitespace-nowrap">
                         {u.email}
                       </td>
-                      <td className="px-4 py-3 align-middle text-xs text-slate-650">
+                      <td className="px-4 py-3 align-middle text-xs text-slate-650 whitespace-nowrap">
                         {u.studentClass ? (
                           <span className="text-[#8AC926] font-bold">{u.studentClass}</span>
                         ) : (
                           <span className="text-slate-450">—</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 align-middle text-xs text-slate-500">
+                      <td className="px-4 py-3 align-middle text-xs text-slate-500 whitespace-nowrap">
                         {u.phone ? u.phone : <span className="text-slate-450">—</span>}
                       </td>
                       {mode === "users" && (
-                        <td className="px-4 py-3 align-middle text-xs text-slate-500">
+                        <td className="px-4 py-3 align-middle text-xs text-slate-500 whitespace-nowrap">
                           {u.createdAt ? (
                             new Date(u.createdAt).toLocaleDateString("en-IN", {
                               day: "numeric",
@@ -565,7 +566,7 @@ export function AdminPeoplePanel({
                       )}
                       {mode === "teachers" && (
                         <>
-                          <td className="px-4 py-3 align-middle text-xs text-slate-500">
+                          <td className="px-4 py-3 align-middle text-xs text-slate-500 whitespace-nowrap">
                             {u.createdAt ? (
                               new Date(u.createdAt).toLocaleDateString("en-IN", {
                                 day: "numeric",
@@ -576,12 +577,12 @@ export function AdminPeoplePanel({
                               <span className="text-slate-450">—</span>
                             )}
                           </td>
-                          <td className="px-4 py-3 align-middle text-xs text-slate-500 font-bold">
+                          <td className="px-4 py-3 align-middle text-xs text-slate-500 font-bold whitespace-nowrap">
                             {u.classStrength !== undefined ? u.classStrength : 0}
                           </td>
                         </>
                       )}
-                      <td className="px-4 py-2 text-right align-middle">
+                      <td className="px-4 py-2 text-right align-middle whitespace-nowrap">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             type="button"
@@ -589,7 +590,7 @@ export function AdminPeoplePanel({
                             onClick={() => setStatusToggleTarget(u)}
                             title={u.status === "ACTIVE" ? "Deactivate account" : "Activate account"}
                             className={`px-2 py-1.5 rounded-lg transition flex items-center justify-center border ${u.status === "ACTIVE"
-                                ? "bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100 disabled:opacity-50"
+                                ? "bg-amber-55 border-amber-200 text-amber-700 hover:bg-amber-100 disabled:opacity-50"
                                 : "bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100"
                               }`}
                           >
@@ -648,6 +649,124 @@ export function AdminPeoplePanel({
               </table>
             </div>
 
+            {/* Mobile/Tablet Card Layout */}
+            <div className="md:hidden divide-y divide-slate-200/50 flex-1 overflow-y-auto modern-scrollbar bg-slate-50/50">
+              {paginatedRecords.map((u) => (
+                <div key={u.id} className="p-4 hover:bg-slate-50 transition-colors flex flex-col gap-2.5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {u.role === "ADMIN" && (
+                          <span className="px-1 py-0.5 rounded text-[9px] font-extrabold uppercase border bg-purple-50 text-purple-700 border-purple-200">
+                            {u.role}
+                          </span>
+                        )}
+                        <h4 className="font-extrabold text-sm text-slate-800 break-all leading-tight">{u.name}</h4>
+                      </div>
+                      <p className="text-2xs text-slate-500 font-semibold mt-1 whitespace-nowrap">{u.email}</p>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        type="button"
+                        disabled={u.id === currentUserId || actionLoading === `status-${u.id}`}
+                        onClick={() => setStatusToggleTarget(u)}
+                        title={u.status === "ACTIVE" ? "Deactivate account" : "Activate account"}
+                        className={`p-1.5 rounded-lg transition flex items-center justify-center border ${u.status === "ACTIVE"
+                            ? "bg-amber-50 border-amber-200 text-amber-750 hover:bg-amber-100 disabled:opacity-50"
+                            : "bg-emerald-50 border-emerald-200 text-emerald-750 hover:bg-emerald-100"
+                          }`}
+                      >
+                        {actionLoading === `status-${u.id}` ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : u.status === "ACTIVE" ? (
+                          <Lock className="w-3.5 h-3.5" />
+                        ) : (
+                          <Unlock className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+
+                      {(u.role === "TEACHER" || u.role === "STUDENT") && (
+                        <button
+                          type="button"
+                          disabled={actionLoading === `reset-${u.id}` || u.status !== "ACTIVE"}
+                          onClick={() => handleSendReset(u)}
+                          title="Send password reset email"
+                          className="p-1.5 rounded-lg bg-slate-55 border border-slate-200 text-slate-700 hover:bg-slate-100 disabled:opacity-50 flex items-center justify-center"
+                        >
+                          {actionLoading === `reset-${u.id}` ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Mail className="w-3.5 h-3.5" />
+                          )}
+                        </button>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => openEditTeacher(u)}
+                        className="p-1.5 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 flex items-center justify-center"
+                        title={mode === "teachers" ? "Edit teacher" : "Edit student"}
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
+                        type="button"
+                        disabled={u.id === currentUserId || actionLoading === `delete-${u.id}`}
+                        onClick={() => setDeleteTarget(u)}
+                        className="p-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 disabled:opacity-50 flex items-center justify-center"
+                        title="Delete account"
+                      >
+                        {actionLoading === `delete-${u.id}` ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className={`grid gap-2.5 bg-slate-50 p-3 rounded-xl border border-slate-200/30 text-[11px] ${
+                    mode === "users" ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-2 sm:grid-cols-4"
+                  }`}>
+                    <div>
+                      <span className="text-slate-400 font-semibold block uppercase text-[9px] tracking-wider mb-0.5">Class</span>
+                      {u.studentClass ? (
+                        <span className="text-[#8AC926] font-extrabold">{u.studentClass}</span>
+                      ) : (
+                        <span className="text-slate-400">—</span>
+                      )}
+                    </div>
+                    <div>
+                      <span className="text-slate-400 font-semibold block uppercase text-[9px] tracking-wider mb-0.5">Phone</span>
+                      <span className="text-slate-650 font-bold">{u.phone ? u.phone : <span className="text-slate-400 font-normal">—</span>}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 font-semibold block uppercase text-[9px] tracking-wider mb-0.5">
+                        {mode === "users" ? "Joining Date" : "Joined Date"}
+                      </span>
+                      <span className="text-slate-605 font-medium">
+                        {u.createdAt ? (
+                          new Date(u.createdAt).toLocaleDateString("en-IN", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })
+                        ) : (
+                          <span className="text-slate-400">—</span>
+                        )}
+                      </span>
+                    </div>
+                    {mode === "teachers" && (
+                      <div>
+                        <span className="text-slate-400 font-semibold block uppercase text-[9px] tracking-wider mb-0.5">Strength</span>
+                        <span className="text-slate-600 font-extrabold">{u.classStrength !== undefined ? u.classStrength : 0}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </AdminPageBody>

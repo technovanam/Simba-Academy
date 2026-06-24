@@ -1970,7 +1970,8 @@ export function AdminTasksPage() {
                             </div>
                           ) : (
                             <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex-1 min-h-[480px] flex flex-col">
-                              <div className="overflow-x-hidden flex-1 min-h-0 overflow-y-auto modern-scrollbar">
+                              {/* Desktop Table View */}
+                              <div className="hidden md:block overflow-x-hidden flex-1 min-h-0 overflow-y-auto modern-scrollbar">
                                 <table className="w-full text-left text-sm">
                                   <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium text-xs sticky top-0 z-10">
                                     <tr>
@@ -2030,13 +2031,14 @@ export function AdminTasksPage() {
                                             <button
                                               type="button"
                                               onClick={() => handleToggleRecurringTask(rt.id, rt.isActive)}
-                                              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition ${
+                                              className={`p-1.5 rounded-lg border transition ${
                                                 rt.isActive
-                                                  ? "bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100"
-                                                  : "bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100"
+                                                  ? "bg-amber-50 border-amber-200 text-amber-600 hover:bg-amber-100"
+                                                  : "bg-emerald-50 border-emerald-200 text-emerald-600 hover:bg-emerald-100"
                                               }`}
+                                              title={rt.isActive ? "Deactivate Task" : "Activate Task"}
                                             >
-                                              {rt.isActive ? "Deactivate" : "Activate"}
+                                              {rt.isActive ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
                                             </button>
                                             <button
                                               type="button"
@@ -2079,6 +2081,97 @@ export function AdminTasksPage() {
                                   </tbody>
                                 </table>
                               </div>
+
+                              {/* Mobile/Tablet Card Layout */}
+                              <div className="md:hidden divide-y divide-slate-150 flex-1 overflow-y-auto modern-scrollbar bg-slate-50/50">
+                                {recurringTaskPagination.paginatedItems.map((rt) => (
+                                  <div key={rt.id} className="p-4 hover:bg-slate-55 transition-colors flex flex-col gap-2.5">
+                                    <div className="flex items-start justify-between gap-3">
+                                      <div className="min-w-0 flex-1">
+                                        <h4 className="font-extrabold text-sm text-slate-800 break-words leading-tight">{rt.title}</h4>
+                                        {rt.description && (
+                                          <p className="text-2xs text-slate-500 font-semibold mt-1 break-words line-clamp-2">{rt.description}</p>
+                                        )}
+                                      </div>
+                                      <div className="flex items-center gap-1 shrink-0">
+                                        <button
+                                          type="button"
+                                          onClick={() => setViewTaskDetailsModal(rt)}
+                                          className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-450 hover:text-emerald-650 hover:bg-emerald-55 transition flex items-center justify-center"
+                                          title="View Details"
+                                        >
+                                          <Eye className="w-3.5 h-3.5" />
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleToggleRecurringTask(rt.id, rt.isActive)}
+                                          className={`p-1.5 rounded-lg border transition flex items-center justify-center ${
+                                            rt.isActive
+                                              ? "bg-amber-50 border-amber-200 text-amber-600 hover:bg-amber-100"
+                                              : "bg-emerald-50 border-emerald-200 text-emerald-600 hover:bg-emerald-100"
+                                          }`}
+                                          title={rt.isActive ? "Deactivate Task" : "Activate Task"}
+                                        >
+                                          {rt.isActive ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => loadRecurringTaskHistory(rt.id)}
+                                          className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-400 hover:text-blue-650 hover:bg-blue-50 transition flex items-center justify-center"
+                                          title="View Assignment History"
+                                        >
+                                          <HistoryIcon className="w-3.5 h-3.5" />
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setRecurringTaskForm({
+                                              id: rt.id,
+                                              title: rt.title,
+                                              description: rt.description || "",
+                                              studentClass: rt.studentClass || "LKG",
+                                              repeatDay: rt.repeatDay,
+                                              isEditing: true,
+                                            });
+                                            setShowRecurringTaskForm(true);
+                                          }}
+                                          className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-400 hover:text-indigo-650 hover:bg-indigo-50 transition flex items-center justify-center"
+                                          title="Edit Task"
+                                        >
+                                          <Edit2 className="w-3.5 h-3.5" />
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleDeleteRecurringTask(rt.id)}
+                                          className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-450 hover:text-rose-650 hover:bg-rose-50 transition flex items-center justify-center"
+                                          title="Delete Task"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                      </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-3 gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-150 text-[11px]">
+                                      <div>
+                                        <span className="text-slate-400 font-semibold block uppercase text-[9px] tracking-wider mb-0.5">Class</span>
+                                        <span className="text-[#8AC926] font-extrabold">{rt.studentClass ? rt.studentClass.split(',').join(', ') : ''}</span>
+                                      </div>
+                                      <div>
+                                        <span className="text-slate-400 font-semibold block uppercase text-[9px] tracking-wider mb-0.5">Repeat</span>
+                                        <span className="text-indigo-650 font-bold">{rt.repeatDay === "TODAY" ? "Today Only" : rt.repeatDay}</span>
+                                      </div>
+                                      <div>
+                                        <span className="text-slate-400 font-semibold block uppercase text-[9px] tracking-wider mb-0.5">Status</span>
+                                        <span className={`px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase border ${
+                                          rt.isActive
+                                            ? "bg-emerald-50 text-emerald-705 border-emerald-200"
+                                            : "bg-slate-100 text-slate-500 border-slate-200"
+                                        }`}>{rt.isActive ? "Active" : "Inactive"}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
                               <div className="p-4 bg-slate-50 border-t border-slate-200">
                                 <AdminListPagination
                                   rangeStart={recurringTaskPagination.rangeStart}
@@ -2104,7 +2197,8 @@ export function AdminTasksPage() {
                       <AdminListEmpty message={`No tasks inside the folder "${selectedTaskFolder.name}".`} />
                     ) : (
                       <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex-1 min-h-[480px] flex flex-col">
-                        <div className="overflow-x-hidden flex-1 min-h-0 overflow-y-auto modern-scrollbar">
+                        {/* Desktop Table View */}
+                        <div className="hidden md:block overflow-x-hidden flex-1 min-h-0 overflow-y-auto modern-scrollbar">
                           <table className="w-full text-left text-sm">
                             <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium text-xs sticky top-0 z-10">
                               <tr>
@@ -2189,14 +2283,14 @@ export function AdminTasksPage() {
                                           });
                                           setShowRecurringTaskForm(true);
                                         }}
-                                        className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-400 hover:text-indigo-650 hover:bg-indigo-50 transition"
+                                        className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-450 hover:text-indigo-655 hover:bg-indigo-50 transition"
                                         title="Edit Task"
                                       >
                                         <Edit2 className="w-4 h-4" />
                                       </button>
                                       <button
                                         onClick={() => handleDeleteRecurringTask(rt.id)}
-                                        className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-400 hover:text-rose-650 hover:bg-rose-50 transition"
+                                        className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-450 hover:text-rose-655 hover:bg-rose-50 transition"
                                         title="Delete Task"
                                       >
                                         <Trash2 className="w-4 h-4" />
@@ -2207,6 +2301,91 @@ export function AdminTasksPage() {
                               ))}
                             </tbody>
                           </table>
+                        </div>
+
+                        {/* Mobile/Tablet Card Layout */}
+                        <div className="md:hidden divide-y divide-slate-150 flex-1 overflow-y-auto modern-scrollbar bg-slate-50/50">
+                          {recurringTaskPagination.paginatedItems.map((rt) => (
+                            <div key={rt.id} className="p-4 hover:bg-slate-55 transition-colors flex flex-col gap-2.5">
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0 flex-1">
+                                  <h4 className="font-extrabold text-sm text-slate-800 break-words leading-tight">{rt.title}</h4>
+                                  {rt.description && (
+                                    <p className="text-2xs text-slate-500 font-semibold mt-1 break-words line-clamp-2">{rt.description}</p>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <button
+                                    onClick={() => setViewTaskDetailsModal(rt)}
+                                    className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-450 hover:text-emerald-650 hover:bg-emerald-55 transition flex items-center justify-center"
+                                    title="View Details"
+                                  >
+                                    <Eye className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleToggleRecurringTask(rt.id, rt.isActive)}
+                                    className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition flex items-center justify-center ${
+                                      rt.isActive
+                                        ? "bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100"
+                                        : "bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100"
+                                    }`}
+                                  >
+                                    {rt.isActive ? "Deactivate" : "Activate"}
+                                  </button>
+                                  <button
+                                    onClick={() => loadRecurringTaskHistory(rt.id)}
+                                    className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-400 hover:text-blue-650 hover:bg-blue-50 transition flex items-center justify-center"
+                                    title="View Assignment History"
+                                  >
+                                    <HistoryIcon className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setRecurringTaskForm({
+                                        id: rt.id,
+                                        title: rt.title,
+                                        description: rt.description || "",
+                                        studentClass: rt.studentClass || "LKG",
+                                        repeatDay: rt.repeatDay,
+                                        isEditing: true,
+                                      });
+                                      setShowRecurringTaskForm(true);
+                                    }}
+                                    className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-450 hover:text-indigo-655 hover:bg-indigo-50 transition flex items-center justify-center"
+                                    title="Edit Task"
+                                  >
+                                    <Edit2 className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteRecurringTask(rt.id)}
+                                    className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-450 hover:text-rose-655 hover:bg-rose-50 transition flex items-center justify-center"
+                                    title="Delete Task"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-3 gap-2 bg-slate-55 p-2.5 rounded-xl border border-slate-150 text-[11px]">
+                                <div>
+                                  <span className="text-slate-400 font-semibold block uppercase text-[9px] tracking-wider mb-0.5">Class</span>
+                                  <span className="text-[#8AC926] font-extrabold">{rt.studentClass ? rt.studentClass.split(',').join(', ') : ''}</span>
+                                </div>
+                                <div>
+                                  <span className="text-slate-400 font-semibold block uppercase text-[9px] tracking-wider mb-0.5">Repeat</span>
+                                  <span className="text-indigo-650 font-bold">{rt.repeatDay === "TODAY" ? "Today Only" : rt.repeatDay}</span>
+                                </div>
+                                <div>
+                                  <span className="text-slate-400 font-semibold block uppercase text-[9px] tracking-wider mb-0.5">Status</span>
+                                  <span className={`px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase border ${
+                                    rt.isActive
+                                      ? "bg-emerald-50 text-emerald-755 border-emerald-200"
+                                      : "bg-slate-100 text-slate-500 border-slate-200"
+                                  }`}>{rt.isActive ? "Active" : "Inactive"}</span>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
                         </div>
                         <div className="p-4 bg-slate-50 border-t border-slate-200">
                           <AdminListPagination

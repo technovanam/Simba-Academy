@@ -1784,6 +1784,7 @@ export function AdminNotificationsPage() {
                       options={notificationDateOptions}
                       onChange={(val) => setNotificationDateFilter(val as any)}
                       ariaLabel="Filter alerts by date"
+                      align="right"
                     />
 
                     {adminNotifications.some((n) => !n.isRead) && (

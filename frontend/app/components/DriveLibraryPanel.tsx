@@ -409,17 +409,9 @@ export function DriveLibraryPanel({ token, role }: DriveLibraryPanelProps) {
                   })}
                 </div>
               ) : (
-                <table className="w-full text-left text-sm whitespace-nowrap">
-                  <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium text-xs sticky top-0 z-10">
-                    <tr>
-                      <th className="px-4 py-3 font-semibold">Name</th>
-                      <th className="px-4 py-3 font-semibold">Type</th>
-                      <th className="px-4 py-3 font-semibold">Date Modified</th>
-                      {role === "ADMIN" && <th className="px-4 py-3 font-semibold">Access</th>}
-                      <th className="px-4 py-3 font-semibold text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
+                <>
+                  {/* Card List View (xl:hidden) */}
+                  <div className="xl:hidden space-y-3">
                     {items.map((item) => {
                       const isFolderItem = isFolder(item.mimeType);
                       const displayDate = new Date(item.createdTime).toLocaleDateString("en-IN", {
@@ -437,102 +429,217 @@ export function DriveLibraryPanel({ token, role }: DriveLibraryPanelProps) {
                       else if (item.mimeType.includes("google-apps.spreadsheet") || item.mimeType.includes("spreadsheet")) mimeLabel = "Spreadsheet";
 
                       return (
-                        <tr key={item.id} className="hover:bg-slate-50/80 transition-colors group">
-                          <td className="px-4 py-3 align-middle">
+                        <div key={item.id} className="p-4 bg-white border border-slate-200 rounded-2xl flex flex-col gap-3">
+                          <div className="flex items-start gap-3">
+                            {isFolderItem ? (
+                              <Folder className="w-10 h-10 text-amber-400 shrink-0 fill-amber-400" />
+                            ) : item.mimeType.includes("image") ? (
+                              <FileText className="w-10 h-10 text-sky-500 shrink-0" />
+                            ) : item.mimeType.includes("pdf") ? (
+                              <FileText className="w-10 h-10 text-rose-500 shrink-0" />
+                            ) : (
+                              <FileText className="w-10 h-10 text-blue-500 shrink-0" />
+                            )}
+                            <div className="min-w-0 flex-1">
+                              <h3 className="font-bold text-slate-800 text-sm break-words leading-tight">
+                                {item.name}
+                              </h3>
+                              <p className="text-3xs text-slate-500 font-bold mt-1.5 flex items-center gap-1.5 flex-wrap">
+                                <span>{mimeLabel}</span>
+                                <span>·</span>
+                                <span className="flex items-center gap-1">
+                                  <Clock className="w-3 h-3 text-slate-400" />
+                                  {displayDate}
+                                </span>
+                              </p>
+                              {role === "ADMIN" && (
+                                <div className="mt-1">{renderAccessBadge(item)}</div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-end gap-2 border-t border-slate-100/65 pt-2.5">
                             {isFolderItem ? (
                               <button
                                 type="button"
                                 onClick={() => handleFolderClick(item.id)}
-                                className="flex items-center gap-2.5 text-slate-800 hover:text-[#8AC926] transition font-bold text-sm text-left truncate w-full max-w-md"
+                                className="px-4 py-2 rounded-xl bg-[#8AC926] text-white font-sans font-bold text-xs hover:bg-[#78B020] transition shadow-md shadow-[#8AC926]/10"
                               >
-                                <Folder className="w-5 h-5 text-amber-400 shrink-0 fill-amber-400" />
-                                <div className="flex flex-col truncate min-w-0">
-                                  <span className="truncate">{item.name}</span>
-                                </div>
+                                Open Folder
                               </button>
                             ) : (
                               <button
                                 type="button"
                                 onClick={() => setViewerFile(item)}
-                                className="flex items-center gap-2.5 text-slate-700 hover:text-slate-900 transition font-bold text-sm text-left truncate w-full max-w-md"
+                                className="px-4 py-2 rounded-xl bg-[#8AC926]/10 border border-[#8AC926]/35 text-[#5a8218] hover:bg-[#8AC926]/20 font-sans font-bold text-xs transition flex items-center gap-1"
                               >
-                                {item.mimeType.includes("image") ? (
-                                  <FileText className="w-5 h-5 text-sky-500 shrink-0" />
-                                ) : item.mimeType.includes("pdf") ? (
-                                  <FileText className="w-5 h-5 text-rose-500 shrink-0" />
-                                ) : (
-                                  <FileText className="w-5 h-5 text-blue-500 shrink-0" />
-                                )}
-                                <div className="flex flex-col truncate min-w-0">
-                                  <span className="truncate">{item.name}</span>
-                                </div>
+                                <Eye className="w-4 h-4" /> View File
                               </button>
                             )}
-                          </td>
-                          <td className="px-4 py-3 align-middle text-xs text-slate-600 font-medium">
-                            {mimeLabel}
-                          </td>
-                          <td className="px-4 py-3 align-middle text-xs text-slate-500 font-medium">
-                            <span className="flex items-center gap-1.5">
-                              <Clock className="w-3.5 h-3.5 text-slate-400" />
-                              {displayDate}
-                            </span>
-                          </td>
-                          {role === "ADMIN" && (
-                            <td className="px-4 py-3 align-middle text-xs font-medium">
-                              {renderAccessBadge(item)}
-                            </td>
-                          )}
-                          <td className="px-4 py-2 text-right align-middle">
-                            <div className="flex items-center justify-end gap-1.5">
-                              {role === "ADMIN" && (
-                                <>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      const aud = item.accessRule?.audience || "BOTH";
-                                      const tClass = item.accessRule?.targetClass || "";
-                                      
-                                      setAccessItem(item);
-                                      setAccessForm({
-                                        audiences: aud === "BOTH" ? ["TEACHER", "STUDENT"] : [aud],
-                                        classes: tClass ? tClass.split(",") : [],
-                                      });
-                                    }}
-                                    className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-200 text-slate-600 hover:bg-slate-100 flex items-center justify-center transition shrink-0"
-                                    title="Access Settings"
-                                  >
-                                    <Settings className="w-4 h-4" />
-                                  </button>
-                                  {item.accessRule && (
-                                    <button
-                                      type="button"
-                                      onClick={() => handleRevokeAccess(item.id)}
-                                      className="w-8 h-8 rounded-lg bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 flex items-center justify-center transition shrink-0"
-                                      title="Revoke Access"
-                                    >
-                                      <Shield className="w-4 h-4" />
-                                    </button>
-                                  )}
-                                </>
-                              )}
-                              {!isFolderItem && (
+                            {role === "ADMIN" && (
+                              <>
                                 <button
                                   type="button"
-                                  onClick={() => setViewerFile(item)}
-                                  className="w-8 h-8 rounded-lg bg-[#8AC926]/10 border border-[#8AC926]/30 text-[#5a8218] hover:bg-[#8AC926]/20 flex items-center justify-center transition shrink-0"
-                                  title="View"
+                                  onClick={() => {
+                                    const aud = item.accessRule?.audience || "BOTH";
+                                    const tClass = item.accessRule?.targetClass || "";
+                                    setAccessItem(item);
+                                    setAccessForm({
+                                      audiences: aud === "BOTH" ? ["TEACHER", "STUDENT"] : [aud],
+                                      classes: tClass ? tClass.split(",") : [],
+                                    });
+                                  }}
+                                  className="p-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-650 hover:bg-slate-100 transition"
+                                  title="Access Settings"
                                 >
-                                  <Eye className="w-4 h-4" />
+                                  <Settings className="w-4 h-4" />
                                 </button>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
+                                {item.accessRule && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRevokeAccess(item.id)}
+                                    className="p-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-650 hover:bg-rose-100 transition"
+                                    title="Revoke Access"
+                                  >
+                                    <Shield className="w-4 h-4" />
+                                  </button>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        </div>
                       );
                     })}
-                  </tbody>
-                </table>
+                  </div>
+
+                  {/* Desktop Table View (hidden xl:block) */}
+                  <div className="hidden xl:block">
+                    <table className="w-full text-left text-sm whitespace-nowrap">
+                      <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium text-xs sticky top-0 z-10">
+                        <tr>
+                          <th className="px-4 py-3 font-semibold">Name</th>
+                          <th className="px-4 py-3 font-semibold">Type</th>
+                          <th className="px-4 py-3 font-semibold">Date Modified</th>
+                          {role === "ADMIN" && <th className="px-4 py-3 font-semibold">Access</th>}
+                          <th className="px-4 py-3 font-semibold text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {items.map((item) => {
+                          const isFolderItem = isFolder(item.mimeType);
+                          const displayDate = new Date(item.createdTime).toLocaleDateString("en-IN", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          });
+
+                          let mimeLabel = "File";
+                          if (isFolderItem) mimeLabel = "Folder";
+                          else if (item.mimeType.includes("pdf")) mimeLabel = "PDF Document";
+                          else if (item.mimeType.includes("image")) mimeLabel = "Image File";
+                          else if (item.mimeType.includes("google-apps.document") || item.mimeType.includes("word")) mimeLabel = "Document";
+                          else if (item.mimeType.includes("google-apps.presentation") || item.mimeType.includes("powerpoint")) mimeLabel = "Presentation";
+                          else if (item.mimeType.includes("google-apps.spreadsheet") || item.mimeType.includes("spreadsheet")) mimeLabel = "Spreadsheet";
+
+                          return (
+                            <tr key={item.id} className="hover:bg-slate-50/80 transition-colors group">
+                              <td className="px-4 py-3 align-middle">
+                                {isFolderItem ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleFolderClick(item.id)}
+                                    className="flex items-center gap-2.5 text-slate-800 hover:text-[#8AC926] transition font-bold text-sm text-left truncate w-full max-w-md"
+                                  >
+                                    <Folder className="w-5 h-5 text-amber-400 shrink-0 fill-amber-400" />
+                                    <div className="flex flex-col truncate min-w-0">
+                                      <span className="truncate">{item.name}</span>
+                                    </div>
+                                  </button>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => setViewerFile(item)}
+                                    className="flex items-center gap-2.5 text-slate-700 hover:text-slate-900 transition font-bold text-sm text-left truncate w-full max-w-md"
+                                  >
+                                    {item.mimeType.includes("image") ? (
+                                      <FileText className="w-5 h-5 text-sky-500 shrink-0" />
+                                    ) : item.mimeType.includes("pdf") ? (
+                                      <FileText className="w-5 h-5 text-rose-500 shrink-0" />
+                                    ) : (
+                                      <FileText className="w-5 h-5 text-blue-500 shrink-0" />
+                                    )}
+                                    <div className="flex flex-col truncate min-w-0">
+                                      <span className="truncate">{item.name}</span>
+                                    </div>
+                                  </button>
+                                )}
+                              </td>
+                              <td className="px-4 py-3 align-middle text-xs text-slate-600 font-medium">
+                                {mimeLabel}
+                              </td>
+                              <td className="px-4 py-3 align-middle text-xs text-slate-500 font-medium">
+                                <span className="flex items-center gap-1.5">
+                                  <Clock className="w-3.5 h-3.5 text-slate-400" />
+                                  {displayDate}
+                                </span>
+                              </td>
+                              {role === "ADMIN" && (
+                                <td className="px-4 py-3 align-middle text-xs font-medium">
+                                  {renderAccessBadge(item)}
+                                </td>
+                              )}
+                              <td className="px-4 py-2 text-right align-middle">
+                                <div className="flex items-center justify-end gap-1.5">
+                                  {role === "ADMIN" && (
+                                    <>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const aud = item.accessRule?.audience || "BOTH";
+                                          const tClass = item.accessRule?.targetClass || "";
+                                          
+                                          setAccessItem(item);
+                                          setAccessForm({
+                                            audiences: aud === "BOTH" ? ["TEACHER", "STUDENT"] : [aud],
+                                            classes: tClass ? tClass.split(",") : [],
+                                          });
+                                        }}
+                                        className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-200 text-slate-650 hover:bg-slate-100 flex items-center justify-center transition shrink-0"
+                                        title="Access Settings"
+                                      >
+                                        <Settings className="w-4 h-4" />
+                                      </button>
+                                      {item.accessRule && (
+                                        <button
+                                          type="button"
+                                          onClick={() => handleRevokeAccess(item.id)}
+                                          className="w-8 h-8 rounded-lg bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 flex items-center justify-center transition shrink-0"
+                                          title="Revoke Access"
+                                        >
+                                          <Shield className="w-4 h-4" />
+                                        </button>
+                                      )}
+                                    </>
+                                  )}
+                                  {!isFolderItem && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setViewerFile(item)}
+                                      className="w-8 h-8 rounded-lg bg-[#8AC926]/10 border border-[#8AC926]/30 text-[#5a8218] hover:bg-[#8AC926]/20 flex items-center justify-center transition shrink-0"
+                                      title="View"
+                                    >
+                                      <Eye className="w-4 h-4" />
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
               )}
             </div>
           </div>

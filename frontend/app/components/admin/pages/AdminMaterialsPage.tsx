@@ -1806,7 +1806,7 @@ export function AdminMaterialsPage() {
                   </div>
                 ) : (
                   <div className="flex flex-col h-full overflow-hidden">
-                    <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-between sm:items-center gap-x-4 gap-y-3 pb-3 w-full min-w-0">
+                    <div className="flex flex-col gap-3 xl:flex-row xl:justify-between xl:items-center gap-x-4 gap-y-3 pb-3 w-full min-w-0">
                       <div className="min-w-0 flex-1 flex items-center gap-3">
                         <button
                           onClick={() => setSelectedApprovalClassFolder(null)}
@@ -1821,7 +1821,7 @@ export function AdminMaterialsPage() {
                         </div>
                       </div>
 
-                      <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto sm:max-w-full sm:ml-auto min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 w-full xl:w-auto xl:max-w-full xl:ml-auto min-w-0">
                         <AdminSearchInput
                           placeholder="Search uploads…"
                           value={approvalSearch}
@@ -1845,6 +1845,7 @@ export function AdminMaterialsPage() {
                           options={APPROVAL_SORT_OPTIONS}
                           onChange={setApprovalSort}
                           ariaLabel="Sort order"
+                          align="right"
                         />
                       </div>
                     </div>
