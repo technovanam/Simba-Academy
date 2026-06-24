@@ -26,7 +26,7 @@ body {
   @apply bg-white dark:bg-gray-950;
   width: 100%;
   max-width: 100%;
-  overflow-x: hidden;
+  overflow-x: clip;
   min-height: 100%;
   -webkit-text-size-adjust: 100%;
 
@@ -76,18 +76,17 @@ body > * {
 
 /* Starbucks-style centre nav pill */
 .starbucks-nav-pill {
-  display: flex;
   align-items: center;
   gap: 0.2rem;
   padding: 0.35rem 0.45rem;
   border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(16px) saturate(140%);
   -webkit-backdrop-filter: blur(16px) saturate(140%);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.6);
   box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    0 8px 32px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
 .starbucks-nav-link {
@@ -96,24 +95,23 @@ body > * {
   font-size: 0.875rem;
   font-weight: 600;
   line-height: 1.2;
-  color: #8AC926; /* text in green */
+  color: #475569; /* text in slate for better visibility */
   white-space: nowrap;
   transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .starbucks-nav-link:hover:not(.is-active) {
-  background: rgba(138, 201, 38, 0.08);
-  color: #78b020;
+  background: rgba(232, 175, 52, 0.15);
+  color: #c59124;
 }
 
 .starbucks-nav-link.is-active {
-  background: #8AC926;
+  background: #E8AF34;
   color: #ffffff;
-  box-shadow: 0 2px 10px rgba(138, 201, 38, 0.3);
+  box-shadow: 0 2px 10px rgba(232, 175, 52, 0.3);
 }
 
 .starbucks-contact-btn {
-  display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: 9999px;
@@ -121,8 +119,8 @@ body > * {
   font-size: 0.875rem;
   font-weight: 700;
   color: #ffffff; /* contact text in white */
-  background: #8AC926;
-  border: 1px solid #6fa01e;
+  background: #E8AF34;
+  border: 1px solid #c59124;
   box-shadow:
     0 8px 28px rgba(0, 0, 0, 0.15),
     0 2px 6px rgba(0, 0, 0, 0.08);
@@ -131,16 +129,16 @@ body > * {
 
 .starbucks-contact-btn:hover {
   transform: translateY(-1px);
-  background: #78b020;
+  background: #d69f2e;
   box-shadow:
-    0 12px 32px rgba(138, 201, 38, 0.25),
-    0 2px 6px rgba(138, 201, 38, 0.1);
+    0 12px 32px rgba(232, 175, 52, 0.25),
+    0 2px 6px rgba(232, 175, 52, 0.1);
 }
 
-/* Landing page — thin light-green scrollbar */
+/* Landing page — thin light-gold scrollbar */
 html.landing-page {
   scrollbar-width: thin;
-  scrollbar-color: #8ac926 #edf6e4;
+  scrollbar-color: #E8AF34 #faf3e0;
 }
 
 html.landing-page::-webkit-scrollbar {
@@ -148,16 +146,16 @@ html.landing-page::-webkit-scrollbar {
 }
 
 html.landing-page::-webkit-scrollbar-track {
-  background: #edf6e4;
+  background: #faf3e0;
 }
 
 html.landing-page::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #b5de78 0%, #8ac926 100%);
+  background: linear-gradient(180deg, #f1cb76 0%, #E8AF34 100%);
   border-radius: 9999px;
 }
 
 html.landing-page::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #8ac926 0%, #6fa31d 100%);
+  background: linear-gradient(180deg, #E8AF34 0%, #c59124 100%);
 }
 
 @keyframes spin-slow {
@@ -488,4 +486,29 @@ html:has(.portal-app-shell) body {
   fill: #FAF6EE;
 }
 
+@keyframes scroll-left {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
 
+@keyframes scroll-right {
+  0% { transform: translateX(-50%); }
+  100% { transform: translateX(0); }
+}
+
+.animate-scroll-left {
+  animation: scroll-left 40s linear infinite;
+}
+
+.animate-scroll-right {
+  animation: scroll-right 40s linear infinite;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
