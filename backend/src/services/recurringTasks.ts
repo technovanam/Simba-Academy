@@ -4,8 +4,8 @@ import { prisma } from "../config/database.js";
 const DAYS_OF_WEEK = ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"];
 
 export function initRecurringTasksCron() {
-  // Run every day at 00:01 (1 minute past midnight)
-  cron.schedule("1 0 * * *", async () => {
+  // Run every day at 8:00 AM
+  cron.schedule("0 8 * * *", async () => {
     console.log("[CRON] Running recurring tasks job...");
     try {
       await processRecurringTasks();

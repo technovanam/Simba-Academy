@@ -375,19 +375,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
 
   // ÔöÇÔöÇ FILTERED DATA ARRAYS ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
   const groupedTasks = useMemo(() => {
-    const map = new Map<string, Task>();
-    const standalone: Task[] = [];
-    for (const t of tasks) {
-      if (t.recurringTaskId) {
-        const existing = map.get(t.recurringTaskId);
-        if (!existing || new Date(t.createdAt).getTime() > new Date(existing.createdAt).getTime()) {
-          map.set(t.recurringTaskId, t);
-        }
-      } else {
-        standalone.push(t);
-      }
-    }
-    return [...Array.from(map.values()), ...standalone].sort((a, b) => 
+    return [...tasks].sort((a, b) => 
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
   }, [tasks]);
@@ -572,7 +560,9 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
         ) : null}
 
         <div className={`flex-1 min-h-0 bg-[#F8FAFC] focus:outline-none portal-main-scroll p-4 lg:p-6 pb-6 lg:pb-8 ${
-          activeTab !== "settings" ? "h-full flex flex-col overflow-visible" : "overflow-y-auto modern-scrollbar"
+          activeTab === "tasks" || activeTab === "library" || activeTab === "planner" || activeTab === "students"
+            ? "h-full flex flex-col overflow-visible"
+            : "overflow-y-auto modern-scrollbar"
         }`}>
           
           {loading && activeTab !== "settings" && activeTab !== "notifications" ? (
