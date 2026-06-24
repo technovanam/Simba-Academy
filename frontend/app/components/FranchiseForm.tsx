@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { api, ApiError } from "../lib/api";
+import { api, ApiError, formatApiError } from "../lib/api";
 import { AlertCircle } from "lucide-react";
 import { Toast } from "./Toast";
 
@@ -66,7 +66,14 @@ export function FranchiseForm() {
       setForm({ name: "", email: "", phone: "", location: "", message: "" });
     } catch (err) {
       setStatus("error");
-      setError(err instanceof ApiError ? err.message : "Failed to submit franchise inquiry");
+      if (err instanceof ApiError && err.errors) {
+        if (err.errors.name) setNameError(err.errors.name[0]);
+        if (err.errors.email) setEmailError(err.errors.email[0]);
+        if (err.errors.phone) setPhoneError(err.errors.phone[0]);
+        setError("Please check the fields for errors.");
+      } else {
+        setError(formatApiError(err, "Failed to submit franchise inquiry"));
+      }
     } finally {
       setStatus("idle");
     }
@@ -77,10 +84,10 @@ export function FranchiseForm() {
       <Toast message={error} variant="error" onDismiss={() => setError("")} />
       <Toast message={successMessage} variant="success" onDismiss={() => setSuccessMessage("")} />
 
-      <form onSubmit={handleSubmit} noValidate autoComplete="off" className="glass-panel rounded-lg p-8 space-y-5 shadow-xl">
+      <form onSubmit={handleSubmit} noValidate autoComplete="off" className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div>
-            <label className={`block text-sm font-bold mb-2 transition-colors ${nameError ? "text-red-500" : ""}`}>Name *</label>
+            <label className={`block text-sm font-bold mb-2 transition-colors ${nameError ? "text-red-500" : "text-slate-700"}`}>Full Name *</label>
             <div className="relative">
               <input
                 type="text"
@@ -90,10 +97,10 @@ export function FranchiseForm() {
                   setForm({ ...form, name: e.target.value });
                   if (nameError) setNameError("");
                 }}
-                className={`w-full rounded-lg border px-4 py-3 pr-10 bg-white outline-none transition-all ${
+                className={`w-full rounded-xl px-4 py-3.5 outline-none transition-all ${
                   nameError 
-                    ? "border-red-500 focus:border-red-500 shadow-xs shadow-red-100 text-red-900 placeholder-red-300" 
-                    : "border-[#8AC926]/20 focus:border-[#8AC926]"
+                    ? "bg-red-50 border-2 border-red-500 text-red-900 placeholder-red-300" 
+                    : "bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#E8AF34] focus:ring-4 focus:ring-[#E8AF34]/10"
                 }`}
               />
               {nameError && (
@@ -105,7 +112,7 @@ export function FranchiseForm() {
             )}
           </div>
           <div>
-            <label className={`block text-sm font-bold mb-2 transition-colors ${emailError ? "text-red-500" : ""}`}>Email *</label>
+            <label className={`block text-sm font-bold mb-2 transition-colors ${emailError ? "text-red-500" : "text-slate-700"}`}>Email Address *</label>
             <div className="relative">
               <input
                 type="email"
@@ -115,10 +122,10 @@ export function FranchiseForm() {
                   setForm({ ...form, email: e.target.value });
                   if (emailError) setEmailError("");
                 }}
-                className={`w-full rounded-lg border px-4 py-3 pr-10 bg-white outline-none transition-all ${
+                className={`w-full rounded-xl px-4 py-3.5 outline-none transition-all ${
                   emailError 
-                    ? "border-red-500 focus:border-red-500 shadow-xs shadow-red-100 text-red-900 placeholder-red-300" 
-                    : "border-[#8AC926]/20 focus:border-[#8AC926]"
+                    ? "bg-red-50 border-2 border-red-500 text-red-900 placeholder-red-300" 
+                    : "bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#E8AF34] focus:ring-4 focus:ring-[#E8AF34]/10"
                 }`}
               />
               {emailError && (
@@ -133,7 +140,7 @@ export function FranchiseForm() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div>
-            <label className={`block text-sm font-bold mb-2 transition-colors ${phoneError ? "text-red-500" : ""}`}>Phone *</label>
+            <label className={`block text-sm font-bold mb-2 transition-colors ${phoneError ? "text-red-500" : "text-slate-700"}`}>Phone Number *</label>
             <div className="relative">
               <input
                 type="tel"
@@ -143,10 +150,10 @@ export function FranchiseForm() {
                   setForm({ ...form, phone: e.target.value });
                   if (phoneError) setPhoneError("");
                 }}
-                className={`w-full rounded-lg border px-4 py-3 pr-10 bg-white outline-none transition-all ${
+                className={`w-full rounded-xl px-4 py-3.5 outline-none transition-all ${
                   phoneError 
-                    ? "border-red-500 focus:border-red-500 shadow-xs shadow-red-100 text-red-900 placeholder-red-300" 
-                    : "border-[#8AC926]/20 focus:border-[#8AC926]"
+                    ? "bg-red-50 border-2 border-red-500 text-red-900 placeholder-red-300" 
+                    : "bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#E8AF34] focus:ring-4 focus:ring-[#E8AF34]/10"
                 }`}
               />
               {phoneError && (
@@ -158,32 +165,32 @@ export function FranchiseForm() {
             )}
           </div>
           <div>
-            <label className="block text-sm font-bold mb-2">Preferred Location</label>
+            <label className="block text-sm font-bold mb-2 text-slate-700">Preferred Location</label>
             <input
               type="text"
               autoComplete="off"
               value={form.location}
               onChange={(e) => setForm({ ...form, location: e.target.value })}
-              className="w-full rounded-lg border-2 border-[#8AC926]/20 px-4 py-3 bg-white focus:border-[#8AC926] outline-none"
+              className="w-full rounded-xl bg-slate-50 border border-slate-200 px-4 py-3.5 focus:bg-white focus:border-[#E8AF34] focus:ring-4 focus:ring-[#E8AF34]/10 outline-none transition-all"
             />
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-bold mb-2">Message</label>
+          <label className="block text-sm font-bold mb-2 text-slate-700">Message or Questions</label>
           <textarea
             rows={4}
             autoComplete="off"
             value={form.message}
             onChange={(e) => setForm({ ...form, message: e.target.value })}
-            className="w-full rounded-lg border-2 border-[#8AC926]/20 px-4 py-3 bg-white focus:border-[#8AC926] outline-none resize-none"
+            className="w-full rounded-xl bg-slate-50 border border-slate-200 px-4 py-3.5 focus:bg-white focus:border-[#E8AF34] focus:ring-4 focus:ring-[#E8AF34]/10 outline-none resize-none transition-all"
           />
         </div>
 
         <button
           type="submit"
           disabled={status === "loading"}
-          className="w-full py-4 rounded-md bg-[#8AC926] border-b-4 border-[#6FA31D] text-white font-sans font-extrabold text-lg hover:bg-[#9BE230] disabled:opacity-60 transition-all cursor-pointer"
+          className="w-full py-4 mt-4 rounded-xl bg-[#E8AF34] text-white font-extrabold text-base hover:bg-[#d69f2e] disabled:opacity-60 transition-all cursor-pointer shadow-md shadow-[#E8AF34]/20 hover:-translate-y-1"
         >
           {status === "loading" ? "Submitting..." : "Submit Franchise Inquiry"}
         </button>
