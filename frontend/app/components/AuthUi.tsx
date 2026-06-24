@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router";
-import { AlertCircle, Check, LayoutGrid, Loader2 } from "lucide-react";
+import { AlertCircle, Check, Home, Loader2 } from "lucide-react";
 import { STUDENT_AUTH_BG_DESKTOP, STUDENT_AUTH_BG_MOBILE } from "../lib/constants";
 
 const studentAuthBgImgClass =
@@ -135,16 +135,16 @@ const PORTAL_META: Record<
   },
 };
 
-/** Fixed top-right control — back to portal picker */
+/** Fixed top-right control — back to home */
 export function AuthBackButton({ portal }: { portal?: AuthPortal }) {
   const iconClass = portal ? PORTAL_META[portal].iconClass : ORANGE.iconClass;
   return (
     <Link
-      to="/portals"
+      to="/"
       className="fixed top-[max(1rem,env(safe-area-inset-top))] right-[max(1rem,env(safe-area-inset-right))] z-50 inline-flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-sm font-bold shadow-md transition-colors bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300"
     >
-      <LayoutGrid className={`w-4 h-4 ${iconClass}`} strokeWidth={2} />
-      Portals
+      <Home className={`w-4 h-4 ${iconClass}`} strokeWidth={2} />
+      Home
     </Link>
   );
 }
