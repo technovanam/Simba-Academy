@@ -141,13 +141,14 @@ app.use((_req, res) => {
 
 const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
   console.error("Unhandled error:", err);
+  console.log("Is AppError?", err instanceof AppError, "Has errors?", (err as any).errors);
   if (process.env.SENTRY_DSN) {
     Sentry.captureException(err);
   }
   if (err instanceof AppError) {
     res.status(err.statusCode).json({
       error: err.message,
-      ...(err instanceof ValidationError ? { errors: err.errors } : {}),
+      ...((err as any).errors ? { errors: (err as any).errors } : {}),
     });
     return;
   }
