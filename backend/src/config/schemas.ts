@@ -115,6 +115,7 @@ export const updateUserSchema = z.object({
   role: z.enum(["ADMIN", "TEACHER", "STUDENT"]).optional(),
   status: z.enum(["ACTIVE", "DEACTIVATED"]).optional(),
   phone: z.string().optional().nullable(),
+  studentClass: z.enum(STUDENT_CLASS_LEVELS).optional().nullable(),
 });
 
 export const forgotPasswordSchema = z.object({

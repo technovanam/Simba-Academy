@@ -1332,6 +1332,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                                   {/* Email column (Col span 4) */}
                                   <div className="col-span-4 min-w-0">
                                     <p className="text-2xs text-slate-600 font-semibold truncate">{student.email}</p>
+                                    {student.phone && <p className="text-[10px] text-slate-400 font-medium truncate mt-0.5">{student.phone}</p>}
                                   </div>
 
                                   {/* Books column (Col span 3) */}
@@ -1452,7 +1453,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                   {selectedStudentForBooks.name}'s Reading Progress
                 </h3>
                 <p className="text-2xs font-semibold text-slate-500 mt-0.5">
-                  {selectedStudentForBooks.email} {user?.studentClass} Class
+                  {selectedStudentForBooks.email} {selectedStudentForBooks.phone ? `• ${selectedStudentForBooks.phone}` : ""} • {user?.studentClass} Class
                 </p>
               </div>
               <button

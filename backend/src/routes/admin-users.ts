@@ -158,7 +158,25 @@ router.get("/teachers", async (req, res, next) => {
       select: userListSelect,
     });
 
-    res.json(teachers);
+    const classStrengths = await prisma.user.groupBy({
+      by: ["studentClass"],
+      where: { role: "STUDENT", isDeleted: false },
+      _count: { id: true },
+    });
+
+    const strengthMap: Record<string, number> = {};
+    for (const item of classStrengths) {
+      if (item.studentClass) {
+        strengthMap[item.studentClass] = item._count.id;
+      }
+    }
+
+    const teachersWithStrength = teachers.map((teacher) => ({
+      ...teacher,
+      classStrength: teacher.studentClass ? (strengthMap[teacher.studentClass] ?? 0) : 0,
+    }));
+
+    res.json(teachersWithStrength);
   } catch (err) {
     next(err);
   }

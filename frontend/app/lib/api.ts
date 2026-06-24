@@ -234,6 +234,7 @@ export const api = {
       role: AuthUser["role"];
       status: AccountStatus;
       phone: string | null;
+      studentClass: string | null;
     }>
   ) =>
     request<AuthUser>(`/api/admin/users/${id}`, {
@@ -773,6 +774,7 @@ export interface AuthUser {
   status?: AccountStatus;
   mustChangePassword?: boolean;
   createdAt?: string;
+  classStrength?: number;
   books?: Array<{
     id: string;
     title: string;
