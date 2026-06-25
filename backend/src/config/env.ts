@@ -1,4 +1,4 @@
-import "dotenv/config";
+import "dotenv/config.js";
 import { UPLOADS_DIR } from "./uploads.js";
 
 function envString(key: string, fallback?: string): string {
@@ -20,7 +20,7 @@ function envInt(key: string, fallback?: number): number {
 export const env = {
   // ── Server ─────────────────────────────────────────────────────
   NODE_ENV: process.env.NODE_ENV ?? "development",
-  PORT: envInt("PORT", 3001),
+  PORT: process.env.PORT || 3001,
 
   // ── Database ───────────────────────────────────────────────────
   DATABASE_URL: envString("DATABASE_URL"),

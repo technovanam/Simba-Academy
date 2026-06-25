@@ -21,7 +21,7 @@ export default function AboutPage() {
         <picture className="absolute inset-0 w-full h-full">
           <source media="(min-width: 1024px)" srcSet="/About%20Hero.webp" />
           <source media="(min-width: 640px)" srcSet="/About%20Hero%20Tab.png" />
-          <img 
+          <img loading="lazy" decoding="async" 
             src="/About%20Hero%20Mobile.png" 
             alt="About Simba Academy Hero" 
             className="w-full h-full object-cover object-bottom"
@@ -57,7 +57,7 @@ export default function AboutPage() {
         <picture className="absolute inset-0 w-full h-full pointer-events-none">
           <source media="(min-width: 1024px)" srcSet="/About%20Page.webp" />
           <source media="(min-width: 640px)" srcSet="/About%20Tab.png" />
-          <img 
+          <img loading="lazy" decoding="async" 
             src="/About%20Mobile.png" 
             alt="Founder Background" 
             className="w-full h-full object-cover object-center"

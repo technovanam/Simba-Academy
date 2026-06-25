@@ -207,7 +207,7 @@ export default function LandingPage() {
           <picture className="absolute inset-0 w-full h-full opacity-80 lg:opacity-100">
             <source media="(min-width: 1024px)" srcSet="/Hero%20Section.webp" />
             <source media="(min-width: 640px)" srcSet="/Hero%20Tab.png" />
-            <img 
+            <img loading="lazy" decoding="async" 
               src="/Hero%20Mobile.png" 
               alt="Simba Academy Background" 
               className="w-full h-full object-cover object-center"
@@ -263,7 +263,7 @@ export default function LandingPage() {
         <picture className="absolute inset-0 w-full h-full pointer-events-none">
           <source media="(min-width: 1024px)" srcSet="/About.webp" />
           <source media="(min-width: 640px)" srcSet="/Home%20About%20Tab.png" />
-          <img 
+          <img loading="lazy" decoding="async" 
             src="/Home%20About%20Mobile.png" 
             alt="About Simba Academy Background" 
             className="w-full h-full object-cover object-center"
@@ -312,7 +312,7 @@ export default function LandingPage() {
                 <picture className="absolute inset-0 w-full h-full">
                   <source media="(min-width: 1024px)" srcSet={bg.desktop} />
                   <source media="(min-width: 640px)" srcSet={bg.tab} />
-                  <img 
+                  <img loading="lazy" decoding="async" 
                     src={bg.mobile} 
                     alt={`Course background ${idx}`} 
                     className="w-full h-full object-cover object-center"
@@ -395,7 +395,7 @@ export default function LandingPage() {
                 {chunkedGallery.map((col, colIdx) => (
                   col.length === 1 ? (
                     <div key={`r1-col-${colIdx}`} className="h-[250px] md:h-[400px] w-[200px] md:w-[320px] shrink-0 rounded-none overflow-hidden shadow-sm relative group/card border border-slate-200">
-                      <img 
+                      <img loading="lazy" decoding="async" 
                         src={resolveStorageUrl(col[0].imageUrl)} 
                         alt={col[0].title ?? "Gallery Image"} 
                         className="h-full w-full object-cover transition-transform duration-700 group-hover/card:scale-110" 
@@ -410,7 +410,7 @@ export default function LandingPage() {
                     <div key={`r1-col-${colIdx}`} className="flex flex-col gap-4 md:gap-6 h-[250px] md:h-[400px] w-[280px] md:w-[450px] shrink-0">
                       {col.map((img, idx) => (
                         <div key={`img-${idx}`} className="flex-1 w-full rounded-none overflow-hidden shadow-sm relative group/card border border-slate-200">
-                          <img 
+                          <img loading="lazy" decoding="async" 
                             src={resolveStorageUrl(img.imageUrl)} 
                             alt={img.title ?? "Gallery Image"} 
                             className="h-full w-full object-cover transition-transform duration-700 group-hover/card:scale-110" 
@@ -432,7 +432,7 @@ export default function LandingPage() {
                 {[...chunkedGallery].reverse().map((col, colIdx) => (
                   col.length === 1 ? (
                     <div key={`r2-col-${colIdx}`} className="h-[250px] md:h-[400px] w-[200px] md:w-[320px] shrink-0 rounded-none overflow-hidden shadow-sm relative group/card border border-slate-200">
-                      <img 
+                      <img loading="lazy" decoding="async" 
                         src={resolveStorageUrl(col[0].imageUrl)} 
                         alt={col[0].title ?? "Gallery Image"} 
                         className="h-full w-full object-cover transition-transform duration-700 group-hover/card:scale-110" 
@@ -447,7 +447,7 @@ export default function LandingPage() {
                     <div key={`r2-col-${colIdx}`} className="flex flex-col gap-4 md:gap-6 h-[250px] md:h-[400px] w-[280px] md:w-[450px] shrink-0">
                       {col.map((img, idx) => (
                         <div key={`r2-img-${idx}`} className="flex-1 w-full rounded-none overflow-hidden shadow-sm relative group/card border border-slate-200">
-                          <img 
+                          <img loading="lazy" decoding="async" 
                             src={resolveStorageUrl(img.imageUrl)} 
                             alt={img.title ?? "Gallery Image"} 
                             className="h-full w-full object-cover transition-transform duration-700 group-hover/card:scale-110" 
@@ -478,7 +478,7 @@ export default function LandingPage() {
         <picture className="absolute inset-0 w-full h-full pointer-events-none">
           <source media="(min-width: 1024px)" srcSet="/Map.webp" />
           <source media="(min-width: 640px)" srcSet="/Map%20Tab.png" />
-          <img 
+          <img loading="lazy" decoding="async" 
             src="/Map%20Mobile.png" 
             alt="Simba Academy Branches Map Background" 
             className="w-full h-full object-cover object-center"
@@ -637,7 +637,7 @@ function TestimonialCard({ testimonial }: { testimonial: Testimonial & { role?: 
       </div>
       <div className="flex items-center gap-4 border-t border-slate-100 pt-4">
         {testimonial.profilePhotoUrl ? (
-          <img src={testimonial.profilePhotoUrl} alt={testimonial.name} className="w-12 h-12 rounded-full object-cover shadow-sm" referrerPolicy="no-referrer" />
+          <img loading="lazy" decoding="async" src={testimonial.profilePhotoUrl} alt={testimonial.name} className="w-12 h-12 rounded-full object-cover shadow-sm" referrerPolicy="no-referrer" />
         ) : (
           <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#E8AF34]/20 to-[#c59124]/20 flex items-center justify-center text-[#E8AF34] font-bold text-xl">
             {testimonial.name.charAt(0)}

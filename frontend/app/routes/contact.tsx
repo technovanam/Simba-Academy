@@ -63,7 +63,7 @@ export default function ContactPage() {
         <picture className="absolute inset-0 w-full h-full pointer-events-none">
           <source media="(min-width: 1024px)" srcSet="/Map.webp" />
           <source media="(min-width: 640px)" srcSet="/Map%20Tab.png" />
-          <img 
+          <img loading="lazy" decoding="async" 
             src="/Map%20Mobile.png" 
             alt="Simba Academy Branches Map Background" 
             className="w-full h-full object-cover object-center"

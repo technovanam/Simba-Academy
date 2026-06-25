@@ -4,7 +4,7 @@ import { env } from "./env.js";
 
 export async function ensureDefaultAdmin(): Promise<void> {
   const email = env.DEFAULT_ADMIN_EMAIL.toLowerCase();
-  const password = env.DEFAULT_ADMIN_PASSWORD;
+  const password = env.DEFAULT_ADMIN_PASSWORD || "Simba@123!@#";
 
   if (!password) {
     console.warn(

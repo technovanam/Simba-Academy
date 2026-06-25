@@ -1,4 +1,4 @@
-import "dotenv/config";
+import "dotenv/config.js";
 import { env } from "./config/env.js";
 import { prisma } from "./config/database.js";
 import { app, initApp, storagePath } from "./app.js";
@@ -7,7 +7,7 @@ import { startLessonPlanCleanupScheduler } from "./services/lessonPlanCleanup.js
 import { initRecurringTasksCron } from "./services/recurringTasks.js";
 import { startOverdueTaskNotifier } from "./services/overdueTaskNotifier.js";
 
-const PORT = env.PORT;
+const PORT = process.env.PORT || env.PORT;
 
 async function startServer() {
   await initApp();

@@ -1,9 +1,12 @@
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
-import { PrismaClient } from "@prisma/client";
+import pkg from "@prisma/client";
+import type { PrismaClient as PrismaClientType } from "@prisma/client";
 import { env } from "./env.js";
 
+const { PrismaClient } = pkg;
+
 const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
+  prisma: PrismaClientType | undefined;
 };
 
 function parseDatabaseUrl(urlStr: string) {

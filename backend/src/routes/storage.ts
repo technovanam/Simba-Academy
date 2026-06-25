@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { Prisma } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 import fs from "node:fs";
 import path from "node:path";
 import { prisma } from "../config/database.js";

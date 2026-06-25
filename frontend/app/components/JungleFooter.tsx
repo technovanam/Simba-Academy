@@ -21,7 +21,7 @@ export function JungleFooter() {
       <picture className="absolute inset-0 w-full h-full pointer-events-none -z-10">
         <source media="(min-width: 1024px)" srcSet="/Fotter.webp" />
         <source media="(min-width: 640px)" srcSet="/Fotter%20Tab.png" />
-        <img 
+        <img loading="lazy" decoding="async" 
           src="/Fotter%20Mobile.png" 
           alt="Simba Academy Footer Background" 
           className="w-full h-full object-cover object-bottom"
@@ -35,7 +35,7 @@ export function JungleFooter() {
         <div className="space-y-6">
           <div className="flex items-center gap-3">
             <div className="w-20 h-20 flex items-center justify-center shrink-0">
-              <img src="/Simba Logo 2025.pdf.png" alt="Simba Preschool" className="w-full h-full object-contain scale-150" />
+              <img loading="lazy" decoding="async" src="/Simba Logo 2025.pdf.png" alt="Simba Preschool" className="w-full h-full object-contain scale-150" />
             </div>
           </div>
         </div>

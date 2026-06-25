@@ -84,7 +84,7 @@ export default function FranchisePage() {
         <picture className="absolute inset-0 w-full h-full">
           <source media="(min-width: 1024px)" srcSet="/Franchise.webp" />
           <source media="(min-width: 640px)" srcSet="/Franchise%20tab.webp" />
-          <img 
+          <img loading="lazy" decoding="async" 
             src="/Franchise%20Phone.webp" 
             alt="Franchise Background" 
             className="w-full h-full object-cover object-center"

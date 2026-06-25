@@ -406,7 +406,7 @@ export function AuthSplitLayout({
           <div className="relative z-10 px-4 py-5 sm:px-6 sm:py-6 flex flex-col gap-4">
             <div className="flex items-center gap-3">
               <div className="w-20 h-10 rounded-xl bg-white/95 px-2 flex items-center justify-center shadow-sm shrink-0">
-                <img src="/Simba Logo 2025.pdf.png" alt="" className="w-full h-full object-contain" />
+                <img loading="lazy" decoding="async" src="/Simba Logo 2025.pdf.png" alt="" className="w-full h-full object-contain" />
               </div>
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/70">Simba Academy</p>
@@ -437,7 +437,7 @@ export function AuthSplitLayout({
           <div className="relative z-10 p-7 sm:p-8 lg:p-9 flex flex-col gap-6 lg:min-h-full lg:justify-center w-full">
             <div className="flex items-center gap-3">
               <div className="w-24 h-12 rounded-xl bg-white/95 px-2 flex items-center justify-center shadow-sm shrink-0">
-                <img src="/Simba Logo 2025.pdf.png" alt="" className="w-full h-full object-contain" />
+                <img loading="lazy" decoding="async" src="/Simba Logo 2025.pdf.png" alt="" className="w-full h-full object-contain" />
               </div>
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/70">Simba Academy</p>
