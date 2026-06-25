@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   api,
   formatApiError,
@@ -17,8 +17,201 @@ import {
 } from "./AdminListUi";
 import { ThemeSelect } from "./ThemeSelect";
 import { ModalCloseButton } from "./ModalCloseButton";
-import { Compass, Loader2, Pencil, Plus, Trash2, Upload, Paperclip, FileText, X } from "lucide-react";
+import { Compass, Loader2, Pencil, Plus, Trash2, Upload, Paperclip, FileText, X, ChevronDown, Filter } from "lucide-react";
 import { ConfirmDialog } from "./ConfirmDialog";
+
+/** Full-title popup shown when a truncated title is clicked */
+function TitlePopup({ title, onClose }: { title: string; onClose: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+    }
+    document.addEventListener("keydown", handleKey);
+    document.addEventListener("mousedown", handleClick);
+    return () => {
+      document.removeEventListener("keydown", handleKey);
+      document.removeEventListener("mousedown", handleClick);
+    };
+  }, [onClose]);
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+      <div
+        ref={ref}
+        className="bg-white rounded-2xl shadow-2xl border border-slate-200 p-6 max-w-sm w-full relative"
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute top-3 right-3 p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition"
+          title="Close"
+        >
+          <X className="w-4 h-4" />
+        </button>
+        <p className="text-[10px] font-bold uppercase tracking-widest text-[#8AC926] mb-2">Lesson Plan Title</p>
+        <p className="text-sm font-bold text-slate-800 leading-relaxed break-words pr-6">{title}</p>
+      </div>
+    </div>
+  );
+}
+
+/** Desktop title cell — truncated, hover tooltip, click popup */
+function TitleCell({ title }: { title: string }) {
+  const [showPopup, setShowPopup] = useState(false);
+  const spanRef = useRef<HTMLSpanElement>(null);
+  const [isTruncated, setIsTruncated] = useState(false);
+
+  useEffect(() => {
+    const el = spanRef.current;
+    if (el) setIsTruncated(el.scrollWidth > el.clientWidth + 1);
+  }, [title]);
+
+  return (
+    <>
+      <span
+        ref={spanRef}
+        title={title}
+        onClick={() => isTruncated && setShowPopup(true)}
+        className={`font-bold text-sm text-slate-800 block truncate${
+          isTruncated ? " cursor-pointer hover:text-[#8AC926] transition-colors" : ""
+        }`}
+      >
+        {title}
+      </span>
+      {showPopup && <TitlePopup title={title} onClose={() => setShowPopup(false)} />}
+    </>
+  );
+}
+
+/** Mobile title — 2-line clamp, always clickable to show full popup */
+function MobileTitleCell({ title }: { title: string }) {
+  const [showPopup, setShowPopup] = useState(false);
+
+  return (
+    <>
+      <h4
+        onClick={() => setShowPopup(true)}
+        title={title}
+        className="font-extrabold text-sm text-slate-800 leading-tight cursor-pointer hover:text-[#8AC926] transition-colors"
+        style={{
+          display: "-webkit-box",
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: "vertical" as const,
+          overflow: "hidden",
+        }}
+      >
+        {title}
+      </h4>
+      {showPopup && <TitlePopup title={title} onClose={() => setShowPopup(false)} />}
+    </>
+  );
+}
+
+const CLASS_OPTIONS = ["All Classes", "Playgroup", "Pre-KG", "LKG", "UKG"];
+
+/** Multi-select class filter dropdown */
+function ClassFilterDropdown({
+  selected,
+  onChange,
+}: {
+  selected: string[];
+  onChange: (v: string[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  function toggle(cls: string) {
+    if (selected.includes(cls)) {
+      onChange(selected.filter((c) => c !== cls));
+    } else {
+      onChange([...selected, cls]);
+    }
+  }
+
+  const label =
+    selected.length === 0
+      ? "All Classes"
+      : selected.length === 1
+      ? selected[0]
+      : `${selected.length} classes`;
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-bold transition whitespace-nowrap ${
+          selected.length > 0
+            ? "bg-[#8AC926]/10 border-[#8AC926] text-[#5a8218]"
+            : "bg-white border-slate-200 text-slate-600 hover:border-[#8AC926]/50"
+        }`}
+      >
+        <Filter className="w-3.5 h-3.5" />
+        {label}
+        {selected.length > 0 && (
+          <span
+            role="button"
+            tabIndex={0}
+            onClick={(e) => { e.stopPropagation(); onChange([]); }}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); onChange([]); } }}
+            className="ml-0.5 rounded-full hover:bg-[#8AC926]/20 p-0.5"
+            title="Clear filter"
+          >
+            <X className="w-3 h-3" />
+          </span>
+        )}
+        <ChevronDown className={`w-3.5 h-3.5 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      {open && (
+        <div className="absolute left-0 top-full mt-1.5 z-30 bg-white border border-slate-200 rounded-2xl shadow-xl p-2 min-w-[160px]">
+          <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 px-2 pt-1 pb-1.5">Filter by class</p>
+          {CLASS_OPTIONS.map((cls) => {
+            const isActive = selected.includes(cls);
+            return (
+              <button
+                key={cls}
+                type="button"
+                onClick={() => toggle(cls)}
+                className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition mb-0.5 ${
+                  isActive
+                    ? "bg-[#8AC926]/10 text-[#5a8218] font-bold"
+                    : "hover:bg-slate-50 text-slate-700"
+                }`}
+              >
+                <span
+                  className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition ${
+                    isActive ? "bg-[#8AC926] border-[#8AC926]" : "border-slate-300"
+                  }`}
+                >
+                  {isActive && (
+                    <svg viewBox="0 0 10 8" className="w-2.5 h-2.5 fill-none">
+                      <path d="M1 4l2.5 2.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  )}
+                </span>
+                {cls}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface AdminLessonPlansPanelProps {
   token: string;
@@ -39,6 +232,7 @@ export function AdminLessonPlansPanel({ token, onNotify, onError }: AdminLessonP
   const [plans, setPlans] = useState<LessonPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
@@ -64,11 +258,24 @@ export function AdminLessonPlansPanel({ token, onNotify, onError }: AdminLessonP
 
   const filtered = plans.filter((p) => {
     const q = search.toLowerCase();
-    if (!q) return true;
-    return p.title.toLowerCase().includes(q);
+    const matchesSearch = !q || p.title.toLowerCase().includes(q);
+
+    let matchesClass = true;
+    if (selectedClasses.length > 0) {
+      const planClasses = (p.targetClass ?? "")
+        .split(",")
+        .map((c) => c.trim())
+        .filter(Boolean);
+      matchesClass = selectedClasses.some((sel) => {
+        if (sel === "All Classes") return planClasses.length === 0;
+        return planClasses.includes(sel);
+      });
+    }
+
+    return matchesSearch && matchesClass;
   });
 
-  const pagination = useAdminPagination(filtered, [search]);
+  const pagination = useAdminPagination(filtered, [search, selectedClasses]);
 
   function openCreate() {
     setForm({ ...emptyForm });
@@ -188,6 +395,10 @@ export function AdminLessonPlansPanel({ token, onNotify, onError }: AdminLessonP
               placeholder="Search lesson plans…"
               ariaLabel="Search lesson plans"
             />
+            <ClassFilterDropdown
+              selected={selectedClasses}
+              onChange={setSelectedClasses}
+            />
             <button
               type="button"
               onClick={openCreate}
@@ -209,36 +420,44 @@ export function AdminLessonPlansPanel({ token, onNotify, onError }: AdminLessonP
           <AdminListEmpty message="No lesson plans matched your search." />
         ) : (
           <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex-1 min-h-0 flex flex-col">
-            {/* Desktop Table View */}
-            <div className="hidden md:block overflow-x-auto flex-1 min-h-0 overflow-y-auto modern-scrollbar">
-              <table className="w-full text-left text-sm table-auto">
+            {/* Desktop Table View — no horizontal scroll */}
+            <div className="hidden md:block flex-1 min-h-0 overflow-y-auto modern-scrollbar overflow-x-hidden">
+              <table className="w-full text-left text-sm table-fixed">
+                <colgroup>
+                  <col style={{ width: "38%" }} />
+                  <col style={{ width: "18%" }} />
+                  <col style={{ width: "20%" }} />
+                  <col style={{ width: "14%" }} />
+                  <col style={{ width: "10%" }} />
+                </colgroup>
                 <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium text-xs sticky top-0 z-10">
                   <tr>
-                    <th className="px-4 py-3 font-semibold w-[40%]">Title</th>
-                    <th className="px-4 py-3 font-semibold w-[20%] whitespace-nowrap">Class</th>
-                    <th className="px-4 py-3 font-semibold w-[20%] whitespace-nowrap">Attachment</th>
-                    <th className="px-4 py-3 font-semibold w-[20%] whitespace-nowrap">Date Added</th>
+                    <th className="px-4 py-3 font-semibold">Title</th>
+                    <th className="px-4 py-3 font-semibold whitespace-nowrap">Class</th>
+                    <th className="px-4 py-3 font-semibold whitespace-nowrap">Attachment</th>
+                    <th className="px-4 py-3 font-semibold whitespace-nowrap">Date Added</th>
                     <th className="px-4 py-3 font-semibold text-right whitespace-nowrap">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {filtered.map((plan) => (
                     <tr key={plan.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="px-4 py-3 align-middle w-[40%] min-w-0">
-                        <span className="font-bold text-sm text-slate-800 block break-words">{plan.title}</span>
+                      <td className="px-4 py-3 align-middle min-w-0 max-w-0">
+                        <TitleCell title={plan.title} />
                       </td>
-                      <td className="px-4 py-3 align-middle text-xs text-slate-600 w-[20%] font-semibold whitespace-nowrap">
-                        {plan.targetClass || "All Classes"}
+                      <td className="px-4 py-3 align-middle text-xs text-slate-600 font-semibold">
+                        <span className="block truncate" title={plan.targetClass || "All Classes"}>{plan.targetClass || "All Classes"}</span>
                       </td>
-                      <td className="px-4 py-3 align-middle text-xs w-[20%] min-w-0 whitespace-nowrap">
+                      <td className="px-4 py-3 align-middle text-xs min-w-0">
                         {plan.fileUrl ? (
-                          <div className="flex items-center gap-1.5 max-w-xs">
+                          <div className="flex items-center gap-1.5 min-w-0">
                             <Paperclip className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                             <a
                               href={plan.fileUrl.startsWith("/") ? `${API_URL}${plan.fileUrl}` : plan.fileUrl}
                               target="_blank"
                               rel="noreferrer"
-                              className="font-bold text-[#8AC926] hover:underline truncate max-w-[200px] block"
+                              title={plan.fileName || "View attachment"}
+                              className="font-bold text-[#8AC926] hover:underline truncate block min-w-0"
                             >
                               {plan.fileName || "View attachment"}
                             </a>
@@ -247,7 +466,7 @@ export function AdminLessonPlansPanel({ token, onNotify, onError }: AdminLessonP
                           <span className="text-slate-450">—</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 align-middle text-xs text-slate-500 w-[20%] whitespace-nowrap">
+                      <td className="px-4 py-3 align-middle text-xs text-slate-500 whitespace-nowrap">
                         {plan.createdAt ? new Date(plan.createdAt).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" }) : <span className="text-slate-450">—</span>}
                       </td>
                       <td className="px-4 py-2 text-right align-middle whitespace-nowrap">
@@ -255,10 +474,10 @@ export function AdminLessonPlansPanel({ token, onNotify, onError }: AdminLessonP
                           <button
                             type="button"
                             onClick={() => openEdit(plan)}
-                            className="px-2.5 py-1 rounded-lg bg-slate-55 border border-slate-200 text-slate-700 hover:bg-slate-100 text-[12px] font-medium flex items-center gap-1"
+                            className="p-1.5 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-100 flex items-center justify-center"
                             title="Edit"
                           >
-                            <Pencil className="w-3 h-3" /> Edit
+                            <Pencil className="w-3.5 h-3.5" />
                           </button>
                           <button
                             type="button"
@@ -282,12 +501,12 @@ export function AdminLessonPlansPanel({ token, onNotify, onError }: AdminLessonP
             </div>
 
             {/* Mobile/Tablet Card Layout */}
-            <div className="md:hidden divide-y divide-slate-150 flex-1 overflow-y-auto modern-scrollbar bg-slate-50/50">
+            <div className="md:hidden divide-y divide-slate-200 flex-1 overflow-y-auto modern-scrollbar bg-slate-50/50">
               {filtered.map((plan) => (
                 <div key={plan.id} className="p-4 hover:bg-slate-50 transition-colors flex flex-col gap-2.5">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
-                      <h4 className="font-extrabold text-sm text-slate-800 break-words leading-tight">{plan.title}</h4>
+                      <MobileTitleCell title={plan.title} />
                       <p className="text-2xs text-slate-500 font-semibold mt-1">
                         Added: {plan.createdAt ? new Date(plan.createdAt).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" }) : "—"}
                       </p>
@@ -317,7 +536,7 @@ export function AdminLessonPlansPanel({ token, onNotify, onError }: AdminLessonP
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-150 text-[11px]">
+                  <div className="grid grid-cols-2 gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-[11px]">
                     <div>
                       <span className="text-slate-400 font-semibold block uppercase text-[9px] tracking-wider mb-0.5">Class</span>
                       <span className="text-indigo-650 font-bold">{plan.targetClass || "All Classes"}</span>

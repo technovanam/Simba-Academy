@@ -60,6 +60,7 @@ import {
   Plus,
   AlertCircle,
   History as HistoryIcon,
+  FileCheck2,
 } from "lucide-react";
 
 const NOTIFICATION_POLL_MS = 12_000;
@@ -142,7 +143,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
   const [showProofModal, setShowProofModal] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [taskDetailsModal, setTaskDetailsModal] = useState<Task | null>(null);
-  const [auditHistoryTaskId, setAuditHistoryTaskId] = useState<string | null>(null);
+  const [auditHistoryTask, setAuditHistoryTask] = useState<Task | null>(null);
   const [taskAuditHistory, setTaskAuditHistory] = useState<TaskAudit[]>([]);
   const [loadingAudit, setLoadingAudit] = useState(false);
   const [proofForm, setProofForm] = useState({ description: "" });
@@ -312,18 +313,26 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
       setActionLoading(null);
       return;
     }
-    if (!selectedProofFile) {
+
+    const isEditing = !!(selectedTask.proofUrl);
+
+    // New submission requires a file; editing allows keeping existing file
+    if (!isEditing && !selectedProofFile) {
       setError("Please select a file/photo to upload as completion proof.");
       setActionLoading(null);
       return;
     }
 
     try {
-      // 1. Upload the proof file to backend/uploads
-      const uploadResponse = await api.uploadRaw(token, selectedProofFile);
-      const proofUrl = uploadResponse.url;
+      let proofUrl = selectedTask.proofUrl ?? "";
 
-      // 2. Submit the proof
+      // Only upload if a new file was selected
+      if (selectedProofFile) {
+        const uploadResponse = await api.uploadRaw(token, selectedProofFile);
+        proofUrl = uploadResponse.url;
+      }
+
+      // Submit/update the proof
       const updated = await api.submitTaskProof(token, selectedTask.id, {
         proofUrl,
         proofDesc: proofForm.description,
@@ -331,7 +340,9 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
 
       // Update state
       setTasks((prev) => prev.map((t) => (t.id === selectedTask.id ? updated : t)));
-      setMessage(`Task "${updated.title}" status marked as completed and sent for review!`);
+      setMessage(isEditing
+        ? `Task "${updated.title}" proof updated successfully!`
+        : `Task "${updated.title}" status marked as completed and sent for review!`);
 
       // Reset
       setProofForm({ description: "" });
@@ -346,32 +357,21 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
     }
   }
 
-  const [taskOccurrenceHistory, setTaskOccurrenceHistory] = useState<Task[]>([]);
-
   async function handleViewHistory(t: Task) {
     if (!token) return;
-    setAuditHistoryTaskId(t.id);
+    setAuditHistoryTask(t);
     setLoadingAudit(true);
     setTaskAuditHistory([]);
-    setTaskOccurrenceHistory([]);
     try {
-      if (t.recurringTaskId) {
-        const [occHistory, auditHistory] = await Promise.all([
-          api.getRecurringTaskOccurrences(token, t.recurringTaskId),
-          api.getTeacherTaskAuditHistory(token, t.id)
-        ]);
-        setTaskOccurrenceHistory(occHistory);
-        setTaskAuditHistory(auditHistory);
-      } else {
-        const history = await api.getTeacherTaskAuditHistory(token, t.id);
-        setTaskAuditHistory(history);
-      }
+      const history = await api.getTeacherTaskAuditHistory(token, t.id);
+      setTaskAuditHistory(history);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Failed to load history.");
     } finally {
       setLoadingAudit(false);
     }
   }
+
 
   // ÔöÇÔöÇ FILTERED DATA ARRAYS ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
   const groupedTasks = useMemo(() => {
@@ -393,7 +393,10 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
   const filteredGroupedTasks = groupedTasks.filter((t) => {
     const matchesSearch = t.title.toLowerCase().includes(taskSearch.toLowerCase()) || 
                           (t.description ?? "").toLowerCase().includes(taskSearch.toLowerCase());
-    const matchesStatus = taskStatusFilter === "ALL" || t.status === taskStatusFilter;
+    const matchesStatus = taskStatusFilter === "ALL" || 
+      (taskStatusFilter === "COMPLETED" 
+        ? ["COMPLETED", "SUBMITTED", "RESUBMITTED", "UNDER_REVIEW"].includes(t.status)
+        : t.status === taskStatusFilter);
     return matchesSearch && matchesStatus;
   });
 
@@ -406,6 +409,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
     { id: "COMPLETED" as const, label: "Submitted" },
     { id: "APPROVED" as const, label: "Approved" },
     { id: "REJECTED" as const, label: "Rejected" },
+    { id: "OVERDUE" as const, label: "Overdue" },
   ];
 
   const filteredLessonPlans = lessonPlans.filter((p) => {
@@ -883,10 +887,11 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                             <table className="w-full text-left text-sm whitespace-nowrap">
                               <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium text-xs sticky top-0 z-10">
                                 <tr>
-                                  <th className="px-4 py-3 font-semibold w-[45%]">Task Details</th>
-                                  <th className="px-4 py-3 font-semibold w-[20%]">Status</th>
-                                  <th className="px-4 py-3 font-semibold w-[20%]">Due Date</th>
-                                  <th className="px-4 py-3 font-semibold text-right w-[15%]">Actions</th>
+                                  <th className="px-4 py-3 font-semibold w-[35%]">Task Details</th>
+                                  <th className="px-4 py-3 font-semibold w-[15%]">Assigned Date</th>
+                                  <th className="px-4 py-3 font-semibold w-[15%]">Status</th>
+                                  <th className="px-4 py-3 font-semibold w-[15%]">Due Date</th>
+                                  <th className="px-4 py-3 font-semibold text-right w-[20%]">Actions</th>
                                 </tr>
                               </thead>
                               {[ 
@@ -895,16 +900,16 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                               ].map(group => group.items.length > 0 && (
                                 <tbody key={group.title} className="divide-y divide-slate-100">
                                   <tr className="bg-slate-50/80">
-                                    <td colSpan={4} className="px-4 py-2 text-xs font-black text-slate-600 uppercase tracking-widest border-b border-slate-200">{group.title}</td>
+                                    <td colSpan={5} className="px-4 py-2 text-xs font-black text-slate-600 uppercase tracking-widest border-b border-slate-200">{group.title}</td>
                                   </tr>
                                   {group.items.map((t) => {
                                   const isOverdue =
-                                    t.dueDate &&
+                                    t.status === "OVERDUE" || (t.dueDate &&
                                     new Date(t.dueDate).getTime() < Date.now() &&
-                                    (t.status === "PENDING" || t.status === "REJECTED" || t.status === "SUBMITTED" || t.status === "RESUBMITTED");
+                                    (t.status === "PENDING" || t.status === "REJECTED"));
                                   return (
                                     <tr key={t.id} className="hover:bg-slate-50/80 transition-colors">
-                                      <td className="px-4 py-3 align-middle w-[45%] min-w-0">
+                                      <td className="px-4 py-3 align-middle w-[35%] min-w-0">
                                         <div className="flex flex-col min-w-0">
                                           <span className="font-bold text-sm text-slate-800">{t.title}</span>
                                           {t.description && (
@@ -912,7 +917,17 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                                           )}
                                         </div>
                                       </td>
-                                      <td className="px-4 py-3 align-middle w-[20%]">
+                                      <td className="px-4 py-3 align-middle w-[15%]">
+                                        <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
+                                          <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                                          {new Date(t.createdAt).toLocaleDateString("en-IN", {
+                                            month: "short",
+                                            day: "numeric",
+                                            year: "numeric",
+                                          })}
+                                        </div>
+                                      </td>
+                                      <td className="px-4 py-3 align-middle w-[15%]">
                                         <div className="flex flex-col gap-1.5">
                                           <div className="flex items-center gap-1.5 flex-wrap">
                                             <span
@@ -927,6 +942,8 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                                                   ? "bg-sky-50 text-sky-700 border-sky-200"
                                                   : t.status === "SUBMITTED" || t.status === "COMPLETED"
                                                   ? "bg-blue-50 text-blue-700 border-blue-200"
+                                                  : t.status === "OVERDUE"
+                                                  ? "bg-rose-50 text-rose-700 border-rose-200"
                                                   : "bg-amber-50 text-amber-700 border-amber-200"
                                               }`}
                                             >
@@ -934,6 +951,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                                                t.status === "SUBMITTED" ? "Submitted" :
                                                t.status === "UNDER_REVIEW" ? "Under Review" :
                                                t.status === "RESUBMITTED" ? "Resubmitted" :
+                                               t.status === "OVERDUE" ? "Overdue" :
                                                t.status}
                                             </span>
                                             {t.proofUrl && (
@@ -956,7 +974,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                                           )}
                                         </div>
                                       </td>
-                                      <td className="px-4 py-3 align-middle w-[20%] text-xs font-semibold text-slate-700">
+                                      <td className="px-4 py-3 align-middle w-[15%] text-xs font-semibold text-slate-700">
                                         {t.dueDate ? (
                                           <span className={`inline-flex items-center gap-1 ${isOverdue ? "text-rose-600" : "text-slate-600"}`}>
                                             <Calendar className="w-3.5 h-3.5" />
@@ -971,7 +989,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                                           <span className="text-slate-450">—</span>
                                         )}
                                       </td>
-                                      <td className="px-4 py-3 text-right align-middle w-[15%]">
+                                      <td className="px-4 py-3 text-right align-middle w-[20%]">
                                         <div className="flex items-center justify-end gap-2">
                                           <button
                                             type="button"
@@ -989,7 +1007,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                                           >
                                             <HistoryIcon className="w-4 h-4 text-indigo-500" />
                                           </button>
-                                          {(t.status === "PENDING" || t.status === "REJECTED" || t.status === "COMPLETED" || t.status === "SUBMITTED" || t.status === "RESUBMITTED") ? (
+                                          {(t.status === "PENDING" || t.status === "REJECTED" || t.status === "COMPLETED" || t.status === "SUBMITTED" || t.status === "RESUBMITTED" || t.status === "OVERDUE") ? (
                                             <button
                                               type="button"
                                               onClick={() => {
@@ -999,12 +1017,13 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                                                 setShowProofModal(true);
                                               }}
                                               className={`w-28 h-[30px] flex items-center justify-center rounded-xl text-white font-sans font-bold text-2xs transition shadow-md whitespace-nowrap ${
-                                                t.status === "REJECTED"
+                                                t.status === "REJECTED" || t.status === "OVERDUE"
                                                   ? "bg-rose-500 hover:bg-rose-600 shadow-rose-500/20"
                                                   : "bg-[#8AC926] hover:bg-[#78B020] shadow-[#8AC926]/10"
                                               }`}
                                             >
                                               {t.status === "REJECTED" ? "Re-submit" :
+                                               t.status === "OVERDUE" ? "Submit late" :
                                                t.status === "COMPLETED" || t.status === "SUBMITTED" || t.status === "RESUBMITTED" ? "Edit proof" :
                                                "Submit proof"}
                                             </button>
@@ -1040,9 +1059,9 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                                 <div className="divide-y divide-slate-100">
                                   {group.items.map((t) => {
                               const isOverdue =
-                                t.dueDate &&
+                                t.status === "OVERDUE" || (t.dueDate &&
                                 new Date(t.dueDate).getTime() < Date.now() &&
-                                (t.status === "PENDING" || t.status === "REJECTED" || t.status === "SUBMITTED" || t.status === "RESUBMITTED");
+                                (t.status === "PENDING" || t.status === "REJECTED"));
                               return (
                                 <div key={t.id} className="p-4 flex flex-col gap-3 hover:bg-slate-50/80 transition-colors">
                                   <div className="flex flex-col gap-1">
@@ -1067,6 +1086,8 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                                               ? "bg-sky-50 text-sky-700 border-sky-200"
                                               : t.status === "SUBMITTED" || t.status === "COMPLETED"
                                               ? "bg-blue-50 text-blue-700 border-blue-200"
+                                              : t.status === "OVERDUE"
+                                              ? "bg-rose-50 text-rose-700 border-rose-200"
                                               : "bg-amber-50 text-amber-700 border-amber-200"
                                           }`}
                                         >
@@ -1074,6 +1095,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                                            t.status === "SUBMITTED" ? "Submitted" :
                                            t.status === "UNDER_REVIEW" ? "Under Review" :
                                            t.status === "RESUBMITTED" ? "Resubmitted" :
+                                           t.status === "OVERDUE" ? "Overdue" :
                                            t.status}
                                         </span>
                                         {t.proofUrl && (
@@ -1090,7 +1112,13 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                                       </div>
                                     </div>
 
-                                    <div className="flex flex-col items-end gap-1">
+                                    <div className="flex flex-col gap-1 items-center">
+                                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Assigned</span>
+                                      <span className="text-[11px] font-semibold text-slate-700">
+                                        {new Date(t.createdAt).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" })}
+                                      </span>
+                                    </div>
+                                    <div className="flex flex-col gap-1 items-center">
                                       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Due Date</span>
                                       {t.dueDate ? (
                                         <span className={`inline-flex items-center gap-1 text-xs font-semibold ${isOverdue ? "text-rose-600" : "text-slate-600"}`}>
@@ -1131,7 +1159,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                                     >
                                       <HistoryIcon className="w-4 h-4 text-indigo-500" />
                                     </button>
-                                    {(t.status === "PENDING" || t.status === "REJECTED" || t.status === "COMPLETED" || t.status === "SUBMITTED" || t.status === "RESUBMITTED") ? (
+                                    {(t.status === "PENDING" || t.status === "REJECTED" || t.status === "COMPLETED" || t.status === "SUBMITTED" || t.status === "RESUBMITTED" || t.status === "OVERDUE") ? (
                                       <button
                                         type="button"
                                         onClick={() => {
@@ -1141,12 +1169,13 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                                           setShowProofModal(true);
                                         }}
                                         className={`px-4 py-2 rounded-xl text-white font-sans font-bold text-xs transition shadow-md whitespace-nowrap ${
-                                          t.status === "REJECTED"
+                                          t.status === "REJECTED" || t.status === "OVERDUE"
                                             ? "bg-rose-500 hover:bg-rose-600 shadow-rose-500/20"
                                             : "bg-[#8AC926] hover:bg-[#78B020] shadow-[#8AC926]/10"
                                         }`}
                                       >
                                         {t.status === "REJECTED" ? "Re-submit" :
+                                         t.status === "OVERDUE" ? "Submit late" :
                                          t.status === "COMPLETED" || t.status === "SUBMITTED" || t.status === "RESUBMITTED" ? "Edit proof" :
                                          "Submit proof"}
                                       </button>
@@ -1370,7 +1399,9 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
               }}
               className="absolute top-4 right-4"
             />
-            <h3 className="font-sans text-lg font-extrabold text-slate-900 mb-4 pr-10 shrink-0">Submit Task Completion Proof</h3>
+            <h3 className="font-sans text-lg font-extrabold text-slate-900 mb-4 pr-10 shrink-0">
+              {selectedTask.proofUrl ? "Edit Task Proof" : "Submit Task Completion Proof"}
+            </h3>
 
             <form onSubmit={handleProofSubmit} noValidate className="space-y-4 text-xs flex-1 flex flex-col min-h-0">
               <div className="overflow-y-auto flex-1 pr-1 space-y-4 min-h-0">
@@ -1393,20 +1424,44 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                 </div>
 
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1.5">Attach File/Photo (Completion proof)</label>
+                  <label className="block text-slate-700 font-bold mb-1.5">
+                    {selectedTask.proofUrl
+                      ? "Replace Attachment (optional — leave empty to keep existing)"
+                      : "Attach File/Photo (Completion proof)"}
+                  </label>
+
+                  {/* Show existing attachment indicator when editing */}
+                  {selectedTask.proofUrl && !selectedProofFile && (
+                    <div className="flex items-center gap-2 px-3 py-2.5 mb-2 bg-[#8AC926]/5 border border-[#8AC926]/30 rounded-xl">
+                      <FileCheck2 className="w-4 h-4 text-[#8AC926] shrink-0" />
+                      <span className="text-xs font-semibold text-slate-700 flex-1">Current file attached — will be kept</span>
+                      <a
+                        href={resolveStorageUrl(selectedTask.proofUrl)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[10px] font-bold text-[#8AC926] hover:underline whitespace-nowrap"
+                      >
+                        View
+                      </a>
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-center w-full">
-                    <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-300 rounded-xl cursor-pointer bg-slate-50 hover:bg-slate-100 hover:border-[#8AC926] transition">
+                    <label className="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-slate-300 rounded-xl cursor-pointer bg-slate-50 hover:bg-slate-100 hover:border-[#8AC926] transition">
                       <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                        <Upload className="w-8 h-8 text-slate-400 mb-2" />
+                        <Upload className="w-7 h-7 text-slate-400 mb-2" />
                         <p className="text-xs text-slate-500 font-bold px-2 text-center break-all">
-                          {selectedProofFile ? selectedProofFile.name : "Select or drag file here"}
+                          {selectedProofFile
+                            ? selectedProofFile.name
+                            : selectedTask.proofUrl
+                            ? "Click to replace with a new file (optional)"
+                            : "Select or drag file here"}
                         </p>
                         <p className="text-3xs text-slate-400 mt-0.5">PDF, Word, or image up to 50MB</p>
                       </div>
-                      <input 
-                        type="file" 
-                        className="hidden" 
-                        required
+                      <input
+                        type="file"
+                        className="hidden"
                         onChange={(e) => setSelectedProofFile(e.target.files?.[0] ?? null)}
                       />
                     </label>
@@ -1414,8 +1469,8 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                 </div>
               </div>
 
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 disabled={actionLoading === "proof-submit"}
                 className="w-full py-3 rounded-xl bg-[#8AC926] text-white font-sans font-bold text-xs tracking-wider uppercase hover:bg-[#78B020] transition shadow-md shadow-[#8AC926]/10 flex items-center justify-center gap-1.5 shrink-0"
               >
@@ -1423,6 +1478,8 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                   <>
                     <Loader2 className="w-3.5 h-3.5 animate-spin" /> Submitting...
                   </>
+                ) : selectedTask.proofUrl ? (
+                  "Update Proof"
                 ) : (
                   "Submit Proof"
                 )}
@@ -1715,12 +1772,12 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
         </div>
       )}
 
-      {auditHistoryTaskId && (
+      {auditHistoryTask && (
         <div className="fixed inset-0 z-[100] bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl p-4 sm:p-6 w-full max-w-2xl shadow-2xl border border-slate-200 animate-scale-up text-slate-800 relative max-h-[90vh] flex flex-col">
             <ModalCloseButton
               onClick={() => {
-                setAuditHistoryTaskId(null);
+                setAuditHistoryTask(null);
                 setTaskAuditHistory([]);
               }}
               className="absolute top-4 right-4"
@@ -1729,6 +1786,35 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
               <HistoryIcon className="w-5 h-5 text-indigo-500" /> Task Status History
             </h3>
 
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-4 flex flex-wrap gap-x-8 gap-y-3">
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Assigned Date</p>
+                <p className="text-sm font-semibold text-slate-700">
+                  {new Date(auditHistoryTask.createdAt).toLocaleDateString("en-IN", { month: "long", day: "numeric", year: "numeric" })}
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Due Date</p>
+                <p className="text-sm font-semibold text-slate-700">
+                  {auditHistoryTask.dueDate ? new Date(auditHistoryTask.dueDate).toLocaleDateString("en-IN", { month: "long", day: "numeric", year: "numeric" }) : "—"}
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Current Status</p>
+                <span className={`px-2 py-0.5 mt-0.5 inline-block rounded text-[10px] font-extrabold uppercase border ${
+                  auditHistoryTask.status === "APPROVED" ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
+                  auditHistoryTask.status === "REJECTED" ? "bg-rose-50 text-rose-700 border-rose-200" :
+                  auditHistoryTask.status === "RESUBMITTED" ? "bg-purple-50 text-purple-700 border-purple-200" :
+                  auditHistoryTask.status === "UNDER_REVIEW" ? "bg-sky-50 text-sky-700 border-sky-200" :
+                  auditHistoryTask.status === "SUBMITTED" || auditHistoryTask.status === "COMPLETED" ? "bg-blue-50 text-blue-700 border-blue-200" :
+                  auditHistoryTask.status === "OVERDUE" ? "bg-rose-50 text-rose-700 border-rose-200" :
+                  "bg-amber-50 text-amber-700 border-amber-200"
+                }`}>
+                  {auditHistoryTask.status === "COMPLETED" ? "SUBMITTED" : auditHistoryTask.status}
+                </span>
+              </div>
+            </div>
+
             <div className="flex-1 overflow-y-auto modern-scrollbar pr-2 min-h-[200px]">
               {loadingAudit ? (
                 <div className="flex flex-col items-center justify-center h-40 gap-3">
@@ -1736,59 +1822,9 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                   <p className="text-xs font-semibold text-slate-500">Loading history...</p>
                 </div>
               ) : (
-                <div className="space-y-8">
-                  {taskOccurrenceHistory.length > 0 && (
-                    <div>
-                      <h4 className="text-sm font-bold text-slate-800 mb-3">Task Occurrences</h4>
-                      <div className="relative border-l-2 border-indigo-100 ml-3 space-y-6 pb-4">
-                        {taskOccurrenceHistory.map((occ) => (
-                          <div key={occ.id} className="relative pl-6">
-                            <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-white border-2 border-indigo-300 shadow-sm" />
-                            <div className="bg-white border border-slate-100 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
-                              <div className="flex justify-between items-start mb-2 gap-4">
-                                <div>
-                                  <p className="text-xs font-bold text-slate-800">
-                                    Task Occurrence
-                                  </p>
-                                  <p className="text-2xs text-slate-500 font-medium mt-0.5">
-                                    Assigned: {new Date(occ.createdAt).toLocaleString()}
-                                  </p>
-                                </div>
-                                <div className="text-right shrink-0">
-                                  <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold border ${
-                                    occ.status === "APPROVED" ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
-                                    occ.status === "REJECTED" ? "bg-rose-50 text-rose-700 border-rose-200" :
-                                    occ.status === "RESUBMITTED" ? "bg-purple-50 text-purple-700 border-purple-200" :
-                                    occ.status === "UNDER_REVIEW" ? "bg-sky-50 text-sky-700 border-sky-200" :
-                                    "bg-amber-50 text-amber-700 border-amber-200"
-                                  }`}>
-                                    {occ.status}
-                                  </span>
-                                </div>
-                              </div>
-                              {occ.status === "REJECTED" && occ.rejectionReason && (
-                                <div className="mt-3 pt-3 border-t border-rose-100 bg-rose-50 rounded p-2">
-                                  <p className="text-[10px] font-bold text-rose-800 mb-1 flex items-center gap-1">
-                                    <AlertCircle className="w-3 h-3" /> Rejection Reason
-                                  </p>
-                                  <p className="text-xs text-rose-700 whitespace-pre-wrap">{occ.rejectionReason}</p>
-                                </div>
-                              )}
-                              {occ.proofDesc && (
-                                <div className="mt-3 pt-3 border-t border-slate-100">
-                                  <p className="text-xs text-slate-600 whitespace-pre-wrap">{occ.proofDesc}</p>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
                   <div>
                     <h4 className="text-sm font-bold text-slate-800 mb-3">
-                      {taskOccurrenceHistory.length > 0 ? "Audit History (Latest Occurrence)" : "Audit History"}
+                      Audit History
                     </h4>
                     {taskAuditHistory.length === 0 ? (
                       <div className="flex items-center justify-center h-40 bg-slate-50 rounded-xl border border-dashed border-slate-200">
@@ -1844,7 +1880,6 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                   ))}
                       </div>
                     )}
-                  </div>
                 </div>
               )}
             </div>
@@ -1853,7 +1888,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
               <button
                 type="button"
                 onClick={() => {
-                  setAuditHistoryTaskId(null);
+                  setAuditHistoryTask(null);
                   setTaskAuditHistory([]);
                 }}
                 className="px-6 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs transition"

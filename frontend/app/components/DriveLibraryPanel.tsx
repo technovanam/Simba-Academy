@@ -10,8 +10,11 @@ import {
   Search,
   Settings,
   Shield,
+  ShieldX,
+  ShieldOff,
   Lock,
   Unlock,
+  AlertTriangle,
 } from "lucide-react";
 import { api, type DriveItem, type DriveAncestor } from "../lib/api";
 import { DocumentViewerModal } from "./DocumentViewerModal";
@@ -107,6 +110,10 @@ export function DriveLibraryPanel({ token, role }: DriveLibraryPanelProps) {
   });
   const [isSavingAccess, setIsSavingAccess] = useState(false);
 
+  // Revoke confirm state
+  const [revokeTarget, setRevokeTarget] = useState<string | null>(null);
+  const [revokeLoading, setRevokeLoading] = useState(false);
+
   const fetchDocuments = useCallback(async (signal: { cancelled: boolean }) => {
     if (!token) return;
 
@@ -200,6 +207,7 @@ export function DriveLibraryPanel({ token, role }: DriveLibraryPanelProps) {
   const handleRevokeAccess = async (fileId: string) => {
     if (!token) return;
     setError("");
+    setRevokeLoading(true);
     try {
       await api.revokeDriveAccessRule(token, fileId);
       setItems((prev) => prev.map((item) => 
@@ -210,6 +218,9 @@ export function DriveLibraryPanel({ token, role }: DriveLibraryPanelProps) {
     } catch (err) {
       console.error(err);
       setError("Failed to revoke access rule.");
+    } finally {
+      setRevokeLoading(false);
+      setRevokeTarget(null);
     }
   };
 
@@ -497,11 +508,11 @@ export function DriveLibraryPanel({ token, role }: DriveLibraryPanelProps) {
                                 {item.accessRule && (
                                   <button
                                     type="button"
-                                    onClick={() => handleRevokeAccess(item.id)}
+                                    onClick={() => setRevokeTarget(item.id)}
                                     className="p-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-650 hover:bg-rose-100 transition"
                                     title="Revoke Access"
                                   >
-                                    <Shield className="w-4 h-4" />
+                                    <ShieldOff className="w-4 h-4" />
                                   </button>
                                 )}
                               </>
@@ -612,11 +623,11 @@ export function DriveLibraryPanel({ token, role }: DriveLibraryPanelProps) {
                                       {item.accessRule && (
                                         <button
                                           type="button"
-                                          onClick={() => handleRevokeAccess(item.id)}
+                                          onClick={() => setRevokeTarget(item.id)}
                                           className="w-8 h-8 rounded-lg bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 flex items-center justify-center transition shrink-0"
                                           title="Revoke Access"
                                         >
-                                          <Shield className="w-4 h-4" />
+                                          <ShieldOff className="w-4 h-4" />
                                         </button>
                                       )}
                                     </>
@@ -761,6 +772,47 @@ export function DriveLibraryPanel({ token, role }: DriveLibraryPanelProps) {
           </button>
         </form>
       </AdminModal>
+
+      {/* Revoke Access Confirmation Popup */}
+      {revokeTarget && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 p-6 w-full max-w-sm relative">
+            {/* Icon badge */}
+            <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-rose-50 border border-rose-200 mx-auto mb-4">
+              <ShieldOff className="w-6 h-6 text-rose-500" />
+            </div>
+
+            <h3 className="text-center font-extrabold text-slate-900 text-base mb-1">Revoke Access?</h3>
+            <p className="text-center text-xs text-slate-500 font-medium mb-5 leading-relaxed">
+              This will remove the access rule for this item. Teachers and students who currently have access will <span className="font-bold text-rose-600">immediately lose access</span>.
+            </p>
+
+            <div className="flex gap-2.5">
+              <button
+                type="button"
+                onClick={() => setRevokeTarget(null)}
+                disabled={revokeLoading}
+                className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-50 transition disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => handleRevokeAccess(revokeTarget)}
+                disabled={revokeLoading}
+                className="flex-1 py-2.5 rounded-xl bg-rose-500 text-white font-bold text-xs hover:bg-rose-600 transition disabled:opacity-60 flex items-center justify-center gap-1.5"
+              >
+                {revokeLoading ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <ShieldOff className="w-3.5 h-3.5" />
+                )}
+                Yes, Revoke
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AdminPageShell>
   );
 }

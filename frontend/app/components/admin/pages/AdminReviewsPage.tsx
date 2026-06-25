@@ -198,7 +198,7 @@ export function AdminReviewsPage() {
     rating?: number;
     totalRatings?: number;
     placeName?: string;
-    fetchMode?: "places_api" | "business_profile" | "oauth_pending";
+    fetchMode?: "places" | "business_profile" | "oauth_pending" | "none";
   }>({ configured: false });
   const [selectedLocationForReviews, setSelectedLocationForReviews] = useState<GoogleLocationSummary | null>(null);
   const [gallery, setGallery] = useState<GalleryItem[]>([]);
