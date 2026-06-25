@@ -30,39 +30,19 @@ export function LessonPlanViewerModal({
     }
     setBlobUrl(null);
   }, []);
-
-  const scrollTimeoutRef = useRef<number | null>(null);
-
-  const handleContainerWheel = () => {
-    if (!iframeRef.current) return;
-    iframeRef.current.style.pointerEvents = "auto";
-    if (scrollTimeoutRef.current) window.clearTimeout(scrollTimeoutRef.current);
-    scrollTimeoutRef.current = window.setTimeout(() => {
-      if (iframeRef.current) iframeRef.current.style.pointerEvents = "none";
-    }, 500);
-  };
-
-  const handleContainerMouseDown = (e: React.MouseEvent) => {
-    if (!iframeRef.current) return;
-    if (e.button === 0) {
-      iframeRef.current.style.pointerEvents = "auto";
-      setTimeout(() => {
-        if (iframeRef.current) iframeRef.current.style.pointerEvents = "none";
-      }, 350);
-    } else if (e.button === 2) {
-      iframeRef.current.style.pointerEvents = "none";
-      e.preventDefault();
-      e.stopPropagation();
+  const handleOverlayWheel = (e: React.WheelEvent) => {
+    if (iframeRef.current) {
+      const event = new WheelEvent("wheel", {
+        deltaX: e.deltaX,
+        deltaY: e.deltaY,
+        deltaZ: e.deltaZ,
+        deltaMode: e.deltaMode,
+        bubbles: true,
+        cancelable: true,
+      });
+      iframeRef.current.dispatchEvent(event);
     }
   };
-
-  useEffect(() => {
-    return () => {
-      if (scrollTimeoutRef.current) {
-        window.clearTimeout(scrollTimeoutRef.current);
-      }
-    };
-  }, []);
 
   // Fetch the file and create a blob URL
   useEffect(() => {
@@ -119,24 +99,15 @@ export function LessonPlanViewerModal({
 
     const onContextMenu = (e: MouseEvent) => {
       e.preventDefault();
-      if (iframeRef.current) iframeRef.current.style.pointerEvents = "none";
-    };
-
-    const onGlobalMouseDown = (e: MouseEvent) => {
-      if (e.button === 2) {
-        if (iframeRef.current) iframeRef.current.style.pointerEvents = "none";
-      }
     };
 
     window.addEventListener("keydown", onKeyDown, true);
     window.addEventListener("contextmenu", onContextMenu, true);
-    window.addEventListener("mousedown", onGlobalMouseDown, true);
 
     return () => {
       document.body.style.overflow = prevOverflow;
       window.removeEventListener("keydown", onKeyDown, true);
       window.removeEventListener("contextmenu", onContextMenu, true);
-      window.removeEventListener("mousedown", onGlobalMouseDown, true);
     };
   }, [onClose]);
 
@@ -202,14 +173,14 @@ export function LessonPlanViewerModal({
       onContextMenu={(e) => e.preventDefault()}
     >
       <div
-        className={`flex flex-col flex-1 min-h-0 w-full mx-auto bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden ${
+        className={`flex flex-col flex-1 min-h-0 w-full mx-auto bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden max-h-full ${
           hasFile ? "max-w-6xl" : "max-w-3xl"
         }`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-slate-200 bg-slate-50 shrink-0">
-          <h3 className="font-sans font-extrabold text-sm text-slate-900 truncate pr-2 max-w-md">
+          <h3 className="font-sans font-extrabold text-sm text-slate-900 pr-2 break-words max-w-[85%]">
             {plan.title}
           </h3>
           <div className="flex items-center gap-2 shrink-0">
@@ -220,39 +191,47 @@ export function LessonPlanViewerModal({
         {/* Body */}
         {hasFile ? (
           <div 
-            className="relative flex-1 min-h-0 bg-slate-800/95 flex items-center justify-center p-4"
+            className="relative flex-1 min-h-0 bg-white"
             onContextMenu={(e) => e.preventDefault()}
-            onWheel={handleContainerWheel}
-            onMouseDown={handleContainerMouseDown}
           >
             {loading && (
-              <div className="flex flex-col items-center gap-2 text-white/90">
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-slate-800 bg-white/90 z-20">
                 <Loader2 className="w-8 h-8 animate-spin text-[#8AC926]" />
                 <p className="text-xs font-semibold">Loading document…</p>
               </div>
             )}
             {loadError && !loading && (
-              <p className="text-sm font-semibold text-red-300 text-center">
-                {loadError}
-              </p>
+              <div className="absolute inset-0 flex items-center justify-center p-4 bg-white z-20">
+                <p className="text-sm font-semibold text-red-500 text-center">
+                  {loadError}
+                </p>
+              </div>
             )}
             {blobUrl && !loadError && (
               plan.fileUrl?.toLowerCase().endsWith('.pdf') ? (
-                <iframe
-                  ref={iframeRef}
-                  title={plan.title}
-                  src={`${blobUrl}#toolbar=0&navpanes=0&scrollbar=0`}
-                  className="absolute inset-0 w-full h-full border-0 bg-white"
-                  style={{ pointerEvents: "none" }}
-                />
+                <div 
+                  className="w-full h-full overflow-y-auto overflow-x-hidden pdf-scrollbar bg-white"
+                  style={{ paddingRight: "2px" }}
+                >
+                  <div className="w-full h-[4500px] overflow-hidden relative">
+                    <iframe
+                      ref={iframeRef}
+                      title={plan.title}
+                      scrolling="no"
+                      src={`${blobUrl}#toolbar=0&navpanes=0&scrollbar=0`}
+                      className="absolute inset-y-0 left-0 border-0 bg-white block"
+                      style={{ pointerEvents: "none", height: "4500px", width: "100%" }}
+                    />
+                  </div>
+                </div>
               ) : (
-                <p className="text-sm text-gray-500">File type not supported for preview.</p>
+                <p className="text-sm text-gray-555">File type not supported for preview.</p>
               )
             )}
           </div>
         ) : (
           /* ── Fallback: text only (no file attached) ── */
-          <div className="flex-1 min-h-0 overflow-y-auto p-5 sm:p-6 space-y-4">
+          <div className="flex-1 min-h-0 overflow-y-auto p-5 sm:p-6 space-y-4 select-none">
             <div>
               <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">
                 Lesson plan
