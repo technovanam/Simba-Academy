@@ -17,6 +17,7 @@ import { validate } from "../middleware/validate.js";
 import { authLimiter, emailCheckLimiter } from "../middleware/rateLimiter.js";
 import { authenticate } from "../middleware/auth.js";
 import { AppError } from "../utils/errors.js";
+import { getTeacherAssignedClasses } from "../utils/teacherClasses.js";
 import { verifyPaymentWithFallback } from "../services/payment.js";
 import { sendEmail, getPaymentSuccessHtml, getPasswordResetHtml } from "../services/email.js";
 import { assertAccountCanAuthenticate } from "../utils/userAccess.js";
@@ -175,6 +176,12 @@ router.get("/profile", authenticate, async (req, res, next) => {
 
     if (!user) {
       throw new AppError("User not found", 404);
+    }
+
+    if (user.role === "TEACHER") {
+      const assignedClasses = await getTeacherAssignedClasses(user.id);
+      res.json({ ...user, studentClass: null, assignedClasses });
+      return;
     }
 
     res.json(user);

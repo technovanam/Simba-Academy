@@ -123,13 +123,18 @@ type TaskFormValues = {
   title: string;
   description: string;
   dueDate: string;
+  assignmentMode: "SINGLE" | "MULTIPLE" | "ALL";
   teacherId: string;
+  teacherIds: string[];
 };
 
 function validateAssignTaskForm(form: TaskFormValues): Record<string, string> {
   const errors: Record<string, string> = {};
-  if (!form.teacherId) {
+  if (form.assignmentMode === "SINGLE" && !form.teacherId) {
     errors.teacherId = "Please select a teacher.";
+  }
+  if (form.assignmentMode === "MULTIPLE" && form.teacherIds.length === 0) {
+    errors.teacherIds = "Please select at least one teacher.";
   }
 
   const title = form.title.trim();
@@ -161,6 +166,84 @@ function taskFieldClass(hasError: boolean): string {
       ? "border-rose-400 focus:border-rose-500"
       : "border-slate-200 focus:border-[#8AC926]"
   }`;
+}
+
+function teacherAssignedClassesLabel(teacher: AuthUser): string {
+  const classes =
+    teacher.assignedClasses && teacher.assignedClasses.length > 0
+      ? teacher.assignedClasses
+      : teacher.studentClass
+        ? [teacher.studentClass]
+        : [];
+  return classes.join(" · ");
+}
+
+function teacherInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase();
+  return `${parts[0]![0]}${parts[parts.length - 1]![0]}`.toUpperCase();
+}
+
+const ALL_CLASS_LEVELS = ["Playgroup", "Pre-KG", "LKG", "UKG"] as const;
+type ClassAssignmentMode = "SINGLE" | "MULTIPLE" | "ALL";
+
+function parseClassCsv(csv: string): string[] {
+  return csv
+    .split(",")
+    .map((c) => c.trim())
+    .filter(Boolean);
+}
+
+function inferClassAssignmentMode(classes: string[]): ClassAssignmentMode {
+  const unique = [...new Set(classes)];
+  if (
+    unique.length >= ALL_CLASS_LEVELS.length &&
+    ALL_CLASS_LEVELS.every((cls) => unique.includes(cls))
+  ) {
+    return "ALL";
+  }
+  if (unique.length <= 1) return "SINGLE";
+  return "MULTIPLE";
+}
+
+function classLevelAbbrev(cls: string): string {
+  switch (cls) {
+    case "Playgroup":
+      return "PG";
+    case "Pre-KG":
+      return "PK";
+    case "LKG":
+      return "LK";
+    case "UKG":
+      return "UK";
+    default:
+      return cls.slice(0, 2).toUpperCase();
+  }
+}
+
+function emptyRecurringTaskForm(
+  overrides: Partial<{
+    id: string;
+    title: string;
+    description: string;
+    studentClass: string;
+    classAssignmentMode: ClassAssignmentMode;
+    repeatDay: string;
+    isEditing: boolean;
+  }> = {}
+) {
+  const studentClass = overrides.studentClass ?? "LKG";
+  return {
+    id: "",
+    title: "",
+    description: "",
+    studentClass,
+    classAssignmentMode: overrides.classAssignmentMode ?? inferClassAssignmentMode(parseClassCsv(studentClass)),
+    repeatDay: "MONDAY",
+    isEditing: false,
+    ...overrides,
+  };
 }
 
 export function AdminTasksPage() {
@@ -239,11 +322,13 @@ export function AdminTasksPage() {
   });
   const [showCourseForm, setShowCourseForm] = useState(false);
 
-  const [taskForm, setTaskForm] = useState({
+  const [taskForm, setTaskForm] = useState<TaskFormValues>({
     title: "",
     description: "",
     dueDate: "",
+    assignmentMode: "SINGLE",
     teacherId: "",
+    teacherIds: [],
   });
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [recurringTasks, setRecurringTasks] = useState<RecurringTask[]>([]);
@@ -253,14 +338,7 @@ export function AdminTasksPage() {
   const [taskFolderForm, setTaskFolderForm] = useState({ id: "", name: "", studentClass: "LKG", isEditing: false });
   const [viewTaskDetailsModal, setViewTaskDetailsModal] = useState<RecurringTask | null>(null);
   const [showRecurringTaskForm, setShowRecurringTaskForm] = useState(false);
-  const [recurringTaskForm, setRecurringTaskForm] = useState({
-    id: "",
-    title: "",
-    description: "",
-    studentClass: "LKG",
-    repeatDay: "MONDAY",
-    isEditing: false,
-  });
+  const [recurringTaskForm, setRecurringTaskForm] = useState(() => emptyRecurringTaskForm());
   const [viewingHistoryTaskId, setViewingHistoryTaskId] = useState<string | null>(null);
   const [recurringTaskHistory, setRecurringTaskHistory] = useState<Task[]>([]);
   const [selectedApprovalClassFolder, setSelectedApprovalClassFolder] = useState<string | null>(null);
@@ -637,16 +715,30 @@ export function AdminTasksPage() {
         setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
         setMessage("Task updated successfully.");
       } else {
-        const created = await api.createTask(token, {
+        const result = await api.createTask(token, {
           title: taskForm.title.trim(),
           description: taskForm.description.trim(),
           dueDate: new Date(`${taskForm.dueDate}T12:00:00`).toISOString(),
-          teacherId: taskForm.teacherId,
+          assignmentMode: taskForm.assignmentMode,
+          teacherId: taskForm.assignmentMode === "SINGLE" ? taskForm.teacherId : undefined,
+          teacherIds: taskForm.assignmentMode === "MULTIPLE" ? taskForm.teacherIds : undefined,
         });
-        setTasks((prev) => [created, ...prev]);
-        setMessage("Task assigned successfully.");
+        const createdList = result.tasks ?? [result];
+        setTasks((prev) => [...createdList, ...prev]);
+        setMessage(
+          createdList.length > 1
+            ? `Task assigned to ${createdList.length} teachers successfully.`
+            : "Task assigned successfully."
+        );
       }
-      setTaskForm({ title: "", description: "", dueDate: "", teacherId: "" });
+      setTaskForm({
+        title: "",
+        description: "",
+        dueDate: "",
+        assignmentMode: "SINGLE",
+        teacherId: "",
+        teacherIds: [],
+      });
       setTaskFormErrors({});
       setShowTaskForm(false);
       setEditingTask(null);
@@ -708,7 +800,7 @@ export function AdminTasksPage() {
         setRecurringTasks((prev) => [created, ...prev]);
         setMessage("Recurring task created successfully.");
       }
-      setRecurringTaskForm({ id: "", title: "", description: "", studentClass: "LKG", repeatDay: "MONDAY", isEditing: false });
+      setRecurringTaskForm(emptyRecurringTaskForm());
       setShowRecurringTaskForm(false);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Failed to save recurring task.");
@@ -1762,8 +1854,7 @@ export function AdminTasksPage() {
               {/* HEADER AREA */}
               {!selectedTaskFolder ? (
                 <AdminPageHeader
-                  title="Assign Tasks (Class Folders)"
-                  description="Organize tasks in class folders that assign to teachers automatically on scheduled days."
+                  title="Assign Tasks "
                   actions={
                     <>
                       <AdminSearchInput
@@ -1781,6 +1872,25 @@ export function AdminTasksPage() {
                       <button
                         type="button"
                         onClick={() => {
+                          setTaskForm({
+                            title: "",
+                            description: "",
+                            dueDate: "",
+                            assignmentMode: "SINGLE",
+                            teacherId: "",
+                            teacherIds: [],
+                          });
+                          setTaskFormErrors({});
+                          setEditingTask(null);
+                          setShowTaskForm(true);
+                        }}
+                        className="px-4 py-2 rounded-xl bg-violet-600 text-white font-sans font-bold text-xs tracking-wider flex items-center gap-2 hover:bg-violet-700 transition shadow-md whitespace-nowrap"
+                      >
+                        <Plus className="w-4 h-4" /> Assign Manual Task
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
                           setTaskFolderForm({ id: "", name: "", studentClass: "LKG", isEditing: false });
                           setShowTaskFolderForm(true);
                         }}
@@ -1791,14 +1901,7 @@ export function AdminTasksPage() {
                       <button
                         type="button"
                         onClick={() => {
-                          setRecurringTaskForm({
-                            id: "",
-                            title: "",
-                            description: "",
-                            studentClass: "LKG",
-                            repeatDay: "MONDAY",
-                            isEditing: false,
-                          });
+                          setRecurringTaskForm(emptyRecurringTaskForm());
                           setShowRecurringTaskForm(true);
                         }}
                         className="px-4 py-2 rounded-xl bg-[#8AC926] text-white font-sans font-bold text-xs tracking-wider flex items-center gap-2 hover:bg-[#78B020] transition shadow-md shadow-[#8AC926]/10 whitespace-nowrap"
@@ -1849,14 +1952,9 @@ export function AdminTasksPage() {
                     <button
                       type="button"
                       onClick={() => {
-                        setRecurringTaskForm({
-                          id: "",
-                          title: "",
-                          description: "",
-                          studentClass: selectedTaskFolder.studentClass,
-                          repeatDay: "MONDAY",
-                          isEditing: false,
-                        });
+                        setRecurringTaskForm(
+                          emptyRecurringTaskForm({ studentClass: selectedTaskFolder.studentClass })
+                        );
                         setShowRecurringTaskForm(true);
                       }}
                       className="px-4 py-2 rounded-xl bg-[#8AC926] text-white font-sans font-bold text-xs tracking-wider flex items-center gap-2 hover:bg-[#78B020] transition shadow-md shadow-[#8AC926]/10 whitespace-nowrap"
@@ -2051,14 +2149,16 @@ export function AdminTasksPage() {
                                             <button
                                               type="button"
                                               onClick={() => {
-                                                setRecurringTaskForm({
-                                                  id: rt.id,
-                                                  title: rt.title,
-                                                  description: rt.description || "",
-                                                  studentClass: rt.studentClass || "LKG",
-                                                  repeatDay: rt.repeatDay,
-                                                  isEditing: true,
-                                                });
+                                                setRecurringTaskForm(
+                                                  emptyRecurringTaskForm({
+                                                    id: rt.id,
+                                                    title: rt.title,
+                                                    description: rt.description || "",
+                                                    studentClass: rt.studentClass || "LKG",
+                                                    repeatDay: rt.repeatDay,
+                                                    isEditing: true,
+                                                  })
+                                                );
                                                 setShowRecurringTaskForm(true);
                                               }}
                                               className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-400 hover:text-indigo-650 hover:bg-indigo-50 transition"
@@ -2125,14 +2225,16 @@ export function AdminTasksPage() {
                                         <button
                                           type="button"
                                           onClick={() => {
-                                            setRecurringTaskForm({
-                                              id: rt.id,
-                                              title: rt.title,
-                                              description: rt.description || "",
-                                              studentClass: rt.studentClass || "LKG",
-                                              repeatDay: rt.repeatDay,
-                                              isEditing: true,
-                                            });
+                                            setRecurringTaskForm(
+                                              emptyRecurringTaskForm({
+                                                id: rt.id,
+                                                title: rt.title,
+                                                description: rt.description || "",
+                                                studentClass: rt.studentClass || "LKG",
+                                                repeatDay: rt.repeatDay,
+                                                isEditing: true,
+                                              })
+                                            );
                                             setShowRecurringTaskForm(true);
                                           }}
                                           className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-400 hover:text-indigo-650 hover:bg-indigo-50 transition flex items-center justify-center"
@@ -2273,14 +2375,16 @@ export function AdminTasksPage() {
                                       </button>
                                       <button
                                         onClick={() => {
-                                          setRecurringTaskForm({
-                                            id: rt.id,
-                                            title: rt.title,
-                                            description: rt.description || "",
-                                            studentClass: rt.studentClass || "LKG",
-                                            repeatDay: rt.repeatDay,
-                                            isEditing: true,
-                                          });
+                                          setRecurringTaskForm(
+                                            emptyRecurringTaskForm({
+                                              id: rt.id,
+                                              title: rt.title,
+                                              description: rt.description || "",
+                                              studentClass: rt.studentClass || "LKG",
+                                              repeatDay: rt.repeatDay,
+                                              isEditing: true,
+                                            })
+                                          );
                                           setShowRecurringTaskForm(true);
                                         }}
                                         className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-450 hover:text-indigo-655 hover:bg-indigo-50 transition"
@@ -2341,14 +2445,16 @@ export function AdminTasksPage() {
                                   </button>
                                   <button
                                     onClick={() => {
-                                      setRecurringTaskForm({
-                                        id: rt.id,
-                                        title: rt.title,
-                                        description: rt.description || "",
-                                        studentClass: rt.studentClass || "LKG",
-                                        repeatDay: rt.repeatDay,
-                                        isEditing: true,
-                                      });
+                                      setRecurringTaskForm(
+                                        emptyRecurringTaskForm({
+                                          id: rt.id,
+                                          title: rt.title,
+                                          description: rt.description || "",
+                                          studentClass: rt.studentClass || "LKG",
+                                          repeatDay: rt.repeatDay,
+                                          isEditing: true,
+                                        })
+                                      );
                                       setShowRecurringTaskForm(true);
                                     }}
                                     className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-450 hover:text-indigo-655 hover:bg-indigo-50 transition flex items-center justify-center"
@@ -2407,7 +2513,7 @@ export function AdminTasksPage() {
                 {/* CREATE/EDIT MODAL */}
                 {showRecurringTaskForm && (
                   <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
-                    <div className="bg-white w-full max-w-lg rounded-2xl shadow-xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
+                    <div className="bg-white w-full max-w-2xl rounded-2xl shadow-xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
                       <div className="bg-slate-50 px-5 py-4 border-b border-slate-100 flex items-center justify-between shrink-0">
                         <h3 className="font-bold text-slate-800 tracking-wide">
                           {recurringTaskForm.isEditing ? "Edit Recurring Task" : "Create Recurring Task"}
@@ -2449,55 +2555,154 @@ export function AdminTasksPage() {
                           <div>
                             <label className="block text-slate-700 font-bold mb-2">Class / Level</label>
                             {selectedTaskFolder !== null ? (
-                              <div className="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-500">
-                                {recurringTaskForm.studentClass}
+                              <div className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 bg-slate-50">
+                                <div className="w-10 h-10 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-[11px] font-extrabold shrink-0">
+                                  {classLevelAbbrev(recurringTaskForm.studentClass)}
+                                </div>
+                                <div>
+                                  <p className="text-xs font-bold text-slate-700">
+                                    {recurringTaskForm.studentClass}
+                                  </p>
+                                  <p className="text-[10px] text-slate-500">
+                                    Locked to folder class
+                                  </p>
+                                </div>
                               </div>
                             ) : (
-                              <div className="flex flex-wrap gap-2">
-                                {["Playgroup", "Pre-KG", "LKG", "UKG"].map((cls) => {
-                                  const isChecked = recurringTaskForm.studentClass
-                                    .split(",")
-                                    .map((c) => c.trim())
-                                    .filter(Boolean)
-                                    .includes(cls);
-                                  return (
-                                    <label
-                                      key={cls}
-                                      className={`flex items-center gap-2 px-3 py-2 border rounded-xl cursor-pointer transition select-none ${
-                                        isChecked
-                                          ? "bg-indigo-50/50 border-indigo-200 text-indigo-700 font-bold"
-                                          : "bg-white border-slate-200 text-slate-650 hover:border-[#8AC926]/50"
-                                      }`}
-                                    >
-                                      <input
-                                        type="checkbox"
-                                        checked={isChecked}
-                                        onChange={(e) => {
-                                          let currentClasses = recurringTaskForm.studentClass
-                                            ? recurringTaskForm.studentClass
-                                                .split(",")
-                                                .map((c) => c.trim())
-                                                .filter(Boolean)
-                                            : [];
-                                          if (e.target.checked) {
-                                            if (!currentClasses.includes(cls)) {
-                                              currentClasses.push(cls);
-                                            }
-                                          } else {
-                                            currentClasses = currentClasses.filter((c) => c !== cls);
-                                          }
+                              <>
+                                <div className="flex flex-wrap gap-2 mb-3">
+                                  {(
+                                    [
+                                      { id: "SINGLE", label: "One class" },
+                                      { id: "MULTIPLE", label: "Multiple classes" },
+                                      { id: "ALL", label: "All classes" },
+                                    ] as const
+                                  ).map((opt) => (
+                                    <button
+                                      key={opt.id}
+                                      type="button"
+                                      onClick={() => {
+                                        const current = parseClassCsv(recurringTaskForm.studentClass);
+                                        if (opt.id === "ALL") {
                                           setRecurringTaskForm({
                                             ...recurringTaskForm,
-                                            studentClass: currentClasses.join(","),
+                                            classAssignmentMode: "ALL",
+                                            studentClass: ALL_CLASS_LEVELS.join(","),
+                                          });
+                                          return;
+                                        }
+                                        if (opt.id === "SINGLE") {
+                                          setRecurringTaskForm({
+                                            ...recurringTaskForm,
+                                            classAssignmentMode: "SINGLE",
+                                            studentClass: current[0] || "LKG",
+                                          });
+                                          return;
+                                        }
+                                        setRecurringTaskForm({
+                                          ...recurringTaskForm,
+                                          classAssignmentMode: "MULTIPLE",
+                                          studentClass:
+                                            current.length > 1
+                                              ? current.join(",")
+                                              : current[0] || "LKG",
+                                        });
+                                      }}
+                                      className={`px-3 py-1.5 rounded-xl text-xs font-bold border ${
+                                        recurringTaskForm.classAssignmentMode === opt.id
+                                          ? "bg-violet-50 border-violet-300 text-violet-800"
+                                          : "bg-white border-slate-200 text-slate-600"
+                                      }`}
+                                    >
+                                      {opt.label}
+                                    </button>
+                                  ))}
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                  {ALL_CLASS_LEVELS.map((cls) => {
+                                    const selectedClasses = parseClassCsv(recurringTaskForm.studentClass);
+                                    const isSelected =
+                                      recurringTaskForm.classAssignmentMode === "ALL" ||
+                                      selectedClasses.includes(cls);
+                                    const isDisabled = recurringTaskForm.classAssignmentMode === "ALL";
+
+                                    return (
+                                      <button
+                                        key={cls}
+                                        type="button"
+                                        disabled={isDisabled}
+                                        onClick={() => {
+                                          if (isDisabled) return;
+                                          if (recurringTaskForm.classAssignmentMode === "SINGLE") {
+                                            setRecurringTaskForm({
+                                              ...recurringTaskForm,
+                                              studentClass: cls,
+                                            });
+                                            return;
+                                          }
+                                          const next = new Set(selectedClasses);
+                                          if (next.has(cls)) next.delete(cls);
+                                          else next.add(cls);
+                                          setRecurringTaskForm({
+                                            ...recurringTaskForm,
+                                            studentClass: [...next].join(","),
                                           });
                                         }}
-                                        className="w-4 h-4 rounded border-slate-300 text-indigo-650 focus:ring-indigo-650/30"
-                                      />
-                                      <span className="text-xs">{cls}</span>
-                                    </label>
-                                  );
-                                })}
-                              </div>
+                                        className={`flex items-center gap-3 w-full p-3 rounded-xl border text-left transition ${
+                                          isDisabled
+                                            ? "border-violet-300 bg-violet-50 opacity-90 cursor-default"
+                                            : isSelected
+                                              ? "border-violet-400 bg-violet-50 ring-1 ring-violet-200 shadow-sm"
+                                              : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
+                                        }`}
+                                      >
+                                        <div
+                                          className={`w-10 h-10 rounded-full flex items-center justify-center text-[11px] font-extrabold shrink-0 ${
+                                            isSelected
+                                              ? "bg-violet-200 text-violet-800"
+                                              : "bg-slate-100 text-slate-600"
+                                          }`}
+                                        >
+                                          {classLevelAbbrev(cls)}
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                          <p className="text-xs font-bold text-slate-800">{cls}</p>
+                                          <p className="text-[10px] text-slate-500">
+                                            {recurringTaskForm.classAssignmentMode === "ALL"
+                                              ? "Included in all-classes task"
+                                              : "Assign to teachers in this class"}
+                                          </p>
+                                        </div>
+                                        <div className="shrink-0">
+                                          {recurringTaskForm.classAssignmentMode === "SINGLE" ? (
+                                            <div
+                                              className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                                                isSelected
+                                                  ? "border-violet-600 bg-violet-600"
+                                                  : "border-slate-300 bg-white"
+                                              }`}
+                                            >
+                                              {isSelected && (
+                                                <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                                              )}
+                                            </div>
+                                          ) : (
+                                            <div
+                                              className={`w-4 h-4 rounded border flex items-center justify-center ${
+                                                isSelected
+                                                  ? "bg-violet-600 border-violet-600 text-white"
+                                                  : "border-slate-300 bg-white"
+                                              }`}
+                                            >
+                                              {isSelected && <Check className="w-3 h-3" />}
+                                            </div>
+                                          )}
+                                        </div>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </>
                             )}
                           </div>
                           <div>
@@ -2740,6 +2945,248 @@ export function AdminTasksPage() {
               onCancel={() => setConfirmDelete(null)}
               loading={!!actionLoading && actionLoading.includes("delete")}
             />
+
+            {showTaskForm && (
+              <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto modern-scrollbar border border-slate-200">
+                  <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+                    <h3 className="font-bold text-slate-900">
+                      {editingTask ? "Edit Task" : "Assign Manual Task"}
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowTaskForm(false);
+                        setEditingTask(null);
+                        setTaskFormErrors({});
+                      }}
+                      className="text-slate-400 hover:text-slate-600"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <form onSubmit={handleAssignTask} className="p-5 space-y-4">
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Title</label>
+                      <input
+                        value={taskForm.title}
+                        onChange={(e) => {
+                          setTaskForm({ ...taskForm, title: e.target.value });
+                          clearTaskFieldError("title");
+                        }}
+                        className={taskFieldClass(!!taskFormErrors.title)}
+                        placeholder="Task title"
+                      />
+                      {taskFormErrors.title && (
+                        <p className="text-2xs text-rose-600 mt-1">{taskFormErrors.title}</p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Instructions</label>
+                      <textarea
+                        value={taskForm.description}
+                        onChange={(e) => {
+                          setTaskForm({ ...taskForm, description: e.target.value });
+                          clearTaskFieldError("description");
+                        }}
+                        rows={3}
+                        className={taskFieldClass(!!taskFormErrors.description)}
+                        placeholder="What should the teacher complete?"
+                      />
+                      {taskFormErrors.description && (
+                        <p className="text-2xs text-rose-600 mt-1">{taskFormErrors.description}</p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Due date</label>
+                      <input
+                        type="date"
+                        min={localDateInputMin()}
+                        value={taskForm.dueDate}
+                        onChange={(e) => {
+                          setTaskForm({ ...taskForm, dueDate: e.target.value });
+                          clearTaskFieldError("dueDate");
+                        }}
+                        className={taskFieldClass(!!taskFormErrors.dueDate)}
+                      />
+                      {taskFormErrors.dueDate && (
+                        <p className="text-2xs text-rose-600 mt-1">{taskFormErrors.dueDate}</p>
+                      )}
+                    </div>
+                    {!editingTask && (
+                      <>
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-600 uppercase mb-2">Assign to</label>
+                          <div className="flex flex-wrap gap-2">
+                            {(
+                              [
+                                { id: "SINGLE", label: "One teacher" },
+                                { id: "MULTIPLE", label: "Multiple teachers" },
+                                { id: "ALL", label: "All teachers" },
+                              ] as const
+                            ).map((opt) => (
+                              <button
+                                key={opt.id}
+                                type="button"
+                                onClick={() =>
+                                  setTaskForm({
+                                    ...taskForm,
+                                    assignmentMode: opt.id,
+                                    teacherId: "",
+                                    teacherIds: [],
+                                  })
+                                }
+                                className={`px-3 py-1.5 rounded-xl text-xs font-bold border ${
+                                  taskForm.assignmentMode === opt.id
+                                    ? "bg-violet-50 border-violet-300 text-violet-800"
+                                    : "bg-white border-slate-200 text-slate-600"
+                                }`}
+                              >
+                                {opt.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        {taskForm.assignmentMode !== "ALL" && (
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">
+                              {taskForm.assignmentMode === "SINGLE" ? "Teacher" : "Teachers"}
+                            </label>
+                            <input
+                              value={teacherPickerSearch}
+                              onChange={(e) => setTeacherPickerSearch(e.target.value)}
+                              placeholder="Search teachers…"
+                              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs mb-3"
+                            />
+                            <div className="max-h-56 overflow-y-auto modern-scrollbar pr-1">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                {teachersList
+                                  .filter((t) => {
+                                    const q = teacherPickerSearch.toLowerCase();
+                                    if (!q) return true;
+                                    return (
+                                      t.name.toLowerCase().includes(q) ||
+                                      t.email.toLowerCase().includes(q)
+                                    );
+                                  })
+                                  .map((teacher) => {
+                                    const isSelected =
+                                      taskForm.assignmentMode === "SINGLE"
+                                        ? taskForm.teacherId === teacher.id
+                                        : taskForm.teacherIds.includes(teacher.id);
+                                    const classesLabel = teacherAssignedClassesLabel(teacher);
+
+                                    return (
+                                      <button
+                                        key={teacher.id}
+                                        type="button"
+                                        onClick={() => {
+                                          if (taskForm.assignmentMode === "SINGLE") {
+                                            setTaskForm({ ...taskForm, teacherId: teacher.id });
+                                          } else {
+                                            const next = new Set(taskForm.teacherIds);
+                                            if (next.has(teacher.id)) next.delete(teacher.id);
+                                            else next.add(teacher.id);
+                                            setTaskForm({ ...taskForm, teacherIds: [...next] });
+                                          }
+                                          clearTaskFieldError("teacherId");
+                                          clearTaskFieldError("teacherIds");
+                                        }}
+                                        className={`flex items-center gap-3 w-full p-3 rounded-xl border text-left transition ${
+                                          isSelected
+                                            ? "border-violet-400 bg-violet-50 ring-1 ring-violet-200 shadow-sm"
+                                            : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
+                                        }`}
+                                      >
+                                        <div
+                                          className={`w-10 h-10 rounded-full flex items-center justify-center text-[11px] font-extrabold shrink-0 ${
+                                            isSelected
+                                              ? "bg-violet-200 text-violet-800"
+                                              : "bg-slate-100 text-slate-600"
+                                          }`}
+                                        >
+                                          {teacherInitials(teacher.name)}
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                          <p className="text-xs font-bold text-slate-800 truncate">
+                                            {teacher.name}
+                                          </p>
+                                          <p className="text-[10px] text-slate-500 truncate">
+                                            {teacher.email}
+                                          </p>
+                                          {classesLabel && (
+                                            <p className="text-[10px] text-[#8AC926] font-semibold truncate mt-0.5">
+                                              {classesLabel}
+                                            </p>
+                                          )}
+                                        </div>
+                                        <div className="shrink-0">
+                                          {taskForm.assignmentMode === "SINGLE" ? (
+                                            <div
+                                              className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                                                isSelected
+                                                  ? "border-violet-600 bg-violet-600"
+                                                  : "border-slate-300 bg-white"
+                                              }`}
+                                            >
+                                              {isSelected && (
+                                                <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                                              )}
+                                            </div>
+                                          ) : (
+                                            <div
+                                              className={`w-4 h-4 rounded border flex items-center justify-center ${
+                                                isSelected
+                                                  ? "bg-violet-600 border-violet-600 text-white"
+                                                  : "border-slate-300 bg-white"
+                                              }`}
+                                            >
+                                              {isSelected && <Check className="w-3 h-3" />}
+                                            </div>
+                                          )}
+                                        </div>
+                                      </button>
+                                    );
+                                  })}
+                              </div>
+                              {teachersList.filter((t) => {
+                                const q = teacherPickerSearch.toLowerCase();
+                                if (!q) return true;
+                                return (
+                                  t.name.toLowerCase().includes(q) ||
+                                  t.email.toLowerCase().includes(q)
+                                );
+                              }).length === 0 && (
+                                <p className="text-xs text-slate-500 text-center py-6">
+                                  No teachers match your search.
+                                </p>
+                              )}
+                            </div>
+                            {taskFormErrors.teacherId && (
+                              <p className="text-2xs text-rose-600 mt-1">{taskFormErrors.teacherId}</p>
+                            )}
+                            {taskFormErrors.teacherIds && (
+                              <p className="text-2xs text-rose-600 mt-1">{taskFormErrors.teacherIds}</p>
+                            )}
+                          </div>
+                        )}
+                      </>
+                    )}
+                    <button
+                      type="submit"
+                      disabled={isActionBusy(actionLoading)}
+                      className="w-full py-3 rounded-xl bg-[#8AC926] text-white font-bold text-xs uppercase hover:bg-[#78B020] transition disabled:opacity-60"
+                    >
+                      {actionLoading === "task-assign"
+                        ? "Saving…"
+                        : editingTask
+                          ? "Update Task"
+                          : "Assign Task"}
+                    </button>
+                  </form>
+                </div>
+              </div>
+            )}
     </>
   );
 }

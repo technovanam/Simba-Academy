@@ -2,6 +2,7 @@ import type { LessonPlan, StoryBook, Task, User } from "@prisma/client";
 import { env } from "../config/env.js";
 import { prisma } from "../config/database.js";
 import { sendPortalNotificationEmail } from "./portalEmails.js";
+import { buildTeacherClassMatchFilter, parseTargetClasses } from "../utils/teacherClasses.js";
 
 type Recipient = Pick<User, "id" | "name" | "email">;
 
@@ -122,14 +123,21 @@ export async function notifyStudentsOfDriveAccess(fileId: string, title: string,
   return students.length;
 }
 
-/** Notify all active teachers when a story book is added for the teacher library. */
+/** Notify teachers whose assigned classes match a newly published story book. */
 export async function notifyTeachersOfNewStoryBook(book: StoryBook): Promise<number> {
   if (book.audience === "STUDENT") {
     return 0;
   }
 
+  const targetClasses = parseTargetClasses(book.category);
+
   const teachers = await prisma.user.findMany({
-    where: { role: "TEACHER", status: "ACTIVE", isDeleted: false },
+    where: {
+      role: "TEACHER",
+      status: "ACTIVE",
+      isDeleted: false,
+      ...buildTeacherClassMatchFilter(targetClasses),
+    },
     select: { id: true, name: true, email: true },
   });
 
@@ -162,6 +170,59 @@ export async function notifyTeachersOfNewStoryBook(book: StoryBook): Promise<num
         { label: "Title", value: book.title },
         ...(book.author ? [{ label: "Author", value: book.author }] : []),
         { label: "Class", value: book.category },
+      ],
+      ctaLabel: "Browse Story Library",
+      ctaUrl: teacherLibraryUrl,
+      footerNote: "This update is also available in your in-portal notifications.",
+    })
+  );
+
+  return teachers.length;
+}
+
+/** Notify teachers whose assigned classes match newly granted Drive library access. */
+export async function notifyTeachersOfDriveAccess(
+  title: string,
+  targetClass: string | null
+): Promise<number> {
+  const targetClasses = parseTargetClasses(targetClass ?? undefined);
+
+  const teachers = await prisma.user.findMany({
+    where: {
+      role: "TEACHER",
+      status: "ACTIVE",
+      isDeleted: false,
+      ...buildTeacherClassMatchFilter(targetClasses),
+    },
+    select: { id: true, name: true, email: true },
+  });
+
+  if (teachers.length === 0) {
+    return 0;
+  }
+
+  const message = `"${title}" was added to your story library.`;
+
+  await prisma.teacherNotification.createMany({
+    data: teachers.map((teacher: Recipient) => ({
+      userId: teacher.id,
+      type: "STORY_BOOK",
+      title: "New story book in library",
+      message,
+    })),
+  });
+
+  await emailRecipients(teachers, (teacher) =>
+    sendPortalNotificationEmail({
+      to: teacher.email,
+      subject: `New story book added — ${title}`,
+      theme: "teacher",
+      recipientName: teacher.name,
+      headline: "Story Library Updated",
+      intro: "An administrator has given you access to a new story book in your teacher library.",
+      rows: [
+        { label: "Title", value: title },
+        ...(targetClass ? [{ label: "Class", value: targetClass }] : []),
       ],
       ctaLabel: "Browse Story Library",
       ctaUrl: teacherLibraryUrl,
@@ -255,21 +316,16 @@ export async function notifyTeachersOfNewLessonPlan(
     return 0;
   }
 
+  const targetClasses = plan.targetClass
+    ? parseTargetClasses(plan.targetClass)
+    : [];
+
   const teachers = await prisma.user.findMany({
     where: {
       role: "TEACHER",
       status: "ACTIVE",
       isDeleted: false,
-      ...(plan.targetClass
-        ? {
-            studentClass: {
-              in: plan.targetClass
-                .split(",")
-                .map((c) => c.trim())
-                .filter(Boolean),
-            },
-          }
-        : {}),
+      ...buildTeacherClassMatchFilter(targetClasses),
     },
     select: { id: true, name: true, email: true },
   });

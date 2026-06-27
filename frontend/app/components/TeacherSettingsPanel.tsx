@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { api, ApiError, type AuthUser } from "../lib/api";
-import { getUser, saveSession, clearSession } from "../lib/auth";
+import { getUser, saveSession, clearSession, getTeacherAssignedClasses } from "../lib/auth";
 import { PORTAL_AUTH } from "../lib/authPortalPaths";
 import { PasswordInput } from "./PasswordInput";
 import { AdminPageBody, AdminPageHeader, AdminPageShell } from "./AdminPageShell";
@@ -34,6 +34,7 @@ export function TeacherSettingsPanel({
   const [passwordLoading, setPasswordLoading] = useState(false);
 
   const display = profile ?? user;
+  const assignedClasses = getTeacherAssignedClasses(display);
 
   async function handlePasswordSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -81,13 +82,15 @@ export function TeacherSettingsPanel({
   }
 
   return (
-    <AdminPageShell>
-      <AdminPageHeader
-        title="Account Settings"
-        description="View your profile details and update your login password."
-      />
+    <AdminPageShell className="h-full flex flex-col min-h-0 overflow-hidden">
+      <div className="shrink-0">
+        <AdminPageHeader
+          title="Account Settings"
+          description="View your profile details and update your login password."
+        />
+      </div>
 
-      <AdminPageBody>
+      <AdminPageBody className="flex-1 min-h-0 overflow-y-auto !mt-0 !pt-0">
         {profileLoading ? (
           <div className="flex items-center justify-center py-16 gap-3">
             <Loader2 className="w-8 h-8 animate-spin text-[#8AC926]" />
@@ -127,8 +130,10 @@ export function TeacherSettingsPanel({
                 <div className="flex items-start gap-3">
                   <GraduationCap className="w-4 h-4 text-[#8AC926] mt-0.5 shrink-0" />
                   <div className="min-w-0">
-                    <dt className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Class Assigned</dt>
-                    <dd className="font-semibold text-slate-800">{display?.studentClass?.trim() || "None"}</dd>
+                    <dt className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Classes Assigned</dt>
+                    <dd className="font-semibold text-slate-800">
+                      {assignedClasses.length > 0 ? assignedClasses.join(", ") : "None"}
+                    </dd>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">

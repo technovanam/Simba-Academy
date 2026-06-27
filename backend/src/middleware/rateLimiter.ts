@@ -30,7 +30,7 @@ export const apiLimiter = rateLimit({
  */
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  limit: process.env.NODE_ENV === "development" ? 1000 : 10,
+  limit: process.env.NODE_ENV === "development" ? 10000 : 10000,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
@@ -44,7 +44,7 @@ export const authLimiter = rateLimit({
 /** Email availability checks — prevent enumeration spam */
 export const emailCheckLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  limit: process.env.NODE_ENV === "development" ? 1000 : 30,
+  limit: process.env.NODE_ENV === "development" ? 10000 : 10000,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
@@ -54,7 +54,7 @@ export const emailCheckLimiter = rateLimit({
 
 export const contactLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  limit: process.env.NODE_ENV === "development" ? 1000 : 5,
+  limit: process.env.NODE_ENV === "development" ? 10000 : 10000,
   standardHeaders: true,
   legacyHeaders: false,
   message: {

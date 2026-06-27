@@ -15,6 +15,10 @@ import { useAdminOutlet } from "../AdminOutletContext";
 import { AdminTabLoader } from "../AdminTabLoader";
 
 import { RecentPaymentCard, sortPaymentsNewestFirst } from "../../RecentPaymentCard";
+import {
+  portalDashboardBodyClass,
+  portalDashboardLowerGridClass,
+} from "../../PortalPageShell";
 
 export function AdminOverviewPage() {
   const navigate = useNavigate();
@@ -102,22 +106,24 @@ export function AdminOverviewPage() {
   if (loading) return <AdminTabLoader />;
 
   return (
-    <>
-      <div className="flex flex-wrap justify-between items-center gap-4 border-b border-slate-100 pb-3 mb-5 w-full min-w-0">
-        <div>
-          <h2 className="text-lg font-bold text-slate-900 tracking-wide uppercase">
+    <div className={`${portalDashboardBodyClass} h-full overflow-hidden !pb-0`}>
+      <div className="flex flex-wrap items-center justify-between gap-3 shrink-0">
+        <div className="min-w-0">
+          <h2 className="text-sm lg:text-base font-bold text-slate-900 tracking-wide uppercase truncate">
             Simba Academy Workspace
           </h2>
+          <p className="text-[10px] text-slate-600 font-semibold tracking-wider mt-0.5 uppercase truncate">
+            Admin dashboard overview
+          </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 shrink-0">
           <button
             type="button"
             onClick={() => goToTab("notifications")}
             className="p-2 rounded-xl bg-white border border-slate-200 text-slate-800 shadow-xs hover:bg-slate-50 transition-all duration-300 relative"
             title="Notifications"
           >
-            <Bell className="w-4 h-4 text-slate-600" />
-            {/* Optional unread dot indicator can go here if needed in future */}
+            <Bell className="w-3.5 h-3.5 text-slate-600" />
           </button>
           <a
             href="/"
@@ -131,13 +137,12 @@ export function AdminOverviewPage() {
         </div>
       </div>
 
-      <div className="space-y-5 animate-fade-in flex-1 flex flex-col min-h-0 w-full min-w-0 max-w-full pb-6 lg:pb-8">
-        <div className="space-y-5 animate-fade-in flex flex-col w-full min-w-0 max-w-full">
-          {/* Three Main Metric Cards (Matched Height & Side-by-Side) */}
-          {stats && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+      <div className="flex flex-col flex-1 min-h-0 overflow-hidden w-full min-w-0 max-w-full">
+        {/* Three Main Metric Cards */}
+        {stats && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch shrink-0">
               {/* Members overview — light green panel */}
-              <div className="bg-[#F3FAEB] border border-green-100 rounded-2xl p-5 relative overflow-hidden text-slate-800 flex flex-col justify-between min-h-[170px] h-full shrink-0">
+              <div className="bg-[#F3FAEB] border border-green-100 rounded-2xl p-5 text-slate-800 flex flex-col justify-between min-h-[190px]">
                 <div>
                   <div className="flex justify-between items-center mb-3">
                     <span className="font-bold tracking-wider text-[10px] uppercase text-green-800">
@@ -183,7 +188,7 @@ export function AdminOverviewPage() {
                   <button
                     type="button"
                     onClick={() => goToTab("users")}
-                    className="text-[9px] font-extrabold uppercase tracking-widest text-green-700 hover:underline inline-arrow"
+                    className="text-[9px] font-extrabold uppercase tracking-widest text-green-700 hover:underline inline-flex items-center gap-0.5"
                   >
                     Manage Users <ChevronRight className="w-2.5 h-2.5" />
                   </button>
@@ -194,7 +199,7 @@ export function AdminOverviewPage() {
               </div>
 
               {/* Revenue / payments overview — light blue panel */}
-              <div className="bg-[#EEF4FF] border border-blue-100 rounded-2xl p-5 relative overflow-hidden text-slate-800 flex flex-col justify-between min-h-[170px] h-full shrink-0">
+              <div className="bg-[#EEF4FF] border border-blue-100 rounded-2xl p-5 text-slate-800 flex flex-col justify-between min-h-[190px]">
                 <div>
                   <div className="flex justify-between items-center mb-3">
                     <span className="font-bold tracking-wider text-[10px] uppercase text-blue-800">
@@ -210,7 +215,7 @@ export function AdminOverviewPage() {
                       <span className="text-[9px] font-bold text-blue-600/80 tracking-widest block uppercase">
                         Recent Payments
                       </span>
-                      <h4 className="font-bold text-xs uppercase leading-tight tracking-wider text-slate-800">
+                      <h4 className="text-2xl font-bold text-slate-800 leading-none tracking-tight">
                         Enrollment Payments
                       </h4>
                     </div>
@@ -233,7 +238,7 @@ export function AdminOverviewPage() {
                   <button
                     type="button"
                     onClick={() => goToTab("payments")}
-                    className="text-[9px] font-extrabold uppercase tracking-widest text-blue-700 hover:underline inline-arrow shrink-0"
+                    className="text-[9px] font-extrabold uppercase tracking-widest text-blue-700 hover:underline inline-flex items-center gap-0.5 shrink-0"
                   >
                     Manage Payments <ChevronRight className="w-2.5 h-2.5" />
                   </button>
@@ -248,7 +253,7 @@ export function AdminOverviewPage() {
               </div>
 
               {/* Today's Schedule — light purple panel */}
-              <div className="bg-[#F5F3FF] border border-violet-100 rounded-2xl p-5 relative overflow-hidden text-slate-800 flex flex-col justify-between min-h-[170px] h-full shrink-0">
+              <div className="bg-[#F5F3FF] border border-violet-100 rounded-2xl p-5 text-slate-800 flex flex-col justify-between min-h-[190px] md:col-span-2 lg:col-span-1">
                 <div>
                   <div className="flex justify-between items-center mb-3">
                     <span className="font-bold tracking-wider text-[10px] uppercase text-violet-800">
@@ -264,14 +269,14 @@ export function AdminOverviewPage() {
                       <span className="text-[9px] font-bold text-violet-600/80 tracking-widest block uppercase">
                         Recent Tasks
                       </span>
-                      <h4 className="font-bold text-xs uppercase leading-tight tracking-wider text-slate-800">
+                      <h4 className="text-2xl font-bold text-slate-800 leading-none tracking-tight">
                         Teacher Assignments
                       </h4>
                     </div>
 
                     <div className="space-y-1.5">
                       {tasks.length === 0 ? (
-                        <div className="bg-white rounded-xl p-3 border border-violet-100 text-xs text-center text-slate-600 font-semibold">
+                        <div className="bg-white rounded-xl p-2.5 border border-violet-100 text-xs text-center text-slate-600 font-semibold">
                           No recent tasks assigned.
                         </div>
                       ) : (
@@ -325,7 +330,7 @@ export function AdminOverviewPage() {
                   <button
                     type="button"
                     onClick={() => goToTab("tasks")}
-                    className="text-[9px] font-extrabold uppercase tracking-widest text-violet-700 hover:underline inline-arrow"
+                    className="text-[9px] font-extrabold uppercase tracking-widest text-violet-700 hover:underline inline-flex items-center gap-0.5"
                   >
                     Manage Tasks <ChevronRight className="w-2.5 h-2.5" />
                   </button>
@@ -337,109 +342,97 @@ export function AdminOverviewPage() {
             </div>
           )}
 
-          {/* Split Workspace Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 items-stretch">
-            {/* Left & Middle Column Workspace (Main Content - 2/3 Width) */}
-            <div className="lg:col-span-2 flex flex-col">
-              {/* Financial Audit Logs Table Card */}
-              <div
-                id="recent-transactions"
-                className="bg-white rounded-2xl p-5 border border-slate-200 flex flex-col"
-              >
-                <div className="flex flex-wrap justify-between items-center gap-4 mb-4">
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
-                      Recent Payments
-                    </h3>
-                    <p className="text-[9px] text-slate-600 font-semibold tracking-wider uppercase mt-0.5">
-                      Latest enrollment transactions
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => goToTab("payments")}
-                    className="text-[9px] font-extrabold uppercase tracking-widest text-blue-700 hover:underline inline-arrow"
-                  >
-                    View all <ChevronRight className="w-2.5 h-2.5" />
-                  </button>
+          {/* Split workspace */}
+          <div className={`${portalDashboardLowerGridClass} flex-1 min-h-0 overflow-hidden`}>
+            <div
+              id="recent-transactions"
+              className="lg:col-span-2 bg-white rounded-2xl p-5 border border-slate-200 flex flex-col flex-1 min-h-0 overflow-hidden"
+            >
+              <div className="flex flex-wrap justify-between items-center gap-4 mb-4 shrink-0">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
+                    Recent Payments
+                  </h3>
+                  <p className="text-[9px] text-slate-600 font-semibold tracking-wider uppercase mt-0.5">
+                    Latest enrollment transactions
+                  </p>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => goToTab("payments")}
+                  className="text-[9px] font-extrabold uppercase tracking-widest text-blue-700 hover:underline inline-flex items-center gap-0.5"
+                >
+                  View all <ChevronRight className="w-2.5 h-2.5" />
+                </button>
+              </div>
 
-                <div className="space-y-1.5 flex-1">
-                  {recentPaymentsList.length === 0 ? (
-                    <div className="bg-slate-50 rounded-xl p-6 border border-slate-200 text-xs text-center text-slate-600 font-semibold">
-                      No payments recorded yet.
-                    </div>
-                  ) : (
-                    recentPaymentsList.map((p) => (
-                      <RecentPaymentCard key={p.id} payment={p} theme="slate" />
-                    ))
-                  )}
-                </div>
+              <div className="space-y-2 flex-1 min-h-0 overflow-y-auto pr-0.5">
+                {recentPaymentsList.length === 0 ? (
+                  <div className="bg-slate-50 rounded-xl p-6 border border-slate-200 text-xs text-center text-slate-600 font-semibold">
+                    No payments recorded yet.
+                  </div>
+                ) : (
+                  recentPaymentsList.map((p) => (
+                    <RecentPaymentCard key={p.id} payment={p} theme="slate" />
+                  ))
+                )}
               </div>
             </div>
 
-            {/* Right Auxiliary Column (Today's Actions & Analytics - 1/3 Width) */}
-            <div className="flex flex-col">
-              {/* Academy Stats & Analytics Card */}
-              <div className="bg-white rounded-2xl p-5 border border-slate-200 flex flex-col">
-                <div className="space-y-5">
-                  {/* Header */}
-                  <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                    <h4 className="font-bold text-[10px] uppercase text-slate-800 tracking-wider">
-                      Academy Analytics
-                    </h4>
-                    <TrendingUp className="w-4 h-4 text-[#8AC926]" />
-                  </div>
+            <div className="bg-white rounded-2xl p-5 border border-slate-200 flex flex-col flex-1 min-h-0 overflow-hidden">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-100 mb-4 shrink-0">
+                <h4 className="font-bold text-xs uppercase text-slate-800 tracking-wider">
+                  Academy Analytics
+                </h4>
+                <TrendingUp className="w-5 h-5 text-[#8AC926]" />
+              </div>
 
-                  {/* Metrics — flat row style (matches admission leads) */}
-                  <div className="grid grid-cols-1 gap-2">
-                    <div className="p-2.5 bg-[#FF9F1C]/5 border border-[#FF9F1C]/15 rounded-xl flex items-center justify-between">
-                      <span className="text-[8px] font-bold text-slate-600 uppercase tracking-wider">
-                        Total Materials
-                      </span>
-                      <span className="text-lg font-bold text-[#FF9F1C] leading-none">
-                        {stats?.materials ?? 0}
-                      </span>
-                    </div>
-                    <div className="p-2.5 bg-indigo-50 border border-indigo-100 rounded-xl flex items-center justify-between">
-                      <span className="text-[8px] font-bold text-slate-600 uppercase tracking-wider">
-                        Pending Review
-                      </span>
-                      <span className="text-lg font-bold text-indigo-600 leading-none">
-                        {stats?.pendingApprovals ?? 0}
-                      </span>
-                    </div>
-                    <div className="p-2.5 bg-rose-50 border border-rose-100 rounded-xl flex items-center justify-between">
-                      <span className="text-[8px] font-bold text-slate-600 uppercase tracking-wider">
-                        Unread Leads
-                      </span>
-                      <span className="text-lg font-bold text-rose-600 leading-none">
-                        {stats?.unreadInquiries ?? 0}
-                      </span>
-                    </div>
-                    <div className="p-2.5 bg-[#8AC926]/5 border border-[#8AC926]/15 rounded-xl flex items-center justify-between">
-                      <span className="text-[8px] font-bold text-slate-600 uppercase tracking-wider">
-                        Total General Enquiries
-                      </span>
-                      <span className="text-lg font-bold text-[#8AC926] leading-none">
-                        {inquiries.length}
-                      </span>
-                    </div>
-                    <div className="p-2.5 bg-[#FF9F1C]/5 border border-[#FF9F1C]/15 rounded-xl flex items-center justify-between">
-                      <span className="text-[8px] font-bold text-slate-600 uppercase tracking-wider">
-                        Total Franchise Enquiries
-                      </span>
-                      <span className="text-lg font-bold text-[#FF9F1C] leading-none">
-                        {franchiseInquiries.length}
-                      </span>
-                    </div>
-                  </div>
+              <div className="grid grid-cols-1 gap-2.5 flex-1">
+                <div className="p-3 bg-[#FF9F1C]/5 border border-[#FF9F1C]/15 rounded-xl flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">
+                    Total Materials
+                  </span>
+                  <span className="text-xl font-bold text-slate-800 leading-none">
+                    {stats?.materials ?? 0}
+                  </span>
+                </div>
+                <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-xl flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">
+                    Pending Review
+                  </span>
+                  <span className="text-xl font-bold text-slate-800 leading-none">
+                    {stats?.pendingApprovals ?? 0}
+                  </span>
+                </div>
+                <div className="p-3 bg-rose-50 border border-rose-100 rounded-xl flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">
+                    Unread Leads
+                  </span>
+                  <span className="text-xl font-bold text-slate-800 leading-none">
+                    {stats?.unreadInquiries ?? 0}
+                  </span>
+                </div>
+                <div className="p-3 bg-[#8AC926]/5 border border-[#8AC926]/15 rounded-xl flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">
+                    Total General Enquiries
+                  </span>
+                  <span className="text-xl font-bold text-slate-800 leading-none">
+                    {inquiries.length}
+                  </span>
+                </div>
+                <div className="p-3 bg-[#FF9F1C]/5 border border-[#FF9F1C]/15 rounded-xl flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">
+                    Total Franchise Enquiries
+                  </span>
+                  <span className="text-xl font-bold text-slate-800 leading-none">
+                    {franchiseInquiries.length}
+                  </span>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

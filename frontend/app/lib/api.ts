@@ -172,7 +172,7 @@ export const api = {
 
   createTeacher: (
     token: string,
-    body: { firstName: string; lastName: string; email: string; phone?: string; studentClass?: string | null }
+    body: { firstName: string; lastName: string; email: string; phone?: string; assignedClasses: string[] }
   ) =>
     request<AuthUser & { emailSent?: boolean; emailWarning?: string }>("/api/admin/teachers", {
       method: "POST",
@@ -188,7 +188,7 @@ export const api = {
       email: string;
       phone: string | null;
       status: AccountStatus;
-      studentClass: string | null;
+      assignedClasses: string[];
     }>
   ) =>
     request<AuthUser>(`/api/admin/teachers/${id}`, {
@@ -341,8 +341,18 @@ export const api = {
   deleteTaskFolder: (token: string, id: string) =>
     request<{ message: string }>(`/api/admin/task-folders/${id}`, { method: "DELETE" }, token),
 
-  createTask: (token: string, body: { title: string; description?: string; dueDate?: string | null; teacherId: string }) =>
-    request<Task>("/api/admin/tasks", {
+  createTask: (
+    token: string,
+    body: {
+      title: string;
+      description?: string;
+      dueDate?: string | null;
+      assignmentMode?: "SINGLE" | "MULTIPLE" | "ALL";
+      teacherId?: string;
+      teacherIds?: string[];
+    }
+  ) =>
+    request<Task & { tasks?: Task[]; count?: number }>("/api/admin/tasks", {
       method: "POST",
       body: JSON.stringify(body),
     }, token),
@@ -429,8 +439,10 @@ export const api = {
   deleteLessonPlan: (token: string, id: string) =>
     request<{ message: string }>(`/api/admin/lesson-plans/${id}`, { method: "DELETE" }, token),
 
-  getTeacherLessonPlans: (token: string) =>
-    request<LessonPlan[]>("/api/teacher/lesson-plans", {}, token),
+  getTeacherLessonPlans: (token: string, classFilter?: string) => {
+    const qs = classFilter ? `?class=${encodeURIComponent(classFilter)}` : "";
+    return request<LessonPlan[]>(`/api/teacher/lesson-plans${qs}`, {}, token);
+  },
 
   createStoryBook: (
     token: string,
@@ -604,8 +616,10 @@ export const api = {
   getRecurringTaskOccurrences: (token: string, recurringTaskId: string) =>
     request<Task[]>(`/api/teacher/tasks/recurring/${recurringTaskId}/history`, {}, token),
 
-  getTeacherStudents: (token: string) =>
-    request<AuthUser[]>("/api/teacher/students", {}, token),
+  getTeacherStudents: (token: string, classFilter?: string) => {
+    const qs = classFilter ? `?class=${encodeURIComponent(classFilter)}` : "";
+    return request<AuthUser[]>(`/api/teacher/students${qs}`, {}, token);
+  },
 
   submitTaskProof: (
     token: string,
@@ -684,11 +698,12 @@ export const api = {
   markAllAdminNotificationsRead: (token: string) =>
     request<{ message: string }>("/api/admin/notifications/read-all", { method: "PATCH" }, token),
 
-  browseDocuments: (token: string, folderId?: string | null, search?: string, type?: string) => {
+  browseDocuments: (token: string, folderId?: string | null, search?: string, type?: string, classFilter?: string) => {
     const qs = new URLSearchParams();
     if (folderId && folderId !== "root") qs.set("folderId", folderId);
     if (search) qs.set("search", search);
     if (type) qs.set("type", type);
+    if (classFilter) qs.set("class", classFilter);
     const query = qs.toString();
     return request<DriveItem[]>(`/api/documents/browse${query ? `?${query}` : ""}`, {}, token);
   },
@@ -770,6 +785,7 @@ export interface AuthUser {
   role: "ADMIN" | "TEACHER" | "STUDENT";
   phone?: string | null;
   studentClass?: string | null;
+  assignedClasses?: string[];
   employeeId?: string | null;
   status?: AccountStatus;
   mustChangePassword?: boolean;

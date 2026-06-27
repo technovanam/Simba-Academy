@@ -335,6 +335,11 @@ div.overflow-x-auto.modern-scrollbar::-webkit-scrollbar-track {
   background: linear-gradient(to bottom, #f8fafc 40px, #ffffff 40px);
 }
 
+/* Portal shells — no dual-tone band on inner scroll areas */
+.portal-app-shell .modern-scrollbar {
+  background: transparent;
+}
+
 /* Portal main scroll — touch + pull-to-refresh friendly on phones/tablets */
 .portal-main-scroll {
   -webkit-overflow-scrolling: touch;

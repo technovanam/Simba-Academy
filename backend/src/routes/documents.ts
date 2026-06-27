@@ -14,7 +14,12 @@ import {
   getRecentDocuments,
   getDriveClient,
 } from "../services/googleDriveService.js";
-import { notifyStudentsOfDriveAccess } from "../services/portalNotifications.js";
+import { notifyStudentsOfDriveAccess, notifyTeachersOfDriveAccess } from "../services/portalNotifications.js";
+import {
+  getTeacherAssignedClasses,
+  resolveActiveClassFilter,
+  teacherMatchesAnyClass,
+} from "../utils/teacherClasses.js";
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -40,7 +45,7 @@ async function logActivity(userId: string | undefined, action: string, details: 
  * Check if the user has access to a specific file or folder by inspecting
  * its own rules and all of its ancestor folders' rules recursively.
  */
-async function getAllowedFolderIds(user: any, studentClass: string | null): Promise<Set<string>> {
+async function getAllowedFolderIds(user: any, activeClasses: string[]): Promise<Set<string>> {
   const allowedFolderIds = new Set<string>();
   try {
     const rules = await prisma.driveAccessRule.findMany({
@@ -51,9 +56,8 @@ async function getAllowedFolderIds(user: any, studentClass: string | null): Prom
 
     const filteredRules = rules.filter(rule => {
       if (!rule.targetClass) return true;
-      if (!studentClass) return false;
-      const classes = rule.targetClass.split(",").map((c: string) => c.trim());
-      return classes.includes(studentClass);
+      if (activeClasses.length === 0) return false;
+      return teacherMatchesAnyClass(activeClasses, rule.targetClass);
     });
 
     for (const rule of filteredRules) {
@@ -73,7 +77,7 @@ async function getAllowedFolderIds(user: any, studentClass: string | null): Prom
   return allowedFolderIds;
 }
 
-async function isExplicitlyAllowed(fileId: string | null, user: any, studentClass: string | null): Promise<boolean> {
+async function isExplicitlyAllowed(fileId: string | null, user: any, activeClasses: string[]): Promise<boolean> {
   if (!fileId || fileId === "root") return false;
   try {
     const ancestors = await getAncestors(fileId);
@@ -104,10 +108,11 @@ async function isExplicitlyAllowed(fileId: string | null, user: any, studentClas
 
       if (user.role === "TEACHER") {
         if (audience !== "BOTH" && audience !== "TEACHER") return false;
-        if (targetClass && studentClass && !targetClass.split(",").map((c: string) => c.trim()).includes(studentClass)) return false;
+        if (targetClass && activeClasses.length > 0 && !teacherMatchesAnyClass(activeClasses, targetClass)) return false;
       } else if (user.role === "STUDENT") {
         if (audience !== "BOTH" && audience !== "STUDENT") return false;
-        if (targetClass && (!studentClass || !targetClass.split(",").map((c: string) => c.trim()).includes(studentClass))) return false;
+        const studentClass = activeClasses[0] ?? null;
+        if (targetClass && (!studentClass || !teacherMatchesAnyClass([studentClass], targetClass))) return false;
       }
       return true;
     }
@@ -121,23 +126,37 @@ async function isExplicitlyAllowed(fileId: string | null, user: any, studentClas
  * Check if the user has access to a specific file or folder by inspecting
  * its own rules and all of its ancestor folders' rules recursively.
  */
-async function hasFolderAccess(fileId: string | null, user: any): Promise<boolean> {
-  if (user.role === "ADMIN") return true;
-  if (!fileId || fileId === "root") return true;
-
-  try {
+async function resolveUserActiveClasses(user: any, classQuery?: string): Promise<string[]> {
+  if (user.role === "STUDENT") {
     const dbUser = await prisma.user.findUnique({
       where: { id: user.userId },
       select: { studentClass: true },
     });
-    const studentClass = dbUser?.studentClass || null;
+    return dbUser?.studentClass ? [dbUser.studentClass] : [];
+  }
+  if (user.role === "TEACHER") {
+    const assigned = await getTeacherAssignedClasses(user.userId);
+    if (classQuery) {
+      return resolveActiveClassFilter(assigned, classQuery);
+    }
+    return assigned;
+  }
+  return [];
+}
 
-    const allowedFolderIds = await getAllowedFolderIds(user, studentClass);
+async function hasFolderAccess(fileId: string | null, user: any, classQuery?: string): Promise<boolean> {
+  if (user.role === "ADMIN") return true;
+  if (!fileId || fileId === "root") return true;
+
+  try {
+    const activeClasses = await resolveUserActiveClasses(user, classQuery);
+
+    const allowedFolderIds = await getAllowedFolderIds(user, activeClasses);
     if (allowedFolderIds.has(fileId)) {
       return true;
     }
 
-    return await isExplicitlyAllowed(fileId, user, studentClass);
+    return await isExplicitlyAllowed(fileId, user, activeClasses);
   } catch (err) {
     console.error("Error verifying folder access rules:", err);
     return false;
@@ -147,7 +166,7 @@ async function hasFolderAccess(fileId: string | null, user: any): Promise<boolea
 /**
  * Filter items based on user role, class, and the stored DriveAccessRules.
  */
-async function applyAccessControls(items: any[], user: any, folderId: string | null = null, isSearchOrRecent: boolean = false) {
+async function applyAccessControls(items: any[], user: any, folderId: string | null = null, classQuery?: string) {
   if (items.length === 0) return items;
   
   if (user.role === "ADMIN") {
@@ -170,13 +189,9 @@ async function applyAccessControls(items: any[], user: any, folderId: string | n
     return items;
   }
 
-  const dbUser = await prisma.user.findUnique({
-    where: { id: user.userId },
-    select: { studentClass: true },
-  });
-  const studentClass = dbUser?.studentClass || null;
+  const activeClasses = await resolveUserActiveClasses(user, classQuery);
 
-  const allowedFolderIds = await getAllowedFolderIds(user, studentClass);
+  const allowedFolderIds = await getAllowedFolderIds(user, activeClasses);
 
   const itemIds = items.map((i) => i.id);
   const rules = await prisma.driveAccessRule.findMany({
@@ -199,13 +214,14 @@ async function applyAccessControls(items: any[], user: any, folderId: string | n
 
       if (user.role === "TEACHER") {
         if (audience === "BOTH" || audience === "TEACHER") {
-          if (!targetClass || !studentClass || targetClass.split(",").map((c: string) => c.trim()).includes(studentClass)) {
+          if (!targetClass || activeClasses.length === 0 || teacherMatchesAnyClass(activeClasses, targetClass)) {
             result.push(item);
           }
         }
       } else if (user.role === "STUDENT") {
         if (audience === "BOTH" || audience === "STUDENT") {
-          if (!targetClass || (studentClass && targetClass.split(",").map((c: string) => c.trim()).includes(studentClass))) {
+          const studentClass = activeClasses[0] ?? null;
+          if (!targetClass || (studentClass && teacherMatchesAnyClass([studentClass], targetClass))) {
             result.push(item);
           }
         }
@@ -218,7 +234,7 @@ async function applyAccessControls(items: any[], user: any, folderId: string | n
         const isFolder = item.mimeType === "application/vnd.google-apps.folder";
         if (isFolder) {
           const parentId = item.parents && item.parents.length > 0 ? item.parents[0] : folderId;
-          const parentExplicitlyAllowed = await isExplicitlyAllowed(parentId, user, studentClass);
+          const parentExplicitlyAllowed = await isExplicitlyAllowed(parentId, user, activeClasses);
           if (parentExplicitlyAllowed) {
             item.accessRule = { audience: "BOTH", targetClass: null };
             result.push(item);
@@ -244,14 +260,16 @@ router.get("/browse", authenticate, allRoles, async (req, res, next) => {
       ? req.query.type
       : undefined;
 
+    const classQuery = typeof req.query.class === "string" ? req.query.class : undefined;
+
     // Verify access to folder hierarchy
-    const allowed = await hasFolderAccess(folderId, req.user!);
+    const allowed = await hasFolderAccess(folderId, req.user!, classQuery);
     if (!allowed) {
       throw new AppError("Access denied to this folder", 403);
     }
 
     const items = await listItems(folderId, search, type);
-    const filteredItems = await applyAccessControls(items, req.user!, folderId, !!search);
+    const filteredItems = await applyAccessControls(items, req.user!, folderId, classQuery);
     res.json(filteredItems);
   } catch (err) {
     next(err);
@@ -279,8 +297,9 @@ router.get("/ancestors/:id", authenticate, allRoles, async (req, res, next) => {
  */
 router.get("/recent", authenticate, allRoles, async (req, res, next) => {
   try {
+    const classQuery = typeof req.query.class === "string" ? req.query.class : undefined;
     const recent = await getRecentDocuments();
-    const filteredRecent = await applyAccessControls(recent, req.user!, null, true);
+    const filteredRecent = await applyAccessControls(recent, req.user!, null, classQuery);
     res.json(filteredRecent);
   } catch (err) {
     next(err);
@@ -548,12 +567,23 @@ router.put("/:id/access", authenticate, adminOnly, async (req, res, next) => {
     const nowHasStudents = audience === "BOTH" || audience === "STUDENT";
     const didnHaveStudents = !existingRule || existingRule.audience === "TEACHER";
     const classesChanged = existingRule && existingRule.targetClass !== (targetClass || null);
+
+    const nowHasTeachers = audience === "BOTH" || audience === "TEACHER";
+    const didnHaveTeachers = !existingRule || existingRule.audience === "STUDENT";
     
     if (nowHasStudents && (didnHaveStudents || classesChanged)) {
       try {
         await notifyStudentsOfDriveAccess(fileId, rule.title, rule.targetClass);
       } catch (err) {
         console.error("Failed to notify students of drive access:", err);
+      }
+    }
+
+    if (nowHasTeachers && (didnHaveTeachers || classesChanged)) {
+      try {
+        await notifyTeachersOfDriveAccess(rule.title, rule.targetClass);
+      } catch (err) {
+        console.error("Failed to notify teachers of drive access:", err);
       }
     }
 

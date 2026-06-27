@@ -1,5 +1,5 @@
 /** One-time student platform registration fee (INR) */
-export const STUDENT_PLATFORM_FEE_INR = 1;
+export const STUDENT_PLATFORM_FEE_INR = 120;
 
 /** Live Zoho Payments checkout widget */
 export const PAYMENTS_LIVE_ZOHO = import.meta.env.VITE_PAYMENTS_LIVE_ZOHO === "true";

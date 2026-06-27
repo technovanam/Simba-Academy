@@ -152,6 +152,49 @@ try {
     console.log("✓ Created TeacherNotification table.");
   }
 
+  // ── TeacherAssignedClass (multi-class teacher assignments) ─────────
+  try {
+    await conn.query("SELECT 1 FROM TeacherAssignedClass LIMIT 1");
+    console.log("✓ TeacherAssignedClass table already exists.");
+  } catch {
+    await conn.query(`
+      CREATE TABLE TeacherAssignedClass (
+        id VARCHAR(191) NOT NULL,
+        teacherId VARCHAR(191) NOT NULL,
+        className VARCHAR(191) NOT NULL,
+        createdAt DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+        PRIMARY KEY (id),
+        UNIQUE INDEX TeacherAssignedClass_teacherId_className_key (teacherId, className),
+        INDEX TeacherAssignedClass_className_idx (className),
+        INDEX TeacherAssignedClass_teacherId_idx (teacherId),
+        CONSTRAINT TeacherAssignedClass_teacherId_fkey FOREIGN KEY (teacherId) REFERENCES User(id) ON DELETE CASCADE ON UPDATE CASCADE
+      ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
+    `);
+    console.log("✓ Created TeacherAssignedClass table.");
+  }
+
+  const legacyTeachers = await conn.query(
+    `SELECT id, studentClass FROM User WHERE role = 'TEACHER' AND studentClass IS NOT NULL AND studentClass != '' AND isDeleted = 0`
+  );
+  let migratedCount = 0;
+  for (const row of legacyTeachers) {
+    const existing = await conn.query(
+      `SELECT id FROM TeacherAssignedClass WHERE teacherId = ? AND className = ? LIMIT 1`,
+      [row.id, row.studentClass]
+    );
+    if (existing.length === 0) {
+      const id = `tac_${row.id}_${row.studentClass.replace(/[^a-zA-Z0-9]/g, "")}`;
+      await conn.query(
+        `INSERT INTO TeacherAssignedClass (id, teacherId, className, createdAt) VALUES (?, ?, ?, NOW(3))`,
+        [id.slice(0, 191), row.id, row.studentClass]
+      );
+      migratedCount++;
+    }
+  }
+  if (legacyTeachers.length > 0) {
+    console.log(`✓ Migrated ${migratedCount} teacher class assignment(s) from User.studentClass.`);
+  }
+
   console.log("\nSchema migration complete.");
 } catch (err) {
   console.error("Migration failed:", err.message);

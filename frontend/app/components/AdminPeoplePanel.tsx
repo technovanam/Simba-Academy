@@ -13,6 +13,7 @@ import { AdminModal } from "./AdminModal";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { AccountStatusBadge } from "./AccountStatusBadge";
 import { ThemeSelect } from "./ThemeSelect";
+import { ThemeClassMultiSelect } from "./ThemeClassMultiSelect";
 import { AdminPageBody, AdminPageHeader, AdminPageShell } from "./AdminPageShell";
 import { adminListContainerClass, adminListRowStackClass } from "./AdminListUi";
 import { STUDENT_CLASS_OPTIONS } from "../lib/constants";
@@ -77,7 +78,24 @@ const SORT_OPTIONS: { id: UserListSort; label: string }[] = [
   { id: "NAME_DESC", label: "Name Z–A" },
 ];
 
-const emptyTeacherForm = { firstName: "", lastName: "", email: "", phone: "", studentClass: "" };
+const emptyTeacherForm = {
+  firstName: "",
+  lastName: "",
+  email: "",
+  phone: "",
+  studentClass: "",
+  assignedClasses: [] as string[],
+};
+
+function teacherClassesLabel(u: AuthUser): string {
+  const classes =
+    u.assignedClasses && u.assignedClasses.length > 0
+      ? u.assignedClasses
+      : u.studentClass
+        ? [u.studentClass]
+        : [];
+  return classes.length > 0 ? classes.join(", ") : "";
+}
 
 const CLASS_FILTER_OPTIONS = [
   { id: "ALL", label: "All Classes" },
@@ -230,6 +248,15 @@ export function AdminPeoplePanel({
     if (mode === "users" && classFilter !== "ALL") {
       return u.studentClass === classFilter;
     }
+    if (mode === "teachers" && classFilter !== "ALL") {
+      const classes =
+        u.assignedClasses && u.assignedClasses.length > 0
+          ? u.assignedClasses
+          : u.studentClass
+            ? [u.studentClass]
+            : [];
+      return classes.includes(classFilter);
+    }
     return true;
   });
 
@@ -245,7 +272,8 @@ export function AdminPeoplePanel({
   const isTeacherFormReady =
     teacherForm.firstName.trim().length > 0 &&
     teacherForm.lastName.trim().length > 0 &&
-    teacherForm.email.trim().length > 0;
+    teacherForm.email.trim().length > 0 &&
+    teacherForm.assignedClasses.length > 0;
 
   useEffect(() => {
     if (currentPage > totalPages) setCurrentPage(totalPages);
@@ -328,8 +356,8 @@ export function AdminPeoplePanel({
       onError("Please enter a valid phone number (at least 7 digits).");
       return;
     }
-    if (!teacherForm.studentClass) {
-      onError("Please select an assigned class.");
+    if (teacherForm.assignedClasses.length === 0) {
+      onError("Please select at least one assigned class.");
       return;
     }
     setActionLoading("teacher-create");
@@ -339,7 +367,7 @@ export function AdminPeoplePanel({
         lastName: teacherForm.lastName.trim(),
         email: teacherForm.email.trim(),
         phone: teacherForm.phone.trim(),
-        studentClass: teacherForm.studentClass,
+        assignedClasses: teacherForm.assignedClasses,
       });
       setRecords((prev) => [created, ...prev]);
       if (created.emailSent) {
@@ -361,12 +389,19 @@ export function AdminPeoplePanel({
 
   function openEditTeacher(teacher: AuthUser) {
     setEditingTeacher(teacher);
+    const assigned =
+      teacher.assignedClasses && teacher.assignedClasses.length > 0
+        ? teacher.assignedClasses
+        : teacher.studentClass
+          ? [teacher.studentClass]
+          : [];
     setEditForm({
       firstName: teacher.firstName ?? teacher.name.split(" ")[0] ?? "",
       lastName: teacher.lastName ?? teacher.name.split(" ").slice(1).join(" ") ?? "",
       email: teacher.email,
       phone: teacher.phone ?? "",
       studentClass: teacher.studentClass ?? "",
+      assignedClasses: assigned,
     });
   }
 
@@ -393,8 +428,13 @@ export function AdminPeoplePanel({
       onError("Please enter a valid phone number (at least 7 digits).");
       return;
     }
-    if (!editForm.studentClass) {
-      onError(mode === "teachers" ? "Please select an assigned class." : "Please select a class.");
+    if (mode === "teachers") {
+      if (editForm.assignedClasses.length === 0) {
+        onError("Please select at least one assigned class.");
+        return;
+      }
+    } else if (!editForm.studentClass) {
+      onError("Please select a class.");
       return;
     }
     setActionLoading(mode === "teachers" ? "teacher-save" : "student-save");
@@ -405,7 +445,7 @@ export function AdminPeoplePanel({
           lastName: editForm.lastName.trim(),
           email: editForm.email.trim(),
           phone: editForm.phone.trim(),
-          studentClass: editForm.studentClass,
+          assignedClasses: editForm.assignedClasses,
         });
         setRecords((prev) => prev.map((r) => (r.id === editingTeacher.id ? { ...r, ...updated } : r)));
         if ((updated as any).emailSent !== undefined) {
@@ -542,7 +582,13 @@ export function AdminPeoplePanel({
                         {u.email}
                       </td>
                       <td className="px-4 py-3 align-middle text-xs text-slate-650 whitespace-nowrap">
-                        {u.studentClass ? (
+                        {mode === "teachers" ? (
+                          teacherClassesLabel(u) ? (
+                            <span className="text-[#8AC926] font-bold">{teacherClassesLabel(u)}</span>
+                          ) : (
+                            <span className="text-slate-450">—</span>
+                          )
+                        ) : u.studentClass ? (
                           <span className="text-[#8AC926] font-bold">{u.studentClass}</span>
                         ) : (
                           <span className="text-slate-450">—</span>
@@ -731,7 +777,13 @@ export function AdminPeoplePanel({
                   }`}>
                     <div>
                       <span className="text-slate-400 font-semibold block uppercase text-[9px] tracking-wider mb-0.5">Class</span>
-                      {u.studentClass ? (
+                      {mode === "teachers" ? (
+                        teacherClassesLabel(u) ? (
+                          <span className="text-[#8AC926] font-extrabold">{teacherClassesLabel(u)}</span>
+                        ) : (
+                          <span className="text-slate-400">—</span>
+                        )
+                      ) : u.studentClass ? (
                         <span className="text-[#8AC926] font-extrabold">{u.studentClass}</span>
                       ) : (
                         <span className="text-slate-400">—</span>
@@ -812,15 +864,11 @@ export function AdminPeoplePanel({
             onChange={(e) => setTeacherForm({ ...teacherForm, phone: e.target.value })}
             className="w-full rounded-xl bg-white border border-slate-200 px-4 py-3 text-xs text-slate-900 outline-none focus:border-[#8AC926]"
           />
-          <div>
-            <label className="block text-slate-700 font-bold mb-1 text-2xs uppercase tracking-wider">Assigned Class</label>
-            <ThemeSelect
-              value={teacherForm.studentClass}
-              onChange={(val) => setTeacherForm({ ...teacherForm, studentClass: val })}
-              options={STUDENT_CLASS_OPTIONS}
-              placeholder="Select assigned class"
-            />
-          </div>
+          <ThemeClassMultiSelect
+            label="Assigned Classes"
+            value={teacherForm.assignedClasses}
+            onChange={(assignedClasses) => setTeacherForm({ ...teacherForm, assignedClasses })}
+          />
           <p className="text-2xs text-slate-500 font-medium">
             A secure temporary password will be generated automatically and emailed to the teacher via Resend.
           </p>
@@ -876,17 +924,25 @@ export function AdminPeoplePanel({
             onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
             className="w-full rounded-xl bg-white border border-slate-200 px-4 py-3 text-xs outline-none focus:border-[#8AC926]"
           />
-          <div>
-            <label className="block text-slate-700 font-bold mb-1 text-2xs uppercase tracking-wider">
-              {mode === "teachers" ? "Assigned Class" : "Student Class"}
-            </label>
-            <ThemeSelect
-              value={editForm.studentClass}
-              onChange={(val) => setEditForm({ ...editForm, studentClass: val })}
-              options={STUDENT_CLASS_OPTIONS}
-              placeholder={mode === "teachers" ? "Select assigned class" : "Select class"}
+          {mode === "teachers" ? (
+            <ThemeClassMultiSelect
+              label="Assigned Classes"
+              value={editForm.assignedClasses}
+              onChange={(assignedClasses) => setEditForm({ ...editForm, assignedClasses })}
             />
-          </div>
+          ) : (
+            <div>
+              <label className="block text-slate-700 font-bold mb-1 text-2xs uppercase tracking-wider">
+                Student Class
+              </label>
+              <ThemeSelect
+                value={editForm.studentClass}
+                onChange={(val) => setEditForm({ ...editForm, studentClass: val })}
+                options={STUDENT_CLASS_OPTIONS}
+                placeholder="Select class"
+              />
+            </div>
+          )}
           {editingTeacher?.employeeId && (
             <p className="text-2xs text-slate-500 font-semibold">Employee ID: {editingTeacher.employeeId}</p>
           )}

@@ -95,7 +95,9 @@ export const createTeacherSchema = z.object({
   lastName: z.string().min(1, "Last name is required"),
   email: z.string().email("Invalid email address"),
   phone: z.string().min(7, "Valid phone number required"),
-  studentClass: z.enum(STUDENT_CLASS_LEVELS, { message: "Assigned class is required" }),
+  assignedClasses: z
+    .array(z.enum(STUDENT_CLASS_LEVELS))
+    .min(1, "At least one assigned class is required"),
 });
 
 export const updateTeacherSchema = z.object({
@@ -104,7 +106,10 @@ export const updateTeacherSchema = z.object({
   email: z.string().email().optional(),
   phone: z.string().min(7, "Valid phone number required").optional(),
   status: z.enum(["ACTIVE", "DEACTIVATED"]).optional(),
-  studentClass: z.enum(STUDENT_CLASS_LEVELS, { message: "Assigned class is required" }).optional(),
+  assignedClasses: z
+    .array(z.enum(STUDENT_CLASS_LEVELS))
+    .min(1, "At least one assigned class is required")
+    .optional(),
 });
 
 export const updateUserSchema = z.object({
@@ -186,15 +191,34 @@ export const createRecurringTaskSchema = z.object({
 
 export const updateRecurringTaskSchema = createRecurringTaskSchema.partial();
 
-export const createTaskSchema = z.object({
-  title: z.string().min(2, "Title must be at least 2 characters"),
-  description: z.string().optional(),
-  dueDate: z
-    .string()
-    .min(1, "Due date is required")
-    .refine(isDueDateTodayOrFuture, "Due date cannot be in the past"),
-  teacherId: z.string(),
-});
+export const createTaskSchema = z
+  .object({
+    title: z.string().min(2, "Title must be at least 2 characters"),
+    description: z.string().optional(),
+    dueDate: z
+      .string()
+      .min(1, "Due date is required")
+      .refine(isDueDateTodayOrFuture, "Due date cannot be in the past"),
+    assignmentMode: z.enum(["SINGLE", "MULTIPLE", "ALL"]).default("SINGLE"),
+    teacherId: z.string().optional(),
+    teacherIds: z.array(z.string()).optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.assignmentMode === "SINGLE" && !data.teacherId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Teacher is required for single assignment",
+        path: ["teacherId"],
+      });
+    }
+    if (data.assignmentMode === "MULTIPLE" && (!data.teacherIds || data.teacherIds.length === 0)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Select at least one teacher",
+        path: ["teacherIds"],
+      });
+    }
+  });
 
 export const approveTaskSchema = z.object({
   status: z.enum(["PENDING", "SUBMITTED", "UNDER_REVIEW", "APPROVED", "REJECTED", "RESUBMITTED"]),

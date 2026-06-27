@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, type ReactNode } from "react";
 import {
   Folder,
   FileText,
@@ -25,6 +25,9 @@ import { STUDENT_CLASS_OPTIONS } from "../lib/constants";
 export interface DriveLibraryPanelProps {
   token: string;
   role: "ADMIN" | "TEACHER" | "STUDENT";
+  classFilter?: string;
+  /** Extra controls rendered in the header row next to search (e.g. class filter). */
+  headerExtras?: ReactNode;
 }
 
 const FILE_TYPE_OPTIONS = [
@@ -85,7 +88,7 @@ function ThumbnailImage({ item }: { item: DriveItem }) {
   );
 }
 
-export function DriveLibraryPanel({ token, role }: DriveLibraryPanelProps) {
+export function DriveLibraryPanel({ token, role, classFilter, headerExtras }: DriveLibraryPanelProps) {
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [items, setItems] = useState<DriveItem[]>([]);
   const [ancestors, setAncestors] = useState<DriveAncestor[]>([]);
@@ -117,7 +120,7 @@ export function DriveLibraryPanel({ token, role }: DriveLibraryPanelProps) {
   const fetchDocuments = useCallback(async (signal: { cancelled: boolean }) => {
     if (!token) return;
 
-    const cacheKey = `${currentFolderId || "root"}|${searchQuery}|${fileTypeFilter}`;
+    const cacheKey = `${currentFolderId || "root"}|${searchQuery}|${fileTypeFilter}|${classFilter ?? ""}`;
     if (cacheRef.current[cacheKey]) {
       const cached = cacheRef.current[cacheKey];
       setItems(cached.items);
@@ -129,7 +132,7 @@ export function DriveLibraryPanel({ token, role }: DriveLibraryPanelProps) {
     setLoading(true);
     setError("");
     try {
-      const data = await api.browseDocuments(token, currentFolderId, searchQuery);
+      const data = await api.browseDocuments(token, currentFolderId, searchQuery, undefined, classFilter);
       if (signal.cancelled) return;
 
       let finalItems = data;
@@ -157,7 +160,7 @@ export function DriveLibraryPanel({ token, role }: DriveLibraryPanelProps) {
         setLoading(false);
       }
     }
-  }, [token, currentFolderId, searchQuery, fileTypeFilter]);
+  }, [token, currentFolderId, searchQuery, fileTypeFilter, classFilter]);
 
   useEffect(() => {
     const signal = { cancelled: false };
@@ -299,6 +302,7 @@ export function DriveLibraryPanel({ token, role }: DriveLibraryPanelProps) {
                 </button>
               ))}
             </div>
+            {headerExtras}
           </>
         }
       />
@@ -336,7 +340,7 @@ export function DriveLibraryPanel({ token, role }: DriveLibraryPanelProps) {
       <AdminPageBody className="flex-1 min-h-0 flex flex-col overflow-hidden">
         {loading ? (
           <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex-1 min-h-0 flex flex-col animate-pulse">
-            <div className="overflow-x-auto flex-1 min-h-0 overflow-y-auto modern-scrollbar">
+            <div className="overflow-x-auto flex-1 min-h-0 overflow-y-auto bg-white">
               <table className="w-full text-left text-sm whitespace-nowrap">
                 <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium text-xs sticky top-0 z-10">
                   <tr>
@@ -385,7 +389,7 @@ export function DriveLibraryPanel({ token, role }: DriveLibraryPanelProps) {
           </div>
         ) : (
           <div className={`bg-white ${role === "STUDENT" ? "" : "border border-slate-200 shadow-sm"} rounded-2xl overflow-hidden flex-1 min-h-0 flex flex-col`}>
-            <div className={`overflow-x-auto flex-1 min-h-0 overflow-y-auto modern-scrollbar ${role === "STUDENT" ? "p-4" : ""}`}>
+            <div className={`overflow-x-auto flex-1 min-h-0 overflow-y-auto bg-white ${role === "STUDENT" ? "p-4" : ""}`}>
               {role === "STUDENT" ? (
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6 content-start">
                   {items.map((item) => {

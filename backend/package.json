@@ -31,6 +31,8 @@
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
     "db:seed": "tsx src/config/seedAdmin.ts",
+    "db:seed-teachers": "node scripts/seed-teachers.mjs",
+    "db:seed-students": "node scripts/seed-students.mjs",
     "db:purge-teachers": "node scripts/purge-teachers.mjs",
     "production": "npm run build && prisma db push && npm start",
     "deploy:cpanel": "npm run build && prisma db push",

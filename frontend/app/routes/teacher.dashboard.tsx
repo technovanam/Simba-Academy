@@ -10,7 +10,7 @@ import {
   type LessonPlan,
   type TaskAudit,
 } from "../lib/api";
-import { clearSession, getToken, getUser, saveSession } from "../lib/auth";
+import { clearSession, getToken, getUser, saveSession, getTeacherAssignedClasses, getTeacherClassFilter, setTeacherClassFilter, teacherClassQueryParam } from "../lib/auth";
 import { resolveStorageUrl } from "../lib/storage";
 import { isActionBusy } from "../lib/actionGuard";
 import { TEACHER_TAB_PATHS } from "../lib/teacherRoutes";
@@ -21,6 +21,7 @@ import { LessonPlanViewerModal } from "../components/LessonPlanViewerModal";
 import { ModalCloseButton } from "../components/ModalCloseButton";
 import { TeacherSettingsPanel } from "../components/TeacherSettingsPanel";
 import { TeacherNotificationBell } from "../components/teacher/TeacherNotificationBell";
+import { TeacherClassFilter } from "../components/teacher/TeacherClassFilter";
 import { TeacherNotificationsPage } from "../components/teacher/pages/TeacherNotificationsPage";
 import { AdminPageBody, AdminPageHeader, AdminPageShell } from "../components/AdminPageShell";
 import {
@@ -138,6 +139,24 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
   const [taskStatusFilter, setTaskStatusFilter] = useState("ALL");
   const [plannerSearch, setPlannerSearch] = useState("");
   const [lessonPlanViewer, setLessonPlanViewer] = useState<LessonPlan | null>(null);
+  const [activeClassFilter, setActiveClassFilterState] = useState("all");
+
+  const assignedClasses = useMemo(() => getTeacherAssignedClasses(user), [user]);
+
+  function setActiveClassFilter(value: string) {
+    setActiveClassFilterState(value);
+    setTeacherClassFilter(value);
+  }
+
+  useEffect(() => {
+    setActiveClassFilterState(getTeacherClassFilter());
+  }, []);
+
+  useEffect(() => {
+    if (assignedClasses.length === 1) {
+      setActiveClassFilter(assignedClasses[0]);
+    }
+  }, [assignedClasses]);
 
   // Modal / Form States
   const [showProofModal, setShowProofModal] = useState(false);
@@ -200,11 +219,11 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
     }
   }, [mounted, token, user?.role, user?.mustChangePassword, navigate]);
 
-  // Fetch data when the active tab changes
+  // Fetch data when the active tab or class filter changes
   useEffect(() => {
     if (!mounted || !token || user?.role !== "TEACHER" || user?.mustChangePassword) return;
     loadTabData(activeTab);
-  }, [mounted, token, user?.role, user?.mustChangePassword, activeTab]);
+  }, [mounted, token, user?.role, user?.mustChangePassword, activeTab, activeClassFilter]);
 
   useEffect(() => {
     if (!token || user?.role !== "TEACHER") return;
@@ -234,26 +253,29 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
     setLoading(true);
     setError("");
 
+    const classParam = teacherClassQueryParam(activeClassFilter);
+
     try {
       if (tab === "overview") {
-        const [allTasks, allPlans] = await Promise.all([
+        const [allTasks, allPlans, students] = await Promise.all([
           api.getTeacherTasks(token),
-          api.getTeacherLessonPlans(token),
+          api.getTeacherLessonPlans(token, classParam),
+          api.getTeacherStudents(token, classParam),
         ]);
         setTasks(allTasks);
         setLessonPlans(allPlans);
+        setClassStudents(students);
       } else if (tab === "tasks") {
         const allTasks = await api.getTeacherTasks(token);
         setTasks(allTasks);
       } else if (tab === "library") {
-        const allBooks = await api.getTeacherStoryBooks(token);
-        setBooks(allBooks);
+        // Drive library is loaded by DriveLibraryPanel with class filter
       } else if (tab === "planner") {
-        const allPlans = await api.getTeacherLessonPlans(token);
+        const allPlans = await api.getTeacherLessonPlans(token, classParam);
         setLessonPlans(allPlans);
         setLessonPlanViewer(null);
       } else if (tab === "students") {
-        const students = await api.getTeacherStudents(token);
+        const students = await api.getTeacherStudents(token, classParam);
         setClassStudents(students);
       } else if (tab === "settings") {
         const freshProfile = await api.profile(token);
@@ -287,7 +309,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
     if (!token) return;
     setRefreshingStudentBooks(true);
     try {
-      const students = await api.getTeacherStudents(token);
+      const students = await api.getTeacherStudents(token, classParam);
       setClassStudents(students);
       const freshStudent = students.find(s => s.id === student.id);
       if (freshStudent) {
@@ -445,6 +467,24 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
     .filter((t) => t.dueDate && (t.status === "PENDING" || t.status === "REJECTED"))
     .sort((a, b) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime())
     .slice(0, 2);
+  const classFilterLabel =
+    activeClassFilter === "all"
+      ? "All Classes"
+      : activeClassFilter;
+
+  const studentsTabTitle =
+    assignedClasses.length === 0
+      ? "Students"
+      : activeClassFilter === "all"
+        ? "All Class Students"
+        : `${activeClassFilter} Students`;
+
+  const studentsTabDescription =
+    assignedClasses.length === 0
+      ? "View your class students."
+      : activeClassFilter === "all"
+        ? `View students across your assigned classes (${assignedClasses.join(", ")}).`
+        : `View students registered in the ${activeClassFilter} class.`;
 
   if (!mounted) {
     return <FullPortalSkeleton />;
@@ -563,17 +603,23 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
           </header>
         ) : null}
 
-        <div className={`flex-1 min-h-0 bg-[#F8FAFC] focus:outline-none portal-main-scroll p-4 lg:p-6 pb-6 lg:pb-8 ${
-          activeTab === "tasks" || activeTab === "library" || activeTab === "planner" || activeTab === "students"
-            ? "h-full flex flex-col overflow-visible"
-            : "overflow-y-auto modern-scrollbar"
+        <div className={`flex-1 min-h-0 bg-[#F8FAFC] focus:outline-none p-4 lg:p-6 ${
+          activeTab === "overview" ||
+          activeTab === "tasks" ||
+          activeTab === "library" ||
+          activeTab === "planner" ||
+          activeTab === "students" ||
+          activeTab === "notifications" ||
+          activeTab === "settings"
+            ? "h-full flex flex-col overflow-hidden"
+            : "portal-main-scroll overflow-y-auto modern-scrollbar pb-6 lg:pb-8"
         }`}>
           
           {loading && activeTab !== "settings" && activeTab !== "notifications" ? (
             <DashboardSkeleton />
           ) : activeTab === "overview" ? (
-            <div className={portalDashboardBodyClass}>
-              {/* ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ OVERVIEW DASHBOARD ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ */}
+            <div className={`${portalDashboardBodyClass} h-full overflow-hidden !pb-0`}>
+              {/* ─────────────── OVERVIEW DASHBOARD ─────────────── */}
                   <div className="flex flex-wrap items-center justify-between gap-3 shrink-0">
                     <div className="min-w-0">
                       <h2 className="text-sm lg:text-base font-bold text-slate-900 tracking-wide uppercase truncate">
@@ -583,7 +629,15 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                         Welcome back, {user?.name ?? "Teacher"}
                       </p>
                     </div>
-                    <TeacherNotificationBell unreadCount={unreadNotificationCount} />
+                    <div className="flex items-center gap-2 shrink-0">
+                      <TeacherClassFilter
+                        assignedClasses={assignedClasses}
+                        value={activeClassFilter}
+                        onChange={setActiveClassFilter}
+                        variant="button"
+                      />
+                      <TeacherNotificationBell unreadCount={unreadNotificationCount} />
+                    </div>
                   </div>
 
                   {/* Three summary panels (matches admin dashboard style) */}
@@ -747,8 +801,8 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                   </div>
 
                   {/* Split workspace */}
-                  <div className={portalDashboardLowerGridClass}>
-                    <div className="lg:col-span-2 bg-white rounded-2xl p-5 border border-slate-200 flex flex-col flex-1">
+                  <div className={`${portalDashboardLowerGridClass} flex-1 min-h-0 overflow-hidden`}>
+                    <div className="lg:col-span-2 bg-white rounded-2xl p-5 border border-slate-200 flex flex-col flex-1 min-h-0 overflow-hidden">
                       <div className="flex flex-wrap justify-between items-center gap-4 mb-4">
                         <div>
                           <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Recent Tasks</h3>
@@ -765,7 +819,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                         </button>
                       </div>
 
-                      <div className="space-y-2">
+                      <div className="space-y-2 flex-1 min-h-0 overflow-y-auto pr-0.5">
                         {tasks.length === 0 ? (
                           <div className="bg-slate-50 rounded-xl p-6 border border-slate-200 text-xs text-center text-slate-600 font-semibold">
                             No tasks assigned yet. Check back when admin assigns work.
@@ -815,22 +869,23 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                       </div>
                     </div>
 
-                    <div className="bg-white rounded-2xl p-5 border border-slate-200 flex flex-col flex-1">
+                    <div className="bg-white rounded-2xl p-5 border border-slate-200 flex flex-col flex-1 min-h-0 overflow-hidden">
                       <div className="flex items-center justify-between pb-2 border-b border-slate-100 mb-4">
-                        <h4 className="font-bold text-[10px] uppercase text-slate-800 tracking-wider">Workspace Summary</h4>
-                        <TrendingUp className="w-4 h-4 text-[#8AC926]" />
+                        <h4 className="font-bold text-xs uppercase text-slate-800 tracking-wider">Workspace Summary</h4>
+                        <TrendingUp className="w-5 h-5 text-[#8AC926]" />
                       </div>
 
-                      <div className="grid grid-cols-1 gap-2 flex-1">
+                      <div className="grid grid-cols-1 gap-2.5 flex-1">
                         {[
                           { label: "Pending proof", value: pendingTasksCount, tone: "amber" },
                           { label: "Submitted", value: completedTasksCount, tone: "sky" },
                           { label: "Approved tasks", value: approvedTasksCount, tone: "emerald" },
                           { label: "Lesson plans", value: lessonPlans.length, tone: "green" },
+                          { label: "Students", value: classStudents.length, tone: "sky" },
                         ].map((item) => (
                           <div
                             key={item.label}
-                            className={`p-2.5 rounded-xl border flex items-center justify-between ${
+                            className={`p-3 rounded-xl border flex items-center justify-between ${
                               item.tone === "amber" ? "bg-amber-50 border-amber-100" :
                               item.tone === "sky" ? "bg-sky-50 border-sky-100" :
                               item.tone === "emerald" ? "bg-emerald-50 border-emerald-100" :
@@ -838,8 +893,8 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                               "bg-[#FF9F1C]/5 border-[#FF9F1C]/15"
                             }`}
                           >
-                            <span className="text-[8px] font-bold text-slate-600 uppercase tracking-wider">{item.label}</span>
-                            <span className="text-lg font-bold text-slate-800 leading-none">{item.value}</span>
+                            <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">{item.label}</span>
+                            <span className="text-xl font-bold text-slate-800 leading-none">{item.value}</span>
                           </div>
                         ))}
                       </div>
@@ -847,14 +902,11 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                   </div>
               </div>
           ) : (
-            <div className={`animate-fade-in ${
-              activeTab !== "settings"
-                ? "h-full flex flex-col min-h-0 overflow-visible"
-                : "space-y-6"
-            }`}>
+            <div className="animate-fade-in h-full flex flex-col min-h-0 overflow-hidden">
               {/* ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ ASSIGNED TASKS Tab ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ */}
               {activeTab === "tasks" && (
-                <AdminPageShell className="h-full flex flex-col min-h-0 overflow-visible">
+                <AdminPageShell className="h-full flex flex-col min-h-0 overflow-hidden">
+                  <div className="shrink-0">
                   <AdminPageHeader
                     title="Assigned Tasks"
                     description="View assigned tasks and upload completion proof for admin review."
@@ -876,12 +928,13 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                       </>
                     }
                   />
-                  <AdminPageBody className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                  </div>
+                  <AdminPageBody className="flex-1 min-h-0 flex flex-col overflow-hidden !mt-0 !pt-0">
                     {filteredGroupedTasks.length === 0 ? (
                       <AdminListEmpty message="No assigned tasks matched your search or filters." />
                     ) : (
                       <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex-1 min-h-0 flex flex-col">
-                        <div className="flex-1 min-h-0 overflow-y-auto modern-scrollbar flex flex-col">
+                        <div className="flex-1 min-h-0 overflow-y-auto bg-white flex flex-col">
                           {/* Desktop/Tablet Table view */}
                           <div className="hidden xl:block overflow-x-auto flex-1 min-h-0">
                             <table className="w-full text-left text-sm whitespace-nowrap">
@@ -1047,7 +1100,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                           </div>
 
                           {/* Mobile Cards list view */}
-                          <div className="xl:hidden flex-1 overflow-y-auto modern-scrollbar">
+                          <div className="xl:hidden flex-1 overflow-y-auto bg-white">
                             {[ 
                               { title: "Today's Tasks", items: todayTasks },
                               { title: "Previous Tasks", items: oldTasks }
@@ -1205,30 +1258,52 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
 
               {/* ────────────────── DRIVE LIBRARY Tab ────────────────── */}
               {activeTab === "library" && token && (
-                <DriveLibraryPanel token={token} role="TEACHER" />
+                <DriveLibraryPanel
+                  token={token}
+                  role="TEACHER"
+                  classFilter={teacherClassQueryParam(activeClassFilter)}
+                  headerExtras={
+                    <TeacherClassFilter
+                      assignedClasses={assignedClasses}
+                      value={activeClassFilter}
+                      onChange={setActiveClassFilter}
+                      variant="button"
+                    />
+                  }
+                />
               )}
 
               {/* ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ LESSON PLANNER Tab (view only) ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ */}
               {activeTab === "planner" && (
-                <AdminPageShell className="h-full flex flex-col min-h-0 overflow-visible">
+                <AdminPageShell className="h-full flex flex-col min-h-0 overflow-hidden">
+                  <div className="shrink-0">
                   <AdminPageHeader
                     title="Lesson Planner"
                     description="View and print lesson plans published by administrators."
                     actions={
-                      <AdminSearchInput
-                        value={plannerSearch}
-                        onChange={setPlannerSearch}
-                        placeholder="Search lesson plans..."
-                        ariaLabel="Search lesson plans"
-                      />
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
+                        <AdminSearchInput
+                          value={plannerSearch}
+                          onChange={setPlannerSearch}
+                          placeholder="Search lesson plans..."
+                          ariaLabel="Search lesson plans"
+                        />
+                        <TeacherClassFilter
+                          assignedClasses={assignedClasses}
+                          value={activeClassFilter}
+                          onChange={setActiveClassFilter}
+                          variant="button"
+                        />
+                      </div>
                     }
                   />
-                  <AdminPageBody className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                  </div>
+                  <AdminPageBody className="flex-1 min-h-0 flex flex-col overflow-hidden !mt-0 !pt-0">
                     {filteredLessonPlans.length === 0 ? (
                       <AdminListEmpty message="No published lesson plans matched your search." />
                     ) : (
                       <div className={`${adminListContainerClass} flex-1 min-h-0 flex flex-col justify-between`}>
-                        <div className="space-y-1.5 flex-1 min-h-0 overflow-y-auto modern-scrollbar">
+                        <div className="space-y-1.5 flex-1 min-h-0 overflow-y-auto bg-white">
                           {plannerPagination.paginatedItems.map((plan) => (
                             <div key={plan.id} className={adminListRowClass}>
                               <div className="flex-1 min-w-[180px]">
@@ -1297,38 +1372,51 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
 
               {/* ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ STUDENTS Tab ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ */}
               {activeTab === "students" && (
-                <AdminPageShell className="h-full flex flex-col min-h-0 overflow-visible">
+                <AdminPageShell className="h-full flex flex-col min-h-0 overflow-hidden">
+                  <div className="shrink-0">
                   <AdminPageHeader
-                    title={user?.studentClass ? `${user.studentClass} Students` : "Students"}
-                    description={user?.studentClass ? `View students registered in the ${user.studentClass} class.` : "View your class students."}
+                    title={studentsTabTitle}
+                    description={studentsTabDescription}
                     actions={
-                      <AdminSearchInput
-                        value={studentSearch}
-                        onChange={setStudentSearch}
-                        placeholder="Search students"
-                        ariaLabel="Search students"
-                      />
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
+                        <AdminSearchInput
+                          value={studentSearch}
+                          onChange={setStudentSearch}
+                          placeholder="Search students"
+                          ariaLabel="Search students"
+                        />
+                        <TeacherClassFilter
+                          assignedClasses={assignedClasses}
+                          value={activeClassFilter}
+                          onChange={setActiveClassFilter}
+                          variant="button"
+                        />
+                      </div>
                     }
                   />
-                  <AdminPageBody className="flex-1 min-h-0 flex flex-col overflow-hidden">
-                    {!user?.studentClass ? (
-                      <AdminListEmpty message="You are not currently assigned to a class. Please contact the administrator to assign a class to your account." />
+                  </div>
+                  <AdminPageBody className="flex-1 min-h-0 flex flex-col overflow-hidden !mt-0 !pt-0">
+                    {assignedClasses.length === 0 ? (
+                      <AdminListEmpty message="You are not currently assigned to any class. Please contact the administrator to assign classes to your account." />
                     ) : classStudents.filter(s => 
                       s.name.toLowerCase().includes(studentSearch.toLowerCase()) || 
                       s.email.toLowerCase().includes(studentSearch.toLowerCase())
                     ).length === 0 ? (
-                      <AdminListEmpty message={`No ${user?.studentClass} students found matching your search.`} />
+                      <AdminListEmpty message={`No students found for ${classFilterLabel} matching your search.`} />
                     ) : (
                       <div className="bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-2xs flex-1 min-h-0 flex flex-col">
                         {/* Header Row */}
                         <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-4 bg-slate-50 border-b border-slate-200/80 text-[10px] font-black text-slate-500 uppercase tracking-widest shrink-0">
-                          <div className="col-span-5">Name</div>
-                          <div className="col-span-4">Email</div>
-                          <div className="col-span-3 text-right">Books</div>
+                          <div className="col-span-4">Name</div>
+                          <div className="col-span-3">Email</div>
+                          {activeClassFilter === "all" && assignedClasses.length > 1 ? (
+                            <div className="col-span-2">Class</div>
+                          ) : null}
+                          <div className={`${activeClassFilter === "all" && assignedClasses.length > 1 ? "col-span-3" : "col-span-5"} text-right`}>Books</div>
                         </div>
 
                         {/* List container */}
-                        <div className="divide-y divide-slate-100 flex-1 min-h-0 overflow-y-auto modern-scrollbar">
+                        <div className="divide-y divide-slate-100 flex-1 min-h-0 overflow-y-auto bg-white">
                           {classStudents
                             .filter(s => 
                               s.name.toLowerCase().includes(studentSearch.toLowerCase()) || 
@@ -1345,19 +1433,32 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                                   onClick={() => handleOpenStudentProgress(student)}
                                   className="px-6 py-4 flex flex-col md:grid md:grid-cols-12 md:items-center gap-2 md:gap-4 hover:bg-slate-50/80 transition duration-200 cursor-pointer"
                                 >
-                                  {/* Name column (Col span 5) */}
-                                  <div className="col-span-5 min-w-0">
+                                  {/* Name column */}
+                                  <div className="col-span-4 min-w-0 md:col-span-4">
                                     <p className="font-bold text-sm text-slate-800 truncate">{student.name}</p>
+                                    {activeClassFilter === "all" && assignedClasses.length > 1 && student.studentClass ? (
+                                      <span className="md:hidden mt-1 inline-block px-2 py-0.5 rounded-full bg-[#8AC926]/10 text-[#5a8a18] text-[10px] font-bold border border-[#8AC926]/20">
+                                        {student.studentClass}
+                                      </span>
+                                    ) : null}
                                   </div>
 
-                                  {/* Email column (Col span 4) */}
-                                  <div className="col-span-4 min-w-0">
+                                  {/* Email column */}
+                                  <div className="col-span-3 min-w-0 md:col-span-3">
                                     <p className="text-2xs text-slate-600 font-semibold truncate">{student.email}</p>
                                     {student.phone && <p className="text-[10px] text-slate-400 font-medium truncate mt-0.5">{student.phone}</p>}
                                   </div>
 
-                                  {/* Books column (Col span 3) */}
-                                  <div className="col-span-3 flex items-center justify-between md:justify-end shrink-0">
+                                  {activeClassFilter === "all" && assignedClasses.length > 1 ? (
+                                    <div className="hidden md:block col-span-2 min-w-0">
+                                      <span className="px-2 py-0.5 rounded-full bg-[#8AC926]/10 text-[#5a8a18] text-[10px] font-bold border border-[#8AC926]/20">
+                                        {student.studentClass ?? "—"}
+                                      </span>
+                                    </div>
+                                  ) : null}
+
+                                  {/* Books column */}
+                                  <div className={`col-span-3 flex items-center justify-between md:justify-end shrink-0 ${activeClassFilter === "all" && assignedClasses.length > 1 ? "md:col-span-3" : "md:col-span-5"}`}>
                                     <span className="md:hidden text-3xs font-extrabold text-slate-400 uppercase tracking-wider">Books:</span>
                                     <span className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 text-2xs font-bold border border-slate-200/60 flex items-center gap-1.5 flex-wrap">
                                       <span>{totalBooks} Books</span>
@@ -1502,7 +1603,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                   {selectedStudentForBooks.name}'s Reading Progress
                 </h3>
                 <p className="text-2xs font-semibold text-slate-500 mt-0.5">
-                  {selectedStudentForBooks.email} {selectedStudentForBooks.phone ? `• ${selectedStudentForBooks.phone}` : ""} • {user?.studentClass} Class
+                  {selectedStudentForBooks.email} {selectedStudentForBooks.phone ? `• ${selectedStudentForBooks.phone}` : ""} • {selectedStudentForBooks.studentClass ?? classFilterLabel} Class
                 </p>
               </div>
               <button

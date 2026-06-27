@@ -63,12 +63,23 @@ export async function processRecurringTasks() {
         },
       });
     } else {
+      const classList = rTask.studentClass.split(",").map((c) => c.trim()).filter(Boolean);
       teachers = await prisma.user.findMany({
         where: {
           role: "TEACHER",
-          studentClass: { in: rTask.studentClass.split(",") },
           status: "ACTIVE",
           isDeleted: false,
+          OR: [
+            {
+              teacherAssignedClasses: {
+                some: { className: { in: classList } },
+              },
+            },
+            {
+              studentClass: { in: classList },
+              teacherAssignedClasses: { none: {} },
+            },
+          ],
         },
       });
     }

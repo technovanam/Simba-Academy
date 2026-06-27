@@ -41,3 +41,27 @@ export function getDashboardPath(role: AuthUser["role"]) {
       return "/";
   }
 }
+
+const TEACHER_CLASS_FILTER_KEY = "teacherActiveClassFilter";
+
+export function getTeacherAssignedClasses(user: AuthUser | null | undefined): string[] {
+  if (!user) return [];
+  if (user.assignedClasses && user.assignedClasses.length > 0) return user.assignedClasses;
+  if (user.studentClass) return [user.studentClass];
+  return [];
+}
+
+export function getTeacherClassFilter(): string {
+  if (typeof window === "undefined") return "all";
+  return sessionStorage.getItem(TEACHER_CLASS_FILTER_KEY) || "all";
+}
+
+export function setTeacherClassFilter(value: string) {
+  if (typeof window === "undefined") return;
+  sessionStorage.setItem(TEACHER_CLASS_FILTER_KEY, value);
+}
+
+export function teacherClassQueryParam(filter: string): string | undefined {
+  if (!filter || filter === "all") return undefined;
+  return filter;
+}

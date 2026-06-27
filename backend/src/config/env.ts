@@ -51,14 +51,14 @@ export const env = {
   /** When false, skip Zoho entirely — registration and enrollment work without payment. */
   PAYMENTS_ENABLED: process.env.PAYMENTS_ENABLED === "true",
   /** One-time student platform registration fee (INR) */
-  STUDENT_REGISTRATION_FEE_INR: envInt("STUDENT_REGISTRATION_FEE_INR", 1),
+  STUDENT_REGISTRATION_FEE_INR: envInt("STUDENT_REGISTRATION_FEE_INR", 120),
 
   // ── Email (Resend API) ─────────────────────────────────────────
   RESEND_API_KEY: envString("RESEND_API_KEY", "re_xxxxxxxxx"),
   EMAIL_FROM: process.env.EMAIL_FROM ?? "contact@simbapreschool.in",
   EMAIL_TO: process.env.EMAIL_TO ?? "contact@simbapreschool.in",
   PLATFORM_NAME: process.env.PLATFORM_NAME ?? "Simba Academy",
-  FRONTEND_URL: (process.env.FRONTEND_URL ?? "http://localhost:5173").replace(/\/$/, ""),
+  FRONTEND_URL: (process.env.FRONTEND_URL ?? "https://simbapreschool.in").replace(/\/$/, ""),
   PASSWORD_RESET_EXPIRES_MINUTES: envInt("PASSWORD_RESET_EXPIRES_MINUTES", 30),
 
   // ── Domains (CORS) ─────────────────────────────────────────────
@@ -81,7 +81,7 @@ export const env = {
 
   // ── Rate Limiting ──────────────────────────────────────────────
   RATE_LIMIT_WINDOW_MS: envInt("RATE_LIMIT_WINDOW_MS", 15 * 60 * 1000), // 15 min
-  RATE_LIMIT_MAX: envInt("RATE_LIMIT_MAX", 100),
+  RATE_LIMIT_MAX: envInt("RATE_LIMIT_MAX", 10000),
 
   // ── Admin Bootstrap (server-side only, not exposed in UI) ───────
   // No password default on purpose — if DEFAULT_ADMIN_PASSWORD is unset the

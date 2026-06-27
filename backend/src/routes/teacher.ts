@@ -8,6 +8,13 @@ import { sendEmail, getTaskCompletionAdminHtml } from "../services/email.js";
 import { env } from "../config/env.js";
 import { createAdminNotification } from "../services/adminNotifications.js";
 import { getFileMimeType } from "../services/googleDriveService.js";
+import {
+  buildLessonPlanClassFilter,
+  buildStudentClassFilter,
+  getTeacherAssignedClasses,
+  resolveActiveClassFilter,
+  teacherMatchesAnyClass,
+} from "../utils/teacherClasses.js";
 
 const router = Router();
 
@@ -128,14 +135,13 @@ router.get("/books", async (_req, res, next) => {
 router.get("/lesson-plans", async (req, res, next) => {
   try {
     const teacherId = req.user!.userId;
-    const teacher = await prisma.user.findFirst({
-      where: { id: teacherId, isDeleted: false },
-      select: { studentClass: true },
-    });
+    const assignedClasses = await getTeacherAssignedClasses(teacherId);
+    const activeClasses = resolveActiveClassFilter(
+      assignedClasses,
+      typeof req.query.class === "string" ? req.query.class : null
+    );
 
-    const targetClassFilter = teacher?.studentClass
-      ? { OR: [{ targetClass: null }, { targetClass: "" }, { targetClass: { contains: teacher.studentClass } }] }
-      : { OR: [{ targetClass: null }, { targetClass: "" }] };
+    const targetClassFilter = buildLessonPlanClassFilter(activeClasses);
 
     const plans = await prisma.lessonPlan.findMany({
       where: {
@@ -147,7 +153,7 @@ router.get("/lesson-plans", async (req, res, next) => {
     });
 
     const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const sanitizedPlans = plans.map(plan => {
+    const sanitizedPlans = plans.map((plan) => {
       if (plan.fileUrl && plan.updatedAt < oneWeekAgo) {
         return { ...plan, fileUrl: null, fileName: null };
       }
@@ -163,14 +169,8 @@ router.get("/lesson-plans", async (req, res, next) => {
 router.get("/lesson-plans/:id", async (req, res, next) => {
   try {
     const teacherId = req.user!.userId;
-    const teacher = await prisma.user.findFirst({
-      where: { id: teacherId, isDeleted: false },
-      select: { studentClass: true },
-    });
-
-    const targetClassFilter = teacher?.studentClass
-      ? { OR: [{ targetClass: null }, { targetClass: { contains: teacher.studentClass } }] }
-      : { targetClass: null };
+    const assignedClasses = await getTeacherAssignedClasses(teacherId);
+    const targetClassFilter = buildLessonPlanClassFilter(assignedClasses);
 
     const plan = await prisma.lessonPlan.findFirst({
       where: {
@@ -206,7 +206,7 @@ router.get("/tasks", async (req, res, next) => {
         recurringTask: { select: { repeatDay: true, isActive: true } },
       },
     });
-    res.json(tasks);
+    res.json(tasks.map((t) => ({ ...t, assignedDate: t.createdAt })));
   } catch (err) {
     next(err);
   }
@@ -323,25 +323,28 @@ router.patch("/tasks/:id/proof", validate(submitTaskProofSchema), async (req, re
   }
 });
 
-// ── List Students in Teacher's Class ───────────────────────────────────
+// ── List Students in Teacher's Class(es) ───────────────────────────────
 router.get("/students", async (req, res, next) => {
   try {
     const teacherId = req.user!.userId;
-    const teacher = await prisma.user.findFirst({
-      where: { id: teacherId, isDeleted: false },
-      select: { studentClass: true },
-    });
-    if (!teacher || !teacher.studentClass) {
+    const assignedClasses = await getTeacherAssignedClasses(teacherId);
+    if (assignedClasses.length === 0) {
       return res.json([]);
     }
+
+    const activeClasses = resolveActiveClassFilter(
+      assignedClasses,
+      typeof req.query.class === "string" ? req.query.class : null
+    );
+
     const classRules = await prisma.driveAccessRule.findMany({
       where: {
         audience: { in: ["STUDENT", "BOTH"] },
         OR: [
           { targetClass: null },
           { targetClass: "" },
-          { targetClass: { contains: teacher.studentClass } }
-        ]
+          ...activeClasses.map((cls) => ({ targetClass: { contains: cls } })),
+        ],
       },
       select: {
         fileId: true,
@@ -352,6 +355,7 @@ router.get("/students", async (req, res, next) => {
 
     const classBooks: Array<{ fileId: string; title: string; targetClass: string | null }> = [];
     for (const rule of classRules) {
+      if (!teacherMatchesAnyClass(activeClasses, rule.targetClass)) continue;
       const mimeType = await getFileMimeType(rule.fileId);
       if (mimeType !== "application/vnd.google-apps.folder") {
         classBooks.push(rule);
@@ -361,8 +365,8 @@ router.get("/students", async (req, res, next) => {
     const students = await prisma.user.findMany({
       where: {
         role: "STUDENT",
-        studentClass: teacher.studentClass,
         isDeleted: false,
+        ...buildStudentClassFilter(activeClasses),
       },
       select: {
         id: true,
@@ -371,6 +375,7 @@ router.get("/students", async (req, res, next) => {
         lastName: true,
         email: true,
         phone: true,
+        studentClass: true,
         createdAt: true,
         status: true,
         notifications: {
@@ -391,7 +396,11 @@ router.get("/students", async (req, res, next) => {
     const mappedStudents = students.map((student) => {
       const bookNotifications = student.notifications.filter((n) => n.storyBookId || n.fileId);
 
-      const booksProgress = classBooks.map((book) => {
+      const relevantBooks = classBooks.filter((book) =>
+        teacherMatchesAnyClass([student.studentClass ?? ""], book.targetClass)
+      );
+
+      const booksProgress = relevantBooks.map((book) => {
         const notif = bookNotifications.find((n) => n.fileId === book.fileId);
         return {
           id: book.fileId,
@@ -411,6 +420,7 @@ router.get("/students", async (req, res, next) => {
         lastName: student.lastName,
         email: student.email,
         phone: student.phone,
+        studentClass: student.studentClass,
         createdAt: student.createdAt,
         status: student.status,
         books: booksProgress,

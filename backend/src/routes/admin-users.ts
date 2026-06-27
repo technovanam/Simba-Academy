@@ -14,6 +14,12 @@ import { hardDeleteUserById } from "../services/hardDeleteUser.js";
 import { env } from "../config/env.js";
 import { generateEmployeeId, generateResetToken, generateTemporaryPassword } from "../utils/password.js";
 import { buildPasswordResetUrl } from "../utils/passwordResetUrl.js";
+import {
+  computeClassStrength,
+  getTeacherAssignedClasses,
+  normalizeClassList,
+  syncTeacherAssignedClasses,
+} from "../utils/teacherClasses.js";
 
 const router = Router();
 
@@ -35,8 +41,36 @@ const userListSelect = {
   _count: { select: { payments: true, uploadedFiles: true } },
 } as const;
 
+const teacherListSelect = {
+  ...userListSelect,
+  teacherAssignedClasses: { select: { className: true }, orderBy: { className: "asc" as const } },
+} as const;
+
 function buildFullName(firstName: string, lastName: string): string {
   return `${firstName.trim()} ${lastName.trim()}`.trim();
+}
+
+function mapTeacherResponse(
+  teacher: {
+    teacherAssignedClasses: { className: string }[];
+    studentClass: string | null;
+    [key: string]: unknown;
+  },
+  classStrength: number
+) {
+  const assignedClasses =
+    teacher.teacherAssignedClasses.length > 0
+      ? teacher.teacherAssignedClasses.map((r) => r.className)
+      : teacher.studentClass
+        ? [teacher.studentClass]
+        : [];
+
+  const { teacherAssignedClasses: _rows, studentClass: _sc, ...rest } = teacher;
+  return {
+    ...rest,
+    assignedClasses,
+    classStrength,
+  };
 }
 
 async function sendPasswordResetEmail(userId: string): Promise<void> {
@@ -144,6 +178,7 @@ router.get("/teachers", async (req, res, next) => {
         { lastName: { contains: search } },
         { employeeId: { contains: search } },
         { studentClass: { contains: search } },
+        { teacherAssignedClasses: { some: { className: { contains: search } } } },
       ];
     }
 
@@ -155,7 +190,7 @@ router.get("/teachers", async (req, res, next) => {
     const teachers = await prisma.user.findMany({
       where,
       orderBy,
-      select: userListSelect,
+      select: teacherListSelect,
     });
 
     const classStrengths = await prisma.user.groupBy({
@@ -171,10 +206,15 @@ router.get("/teachers", async (req, res, next) => {
       }
     }
 
-    const teachersWithStrength = teachers.map((teacher) => ({
-      ...teacher,
-      classStrength: teacher.studentClass ? (strengthMap[teacher.studentClass] ?? 0) : 0,
-    }));
+    const teachersWithStrength = teachers.map((teacher) => {
+      const assignedClasses =
+        teacher.teacherAssignedClasses.length > 0
+          ? teacher.teacherAssignedClasses.map((r) => r.className)
+          : teacher.studentClass
+            ? [teacher.studentClass]
+            : [];
+      return mapTeacherResponse(teacher, computeClassStrength(assignedClasses, strengthMap));
+    });
 
     res.json(teachersWithStrength);
   } catch (err) {
@@ -185,8 +225,12 @@ router.get("/teachers", async (req, res, next) => {
 // ── Create Teacher ────────────────────────────────────────────────────
 router.post("/teachers", validate(createTeacherSchema), async (req, res, next) => {
   try {
-    const { firstName, lastName, email, phone, studentClass } = req.body;
+    const { firstName, lastName, email, phone, assignedClasses } = req.body;
     const normalizedEmail = email.toLowerCase().trim();
+    const classes = normalizeClassList(assignedClasses);
+    if (classes.length === 0) {
+      throw new AppError("At least one assigned class is required", 400);
+    }
 
     const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } });
     if (existing && !existing.isDeleted) {
@@ -206,14 +250,17 @@ router.post("/teachers", validate(createTeacherSchema), async (req, res, next) =
         email: normalizedEmail,
         password: hashedPassword,
         phone: phone?.trim() || null,
-        studentClass: studentClass || null,
+        studentClass: null,
         role: "TEACHER",
         employeeId,
         status: "ACTIVE",
         mustChangePassword: true,
         createdBy: req.user!.userId,
+        teacherAssignedClasses: {
+          create: classes.map((className) => ({ className })),
+        },
       },
-      select: userListSelect,
+      select: teacherListSelect,
     });
 
     let emailSent = false;
@@ -239,8 +286,18 @@ router.post("/teachers", validate(createTeacherSchema), async (req, res, next) =
       );
     }
 
+    const classStrengths = await prisma.user.groupBy({
+      by: ["studentClass"],
+      where: { role: "STUDENT", isDeleted: false },
+      _count: { id: true },
+    });
+    const strengthMap: Record<string, number> = {};
+    for (const item of classStrengths) {
+      if (item.studentClass) strengthMap[item.studentClass] = item._count.id;
+    }
+
     res.status(201).json({
-      ...teacher,
+      ...mapTeacherResponse(teacher, computeClassStrength(classes, strengthMap)),
       emailSent,
       emailWarning: emailSent
         ? undefined
@@ -261,7 +318,8 @@ router.patch("/teachers/:id", validate(updateTeacherSchema), async (req, res, ne
       throw new AppError("Teacher not found", 404);
     }
 
-    const data: Prisma.UserUpdateInput = { ...req.body };
+    const { assignedClasses, ...bodyFields } = req.body;
+    const data: Prisma.UserUpdateInput = { ...bodyFields };
     if (req.body.firstName || req.body.lastName) {
       const first = (req.body.firstName ?? teacher.firstName ?? teacher.name.split(" ")[0]) as string;
       const last = (req.body.lastName ?? teacher.lastName ?? "") as string;
@@ -288,10 +346,14 @@ router.patch("/teachers/:id", validate(updateTeacherSchema), async (req, res, ne
       }
     }
 
+    if (assignedClasses !== undefined) {
+      await syncTeacherAssignedClasses(teacher.id, assignedClasses);
+    }
+
     const updated = await prisma.user.update({
       where: { id: teacher.id },
       data,
-      select: userListSelect,
+      select: teacherListSelect,
     });
 
     if (temporaryPassword) {
@@ -318,8 +380,19 @@ router.patch("/teachers/:id", validate(updateTeacherSchema), async (req, res, ne
       }
     }
 
+    const assigned = await getTeacherAssignedClasses(updated.id);
+    const classStrengths = await prisma.user.groupBy({
+      by: ["studentClass"],
+      where: { role: "STUDENT", isDeleted: false },
+      _count: { id: true },
+    });
+    const strengthMap: Record<string, number> = {};
+    for (const item of classStrengths) {
+      if (item.studentClass) strengthMap[item.studentClass] = item._count.id;
+    }
+
     res.json({
-      ...updated,
+      ...mapTeacherResponse(updated, computeClassStrength(assigned, strengthMap)),
       emailSent: temporaryPassword ? emailSent : undefined,
       emailWarning: (temporaryPassword && !emailSent)
         ? "Welcome email could not be sent. Fix Resend API settings or read the backend log for the temporary password."

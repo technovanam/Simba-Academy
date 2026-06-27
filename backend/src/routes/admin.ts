@@ -786,11 +786,34 @@ router.get("/tasks", async (_req, res, next) => {
     const tasks = await prisma.task.findMany({
       orderBy: { createdAt: "desc" },
       include: {
-        teacher: { select: { name: true, email: true, studentClass: true } },
+        teacher: {
+          select: {
+            name: true,
+            email: true,
+            studentClass: true,
+            teacherAssignedClasses: { select: { className: true } },
+          },
+        },
         recurringTask: { select: { studentClass: true } },
       },
     });
-    res.json(tasks);
+    const mapped = tasks.map((task) => ({
+      ...task,
+      assignedDate: task.createdAt,
+      teacher: task.teacher
+        ? {
+            name: task.teacher.name,
+            email: task.teacher.email,
+            assignedClasses:
+              task.teacher.teacherAssignedClasses.length > 0
+                ? task.teacher.teacherAssignedClasses.map((r) => r.className)
+                : task.teacher.studentClass
+                  ? [task.teacher.studentClass]
+                  : [],
+          }
+        : null,
+    }));
+    res.json(mapped);
   } catch (err) {
     next(err);
   }
@@ -799,15 +822,7 @@ router.get("/tasks", async (_req, res, next) => {
 // ── Create/Assign Task ──────────────────────────────────────────────
 router.post("/tasks", validate(createTaskSchema), async (req, res, next) => {
   try {
-    const { title, description, dueDate, teacherId } = req.body;
-
-    // Verify teacher exists
-    const teacher = await prisma.user.findFirst({
-      where: { id: teacherId, role: "TEACHER" },
-    });
-    if (!teacher) {
-      throw new AppError("Teacher not found", 404);
-    }
+    const { title, description, dueDate, assignmentMode = "SINGLE", teacherId, teacherIds } = req.body;
 
     const due = new Date(dueDate);
     const today = new Date();
@@ -817,41 +832,79 @@ router.post("/tasks", validate(createTaskSchema), async (req, res, next) => {
       throw new AppError("Due date cannot be in the past", 400);
     }
 
-    const task = await prisma.task.create({
-      data: {
-        title: title.trim(),
-        description: description?.trim() || null,
-        dueDate: due,
-        teacherId,
-        status: "PENDING",
+    let targetTeacherIds: string[] = [];
+    if (assignmentMode === "ALL") {
+      const allTeachers = await prisma.user.findMany({
+        where: { role: "TEACHER", status: "ACTIVE", isDeleted: false },
+        select: { id: true },
+      });
+      targetTeacherIds = allTeachers.map((t) => t.id);
+    } else if (assignmentMode === "MULTIPLE") {
+      targetTeacherIds = [...new Set(teacherIds as string[])];
+    } else {
+      targetTeacherIds = [teacherId as string];
+    }
+
+    if (targetTeacherIds.length === 0) {
+      throw new AppError("No teachers selected for assignment", 400);
+    }
+
+    const teachers = await prisma.user.findMany({
+      where: {
+        id: { in: targetTeacherIds },
+        role: "TEACHER",
+        isDeleted: false,
       },
-      include: { teacher: { select: { id: true, name: true, email: true } } },
+      select: { id: true, name: true, email: true },
     });
 
-    // Log Task Audit History
+    if (teachers.length !== targetTeacherIds.length) {
+      throw new AppError("One or more teachers not found", 404);
+    }
+
     const adminUser = await prisma.user.findUnique({
       where: { id: req.user!.userId },
       select: { name: true },
     });
 
-    await prisma.taskAudit.create({
-      data: {
-        taskId: task.id,
-        action: "CREATED",
-        statusTo: "PENDING",
-        changedById: req.user!.userId,
-        changedByName: adminUser?.name || "Admin",
-        comments: "Task manually assigned by Admin.",
-      },
-    });
+    const createdTasks = [];
+    for (const teacher of teachers) {
+      const task = await prisma.task.create({
+        data: {
+          title: title.trim(),
+          description: description?.trim() || null,
+          dueDate: due,
+          teacherId: teacher.id,
+          status: "PENDING",
+        },
+        include: { teacher: { select: { id: true, name: true, email: true } } },
+      });
 
-    try {
-      await notifyTeacherOfNewTask(teacher, task);
-    } catch (notifyErr) {
-      console.error("Failed to notify teacher of new task:", notifyErr);
+      await prisma.taskAudit.create({
+        data: {
+          taskId: task.id,
+          action: "CREATED",
+          statusTo: "PENDING",
+          changedById: req.user!.userId,
+          changedByName: adminUser?.name || "Admin",
+          comments: `Task manually assigned by Admin (${assignmentMode}).`,
+        },
+      });
+
+      try {
+        await notifyTeacherOfNewTask(teacher, task);
+      } catch (notifyErr) {
+        console.error("Failed to notify teacher of new task:", notifyErr);
+      }
+
+      createdTasks.push({ ...task, assignedDate: task.createdAt });
     }
 
-    res.status(201).json(task);
+    res.status(201).json({
+      tasks: createdTasks,
+      count: createdTasks.length,
+      ...(createdTasks.length === 1 ? createdTasks[0] : {}),
+    });
   } catch (err) {
     next(err);
   }

@@ -5,7 +5,6 @@ import { api, formatApiError, type TeacherNotification } from "../../../lib/api"
 import { TEACHER_TAB_PATHS } from "../../../lib/teacherRoutes";
 import { AdminPageBody, AdminPageHeader, AdminPageShell } from "../../AdminPageShell";
 import { AdminListEmpty, AdminRecordList, adminListRowStackClass } from "../../AdminListUi";
-import { portalDashboardBodyClass } from "../../PortalPageShell";
 
 interface TeacherNotificationsPageProps {
   token: string;
@@ -76,8 +75,8 @@ export function TeacherNotificationsPage({ token, onError, onRefresh }: TeacherN
   }
 
   return (
-    <div className={`${portalDashboardBodyClass} h-full overflow-visible`}>
-      <AdminPageShell className="h-full flex flex-col min-h-0 overflow-visible">
+    <AdminPageShell className="h-full flex flex-col min-h-0 overflow-hidden">
+      <div className="shrink-0">
         <AdminPageHeader
           title="Notifications"
           description="Alerts for new tasks, story books, lesson plans, and task reviews."
@@ -99,12 +98,13 @@ export function TeacherNotificationsPage({ token, onError, onRefresh }: TeacherN
             ) : null
           }
         />
-        <AdminPageBody className="flex-1 min-h-0 flex flex-col overflow-hidden">
-          {notifications.length === 0 ? (
-            <AdminListEmpty message="No notifications yet. You'll be alerted here when admins add tasks, story books, or lesson plans." />
-          ) : (
-            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex-1 min-h-0 flex flex-col">
-              <div className="overflow-y-auto modern-scrollbar flex-1 min-h-0 px-2 sm:px-3 py-2.5 sm:py-3 space-y-1.5">
+      </div>
+      <AdminPageBody className="flex-1 min-h-0 flex flex-col overflow-hidden !mt-0 !pt-0">
+        {notifications.length === 0 ? (
+          <AdminListEmpty message="No notifications yet. You'll be alerted here when admins add tasks, story books, or lesson plans." />
+        ) : (
+          <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex-1 min-h-0 flex flex-col">
+            <div className="overflow-y-auto flex-1 min-h-0 px-2 sm:px-3 py-2.5 sm:py-3 space-y-1.5">
                 {notifications.map((n) => (
                   <div
                     key={n.id}
@@ -191,11 +191,10 @@ export function TeacherNotificationsPage({ token, onError, onRefresh }: TeacherN
                     </div>
                   </div>
                 ))}
-              </div>
             </div>
-          )}
-        </AdminPageBody>
-      </AdminPageShell>
-    </div>
+          </div>
+        )}
+      </AdminPageBody>
+    </AdminPageShell>
   );
 }

@@ -48,6 +48,20 @@ model User {
   teacherNotifications TeacherNotification[]
   adminNotifications   AdminNotification[]
   auditLogs            AuditLog[]
+  teacherAssignedClasses TeacherAssignedClass[]
+}
+
+model TeacherAssignedClass {
+  id        String   @id @default(cuid())
+  teacherId String
+  className String
+  createdAt DateTime @default(now())
+
+  teacher User @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@unique([teacherId, className])
+  @@index([className])
+  @@index([teacherId])
 }
 
 model PasswordResetToken {
