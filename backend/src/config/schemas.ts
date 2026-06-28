@@ -185,7 +185,7 @@ export const createRecurringTaskSchema = z.object({
   description: z.string().optional(),
   studentClass: z.string().optional().nullable(),
   teacherIds: z.array(z.string()).optional(),
-  repeatDay: z.enum(["DAILY", "SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "TODAY"]),
+  repeatDay: z.string(),
   isActive: z.boolean().optional(),
   folderId: z.string().optional().nullable(),
 }).refine((data) => {
@@ -202,7 +202,7 @@ export const updateRecurringTaskSchema = z.object({
   description: z.string().optional(),
   studentClass: z.string().optional().nullable(),
   teacherIds: z.array(z.string()).optional(),
-  repeatDay: z.enum(["DAILY", "SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "TODAY"]).optional(),
+  repeatDay: z.string().optional(),
   isActive: z.boolean().optional(),
   folderId: z.string().optional().nullable(),
 });

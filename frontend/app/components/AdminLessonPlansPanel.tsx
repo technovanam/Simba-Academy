@@ -4,7 +4,7 @@ import {
   formatApiError,
   API_URL,
   type LessonPlan,
-  type User,
+  type AuthUser,
 } from "../lib/api";
 import { isActionBusy } from "../lib/actionGuard";
 import { AdminPageBody, AdminPageHeader, AdminPageShell } from "./AdminPageShell";
@@ -228,11 +228,12 @@ const emptyForm = {
   fileName: "",
   targetClass: "",
   assignedTeacherIds: [] as string[],
+  planDate: "",
 };
 
 export function AdminLessonPlansPanel({ token, onNotify, onError }: AdminLessonPlansPanelProps) {
   const [plans, setPlans] = useState<LessonPlan[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<AuthUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
@@ -300,6 +301,7 @@ export function AdminLessonPlansPanel({ token, onNotify, onError }: AdminLessonP
       fileName: plan.fileName ?? "",
       targetClass: plan.targetClass ?? "",
       assignedTeacherIds: plan.assignedTeacherIds ? plan.assignedTeacherIds.split(",") : [],
+      planDate: plan.planDate ? plan.planDate.split("T")[0] : "",
     });
     setTeacherSearch("");
     setShowForm(true);
@@ -345,7 +347,7 @@ export function AdminLessonPlansPanel({ token, onNotify, onError }: AdminLessonP
       const body = {
         title: form.title.trim(),
         courseId: null,
-        planDate: null,
+        planDate: form.planDate ? new Date(form.planDate).toISOString() : null,
         content: form.title.trim(),
         materialsNeeded: form.materialsNeeded.trim() || null,
         isPublished: true,
@@ -595,16 +597,18 @@ export function AdminLessonPlansPanel({ token, onNotify, onError }: AdminLessonP
             </h3>
 
             <form onSubmit={handleSubmit} className="space-y-4 text-xs" noValidate>
-              <div>
-                <label className="block text-slate-700 font-bold mb-1.5">Title</label>
-                <input
-                  required
-                  minLength={2}
-                  value={form.title}
-                  onChange={(e) => setForm({ ...form, title: e.target.value })}
-                  className="w-full rounded-xl border border-slate-200 px-4 py-2.5 outline-none focus:border-[#8AC926]"
-                  placeholder="e.g. UKG Phonics — Week 3"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <label className="block text-slate-700 font-bold mb-1.5">Title</label>
+                  <input
+                    required
+                    minLength={2}
+                    value={form.title}
+                    onChange={(e) => setForm({ ...form, title: e.target.value })}
+                    className="w-full rounded-xl border border-slate-200 px-4 py-2.5 outline-none focus:border-[#8AC926]"
+                    placeholder="e.g. UKG Phonics — Week 3"
+                  />
+                </div>
               </div>
               <div>
                 <label className="block text-slate-700 font-bold mb-2">Class Assignment</label>
@@ -667,7 +671,7 @@ export function AdminLessonPlansPanel({ token, onNotify, onError }: AdminLessonP
                     ))
                     .map((teacher) => {
                       const selectedClasses = form.targetClass
-                        ? form.targetClass.split(",").map((c) => c.trim()).filter(Boolean)
+                        ? form.targetClass.split(",").map((c: string) => c.trim()).filter(Boolean)
                         : [];
                       
                       const teacherClasses = teacher.assignedClasses && teacher.assignedClasses.length > 0
@@ -698,7 +702,7 @@ export function AdminLessonPlansPanel({ token, onNotify, onError }: AdminLessonP
                                   ? "bg-[#8AC926] text-white"
                                   : "bg-slate-200 text-slate-600"
                             }`}>
-                              {teacher.name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()}
+                              {teacher.name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()}
                             </div>
                             <div className="min-w-0">
                               <p className={`font-bold truncate ${isAutoIncluded ? "text-slate-500" : "text-slate-700"}`}>
@@ -706,7 +710,7 @@ export function AdminLessonPlansPanel({ token, onNotify, onError }: AdminLessonP
                               </p>
                               <p className={`truncate ${isAutoIncluded ? "text-emerald-600 font-medium text-[10px]" : "text-slate-400 text-[10px]"}`}>
                                 {isAutoIncluded 
-                                  ? `Automatically included via ${teacherClasses.find(c => selectedClasses.includes(c))}` 
+                                  ? `Automatically included via ${teacherClasses.find((c: string) => selectedClasses.includes(c))}` 
                                   : teacherClasses.length > 0 ? teacherClasses.join(", ") : "No classes assigned"}
                               </p>
                             </div>

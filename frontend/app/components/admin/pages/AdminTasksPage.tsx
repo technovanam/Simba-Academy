@@ -83,6 +83,7 @@ import { RecentPaymentCard, sortPaymentsNewestFirst } from "../../RecentPaymentC
 import { StoryBookActions } from "../../StoryBookActions";
 import { GalleryItemActions } from "../../GalleryItemActions";
 import { ThemeSelect } from "../../ThemeSelect";
+import { ThemeDatePicker } from "../../ThemeDatePicker";
 import { PortalDateRangePicker } from "../../PortalDateRangePicker";
 import { AdminSettingsPanel } from "../../AdminSettingsPanel";
 import { LIBRARY_AUDIENCE_OPTIONS, audienceLabel } from "../../../lib/library";
@@ -2084,8 +2085,12 @@ export function AdminTasksPage() {
                                         <td className="px-4 py-3 align-middle text-xs font-semibold text-slate-650 whitespace-normal">
                                           {rt.repeatDay === "TODAY" ? (
                                             <span className="font-bold text-indigo-650">Today Only</span>
+                                          ) : rt.repeatDay === "DAILY" ? (
+                                            <>Repeats every <span className="font-bold text-indigo-650">Every Day</span></>
+                                          ) : rt.repeatDay.includes("-") ? (
+                                            <span className="font-bold text-indigo-650">{new Date(rt.repeatDay).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" })}</span>
                                           ) : (
-                                            <>Repeats every <span className="font-bold text-indigo-650">{rt.repeatDay === "DAILY" ? "Every Day" : rt.repeatDay}</span></>
+                                            <>Repeats every <span className="font-bold text-indigo-650">{rt.repeatDay}</span></>
                                           )}
                                         </td>
                                         <td className="px-4 py-3 align-middle whitespace-nowrap">
@@ -2245,7 +2250,11 @@ export function AdminTasksPage() {
                                       </div>
                                       <div>
                                         <span className="text-slate-400 font-semibold block uppercase text-[9px] tracking-wider mb-0.5">Repeat</span>
-                                        <span className="text-indigo-650 font-bold">{rt.repeatDay === "TODAY" ? "Today Only" : rt.repeatDay}</span>
+                                        <span className="text-indigo-650 font-bold">
+                                          {rt.repeatDay === "TODAY" ? "Today Only" : 
+                                           rt.repeatDay === "DAILY" ? "Every Day" :
+                                           rt.repeatDay.includes("-") ? new Date(rt.repeatDay).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" }) : rt.repeatDay}
+                                        </span>
                                       </div>
                                       <div>
                                         <span className="text-slate-400 font-semibold block uppercase text-[9px] tracking-wider mb-0.5">Status</span>
@@ -2556,7 +2565,7 @@ export function AdminTasksPage() {
                                 </div>
                               </div>
                             ) : (
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                                 {ALL_CLASS_LEVELS.map((cls) => {
                                   const selectedClasses = recurringTaskForm.studentClass
                                     ? recurringTaskForm.studentClass.split(",").map((c) => c.trim()).filter(Boolean)
@@ -2576,14 +2585,14 @@ export function AdminTasksPage() {
                                           studentClass: [...next].join(","),
                                         });
                                       }}
-                                      className={`flex items-center gap-3 w-full p-3 rounded-xl border text-left transition ${
+                                      className={`flex items-center gap-2 w-full p-2 rounded-xl border text-left transition ${
                                         isSelected
                                           ? "border-[#8AC926] bg-[#8AC926]/5 ring-1 ring-[#8AC926]/20 shadow-sm"
                                           : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
                                       }`}
                                     >
                                       <div
-                                        className={`w-10 h-10 rounded-full flex items-center justify-center text-[11px] font-extrabold shrink-0 ${
+                                        className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-extrabold shrink-0 ${
                                           isSelected
                                             ? "bg-[#8AC926]/20 text-[#8AC926]"
                                             : "bg-slate-100 text-slate-600"
@@ -2592,10 +2601,7 @@ export function AdminTasksPage() {
                                         {classLevelAbbrev(cls)}
                                       </div>
                                       <div className="min-w-0 flex-1">
-                                        <p className="text-xs font-bold text-slate-800">{cls}</p>
-                                        <p className="text-[10px] text-slate-500">
-                                          Assign to teachers in this class
-                                        </p>
+                                        <p className="text-[11px] font-bold text-slate-800">{cls}</p>
                                       </div>
                                       <div className="shrink-0">
                                         <div
@@ -2713,22 +2719,46 @@ export function AdminTasksPage() {
                           </div>
 
                           <div>
-                            <label className="block text-slate-700 font-bold mb-1.5">Repeat Day</label>
-                            <ThemeSelect
-                              value={recurringTaskForm.repeatDay}
-                              onChange={(val) => setRecurringTaskForm({ ...recurringTaskForm, repeatDay: val })}
-                              options={[
-                                { id: "DAILY", label: "Every Day (Daily)" },
-                                { id: "TODAY", label: "Today Only" },
-                                { id: "MONDAY", label: "Monday" },
-                                { id: "TUESDAY", label: "Tuesday" },
-                                { id: "WEDNESDAY", label: "Wednesday" },
-                                { id: "THURSDAY", label: "Thursday" },
-                                { id: "FRIDAY", label: "Friday" },
-                                { id: "SATURDAY", label: "Saturday" },
-                                { id: "SUNDAY", label: "Sunday" },
-                              ]}
-                            />
+                            <label className="block text-slate-700 font-bold mb-1.5">Repeat Day / Date</label>
+                            <div className="flex flex-row gap-2">
+                              <div className={!["DAILY", "TODAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"].includes(recurringTaskForm.repeatDay) ? "w-1/2" : "w-full"}>
+                                <ThemeSelect
+                                  value={
+                                    ["DAILY", "TODAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"].includes(recurringTaskForm.repeatDay)
+                                      ? recurringTaskForm.repeatDay
+                                      : "SPECIFIC_DATE"
+                                  }
+                                  onChange={(val) => {
+                                    if (val === "SPECIFIC_DATE") {
+                                      setRecurringTaskForm({ ...recurringTaskForm, repeatDay: new Date().toISOString().split("T")[0] });
+                                    } else {
+                                      setRecurringTaskForm({ ...recurringTaskForm, repeatDay: val });
+                                    }
+                                  }}
+                                  options={[
+                                    { id: "DAILY", label: "Every Day (Daily)" },
+                                    { id: "TODAY", label: "Today Only" },
+                                    { id: "SPECIFIC_DATE", label: "Specific Date..." },
+                                    { id: "MONDAY", label: "Monday" },
+                                    { id: "TUESDAY", label: "Tuesday" },
+                                    { id: "WEDNESDAY", label: "Wednesday" },
+                                    { id: "THURSDAY", label: "Thursday" },
+                                    { id: "FRIDAY", label: "Friday" },
+                                    { id: "SATURDAY", label: "Saturday" },
+                                    { id: "SUNDAY", label: "Sunday" },
+                                  ]}
+                                />
+                              </div>
+                              {!["DAILY", "TODAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"].includes(recurringTaskForm.repeatDay) && (
+                                <div className="w-1/2">
+                                  <ThemeDatePicker
+                                    value={recurringTaskForm.repeatDay}
+                                    onChange={(val) => setRecurringTaskForm({ ...recurringTaskForm, repeatDay: val })}
+                                    minDate={localDateInputMin()}
+                                  />
+                                </div>
+                              )}
+                            </div>
                           </div>
                           <button
                             type="submit"

@@ -33,11 +33,13 @@ export async function processRecurringTasks() {
   const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0);
   const endOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
 
-  // Find all active recurring tasks for today (specific day OR DAILY OR TODAY)
+  const todayDateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
+  // Find all active recurring tasks for today (specific day OR DAILY OR TODAY OR specific date)
   const activeTasks = await prisma.recurringTask.findMany({
     where: {
       isActive: true,
-      repeatDay: { in: [dayName, "DAILY", "TODAY"] },
+      repeatDay: { in: [dayName, "DAILY", "TODAY", todayDateStr] },
     },
   });
 
