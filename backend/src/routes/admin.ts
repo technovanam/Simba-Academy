@@ -1075,11 +1075,12 @@ router.get("/lesson-plans", async (_req, res, next) => {
 
 router.post("/lesson-plans", validate(createLessonPlanSchema), async (req, res, next) => {
   try {
-    const { title, targetClass, courseId, planDate, content, materialsNeeded, isPublished, fileUrl, fileName } = req.body;
+    const { title, targetClass, courseId, planDate, content, materialsNeeded, isPublished, fileUrl, fileName, assignedTeacherIds } = req.body;
     const plan = await prisma.lessonPlan.create({
       data: {
         title,
         targetClass: targetClass || null,
+        assignedTeacherIds: assignedTeacherIds && assignedTeacherIds.length > 0 ? assignedTeacherIds.join(",") : null,
         courseId: courseId || null,
         planDate: planDate ? new Date(planDate) : null,
         content: content || title,
@@ -1115,12 +1116,13 @@ router.patch("/lesson-plans/:id", validate(updateLessonPlanSchema), async (req, 
       throw new AppError("Lesson plan not found", 404);
     }
 
-    const { title, targetClass, courseId, planDate, content, materialsNeeded, isPublished, fileUrl, fileName } = req.body;
+    const { title, targetClass, courseId, planDate, content, materialsNeeded, isPublished, fileUrl, fileName, assignedTeacherIds } = req.body;
     const plan = await prisma.lessonPlan.update({
       where: { id: String(req.params.id) },
       data: {
         ...(title !== undefined && { title }),
         ...(targetClass !== undefined && { targetClass: targetClass || null }),
+        ...(assignedTeacherIds !== undefined && { assignedTeacherIds: assignedTeacherIds && assignedTeacherIds.length > 0 ? assignedTeacherIds.join(",") : null }),
         ...(courseId !== undefined && { courseId: courseId || null }),
         ...(planDate !== undefined && { planDate: planDate ? new Date(planDate) : null }),
         ...(content !== undefined && { content: content || title }),

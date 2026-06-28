@@ -141,7 +141,7 @@ router.get("/lesson-plans", async (req, res, next) => {
       typeof req.query.class === "string" ? req.query.class : null
     );
 
-    const targetClassFilter = buildLessonPlanClassFilter(activeClasses);
+    const targetClassFilter = buildLessonPlanClassFilter(activeClasses, teacherId);
 
     const plans = await prisma.lessonPlan.findMany({
       where: {
@@ -170,7 +170,7 @@ router.get("/lesson-plans/:id", async (req, res, next) => {
   try {
     const teacherId = req.user!.userId;
     const assignedClasses = await getTeacherAssignedClasses(teacherId);
-    const targetClassFilter = buildLessonPlanClassFilter(assignedClasses);
+    const targetClassFilter = buildLessonPlanClassFilter(assignedClasses, teacherId);
 
     const plan = await prisma.lessonPlan.findFirst({
       where: {

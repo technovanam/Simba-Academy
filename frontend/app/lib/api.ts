@@ -1089,6 +1089,7 @@ export interface LessonPlan {
   fileUrl?: string | null;
   fileName?: string | null;
   targetClass?: string | null;
+  assignedTeacherIds?: string | null;
   createdAt: string;
   updatedAt: string;
   course?: { title: string; level?: string } | null;

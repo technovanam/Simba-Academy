@@ -249,6 +249,7 @@ model LessonPlan {
   planDate        DateTime?
   content         String    @db.Text
   materialsNeeded String?   @db.Text
+  assignedTeacherIds String?
   isPublished     Boolean   @default(true)
   fileUrl         String?
   fileName        String?

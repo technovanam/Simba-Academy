@@ -4,6 +4,7 @@ import {
   formatApiError,
   API_URL,
   type LessonPlan,
+  type User,
 } from "../lib/api";
 import { isActionBusy } from "../lib/actionGuard";
 import { AdminPageBody, AdminPageHeader, AdminPageShell } from "./AdminPageShell";
@@ -226,10 +227,12 @@ const emptyForm = {
   fileUrl: "",
   fileName: "",
   targetClass: "",
+  assignedTeacherIds: [] as string[],
 };
 
 export function AdminLessonPlansPanel({ token, onNotify, onError }: AdminLessonPlansPanelProps) {
   const [plans, setPlans] = useState<LessonPlan[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
@@ -239,12 +242,17 @@ export function AdminLessonPlansPanel({ token, onNotify, onError }: AdminLessonP
   const [uploading, setUploading] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [teacherSearch, setTeacherSearch] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const allPlans = await api.getLessonPlans(token);
+      const [allPlans, allUsers] = await Promise.all([
+        api.getLessonPlans(token),
+        api.getUsers(token)
+      ]);
       setPlans(allPlans);
+      setUsers(allUsers);
     } catch (err) {
       onError(formatApiError(err, "Failed to load lesson plans."));
     } finally {
@@ -279,6 +287,7 @@ export function AdminLessonPlansPanel({ token, onNotify, onError }: AdminLessonP
 
   function openCreate() {
     setForm({ ...emptyForm });
+    setTeacherSearch("");
     setShowForm(true);
   }
 
@@ -290,7 +299,9 @@ export function AdminLessonPlansPanel({ token, onNotify, onError }: AdminLessonP
       fileUrl: plan.fileUrl ?? "",
       fileName: plan.fileName ?? "",
       targetClass: plan.targetClass ?? "",
+      assignedTeacherIds: plan.assignedTeacherIds ? plan.assignedTeacherIds.split(",") : [],
     });
+    setTeacherSearch("");
     setShowForm(true);
   }
 
@@ -341,6 +352,7 @@ export function AdminLessonPlansPanel({ token, onNotify, onError }: AdminLessonP
         fileUrl: form.fileUrl || null,
         fileName: form.fileName || null,
         targetClass: form.targetClass || null,
+        assignedTeacherIds: form.assignedTeacherIds.length > 0 ? form.assignedTeacherIds : null,
       };
 
       if (form.id) {
@@ -635,6 +647,101 @@ export function AdminLessonPlansPanel({ token, onNotify, onError }: AdminLessonP
                 <p className="text-[10px] text-slate-400 mt-1.5">
                   Leave all unchecked to assign to **All Classes** (Send to all teachers).
                 </p>
+              </div>
+              <div>
+                <label className="block text-slate-700 font-bold mb-1.5">Additional Teachers</label>
+                <div className="relative mb-2">
+                  <input
+                    type="text"
+                    placeholder="Search teachers to add..."
+                    value={teacherSearch}
+                    onChange={(e) => setTeacherSearch(e.target.value)}
+                    className="w-full rounded-xl bg-white border border-slate-200 px-4 py-2 text-slate-900 outline-none focus:border-[#8AC926] transition"
+                  />
+                </div>
+                <div className="border border-slate-200 rounded-xl overflow-hidden max-h-48 overflow-y-auto bg-slate-50 p-2 space-y-1 modern-scrollbar">
+                  {users
+                    .filter((u) => u.role === "TEACHER" && (
+                      u.name.toLowerCase().includes(teacherSearch.toLowerCase()) ||
+                      (u.email ?? "").toLowerCase().includes(teacherSearch.toLowerCase())
+                    ))
+                    .map((teacher) => {
+                      const selectedClasses = form.targetClass
+                        ? form.targetClass.split(",").map((c) => c.trim()).filter(Boolean)
+                        : [];
+                      
+                      const teacherClasses = teacher.assignedClasses && teacher.assignedClasses.length > 0
+                        ? teacher.assignedClasses
+                        : teacher.studentClass
+                          ? [teacher.studentClass]
+                          : [];
+
+                      const isAutoIncluded = teacherClasses.some((c) => selectedClasses.includes(c));
+                      const isSelected = isAutoIncluded || form.assignedTeacherIds.includes(teacher.id);
+
+                      return (
+                        <div
+                          key={teacher.id}
+                          className={`flex items-center justify-between p-2 rounded-lg border text-left transition text-xs ${
+                            isAutoIncluded
+                              ? "border-emerald-100 bg-emerald-50/50 text-slate-500 cursor-default"
+                              : isSelected
+                                ? "border-[#8AC926] bg-[#8AC926]/5"
+                                : "border-transparent bg-white hover:border-slate-200"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-extrabold text-[10px] shrink-0 ${
+                              isAutoIncluded
+                                ? "bg-emerald-150 text-emerald-700"
+                                : isSelected
+                                  ? "bg-[#8AC926] text-white"
+                                  : "bg-slate-200 text-slate-600"
+                            }`}>
+                              {teacher.name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()}
+                            </div>
+                            <div className="min-w-0">
+                              <p className={`font-bold truncate ${isAutoIncluded ? "text-slate-500" : "text-slate-700"}`}>
+                                {teacher.name}
+                              </p>
+                              <p className={`truncate ${isAutoIncluded ? "text-emerald-600 font-medium text-[10px]" : "text-slate-400 text-[10px]"}`}>
+                                {isAutoIncluded 
+                                  ? `Automatically included via ${teacherClasses.find(c => selectedClasses.includes(c))}` 
+                                  : teacherClasses.length > 0 ? teacherClasses.join(", ") : "No classes assigned"}
+                              </p>
+                            </div>
+                          </div>
+                          {!isAutoIncluded && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newIds = isSelected
+                                  ? form.assignedTeacherIds.filter(id => id !== teacher.id)
+                                  : [...form.assignedTeacherIds, teacher.id];
+                                setForm({ ...form, assignedTeacherIds: newIds });
+                              }}
+                              className={`px-3 py-1.5 rounded-lg font-bold transition shrink-0 ml-2 ${
+                                isSelected
+                                  ? "bg-rose-50 text-rose-600 hover:bg-rose-100"
+                                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                              }`}
+                            >
+                              {isSelected ? "Remove" : "Add"}
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  {users.filter(u => u.role === "TEACHER").length === 0 && (
+                    <div className="p-4 text-center text-slate-500 italic">No teachers found in the system.</div>
+                  )}
+                </div>
+                {form.assignedTeacherIds.length > 0 && (
+                  <p className="text-emerald-600 font-bold mt-2 flex items-center gap-1 text-[11px]">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    {form.assignedTeacherIds.length} specific teacher{form.assignedTeacherIds.length !== 1 ? 's' : ''} added
+                  </p>
+                )}
               </div>
               <div>
                 <label className="block text-slate-700 font-bold mb-1.5">Materials needed (PDF or Word)</label>

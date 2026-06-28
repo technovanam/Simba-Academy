@@ -104,9 +104,9 @@ export async function syncTeacherAssignedClasses(
   return normalized;
 }
 
-export function buildLessonPlanClassFilter(assignedClasses: string[]): Prisma.LessonPlanWhereInput {
+export function buildLessonPlanClassFilter(assignedClasses: string[], teacherId: string): Prisma.LessonPlanWhereInput {
   if (assignedClasses.length === 0) {
-    return { OR: [{ targetClass: null }, { targetClass: "" }] };
+    return { OR: [{ targetClass: null }, { targetClass: "" }, { assignedTeacherIds: { contains: teacherId } }] };
   }
 
   const classConditions: Prisma.LessonPlanWhereInput[] = assignedClasses.map((cls) => ({
@@ -114,7 +114,7 @@ export function buildLessonPlanClassFilter(assignedClasses: string[]): Prisma.Le
   }));
 
   return {
-    OR: [{ targetClass: null }, { targetClass: "" }, ...classConditions],
+    OR: [{ targetClass: null }, { targetClass: "" }, { assignedTeacherIds: { contains: teacherId } }, ...classConditions],
   };
 }
 
