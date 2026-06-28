@@ -199,14 +199,46 @@ router.get("/lesson-plans/:id", async (req, res, next) => {
 // ── List Tasks Assigned to Current Teacher ───────────────────────────
 router.get("/tasks", async (req, res, next) => {
   try {
+    const classParam = req.query.class ? String(req.query.class) : "all";
+    const teacherId = String(req.user!.userId);
+
     const tasks = await prisma.task.findMany({
-      where: { teacherId: String(req.user!.userId) },
+      where: { teacherId },
       orderBy: { createdAt: "desc" },
       include: {
-        recurringTask: { select: { repeatDay: true, isActive: true } },
+        recurringTask: { 
+          select: { 
+            repeatDay: true, 
+            isActive: true,
+            studentClass: true,
+            assignedTeacherIds: true,
+            folder: { select: { studentClass: true } }
+          } 
+        },
       },
     });
-    res.json(tasks.map((t) => ({ ...t, assignedDate: t.createdAt })));
+
+    let filteredTasks = tasks;
+    if (classParam !== "all") {
+      filteredTasks = tasks.filter((t: any) => {
+        if (!t.recurringTask) return false; // One-off tasks have no class, so don't show them under specific class filters
+        const rt = t.recurringTask;
+        
+        let belongsToClass = false;
+        if (rt.studentClass) {
+          const classes = rt.studentClass.split(",").map((c: string) => c.trim());
+          if (classes.includes(classParam)) belongsToClass = true;
+        }
+        
+        if (rt.folder && rt.folder.studentClass === classParam) {
+          belongsToClass = true;
+        }
+
+        return belongsToClass;
+      });
+    }
+
+    res.json(filteredTasks.map((t) => ({ ...t, assignedDate: t.createdAt })));
   } catch (err) {
     next(err);
   }

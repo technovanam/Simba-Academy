@@ -258,7 +258,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
     try {
       if (tab === "overview") {
         const [allTasks, allPlans, students] = await Promise.all([
-          api.getTeacherTasks(token),
+          api.getTeacherTasks(token, classParam),
           api.getTeacherLessonPlans(token, classParam),
           api.getTeacherStudents(token, classParam),
         ]);
@@ -266,7 +266,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
         setLessonPlans(allPlans);
         setClassStudents(students);
       } else if (tab === "tasks") {
-        const allTasks = await api.getTeacherTasks(token);
+        const allTasks = await api.getTeacherTasks(token, classParam);
         setTasks(allTasks);
       } else if (tab === "library") {
         // Drive library is loaded by DriveLibraryPanel with class filter
@@ -309,7 +309,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
     if (!token) return;
     setRefreshingStudentBooks(true);
     try {
-      const students = await api.getTeacherStudents(token, classParam);
+      const students = await api.getTeacherStudents(token, teacherClassQueryParam(activeClassFilter));
       setClassStudents(students);
       const freshStudent = students.find(s => s.id === student.id);
       if (freshStudent) {
@@ -917,6 +917,11 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                           onChange={setTaskSearch}
                           placeholder="Search tasks..."
                           ariaLabel="Search tasks"
+                        />
+                        <TeacherClassFilter
+                          assignedClasses={assignedClasses}
+                          value={activeClassFilter}
+                          onChange={setActiveClassFilter}
                         />
                         <PillSelect
                           value={taskStatusFilter as (typeof taskStatusOptions)[number]["id"]}

@@ -53,36 +53,51 @@ export async function processRecurringTasks() {
 
   for (const rTask of activeTasks) {
     // Find all teachers to assign the task to
-    let teachers;
-    if (!rTask.studentClass) {
-      teachers = await prisma.user.findMany({
-        where: {
-          role: "TEACHER",
-          status: "ACTIVE",
-          isDeleted: false,
-        },
-      });
-    } else {
+    let classTeachers: any[] = [];
+    if (rTask.studentClass) {
       const classList = rTask.studentClass.split(",").map((c) => c.trim()).filter(Boolean);
-      teachers = await prisma.user.findMany({
-        where: {
-          role: "TEACHER",
-          status: "ACTIVE",
-          isDeleted: false,
-          OR: [
-            {
-              teacherAssignedClasses: {
-                some: { className: { in: classList } },
+      if (classList.length > 0) {
+        classTeachers = await prisma.user.findMany({
+          where: {
+            role: "TEACHER",
+            status: "ACTIVE",
+            isDeleted: false,
+            OR: [
+              {
+                teacherAssignedClasses: {
+                  some: { className: { in: classList } },
+                },
               },
-            },
-            {
-              studentClass: { in: classList },
-              teacherAssignedClasses: { none: {} },
-            },
-          ],
-        },
-      });
+              {
+                studentClass: { in: classList },
+                teacherAssignedClasses: { none: {} },
+              },
+            ],
+          },
+        });
+      }
     }
+
+    let individualTeachers: any[] = [];
+    if (rTask.assignedTeacherIds) {
+      const teacherIdList = rTask.assignedTeacherIds.split(",").map((id) => id.trim()).filter(Boolean);
+      if (teacherIdList.length > 0) {
+        individualTeachers = await prisma.user.findMany({
+          where: {
+            id: { in: teacherIdList },
+            role: "TEACHER",
+            status: "ACTIVE",
+            isDeleted: false,
+          },
+        });
+      }
+    }
+
+    // Merge and deduplicate by id
+    const teacherMap = new Map<string, any>();
+    for (const t of classTeachers) teacherMap.set(t.id, t);
+    for (const t of individualTeachers) teacherMap.set(t.id, t);
+    const teachers = Array.from(teacherMap.values());
 
     if (teachers.length === 0) {
       if (rTask.repeatDay === "TODAY") {
@@ -107,6 +122,15 @@ export async function processRecurringTasks() {
       });
 
       if (existing) {
+        if (existing.title !== rTask.title || existing.description !== rTask.description) {
+          await prisma.task.update({
+            where: { id: existing.id },
+            data: {
+              title: rTask.title,
+              description: rTask.description,
+            }
+          });
+        }
         skipped++;
         continue;
       }

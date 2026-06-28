@@ -199,17 +199,17 @@ model TaskFolder {
   recurringTasks RecurringTask[]
 }
 
-// ── Recurring Teacher Tasks (Class-Based) ───────────────────────────
 model RecurringTask {
-  id           String      @id @default(cuid())
-  title        String
-  description  String?     @db.Text
-  studentClass String
-  repeatDay    String
-  isActive     Boolean     @default(true)
-  folderId     String?
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  id                 String      @id @default(cuid())
+  title              String
+  description        String?     @db.Text
+  studentClass       String?
+  assignedTeacherIds String?     @db.Text
+  repeatDay          String
+  isActive           Boolean     @default(true)
+  folderId           String?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
 
   tasks        Task[]
   folder       TaskFolder? @relation(fields: [folderId], references: [id], onDelete: Cascade)

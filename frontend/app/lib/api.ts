@@ -305,13 +305,13 @@ export const api = {
   getRecurringTasks: (token: string) =>
     request<RecurringTask[]>("/api/admin/recurring-tasks", {}, token),
 
-  createRecurringTask: (token: string, body: { title: string; description?: string; studentClass: string; repeatDay: string; isActive?: boolean; folderId?: string | null }) =>
+  createRecurringTask: (token: string, body: { title: string; description?: string; studentClass: string | null; teacherIds?: string[]; repeatDay: string; isActive?: boolean; folderId?: string | null }) =>
     request<RecurringTask>("/api/admin/recurring-tasks", {
       method: "POST",
       body: JSON.stringify(body),
     }, token),
 
-  updateRecurringTask: (token: string, id: string, body: Partial<{ title: string; description: string | null; studentClass: string; repeatDay: string; isActive: boolean; folderId: string | null }>) =>
+  updateRecurringTask: (token: string, id: string, body: Partial<{ title: string; description: string | null; studentClass: string | null; teacherIds: string[]; repeatDay: string; isActive: boolean; folderId: string | null }>) =>
     request<RecurringTask>(`/api/admin/recurring-tasks/${id}`, {
       method: "PATCH",
       body: JSON.stringify(body),
@@ -607,8 +607,8 @@ export const api = {
     }, token);
   },
 
-  getTeacherTasks: (token: string) =>
-    request<Task[]>("/api/teacher/tasks", {}, token),
+  getTeacherTasks: (token: string, classParam?: string) =>
+    request<Task[]>(`/api/teacher/tasks${classParam ? `?class=${encodeURIComponent(classParam)}` : ""}`, {}, token),
 
   getTeacherTaskAuditHistory: (token: string, taskId: string) =>
     request<TaskAudit[]>(`/api/teacher/tasks/${taskId}/audit`, {}, token),
@@ -970,7 +970,8 @@ export interface RecurringTask {
   id: string;
   title: string;
   description?: string | null;
-  studentClass: string;
+  studentClass: string | null;
+  assignedTeacherIds?: string | null;
   repeatDay: string;
   isActive: boolean;
   folderId?: string | null;

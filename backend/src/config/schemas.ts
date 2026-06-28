@@ -183,13 +183,29 @@ export const createTaskFolderSchema = z.object({
 export const createRecurringTaskSchema = z.object({
   title: z.string().min(2, "Title must be at least 2 characters"),
   description: z.string().optional(),
-  studentClass: z.string().min(1, "Class is required"),
+  studentClass: z.string().optional().nullable(),
+  teacherIds: z.array(z.string()).optional(),
   repeatDay: z.enum(["DAILY", "SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "TODAY"]),
   isActive: z.boolean().optional(),
   folderId: z.string().optional().nullable(),
+}).refine((data) => {
+  const hasClasses = !!(data.studentClass && data.studentClass.trim());
+  const hasTeachers = !!(data.teacherIds && data.teacherIds.length > 0);
+  return hasClasses || hasTeachers;
+}, {
+  message: "At least one class or individual teacher must be selected",
+  path: ["studentClass"],
 });
 
-export const updateRecurringTaskSchema = createRecurringTaskSchema.partial();
+export const updateRecurringTaskSchema = z.object({
+  title: z.string().min(2, "Title must be at least 2 characters").optional(),
+  description: z.string().optional(),
+  studentClass: z.string().optional().nullable(),
+  teacherIds: z.array(z.string()).optional(),
+  repeatDay: z.enum(["DAILY", "SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "TODAY"]).optional(),
+  isActive: z.boolean().optional(),
+  folderId: z.string().optional().nullable(),
+});
 
 export const createTaskSchema = z
   .object({

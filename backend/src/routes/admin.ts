@@ -678,12 +678,13 @@ router.get("/recurring-tasks", async (_req, res, next) => {
 // ── Create Recurring Task ───────────────────────────────────────────
 router.post("/recurring-tasks", validate(createRecurringTaskSchema), async (req, res, next) => {
   try {
-    const { title, description, studentClass, repeatDay, isActive, folderId } = req.body;
+    const { title, description, studentClass, teacherIds, repeatDay, isActive, folderId } = req.body;
     const rTask = await prisma.recurringTask.create({
       data: {
         title: title.trim(),
         description: description?.trim() || null,
-        studentClass,
+        studentClass: studentClass || null,
+        assignedTeacherIds: teacherIds && teacherIds.length > 0 ? teacherIds.join(",") : null,
         repeatDay,
         isActive: isActive !== undefined ? isActive : true,
         folderId: folderId || null,
@@ -703,7 +704,7 @@ router.post("/recurring-tasks", validate(createRecurringTaskSchema), async (req,
 router.patch("/recurring-tasks/:id", validate(updateRecurringTaskSchema), async (req, res, next) => {
   try {
     const id = req.params.id as string;
-    const { title, description, studentClass, repeatDay, isActive, folderId } = req.body;
+    const { title, description, studentClass, teacherIds, repeatDay, isActive, folderId } = req.body;
     
     const rTask = await prisma.recurringTask.findUnique({ where: { id } });
     if (!rTask) throw new AppError("Recurring task not found", 404);
@@ -713,7 +714,8 @@ router.patch("/recurring-tasks/:id", validate(updateRecurringTaskSchema), async 
       data: {
         ...(title !== undefined && { title: title.trim() }),
         ...(description !== undefined && { description: description?.trim() || null }),
-        ...(studentClass !== undefined && { studentClass }),
+        ...(studentClass !== undefined && { studentClass: studentClass || null }),
+        ...(teacherIds !== undefined && { assignedTeacherIds: teacherIds && teacherIds.length > 0 ? teacherIds.join(",") : null }),
         ...(repeatDay !== undefined && { repeatDay }),
         ...(isActive !== undefined && { isActive }),
         ...(folderId !== undefined && { folderId: folderId || null }),

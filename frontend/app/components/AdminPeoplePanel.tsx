@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   api,
   ApiError,
+  formatApiError,
   type AuthUser,
   type AccountStatus,
   type TeacherListFilter,
@@ -310,7 +311,7 @@ export function AdminPeoplePanel({
       );
       setDeleteTarget(null);
     } catch (err) {
-      onError(err instanceof ApiError ? err.message : "Failed to delete user.");
+      onError(formatApiError(err, "Failed to delete user."));
     } finally {
       setActionLoading(null);
     }
@@ -327,7 +328,7 @@ export function AdminPeoplePanel({
       }
       onNotify("Password reset email sent successfully.");
     } catch (err) {
-      onError(err instanceof ApiError ? err.message : "Failed to send reset email.");
+      onError(formatApiError(err, "Failed to send reset email."));
     } finally {
       setActionLoading(null);
     }
@@ -381,7 +382,7 @@ export function AdminPeoplePanel({
       setTeacherForm(emptyTeacherForm);
       setShowCreateTeacher(false);
     } catch (err) {
-      onError(err instanceof ApiError ? err.message : "Failed to create teacher.");
+      onError(formatApiError(err, "Failed to create teacher."));
     } finally {
       setActionLoading(null);
     }
@@ -473,7 +474,7 @@ export function AdminPeoplePanel({
       }
       setEditingTeacher(null);
     } catch (err) {
-      onError(err instanceof ApiError ? err.message : `Failed to update ${mode === "teachers" ? "teacher" : "student"}.`);
+      onError(formatApiError(err, `Failed to update ${mode === "teachers" ? "teacher" : "student"}.`));
     } finally {
       setActionLoading(null);
     }
