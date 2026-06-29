@@ -8,7 +8,6 @@ This codebase is structured as a full-stack monorepo:
 
 - **[`backend/`](file:///c:/Users/Sasi/Documents/Simba-Academy/backend)**: Express API built with TypeScript, Prisma ORM, and MariaDB/MySQL.
 - **[`frontend/`](file:///c:/Users/Sasi/Documents/Simba-Academy/frontend)**: Client-side web application built with React Router v7, Vite, and TailwindCSS.
-- **[`tests/`](file:///c:/Users/Sasi/Documents/Simba-Academy/tests)**: E2E, accessibility, responsive, and API/DB integration tests using Playwright.
 - **[`scripts/`](file:///c:/Users/Sasi/Documents/Simba-Academy/scripts)**: Root-level administration and helper utilities.
 
 ---
@@ -19,7 +18,6 @@ This codebase is structured as a full-stack monorepo:
 | :--------------- | :---------------------------------------------------------------------------- |
 | **Backend**      | Node.js (>=20), Express, TypeScript, Prisma ORM, MariaDB / MySQL              |
 | **Frontend**     | React, React Router v7, Vite, TailwindCSS                                     |
-| **Testing**      | Playwright (E2E, API, Security, Accessibility)                                |
 | **Integrations** | Zoho Payments, Resend Email API, Google Business Profile API, Sentry, PostHog |
 
 ---
@@ -38,7 +36,7 @@ Ensure you have the following installed locally:
 Install dependencies at the root and for each sub-project:
 
 ```bash
-# Install root (includes Playwright runner)
+# Install root dependencies
 npm install
 
 # Install backend dependencies
@@ -87,26 +85,6 @@ npm run dev
 ```
 
 This runs the backend server on `http://localhost:3001` and the frontend server on `http://localhost:5173`.
-
----
-
-## 🧪 Testing and Audits
-
-This repository includes a suite of automated checks and tests:
-
-```bash
-# Run production readiness static check (Helmet, CORS, rate limiters, etc.)
-npm run test:readiness
-
-# Run integration tests against the database & API endpoints
-npm run test:db
-
-# Run full Playwright E2E functional & UI tests
-npm run test:e2e
-
-# Run all verification pipelines together
-npm run test:all
-```
 
 ---
 

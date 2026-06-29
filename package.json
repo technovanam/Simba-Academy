@@ -17,26 +17,11 @@
     "db:seed": "npm run db:seed --prefix backend",
     "db:clear": "node backend/scripts/clear-db.mjs",
     "db:purge-teachers": "npm run db:purge-teachers --prefix backend",
-    "test:db": "node backend/scripts/verify-all-features.mjs",
-    "test:e2e": "playwright test",
-    "test:e2e:only": "playwright test tests/e2e",
-    "test:e2e:ui": "playwright test --ui",
-    "test:e2e:responsive": "playwright test tests/responsive",
-    "test:e2e:api": "playwright test tests/api-db.integration.spec.ts",
-    "test:e2e:summary": "npx tsx tests/scripts/generate-summary.ts",
-    "test:auth": "playwright test tests/auth.functional.spec.ts",
-    "test:rbac": "playwright test tests/rbac.api.spec.ts",
-    "test:security": "playwright test tests/api-security.spec.ts",
-    "test:a11y": "playwright test tests/a11y.smoke.spec.ts",
-    "test:readiness": "node backend/scripts/production-readiness.mjs",
-    "test:all": "npm run test:readiness -- --static-only && npm run test:db && npm run test:e2e",
     "pack:backend": "npm run deploy:pack --prefix backend",
     "pack:frontend": "npm run deploy:pack --prefix frontend",
-    "pack:cpanel": "npm run pack:backend && npm run pack:frontend",
-    "postinstall": "playwright install chromium"
+    "pack:cpanel": "npm run pack:backend && npm run pack:frontend"
   },
   "devDependencies": {
-    "@axe-core/playwright": "^4.12.1",
     "concurrently": "^9.2.1",
     "dotenv": "^17.4.2"
   }
