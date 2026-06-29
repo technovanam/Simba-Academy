@@ -13,6 +13,50 @@ export const adminListRowClass =
 export const adminListRowStackClass =
   "flex flex-col sm:flex-row sm:items-center items-stretch gap-3 sm:gap-4 px-3 sm:px-4 py-3.5 rounded-xl border border-slate-100 hover:bg-slate-50/80 transition-colors min-w-0 w-full";
 
+/** Coloured icon action buttons for admin tables */
+export const adminActionBtnBase =
+  "p-1.5 rounded-lg border transition disabled:opacity-50 flex items-center justify-center shrink-0";
+
+export const adminActionBtnView =
+  `${adminActionBtnBase} bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100`;
+
+export const adminActionBtnEdit =
+  `${adminActionBtnBase} bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100`;
+
+export const adminActionBtnDelete =
+  `${adminActionBtnBase} bg-rose-50 border-rose-200 text-rose-700 hover:bg-rose-100`;
+
+export const adminActionBtnHistory =
+  `${adminActionBtnBase} bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100`;
+
+export const adminActionBtnLock =
+  `${adminActionBtnBase} bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100`;
+
+export const adminActionBtnUnlock =
+  `${adminActionBtnBase} bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100`;
+
+export const adminActionBtnApprove =
+  `${adminActionBtnBase} bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100`;
+
+export const adminActionBtnSettings =
+  `${adminActionBtnBase} bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100`;
+
+export const adminActionBtnMail =
+  `${adminActionBtnBase} bg-sky-50 border-sky-200 text-sky-700 hover:bg-sky-100`;
+
+/** Larger icon-only buttons (e.g. story library table) */
+export const adminActionBtnIconBase =
+  "w-8 h-8 rounded-lg border transition disabled:opacity-50 flex items-center justify-center shrink-0";
+
+export const adminActionBtnViewIcon =
+  `${adminActionBtnIconBase} bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100`;
+
+export const adminActionBtnSettingsIcon =
+  `${adminActionBtnIconBase} bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100`;
+
+export const adminActionBtnDeleteIcon =
+  `${adminActionBtnIconBase} bg-rose-50 border-rose-200 text-rose-700 hover:bg-rose-100`;
+
 export function buildPageNumbers(current: number, total: number): (number | "ellipsis")[] {
   if (total <= 1) return total === 1 ? [1] : [];
   if (total <= 7) {
@@ -68,11 +112,19 @@ const PILL_ACCENT = {
     border: "border-[#8AC926]",
     hover: "hover:bg-[#8AC926]/5",
     active: "bg-[#8AC926]/15 text-[#5a8218]",
+    focusBorder: "focus:border-[#8AC926]",
+  },
+  blue: {
+    border: "border-blue-600",
+    hover: "hover:bg-blue-600/5",
+    active: "bg-blue-600/15 text-blue-700",
+    focusBorder: "focus:border-blue-500",
   },
   orange: {
     border: "border-[#FF9F1C]",
     hover: "hover:bg-[#FF9F1C]/5",
     active: "bg-[#FF9F1C]/15 text-[#c77a00]",
+    focusBorder: "focus:border-[#FF9F1C]",
   },
 } as const;
 
@@ -162,12 +214,15 @@ export function AdminSearchInput({
   onChange,
   placeholder,
   ariaLabel,
+  accent = "green",
 }: {
   value: string;
   onChange: (value: string) => void;
   placeholder: string;
   ariaLabel: string;
+  accent?: keyof typeof PILL_ACCENT;
 }) {
+  const tone = PILL_ACCENT[accent];
   return (
     <div className="relative w-full min-w-0 sm:w-[260px] max-w-full">
       <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -175,7 +230,7 @@ export function AdminSearchInput({
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="pl-8 pr-3 py-2 bg-white border border-slate-200 text-slate-900 rounded-full text-xs w-full outline-none focus:border-[#8AC926] placeholder-slate-400 transition-all"
+        className={`pl-8 pr-3 py-2 bg-white border border-slate-200 text-slate-900 rounded-full text-xs w-full outline-none ${tone.focusBorder} placeholder-slate-400 transition-all`}
         aria-label={ariaLabel}
       />
     </div>

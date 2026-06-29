@@ -56,4 +56,7 @@ backend/dist/
 
 # ── Docker ──────────────────────────────────────────────────────────
 .docker/
-backend/simba-academy-498413-11a1a705ab62.json
+
+# ── Google Cloud service account keys (never commit) ─────────────────
+simba-academy-*.json
+**/simba-academy-*.json

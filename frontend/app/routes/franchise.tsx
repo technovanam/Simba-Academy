@@ -95,7 +95,7 @@ export default function FranchisePage() {
         
         {/* Text Overlay */}
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6 sm:px-12 z-10 pt-[2%] sm:pt-[4%]">
-          <div className="space-y-4 md:space-y-6 flex flex-col items-center max-w-4xl mx-auto translate-x-4 sm:translate-x-0">
+          <div className="space-y-4 md:space-y-6 flex flex-col items-center max-w-4xl mx-auto">
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight leading-[1.2] drop-shadow-sm">
               Bring <br className="sm:hidden" />
               <span className="text-slate-900">Simba Preschool</span> <br className="sm:hidden" />
@@ -103,7 +103,7 @@ export default function FranchisePage() {
               <span className="sm:hidden">To </span><br/>
               Your City
             </h1>
-            <p className="text-sm sm:text-base lg:text-lg text-slate-800 font-medium leading-relaxed max-w-[280px] sm:max-w-2xl mx-auto drop-shadow-sm px-2 md:px-4">
+            <p className="text-sm sm:text-base lg:text-lg text-slate-800 font-medium leading-relaxed max-w-[min(100%,20rem)] sm:max-w-2xl mx-auto drop-shadow-sm px-2 md:px-4">
               <span className="sm:hidden">Join our premium preschool network with all the tools you need to succeed.</span>
               <span className="hidden sm:inline">Join a fast-growing network of premium preschools. We provide all the tools, curriculum, and technology required to run a successful center.</span>
             </p>

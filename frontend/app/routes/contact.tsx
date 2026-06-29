@@ -75,20 +75,20 @@ export default function ContactPage() {
         <div className="absolute inset-0 bg-slate-950/5 pointer-events-none" />
 
         <div className="max-w-7xl mx-auto px-6 sm:px-12 w-full text-center relative z-10">
-          <div className="relative -translate-y-44 sm:-translate-y-16">
+          <div className="relative -translate-y-20 sm:-translate-y-16">
             <div className="text-center mb-10">
               <span className="text-xs font-bold tracking-widest text-[#E8AF34] uppercase block mb-3">Our Network</span>
               <h2 className="text-4xl sm:text-5xl font-extrabold text-slate-900 tracking-tight">Our Branches</h2>
               <div className="w-12 h-1 bg-[#E8AF34] mx-auto mt-4 rounded-full" />
             </div>
 
-            <p className="text-white sm:text-slate-700 font-semibold text-base sm:text-lg max-w-2xl mx-auto mb-10 drop-shadow-sm">
+            <p className="text-slate-800 sm:text-slate-700 font-semibold text-base sm:text-lg max-w-2xl mx-auto mb-10 drop-shadow-sm bg-white/85 sm:bg-transparent px-4 py-3 rounded-xl sm:px-0 sm:py-0">
               Simba Academy is expanding! Discover our interactive locations and flagship campuses across the region.
             </p>
           </div>
 
           {/* Interactive Google Map Box */}
-          <div className="w-[65%] sm:w-full max-w-[520px] mx-auto h-[200px] sm:h-[276px] overflow-hidden rounded-none bg-white/95 backdrop-blur-sm shadow-2xl -mt-24 sm:-mt-10 relative z-20">
+          <div className="w-full sm:max-w-[520px] mx-auto h-[220px] sm:h-[276px] overflow-hidden rounded-none bg-white/95 backdrop-blur-sm shadow-2xl -mt-12 sm:-mt-10 relative z-20">
             <iframe
               title="Simba Academy Salem Branches Map"
               src="https://maps.google.com/maps?q=Simba%20Preschool,%20Salem&t=&z=12&ie=UTF8&iwloc=&output=embed"

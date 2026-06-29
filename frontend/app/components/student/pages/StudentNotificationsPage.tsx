@@ -74,8 +74,8 @@ export function StudentNotificationsPage() {
   if (loading) return <StudentTabLoader />;
 
   return (
-    <div className={`${portalDashboardBodyClass} h-full overflow-visible`}>
-      <AdminPageShell className="h-full flex flex-col min-h-0 overflow-visible">
+    <div className={`${portalDashboardBodyClass} h-full min-h-0 overflow-hidden`}>
+      <AdminPageShell className="h-full flex flex-col min-h-0 overflow-hidden">
         <AdminPageHeader
           title="Notifications"
           description="Alerts when new story books are added for your class."

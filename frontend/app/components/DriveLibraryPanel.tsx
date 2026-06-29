@@ -16,9 +16,15 @@ import {
   Unlock,
   AlertTriangle,
 } from "lucide-react";
-import { api, type DriveItem, type DriveAncestor } from "../lib/api";
+import { api, formatApiError, type DriveItem, type DriveAncestor } from "../lib/api";
 import { DocumentViewerModal } from "./DocumentViewerModal";
 import { AdminPageBody, AdminPageHeader, AdminPageShell } from "./AdminPageShell";
+import {
+  adminActionBtnDeleteIcon,
+  adminActionBtnSettings,
+  adminActionBtnSettingsIcon,
+  adminActionBtnViewIcon,
+} from "./AdminListUi";
 import { AdminModal } from "./AdminModal";
 import { STUDENT_CLASS_OPTIONS } from "../lib/constants";
 
@@ -88,12 +94,89 @@ function ThumbnailImage({ item }: { item: DriveItem }) {
   );
 }
 
+function DriveTableColGroup({ isAdmin }: { isAdmin: boolean }) {
+  if (isAdmin) {
+    return (
+      <colgroup>
+        <col style={{ width: "28%" }} />
+        <col style={{ width: "14%" }} />
+        <col style={{ width: "14%" }} />
+        <col style={{ width: "22%" }} />
+        <col style={{ width: "22%" }} />
+      </colgroup>
+    );
+  }
+  return (
+    <colgroup>
+      <col style={{ width: "32%" }} />
+      <col style={{ width: "16%" }} />
+      <col style={{ width: "16%" }} />
+      <col style={{ width: "36%" }} />
+    </colgroup>
+  );
+}
+
+function DriveTableHeader({ isAdmin }: { isAdmin: boolean }) {
+  return (
+    <thead className="text-slate-500 font-medium text-xs">
+      <tr>
+        <th className="px-4 py-3 font-semibold">Name</th>
+        <th className="px-4 py-3 font-semibold">Type</th>
+        <th className="px-4 py-3 font-semibold">Date Modified</th>
+        {isAdmin && <th className="px-4 py-3 font-semibold">Access</th>}
+        <th className="px-4 py-3 font-semibold text-right">Actions</th>
+      </tr>
+    </thead>
+  );
+}
+
+const DRIVE_ACCENT = {
+  green: {
+    focusBorder: "focus:border-[#8AC926]",
+    pillActive: "bg-[#8AC926]/15 text-[#5a8218] shadow-xs",
+    link: "text-[#8AC926]",
+    folderHover: "hover:text-[#8AC926]",
+    btnPrimary: "bg-[#8AC926] text-white hover:bg-[#78B020] shadow-md shadow-[#8AC926]/10",
+    btnSecondary: "bg-[#8AC926]/10 border border-[#8AC926]/35 text-[#5a8218] hover:bg-[#8AC926]/20",
+    checkbox: "hover:border-[#8AC926] checked:border-[#8AC926] checked:bg-[#8AC926]",
+    viewerAccent: "green" as const,
+  },
+  blue: {
+    focusBorder: "focus:border-blue-500",
+    pillActive: "bg-blue-600/15 text-blue-700 shadow-xs",
+    link: "text-blue-600",
+    folderHover: "hover:text-blue-600",
+    btnPrimary: "bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-500/20",
+    btnSecondary: "bg-blue-600/10 border border-blue-600/35 text-blue-700 hover:bg-blue-600/20",
+    checkbox: "hover:border-blue-600 checked:border-blue-600 checked:bg-blue-600",
+    viewerAccent: "blue" as const,
+  },
+  orange: {
+    focusBorder: "focus:border-[#FF9F1C]",
+    pillActive: "bg-[#FF9F1C]/15 text-[#c77a00] shadow-xs",
+    link: "text-[#FF9F1C]",
+    folderHover: "hover:text-[#FF9F1C]",
+    btnPrimary: "bg-[#FF9F1C] text-white hover:bg-[#e88f0a] shadow-md shadow-[#FF9F1C]/20",
+    btnSecondary: "bg-[#FF9F1C]/10 border border-[#FF9F1C]/35 text-[#c77a00] hover:bg-[#FF9F1C]/20",
+    checkbox: "hover:border-[#FF9F1C] checked:border-[#FF9F1C] checked:bg-[#FF9F1C]",
+    viewerAccent: "orange" as const,
+  },
+} as const;
+
+function driveAccentForRole(role: DriveLibraryPanelProps["role"]) {
+  if (role === "TEACHER") return DRIVE_ACCENT.blue;
+  if (role === "STUDENT") return DRIVE_ACCENT.orange;
+  return DRIVE_ACCENT.green;
+}
+
 export function DriveLibraryPanel({ token, role, classFilter, headerExtras }: DriveLibraryPanelProps) {
+  const accent = driveAccentForRole(role);
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [items, setItems] = useState<DriveItem[]>([]);
   const [ancestors, setAncestors] = useState<DriveAncestor[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [loadError, setLoadError] = useState("");
+  const [actionError, setActionError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [fileTypeFilter, setFileTypeFilter] = useState<FileTypeFilter>("ALL");
 
@@ -130,7 +213,7 @@ export function DriveLibraryPanel({ token, role, classFilter, headerExtras }: Dr
     }
 
     setLoading(true);
-    setError("");
+    setLoadError("");
     try {
       const data = await api.browseDocuments(token, currentFolderId, searchQuery, undefined, classFilter);
       if (signal.cancelled) return;
@@ -154,7 +237,14 @@ export function DriveLibraryPanel({ token, role, classFilter, headerExtras }: Dr
     } catch (err) {
       if (signal.cancelled) return;
       console.error("Failed to load documents:", err);
-      setError("Failed to load documents. Please check your Google Drive configurations.");
+      setItems([]);
+      setAncestors([]);
+      setLoadError(
+        formatApiError(
+          err,
+          "Failed to load documents. Please check your Google Drive configurations."
+        )
+      );
     } finally {
       if (!signal.cancelled) {
         setLoading(false);
@@ -176,7 +266,7 @@ export function DriveLibraryPanel({ token, role, classFilter, headerExtras }: Dr
     setIsSavingAccess(true);
     try {
       if (accessForm.audiences.length === 0) {
-        setError("Please select at least one audience.");
+        setActionError("Please select at least one audience.");
         setIsSavingAccess(false);
         return;
       }
@@ -199,9 +289,10 @@ export function DriveLibraryPanel({ token, role, classFilter, headerExtras }: Dr
       ));
       
       setAccessItem(null);
+      setActionError("");
     } catch (err) {
       console.error(err);
-      setError("Failed to update access rule.");
+      setActionError("Failed to update access rule.");
     } finally {
       setIsSavingAccess(false);
     }
@@ -209,7 +300,7 @@ export function DriveLibraryPanel({ token, role, classFilter, headerExtras }: Dr
 
   const handleRevokeAccess = async (fileId: string) => {
     if (!token) return;
-    setError("");
+    setActionError("");
     setRevokeLoading(true);
     try {
       await api.revokeDriveAccessRule(token, fileId);
@@ -220,7 +311,7 @@ export function DriveLibraryPanel({ token, role, classFilter, headerExtras }: Dr
       ));
     } catch (err) {
       console.error(err);
-      setError("Failed to revoke access rule.");
+      setActionError("Failed to revoke access rule.");
     } finally {
       setRevokeLoading(false);
       setRevokeTarget(null);
@@ -282,11 +373,11 @@ export function DriveLibraryPanel({ token, role, classFilter, headerExtras }: Dr
                 placeholder="Search library…"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8 pr-3 py-2 bg-white border border-slate-200 text-slate-900 rounded-full text-xs w-full outline-none focus:border-[#8AC926] placeholder-slate-400 transition-all"
+                className={`pl-8 pr-3 py-2 bg-white border border-slate-200 text-slate-900 rounded-full text-xs w-full outline-none ${accent.focusBorder} placeholder-slate-400 transition-all`}
                 aria-label="Search files and folders"
               />
             </div>
-            <div className="flex bg-white rounded-full border border-slate-200 p-0.5 shrink-0 shadow-sm">
+            <div className="flex flex-wrap bg-white rounded-full border border-slate-200 p-0.5 shadow-sm w-full sm:w-auto min-w-0">
               {FILE_TYPE_OPTIONS.map((type) => (
                 <button
                   key={type.id}
@@ -294,7 +385,7 @@ export function DriveLibraryPanel({ token, role, classFilter, headerExtras }: Dr
                   onClick={() => setFileTypeFilter(type.id)}
                   className={`px-3 py-1.5 rounded-full text-[10px] font-black tracking-wider uppercase transition ${
                     fileTypeFilter === type.id
-                      ? "bg-[#8AC926]/15 text-[#5a8218] shadow-xs"
+                      ? accent.pillActive
                       : "text-slate-500 hover:text-slate-800"
                   }`}
                 >
@@ -307,18 +398,12 @@ export function DriveLibraryPanel({ token, role, classFilter, headerExtras }: Dr
         }
       />
 
-      {error && (
-        <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold shrink-0">
-          {error}
-        </div>
-      )}
-
       {/* Breadcrumb */}
       <div className="flex items-center gap-1.5 text-xs text-slate-600 bg-white border border-slate-200 px-3.5 py-2 rounded-xl overflow-hidden shadow-sm shrink-0 w-fit max-w-full">
         <button
           type="button"
           onClick={() => handleFolderClick("root")}
-          className="flex items-center gap-1 font-bold text-[#8AC926] hover:underline shrink-0"
+          className={`flex items-center gap-1 font-bold ${accent.link} hover:underline shrink-0`}
         >
           <Home className="w-3.5 h-3.5" />
           <span>Library Home</span>
@@ -340,18 +425,17 @@ export function DriveLibraryPanel({ token, role, classFilter, headerExtras }: Dr
       <AdminPageBody className="flex-1 min-h-0 flex flex-col overflow-hidden">
         {loading ? (
           <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex-1 min-h-0 flex flex-col animate-pulse">
-            <div className="overflow-x-auto flex-1 min-h-0 overflow-y-auto bg-white">
-              <table className="w-full text-left text-sm whitespace-nowrap">
-                <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium text-xs sticky top-0 z-10">
-                  <tr>
-                    <th className="px-4 py-3 font-semibold">Name</th>
-                    <th className="px-4 py-3 font-semibold">Type</th>
-                    <th className="px-4 py-3 font-semibold">Date Modified</th>
-                    {role === "ADMIN" && <th className="px-4 py-3 font-semibold">Access</th>}
-                    <th className="px-4 py-3 font-semibold text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
+            <div className="hidden xl:flex flex-col flex-1 min-h-0 overflow-hidden">
+              <div className="overflow-x-auto shrink-0 border-b border-slate-200 bg-slate-50">
+                <table className="w-full text-left text-sm whitespace-nowrap table-fixed">
+                  <DriveTableColGroup isAdmin={role === "ADMIN"} />
+                  <DriveTableHeader isAdmin={role === "ADMIN"} />
+                </table>
+              </div>
+              <div className="overflow-x-auto flex-1 min-h-0 overflow-y-auto bg-white">
+                <table className="w-full text-left text-sm whitespace-nowrap table-fixed">
+                  <DriveTableColGroup isAdmin={role === "ADMIN"} />
+                  <tbody className="divide-y divide-slate-100">
                   {[...Array(5)].map((_, idx) => (
                     <tr key={idx} className="bg-white">
                       <td className="px-4 py-4">
@@ -379,18 +463,35 @@ export function DriveLibraryPanel({ token, role, classFilter, headerExtras }: Dr
                       </td>
                     </tr>
                   ))}
-                </tbody>
-              </table>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div className="xl:hidden flex-1 min-h-0 overflow-y-auto p-3 space-y-3">
+              {[...Array(4)].map((_, idx) => (
+                <div key={idx} className="p-4 bg-white border border-slate-200 rounded-2xl space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 bg-slate-200 rounded shrink-0" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 bg-slate-200 rounded w-3/4" />
+                      <div className="h-3 bg-slate-200 rounded w-1/2" />
+                    </div>
+                  </div>
+                  <div className="h-8 bg-slate-200 rounded-xl w-28 ml-auto" />
+                </div>
+              ))}
             </div>
           </div>
-        ) : items.length === 0 ? (
-          <div className="bg-white rounded-2xl p-12 text-center text-sm font-semibold text-slate-600 border border-slate-200">
-            {searchQuery ? "No matching files or folders found." : "This folder is empty."}
+        ) : loadError || items.length === 0 ? (
+          <div className="bg-white rounded-2xl p-12 text-center text-sm font-semibold border border-slate-200 flex-1 min-h-0 flex items-center justify-center">
+            <p className={loadError ? "text-rose-700" : "text-slate-600"}>
+              {loadError || (searchQuery ? "No matching files or folders found." : "This folder is empty.")}
+            </p>
           </div>
         ) : (
           <div className={`bg-white ${role === "STUDENT" ? "" : "border border-slate-200 shadow-sm"} rounded-2xl overflow-hidden flex-1 min-h-0 flex flex-col`}>
-            <div className={`overflow-x-auto flex-1 min-h-0 overflow-y-auto bg-white ${role === "STUDENT" ? "p-4" : ""}`}>
-              {role === "STUDENT" ? (
+            {role === "STUDENT" ? (
+              <div className="overflow-x-auto flex-1 min-h-0 overflow-y-auto bg-white p-4">
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6 content-start">
                   {items.map((item) => {
                     const isFolderItem = isFolder(item.mimeType);
@@ -423,10 +524,11 @@ export function DriveLibraryPanel({ token, role, classFilter, headerExtras }: Dr
                     );
                   })}
                 </div>
-              ) : (
-                <>
-                  {/* Card List View (xl:hidden) */}
-                  <div className="xl:hidden space-y-3">
+              </div>
+            ) : (
+              <>
+                <div className="xl:hidden flex-1 min-h-0 overflow-y-auto overflow-x-auto p-3">
+                  <div className="space-y-3">
                     {items.map((item) => {
                       const isFolderItem = isFolder(item.mimeType);
                       const displayDate = new Date(item.createdTime).toLocaleDateString("en-IN", {
@@ -478,7 +580,7 @@ export function DriveLibraryPanel({ token, role, classFilter, headerExtras }: Dr
                               <button
                                 type="button"
                                 onClick={() => handleFolderClick(item.id)}
-                                className="px-4 py-2 rounded-xl bg-[#8AC926] text-white font-sans font-bold text-xs hover:bg-[#78B020] transition shadow-md shadow-[#8AC926]/10"
+                                className={`px-4 py-2 rounded-xl font-sans font-bold text-xs transition ${accent.btnPrimary}`}
                               >
                                 Open Folder
                               </button>
@@ -486,7 +588,7 @@ export function DriveLibraryPanel({ token, role, classFilter, headerExtras }: Dr
                               <button
                                 type="button"
                                 onClick={() => setViewerFile(item)}
-                                className="px-4 py-2 rounded-xl bg-[#8AC926]/10 border border-[#8AC926]/35 text-[#5a8218] hover:bg-[#8AC926]/20 font-sans font-bold text-xs transition flex items-center gap-1"
+                                className={`px-4 py-2 rounded-xl font-sans font-bold text-xs transition flex items-center gap-1 ${accent.btnSecondary}`}
                               >
                                 <Eye className="w-4 h-4" /> View File
                               </button>
@@ -504,7 +606,7 @@ export function DriveLibraryPanel({ token, role, classFilter, headerExtras }: Dr
                                       classes: tClass ? tClass.split(",") : [],
                                     });
                                   }}
-                                  className="p-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-650 hover:bg-slate-100 transition"
+                                  className={adminActionBtnSettings}
                                   title="Access Settings"
                                 >
                                   <Settings className="w-4 h-4" />
@@ -526,19 +628,19 @@ export function DriveLibraryPanel({ token, role, classFilter, headerExtras }: Dr
                       );
                     })}
                   </div>
+                </div>
 
-                  {/* Desktop Table View (hidden xl:block) */}
-                  <div className="hidden xl:block">
-                    <table className="w-full text-left text-sm whitespace-nowrap">
-                      <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium text-xs sticky top-0 z-10">
-                        <tr>
-                          <th className="px-4 py-3 font-semibold">Name</th>
-                          <th className="px-4 py-3 font-semibold">Type</th>
-                          <th className="px-4 py-3 font-semibold">Date Modified</th>
-                          {role === "ADMIN" && <th className="px-4 py-3 font-semibold">Access</th>}
-                          <th className="px-4 py-3 font-semibold text-right">Actions</th>
-                        </tr>
-                      </thead>
+                {/* Desktop Table View (hidden xl:block) */}
+                <div className="hidden xl:flex flex-col flex-1 min-h-0 overflow-hidden">
+                  <div className="overflow-x-auto shrink-0 border-b border-slate-200 bg-slate-50">
+                    <table className="w-full text-left text-sm whitespace-nowrap table-fixed">
+                      <DriveTableColGroup isAdmin={role === "ADMIN"} />
+                      <DriveTableHeader isAdmin={role === "ADMIN"} />
+                    </table>
+                  </div>
+                  <div className="overflow-x-auto flex-1 min-h-0 overflow-y-auto bg-white">
+                    <table className="w-full text-left text-sm whitespace-nowrap table-fixed">
+                      <DriveTableColGroup isAdmin={role === "ADMIN"} />
                       <tbody className="divide-y divide-slate-100">
                         {items.map((item) => {
                           const isFolderItem = isFolder(item.mimeType);
@@ -563,7 +665,7 @@ export function DriveLibraryPanel({ token, role, classFilter, headerExtras }: Dr
                                   <button
                                     type="button"
                                     onClick={() => handleFolderClick(item.id)}
-                                    className="flex items-center gap-2.5 text-slate-800 hover:text-[#8AC926] transition font-bold text-sm text-left truncate w-full max-w-md"
+                                    className={`flex items-center gap-2.5 text-slate-800 ${accent.folderHover} transition font-bold text-sm text-left truncate w-full max-w-md`}
                                   >
                                     <Folder className="w-5 h-5 text-amber-400 shrink-0 fill-amber-400" />
                                     <div className="flex flex-col truncate min-w-0">
@@ -619,7 +721,7 @@ export function DriveLibraryPanel({ token, role, classFilter, headerExtras }: Dr
                                             classes: tClass ? tClass.split(",") : [],
                                           });
                                         }}
-                                        className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-200 text-slate-650 hover:bg-slate-100 flex items-center justify-center transition shrink-0"
+                                        className={adminActionBtnSettingsIcon}
                                         title="Access Settings"
                                       >
                                         <Settings className="w-4 h-4" />
@@ -628,7 +730,7 @@ export function DriveLibraryPanel({ token, role, classFilter, headerExtras }: Dr
                                         <button
                                           type="button"
                                           onClick={() => setRevokeTarget(item.id)}
-                                          className="w-8 h-8 rounded-lg bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 flex items-center justify-center transition shrink-0"
+                                          className={adminActionBtnDeleteIcon}
                                           title="Revoke Access"
                                         >
                                           <ShieldOff className="w-4 h-4" />
@@ -640,7 +742,7 @@ export function DriveLibraryPanel({ token, role, classFilter, headerExtras }: Dr
                                     <button
                                       type="button"
                                       onClick={() => setViewerFile(item)}
-                                      className="w-8 h-8 rounded-lg bg-[#8AC926]/10 border border-[#8AC926]/30 text-[#5a8218] hover:bg-[#8AC926]/20 flex items-center justify-center transition shrink-0"
+                                      className={adminActionBtnViewIcon}
                                       title="View"
                                     >
                                       <Eye className="w-4 h-4" />
@@ -654,9 +756,9 @@ export function DriveLibraryPanel({ token, role, classFilter, headerExtras }: Dr
                       </tbody>
                     </table>
                   </div>
-                </>
-              )}
-            </div>
+                </div>
+              </>
+            )}
           </div>
         )}
       </AdminPageBody>
@@ -669,7 +771,7 @@ export function DriveLibraryPanel({ token, role, classFilter, headerExtras }: Dr
           token={token}
           onClose={() => setViewerFile(null)}
           role={role}
-          accent="green"
+          accent={accent.viewerAccent}
         />
       )}
 
@@ -677,11 +779,19 @@ export function DriveLibraryPanel({ token, role, classFilter, headerExtras }: Dr
       <AdminModal
         open={!!accessItem}
         onClose={() => {
-          if (!isSavingAccess) setAccessItem(null);
+          if (!isSavingAccess) {
+            setAccessItem(null);
+            setActionError("");
+          }
         }}
         title="Access Settings"
       >
         <form onSubmit={handleSaveAccess} className="space-y-4">
+          {actionError && (
+            <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold">
+              {actionError}
+            </div>
+          )}
           <div>
             <label className="block text-slate-700 font-bold mb-3 text-2xs uppercase tracking-wider">Target Audience</label>
             <div className="flex items-center gap-6">

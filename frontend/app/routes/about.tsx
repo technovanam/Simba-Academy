@@ -32,7 +32,7 @@ export default function AboutPage() {
         
         {/* Text Overlay */}
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6 sm:px-12 z-10 pt-[25%] sm:pt-[12%] md:pt-[10%]">
-          <div className="space-y-3 sm:space-y-4 md:space-y-6 flex flex-col items-center max-w-4xl mx-auto translate-y-28 sm:translate-y-12 md:translate-y-16">
+          <div className="space-y-3 sm:space-y-4 md:space-y-6 flex flex-col items-center max-w-4xl mx-auto translate-y-16 sm:translate-y-12 md:translate-y-16">
             <h1 className="text-4xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-slate-800 tracking-tight leading-[1.1] drop-shadow-sm">
               About <span className="text-[#E8AF34]">Simba Preschool</span>
             </h1>
@@ -67,8 +67,8 @@ export default function AboutPage() {
         </picture>
         
         {/* Content at the right */}
-        <div className="relative z-10 w-full max-w-7xl mx-auto px-6 sm:px-12 flex justify-end">
-          <div className="max-w-lg p-8 sm:p-12 mr-4 sm:mr-12 md:mr-24 lg:mr-32 translate-y-32 sm:translate-y-0">
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-6 sm:px-12 flex justify-center sm:justify-end">
+          <div className="max-w-lg p-6 sm:p-12 sm:mr-12 md:mr-24 lg:mr-32 translate-y-8 sm:translate-y-0 bg-white/90 sm:bg-transparent rounded-2xl sm:rounded-none backdrop-blur-sm sm:backdrop-blur-none">
             <Quote className="w-8 h-8 text-[#E8AF34] mb-6" />
             <h3 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-4">Founder&apos;s Message</h3>
             <p className="text-slate-800 text-sm sm:text-base leading-relaxed italic mb-8 font-medium">

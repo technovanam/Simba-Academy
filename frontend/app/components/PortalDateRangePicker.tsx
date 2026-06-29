@@ -285,7 +285,7 @@ export function PortalDateRangePicker({
   return (
     <div className="relative inline-block text-left" ref={containerRef}>
       {/* Date Inputs Panel */}
-      <div className="flex items-center gap-2 bg-white border border-slate-200/80 rounded-2xl p-1 shadow-xs hover:border-slate-300 transition duration-300 w-fit">
+      <div className="flex items-center gap-2 bg-white border border-slate-200/80 rounded-2xl p-1 shadow-xs hover:border-slate-300 transition duration-300 w-full max-w-full sm:w-fit min-w-0">
         <div className="flex items-center gap-1 px-2.5 py-1">
           <Calendar className="w-3.5 h-3.5 text-[#8AC926] shrink-0" />
           <input
@@ -333,7 +333,7 @@ export function PortalDateRangePicker({
 
       {/* Custom Calendar Dropdown Panel (Absolute Popover Overlay) */}
       {isOpen && (
-        <div className="absolute left-0 mt-2 w-72 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 overflow-hidden animate-fade-in p-4">
+        <div className="absolute left-0 right-0 sm:right-auto mt-2 w-full max-w-[min(18rem,calc(100vw-2rem))] sm:w-72 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 overflow-hidden animate-fade-in p-4">
           {/* Calendar Header */}
           <div className="flex items-center justify-between mb-4">
             <button

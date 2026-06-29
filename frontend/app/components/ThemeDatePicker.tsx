@@ -86,7 +86,7 @@ export function ThemeDatePicker({ value, onChange, minDate }: ThemeDatePickerPro
       </button>
 
       {isOpen && (
-        <div className="absolute bottom-full left-0 mb-2 p-4 bg-white border border-slate-200 shadow-xl rounded-2xl z-50 w-[280px]">
+        <div className="absolute left-0 right-0 sm:right-auto top-full sm:bottom-full sm:top-auto mt-2 sm:mt-0 sm:mb-2 p-4 bg-white border border-slate-200 shadow-xl rounded-2xl z-50 w-full max-w-[min(18rem,calc(100vw-2rem))] sm:w-[280px]">
           <div className="flex items-center justify-between mb-4">
             <button
               type="button"

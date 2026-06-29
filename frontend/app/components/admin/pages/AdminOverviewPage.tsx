@@ -16,8 +16,17 @@ import { AdminTabLoader } from "../AdminTabLoader";
 
 import { RecentPaymentCard, sortPaymentsNewestFirst } from "../../RecentPaymentCard";
 import {
-  portalDashboardBodyClass,
-  portalDashboardLowerGridClass,
+  portalDashboardOverviewClass,
+  portalDashboardLowerGridShellClass,
+  portalDashboardMainPanelClass,
+  portalAnalyticsHeaderClass,
+  portalAnalyticsLabelClass,
+  portalAnalyticsListClass,
+  portalAnalyticsPanelClass,
+  portalAnalyticsRowClass,
+  portalAnalyticsTitleClass,
+  portalAnalyticsValueClass,
+  portalHeroMetricClass,
 } from "../../PortalPageShell";
 
 export function AdminOverviewPage() {
@@ -106,7 +115,7 @@ export function AdminOverviewPage() {
   if (loading) return <AdminTabLoader />;
 
   return (
-    <div className={`${portalDashboardBodyClass} h-full overflow-hidden !pb-0`}>
+    <div className={portalDashboardOverviewClass}>
       <div className="flex flex-wrap items-center justify-between gap-3 shrink-0">
         <div className="min-w-0">
           <h2 className="text-sm lg:text-base font-bold text-slate-900 tracking-wide uppercase truncate">
@@ -137,7 +146,6 @@ export function AdminOverviewPage() {
         </div>
       </div>
 
-      <div className="flex flex-col flex-1 min-h-0 overflow-hidden w-full min-w-0 max-w-full">
         {/* Three Main Metric Cards */}
         {stats && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch shrink-0">
@@ -158,7 +166,7 @@ export function AdminOverviewPage() {
                       <span className="text-[9px] font-bold text-green-600/80 tracking-widest block uppercase">
                         Active accounts
                       </span>
-                      <h3 className="text-2xl font-bold text-slate-800 leading-none tracking-tight">
+                      <h3 className={portalHeroMetricClass}>
                         {stats.users} Active
                       </h3>
                     </div>
@@ -215,7 +223,7 @@ export function AdminOverviewPage() {
                       <span className="text-[9px] font-bold text-blue-600/80 tracking-widest block uppercase">
                         Recent Payments
                       </span>
-                      <h4 className="text-2xl font-bold text-slate-800 leading-none tracking-tight">
+                      <h4 className={portalHeroMetricClass}>
                         Enrollment Payments
                       </h4>
                     </div>
@@ -269,7 +277,7 @@ export function AdminOverviewPage() {
                       <span className="text-[9px] font-bold text-violet-600/80 tracking-widest block uppercase">
                         Recent Tasks
                       </span>
-                      <h4 className="text-2xl font-bold text-slate-800 leading-none tracking-tight">
+                      <h4 className={portalHeroMetricClass}>
                         Teacher Assignments
                       </h4>
                     </div>
@@ -343,10 +351,10 @@ export function AdminOverviewPage() {
           )}
 
           {/* Split workspace */}
-          <div className={`${portalDashboardLowerGridClass} flex-1 min-h-0 overflow-hidden`}>
+          <div className={portalDashboardLowerGridShellClass}>
             <div
               id="recent-transactions"
-              className="lg:col-span-2 bg-white rounded-2xl p-5 border border-slate-200 flex flex-col flex-1 min-h-0 overflow-hidden"
+              className={portalDashboardMainPanelClass}
             >
               <div className="flex flex-wrap justify-between items-center gap-4 mb-4 shrink-0">
                 <div>
@@ -366,73 +374,74 @@ export function AdminOverviewPage() {
                 </button>
               </div>
 
-              <div className="space-y-2 flex-1 min-h-0 overflow-y-auto pr-0.5">
+              <div className="space-y-2 flex-1 min-h-0 flex flex-col">
                 {recentPaymentsList.length === 0 ? (
-                  <div className="bg-slate-50 rounded-xl p-6 border border-slate-200 text-xs text-center text-slate-600 font-semibold">
-                    No payments recorded yet.
+                  <div className="flex-1 flex items-center justify-center min-h-[8rem]">
+                    <div className="bg-slate-50 rounded-xl p-6 border border-slate-200 text-xs text-center text-slate-600 font-semibold w-full">
+                      No payments recorded yet.
+                    </div>
                   </div>
                 ) : (
-                  recentPaymentsList.map((p) => (
-                    <RecentPaymentCard key={p.id} payment={p} theme="slate" />
-                  ))
+                  <div className="space-y-2 flex-1 min-h-0 overflow-y-auto pr-0.5">
+                    {recentPaymentsList.map((p) => (
+                      <RecentPaymentCard key={p.id} payment={p} theme="slate" />
+                    ))}
+                  </div>
                 )}
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl p-5 border border-slate-200 flex flex-col flex-1 min-h-0 overflow-hidden">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-100 mb-4 shrink-0">
-                <h4 className="font-bold text-xs uppercase text-slate-800 tracking-wider">
+            <div className={portalAnalyticsPanelClass}>
+              <div className={portalAnalyticsHeaderClass}>
+                <h4 className={portalAnalyticsTitleClass}>
                   Academy Analytics
                 </h4>
-                <TrendingUp className="w-5 h-5 text-[#8AC926]" />
+                <TrendingUp className="w-4 h-4 text-[#8AC926] shrink-0" />
               </div>
 
-              <div className="grid grid-cols-1 gap-2.5 flex-1">
-                <div className="p-3 bg-[#FF9F1C]/5 border border-[#FF9F1C]/15 rounded-xl flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">
-                    Total Materials
-                  </span>
-                  <span className="text-xl font-bold text-slate-800 leading-none">
-                    {stats?.materials ?? 0}
-                  </span>
-                </div>
-                <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-xl flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">
-                    Pending Review
-                  </span>
-                  <span className="text-xl font-bold text-slate-800 leading-none">
-                    {stats?.pendingApprovals ?? 0}
-                  </span>
-                </div>
-                <div className="p-3 bg-rose-50 border border-rose-100 rounded-xl flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">
-                    Unread Leads
-                  </span>
-                  <span className="text-xl font-bold text-slate-800 leading-none">
-                    {stats?.unreadInquiries ?? 0}
-                  </span>
-                </div>
-                <div className="p-3 bg-[#8AC926]/5 border border-[#8AC926]/15 rounded-xl flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">
-                    Total General Enquiries
-                  </span>
-                  <span className="text-xl font-bold text-slate-800 leading-none">
-                    {inquiries.length}
-                  </span>
-                </div>
-                <div className="p-3 bg-[#FF9F1C]/5 border border-[#FF9F1C]/15 rounded-xl flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">
-                    Total Franchise Enquiries
-                  </span>
-                  <span className="text-xl font-bold text-slate-800 leading-none">
-                    {franchiseInquiries.length}
-                  </span>
-                </div>
+              <div className={portalAnalyticsListClass}>
+                {[
+                  {
+                    label: "Total Materials",
+                    value: stats?.materials ?? 0,
+                    className: "bg-[#FF9F1C]/5 border-[#FF9F1C]/15",
+                  },
+                  {
+                    label: "Pending Review",
+                    value: stats?.pendingApprovals ?? 0,
+                    className: "bg-indigo-50 border-indigo-100",
+                  },
+                  {
+                    label: "Unread Leads",
+                    value: stats?.unreadInquiries ?? 0,
+                    className: "bg-rose-50 border-rose-100",
+                  },
+                  {
+                    label: "Total General Enquiries",
+                    value: inquiries.length,
+                    className: "bg-[#8AC926]/5 border-[#8AC926]/15",
+                  },
+                  {
+                    label: "Total Franchise Enquiries",
+                    value: franchiseInquiries.length,
+                    className: "bg-[#FF9F1C]/5 border-[#FF9F1C]/15",
+                  },
+                ].map((item) => (
+                  <div
+                    key={item.label}
+                    className={`${portalAnalyticsRowClass} ${item.className}`}
+                  >
+                    <span className={portalAnalyticsLabelClass}>
+                      {item.label}
+                    </span>
+                    <span className={portalAnalyticsValueClass}>
+                      {item.value}
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
-        </div>
-      </div>
-    // </div>
+    </div>
   );
 }

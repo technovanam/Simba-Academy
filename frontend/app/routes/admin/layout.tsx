@@ -178,7 +178,7 @@ export default function AdminLayout() {
       />
 
       <main className={`flex-1 min-h-0 w-full min-w-0 max-w-7xl mx-auto flex flex-col ${
-        activeTab === "overview" || activeTab === "users" || activeTab === "teachers" || activeTab === "books" || activeTab === "planner" || activeTab === "tasks" || activeTab === "gallery" || activeTab === "payments" || activeTab === "materials" || activeTab === "documents" || activeTab === "settings" || activeTab === "notifications" ? "h-full overflow-hidden pb-4 lg:pb-4" : "portal-main-scroll overflow-y-auto overflow-x-hidden pb-6 lg:pb-8"
+        activeTab === "overview" || activeTab === "users" || activeTab === "teachers" || activeTab === "books" || activeTab === "planner" || activeTab === "tasks" || activeTab === "gallery" || activeTab === "payments" || activeTab === "materials" || activeTab === "inquiries" || activeTab === "documents" || activeTab === "settings" || activeTab === "notifications" ? "h-full overflow-hidden pb-4 lg:pb-4" : "portal-main-scroll overflow-y-auto overflow-x-hidden pb-6 lg:pb-8"
       } p-3 sm:p-4 lg:p-6`}>
         <AdminOutletProvider value={{ token, user, setUser, setMessage, setError }}>
           <Outlet />

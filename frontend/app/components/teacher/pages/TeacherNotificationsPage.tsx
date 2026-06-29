@@ -68,7 +68,7 @@ export function TeacherNotificationsPage({ token, onError, onRefresh }: TeacherN
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[240px] gap-3">
-        <Loader2 className="w-10 h-10 animate-spin text-[#8AC926]" />
+        <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
         <p className="font-bold text-slate-600">Loading notifications…</p>
       </div>
     );
@@ -86,7 +86,7 @@ export function TeacherNotificationsPage({ token, onError, onRefresh }: TeacherN
                 type="button"
                 disabled={actionLoading === "all"}
                 onClick={markAllRead}
-                className="px-4 py-2 rounded-xl bg-[#8AC926] text-white font-sans font-bold text-xs tracking-wider flex items-center gap-2 hover:bg-[#78B020] transition shadow-md shadow-[#8AC926]/10 whitespace-nowrap disabled:opacity-60"
+                className="px-4 py-2 rounded-xl bg-blue-600 text-white font-sans font-bold text-xs tracking-wider flex items-center gap-2 hover:bg-blue-700 transition shadow-md shadow-blue-500/10 whitespace-nowrap disabled:opacity-60"
               >
                 {actionLoading === "all" ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -108,7 +108,7 @@ export function TeacherNotificationsPage({ token, onError, onRefresh }: TeacherN
                 {notifications.map((n) => (
                   <div
                     key={n.id}
-                    className={`${adminListRowStackClass} ${!n.isRead ? "bg-[#8AC926]/5 border-[#8AC926]/20" : ""}`}
+                    className={`${adminListRowStackClass} ${!n.isRead ? "bg-blue-50 border-blue-200" : ""}`}
                   >
                     <div className="flex-1 min-w-[200px] space-y-1">
                       <div className="flex flex-wrap items-center gap-2">
@@ -116,7 +116,7 @@ export function TeacherNotificationsPage({ token, onError, onRefresh }: TeacherN
                           className={`px-2 py-0.5 rounded-md text-4xs font-extrabold uppercase border shrink-0 ${
                             n.isRead
                               ? "bg-slate-100 text-slate-600 border-slate-200"
-                              : "bg-[#8AC926]/15 text-[#5a8f18] border-[#8AC926]/30"
+                              : "bg-blue-100 text-blue-700 border-blue-200"
                           }`}
                         >
                           {n.isRead ? "Read" : "New"}
@@ -143,7 +143,7 @@ export function TeacherNotificationsPage({ token, onError, onRefresh }: TeacherN
                           onClick={() => {
                             if (!n.isRead) void markRead(n);
                           }}
-                          className="px-3 py-1.5 rounded-lg font-bold text-2xs flex items-center gap-1 border bg-[#8AC926]/10 border-[#8AC926]/30 text-[#5a8f18] hover:bg-[#8AC926]/20"
+                          className="px-3 py-1.5 rounded-lg font-bold text-2xs flex items-center gap-1 border bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
                         >
                           <Book className="w-3.5 h-3.5" />
                           Story library

@@ -104,12 +104,9 @@ import {
 } from "../../PortalPageShell";
 import {
   AdminListEmpty,
-  AdminListPagination,
-  AdminRecordList,
   AdminSearchInput,
   PillSelect,
   adminListRowClass,
-  adminListRowStackClass,
   useAdminPagination,
 } from "../../AdminListUi";
 import { useAdminOutlet } from "../AdminOutletContext";
@@ -1425,11 +1422,6 @@ export function AdminInquiriesPage() {
   ];
   const bookPagination = useAdminPagination(combinedItems, [bookSearch, bookAudienceFilter, bookClassFilter, books.length, folders.length], 10);
   const galleryPagination = useAdminPagination(filteredGallery, [gallerySearch, gallery.length]);
-  const inquiryPagination = useAdminPagination(
-    filteredInquiries,
-    [inquirySearch, inquirySubTab, inquiries.length, franchiseInquiries.length],
-    4
-  );
 
   const taskStatusOptions = [
     { id: "ALL", label: "All Statuses" },
@@ -1450,6 +1442,11 @@ export function AdminInquiriesPage() {
     { id: "general", label: `General Enquiry (${inquiries.length})` },
     { id: "franchise", label: `Franchise (${franchiseInquiries.length})` },
   ];
+
+  const sortedInquiries = [...filteredInquiries].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+  const inquiryUnreadCount = activeInquiries.filter((item) => !item.isRead).length;
 
   interface CombinedApprovalItem {
     id: string;
@@ -1758,7 +1755,7 @@ export function AdminInquiriesPage() {
 
   return (
     <>
-<AdminPageShell>
+<AdminPageShell className="h-full flex flex-col min-h-0 overflow-hidden">
               <AdminPageHeader
                 title="Submissions & Leads"
                 description="Review general preschool inquiries and franchise business opportunities."
@@ -1781,8 +1778,42 @@ export function AdminInquiriesPage() {
                 }
               />
 
-              <AdminPageBody>
-                {filteredInquiries.length === 0 ? (
+              <AdminPageBody className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4 shrink-0">
+                  <div className="px-4 py-2.5 bg-blue-50 border border-blue-100 rounded-xl flex items-center gap-3">
+                    <div className="p-1.5 bg-white rounded-lg border border-blue-100 shrink-0">
+                      <Mail className="w-4 h-4 text-blue-600" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[9px] font-bold text-blue-700 uppercase tracking-wider leading-none">
+                        Total {inquirySubTab === "franchise" ? "franchise leads" : "enquiries"}
+                      </p>
+                      <p className="text-xl font-extrabold text-slate-900 mt-0.5 leading-tight">
+                        {activeInquiries.length}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="px-4 py-2.5 bg-amber-50 border border-amber-100 rounded-xl flex items-center gap-3">
+                    <div className="p-1.5 bg-white rounded-lg border border-amber-100 shrink-0">
+                      <Bell className="w-4 h-4 text-amber-600" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[9px] font-bold text-amber-700 uppercase tracking-wider leading-none">
+                        New / unread
+                      </p>
+                      <p className="text-xl font-extrabold text-amber-700 mt-0.5 leading-tight">
+                        {inquiryUnreadCount}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {loading ? (
+                  <div className="flex flex-col items-center justify-center py-16 gap-2">
+                    <Loader2 className="w-8 h-8 animate-spin text-[#8AC926]" />
+                    <p className="text-xs font-semibold text-slate-600">Loading leads…</p>
+                  </div>
+                ) : sortedInquiries.length === 0 ? (
                   <AdminListEmpty
                     message={
                       inquirySubTab === "general"
@@ -1791,132 +1822,188 @@ export function AdminInquiriesPage() {
                     }
                   />
                 ) : (
-                  <AdminRecordList>
-                    {inquiryPagination.paginatedItems.map((item) => {
-                      const isFranchise = inquirySubTab === "franchise";
-                      const franchiseItem = isFranchise ? (item as FranchiseInquiry) : null;
-                      const readKey = isFranchise
-                        ? `franchise-read-${item.id}`
-                        : `inquiry-read-${item.id}`;
-
-                      return (
-                        <div
-                          key={item.id}
-                          className={`${adminListRowStackClass} cursor-pointer hover:border-[#8AC926]/50 hover:bg-[#8AC926]/5 transition`}
-                          onClick={() =>
-                            setLeadView({
-                              kind: isFranchise ? "franchise" : "admission",
-                              item,
-                            })
-                          }
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter" || e.key === " ") {
-                              e.preventDefault();
-                              setLeadView({
-                                kind: isFranchise ? "franchise" : "admission",
-                                item,
-                              });
-                            }
-                          }}
-                          role="button"
-                          tabIndex={0}
-                          aria-label={`View ${isFranchise ? "franchise" : "general"} inquiry from ${item.name}`}
-                        >
-                          <div className="flex-1 min-w-0">
-                            <div className="flex flex-wrap items-center gap-2 mb-1">
-                              <span
-                                className={`px-2 py-0.5 rounded-md text-4xs font-extrabold uppercase border shrink-0 ${
-                                  isFranchise
-                                    ? "bg-purple-50 text-purple-700 border-purple-200"
-                                    : "bg-blue-50 text-blue-700 border-blue-200"
-                                }`}
-                              >
-                                {isFranchise ? "Franchise" : "General"}
-                              </span>
-                              <span
-                                className={`px-2 py-0.5 rounded-md text-4xs font-extrabold uppercase border shrink-0 ${
-                                  item.isRead
-                                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                    : "bg-amber-50 text-amber-700 border-amber-200"
-                                }`}
-                              >
-                                {item.isRead ? "Read" : "New"}
-                              </span>
-                            </div>
-                            <p className="font-bold text-sm text-slate-800">{item.name}</p>
-                            <p className="text-2xs text-slate-600 font-medium">{item.email}</p>
-                            <p className="text-2xs text-slate-500 mt-0.5">
-                              {item.phone || "No phone"}
-                              {franchiseItem?.location && (
-                                <>
-                                  {" "}
-                                  · Location:{" "}
-                                  <span className="text-[#6B9E1A] font-semibold">
-                                    {franchiseItem.location}
-                                  </span>
-                                </>
-                              )}
-                            </p>
-                            <p className="text-2xs text-slate-400 mt-0.5">
-                              {new Date(item.createdAt).toLocaleString("en-IN", {
-                                month: "short",
-                                day: "numeric",
-                                year: "numeric",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                            </p>
-                          </div>
-                          <div
-                            className="flex flex-wrap items-center gap-2 shrink-0"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <button
-                              type="button"
-                              title="View full details"
-                              onClick={() =>
+                  <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex-1 min-h-0 flex flex-col">
+                    <div className="hidden lg:flex flex-col flex-1 min-h-0 overflow-hidden">
+                      <div className="overflow-x-auto shrink-0 border-b border-slate-200 bg-slate-50">
+                        <table className="w-full text-left text-sm table-fixed">
+                          <colgroup>
+                            <col style={{ width: inquirySubTab === "franchise" ? "18%" : "22%" }} />
+                            <col style={{ width: inquirySubTab === "franchise" ? "20%" : "24%" }} />
+                            <col style={{ width: "14%" }} />
+                            {inquirySubTab === "franchise" ? <col style={{ width: "14%" }} /> : null}
+                            <col style={{ width: "12%" }} />
+                            <col style={{ width: "14%" }} />
+                            <col style={{ width: inquirySubTab === "franchise" ? "18%" : "16%" }} />
+                          </colgroup>
+                          <thead className="text-slate-500 font-medium text-xs">
+                            <tr>
+                              <th className="px-4 py-3 font-semibold whitespace-nowrap">Name</th>
+                              <th className="px-4 py-3 font-semibold whitespace-nowrap">Email</th>
+                              <th className="px-4 py-3 font-semibold whitespace-nowrap">Phone</th>
+                              {inquirySubTab === "franchise" ? (
+                                <th className="px-4 py-3 font-semibold whitespace-nowrap">Location</th>
+                              ) : null}
+                              <th className="px-4 py-3 font-semibold whitespace-nowrap">Status</th>
+                              <th className="px-4 py-3 font-semibold whitespace-nowrap">Date</th>
+                              <th className="px-4 py-3 font-semibold text-right whitespace-nowrap">Actions</th>
+                            </tr>
+                          </thead>
+                        </table>
+                      </div>
+                      <div className="overflow-x-auto flex-1 min-h-0 overflow-y-auto modern-scrollbar">
+                        <table className="w-full text-left text-sm table-fixed">
+                          <colgroup>
+                            <col style={{ width: inquirySubTab === "franchise" ? "18%" : "22%" }} />
+                            <col style={{ width: inquirySubTab === "franchise" ? "20%" : "24%" }} />
+                            <col style={{ width: "14%" }} />
+                            {inquirySubTab === "franchise" ? <col style={{ width: "14%" }} /> : null}
+                            <col style={{ width: "12%" }} />
+                            <col style={{ width: "14%" }} />
+                            <col style={{ width: inquirySubTab === "franchise" ? "18%" : "16%" }} />
+                          </colgroup>
+                          <tbody className="divide-y divide-slate-100">
+                            {sortedInquiries.map((item) => {
+                              const isFranchise = inquirySubTab === "franchise";
+                              const franchiseItem = isFranchise ? (item as FranchiseInquiry) : null;
+                              const openLead = () =>
                                 setLeadView({
                                   kind: isFranchise ? "franchise" : "admission",
                                   item,
-                                })
-                              }
-                              className="px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100 text-2xs font-bold flex items-center gap-1"
-                            >
-                              <Eye className="w-3 h-3" /> View
-                            </button>
-                            {!item.isRead && (
+                                });
+
+                              return (
+                                <tr
+                                  key={item.id}
+                                  className="hover:bg-slate-50/80 transition-colors cursor-pointer"
+                                  onClick={openLead}
+                                >
+                                  <td className="px-4 py-3 align-middle min-w-0">
+                                    <span className="font-bold text-sm text-slate-800 block truncate" title={item.name}>
+                                      {item.name}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-3 align-middle text-2xs text-slate-500 font-medium min-w-0">
+                                    <span className="block truncate" title={item.email}>
+                                      {item.email}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-3 align-middle text-xs text-slate-600 whitespace-nowrap">
+                                    {item.phone || "—"}
+                                  </td>
+                                  {isFranchise ? (
+                                    <td className="px-4 py-3 align-middle text-xs font-semibold text-[#6B9E1A] whitespace-nowrap">
+                                      {franchiseItem?.location || "—"}
+                                    </td>
+                                  ) : null}
+                                  <td className="px-4 py-3 align-middle whitespace-nowrap">
+                                    <span
+                                      className={`px-2 py-0.5 rounded-md text-4xs font-extrabold uppercase border ${
+                                        item.isRead
+                                          ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                          : "bg-amber-50 text-amber-700 border-amber-200"
+                                      }`}
+                                    >
+                                      {item.isRead ? "Read" : "New"}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-3 align-middle text-xs text-slate-500 whitespace-nowrap">
+                                    {new Date(item.createdAt).toLocaleDateString("en-IN", {
+                                      month: "short",
+                                      day: "numeric",
+                                      year: "numeric",
+                                    })}
+                                  </td>
+                                  <td className="px-4 py-2 text-right align-middle whitespace-nowrap">
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        openLead();
+                                      }}
+                                      className="px-3 py-1.5 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100 text-2xs font-bold inline-flex items-center gap-1 transition"
+                                    >
+                                      <Eye className="w-3 h-3" /> View
+                                    </button>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    <div className="lg:hidden divide-y divide-slate-200/50 flex-1 overflow-y-auto modern-scrollbar bg-slate-50/50">
+                      {sortedInquiries.map((item) => {
+                        const isFranchise = inquirySubTab === "franchise";
+                        const franchiseItem = isFranchise ? (item as FranchiseInquiry) : null;
+                        const openLead = () =>
+                          setLeadView({
+                            kind: isFranchise ? "franchise" : "admission",
+                            item,
+                          });
+
+                        return (
+                          <div
+                            key={item.id}
+                            className="p-4 hover:bg-slate-50 transition-colors flex flex-col gap-2.5 cursor-pointer"
+                            onClick={openLead}
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="font-extrabold text-sm text-slate-800 leading-tight">{item.name}</p>
+                                <p className="text-2xs text-slate-500 font-semibold mt-0.5 break-all">{item.email}</p>
+                              </div>
                               <button
                                 type="button"
-                                disabled={actionLoading === readKey}
-                                onClick={() =>
-                                  isFranchise
-                                    ? handleMarkFranchiseRead(item.id)
-                                    : handleMarkInquiryRead(item.id)
-                                }
-                                className="px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 text-2xs font-bold flex items-center gap-1 disabled:opacity-50"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openLead();
+                                }}
+                                className="px-2.5 py-1.5 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100 text-2xs font-bold flex items-center gap-1 shrink-0 transition"
                               >
-                                {actionLoading === readKey ? (
-                                  <Loader2 className="w-3 h-3 animate-spin" />
-                                ) : (
-                                  "Mark Read"
-                                )}
+                                <Eye className="w-3 h-3" /> View
                               </button>
-                            )}
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 bg-slate-50 p-3 rounded-xl border border-slate-200/30 text-[11px]">
+                              <div>
+                                <span className="text-slate-400 font-semibold block uppercase text-[9px] tracking-wider mb-0.5">Phone</span>
+                                <span className="text-slate-700 font-medium">{item.phone || "—"}</span>
+                              </div>
+                              {isFranchise && franchiseItem?.location ? (
+                                <div>
+                                  <span className="text-slate-400 font-semibold block uppercase text-[9px] tracking-wider mb-0.5">Location</span>
+                                  <span className="text-[#6B9E1A] font-semibold">{franchiseItem.location}</span>
+                                </div>
+                              ) : null}
+                              <div>
+                                <span className="text-slate-400 font-semibold block uppercase text-[9px] tracking-wider mb-0.5">Status</span>
+                                <span
+                                  className={`px-2 py-0.5 rounded-md text-4xs font-extrabold uppercase border inline-block ${
+                                    item.isRead
+                                      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                      : "bg-amber-50 text-amber-700 border-amber-200"
+                                  }`}
+                                >
+                                  {item.isRead ? "Read" : "New"}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="text-slate-400 font-semibold block uppercase text-[9px] tracking-wider mb-0.5">Date</span>
+                                <span className="text-slate-600 font-medium">
+                                  {new Date(item.createdAt).toLocaleDateString("en-IN", {
+                                    month: "short",
+                                    day: "numeric",
+                                    year: "numeric",
+                                  })}
+                                </span>
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      );
-                    })}
-                    <AdminListPagination
-                      rangeStart={inquiryPagination.rangeStart}
-                      rangeEnd={inquiryPagination.rangeEnd}
-                      total={filteredInquiries.length}
-                      safePage={inquiryPagination.safePage}
-                      totalPages={inquiryPagination.totalPages}
-                      pageNumbers={inquiryPagination.pageNumbers}
-                      onPageChange={inquiryPagination.setCurrentPage}
-                      itemLabel="leads"
-                    />
-                  </AdminRecordList>
+                        );
+                      })}
+                    </div>
+                  </div>
                 )}
 
                 {leadView && (

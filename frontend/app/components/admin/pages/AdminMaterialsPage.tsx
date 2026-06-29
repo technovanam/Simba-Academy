@@ -104,10 +104,10 @@ import {
 } from "../../PortalPageShell";
 import {
   AdminListEmpty,
-  AdminListPagination,
   AdminRecordList,
   AdminSearchInput,
   PillSelect,
+  adminActionBtnView,
   adminListRowClass,
   adminListRowStackClass,
   useAdminPagination,
@@ -1481,6 +1481,176 @@ export function AdminMaterialsPage() {
     return "Playgroup";
   }
 
+  function renderApprovalStatusBadge(m: CombinedApprovalItem) {
+    if (m.isTask) {
+      return (
+        <span
+          className={`px-2.5 py-0.5 rounded-lg text-2xs font-extrabold uppercase border shrink-0 ${
+            m.status === "APPROVED"
+              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+              : m.status === "REJECTED"
+                ? "bg-rose-50 text-rose-700 border-rose-200"
+                : m.status === "RESUBMITTED"
+                  ? "bg-purple-50 text-purple-700 border-purple-200"
+                  : m.status === "UNDER_REVIEW"
+                    ? "bg-sky-50 text-sky-700 border-sky-200"
+                    : "bg-blue-50 text-blue-700 border-blue-200"
+          }`}
+        >
+          {m.status === "APPROVED"
+            ? "Approved"
+            : m.status === "REJECTED"
+              ? "Rejected"
+              : m.status === "RESUBMITTED"
+                ? "Resubmitted"
+                : m.status === "UNDER_REVIEW"
+                  ? "Under Review"
+                  : "Submitted"}
+        </span>
+      );
+    }
+
+    return (
+      <span
+        className={`px-2.5 py-0.5 rounded-lg text-2xs font-extrabold uppercase border shrink-0 ${
+          m.isApproved
+            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+            : "bg-amber-50 text-amber-700 border-amber-200"
+        }`}
+      >
+        {m.isApproved ? "Approved" : "Pending Review"}
+      </span>
+    );
+  }
+
+  function renderApprovalActions(m: CombinedApprovalItem) {
+    return (
+      <div className="flex items-center justify-end gap-1.5 flex-wrap">
+        <button
+          type="button"
+          onClick={() => setViewDetailsModal(m)}
+          title="View Details"
+          className={adminActionBtnView}
+        >
+          <Eye className="w-4 h-4" />
+        </button>
+        {m.isTask ? (
+          <>
+            <button
+              type="button"
+              onClick={() => handleViewHistory(m.id)}
+              title="View History"
+              className="p-1.5 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 transition"
+            >
+              <HistoryIcon className="w-4 h-4" />
+            </button>
+            {(m.status === "SUBMITTED" || m.status === "RESUBMITTED" || m.status === "UNDER_REVIEW" || m.status === "REJECTED") && (
+              <button
+                disabled={actionLoading === `task-approve-${m.id}`}
+                onClick={() => handleApproveTaskProof(m.id, true)}
+                title="Approve"
+                className="p-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 transition disabled:opacity-50"
+              >
+                {actionLoading === `task-approve-${m.id}` ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Check className="w-4 h-4" />
+                )}
+              </button>
+            )}
+            {(m.status === "SUBMITTED" || m.status === "RESUBMITTED" || m.status === "UNDER_REVIEW") && (
+              <button
+                disabled={actionLoading === `task-approve-${m.id}`}
+                onClick={() => {
+                  setRejectTaskForm({ id: m.id, reason: "" });
+                  setShowRejectTaskForm(true);
+                }}
+                title="Reject"
+                className="p-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 transition disabled:opacity-50"
+              >
+                {actionLoading === `task-approve-${m.id}` ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <X className="w-4 h-4" />
+                )}
+              </button>
+            )}
+            {(m.status === "APPROVED" || m.status === "REJECTED") && (
+              <button
+                disabled={actionLoading === `task-approve-${m.id}`}
+                onClick={() => handleRevokeTaskProof(m.id)}
+                title="Revoke Approval/Rejection"
+                className="p-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100 transition disabled:opacity-50"
+              >
+                {actionLoading === `task-approve-${m.id}` ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <RotateCcw className="w-4 h-4" />
+                )}
+              </button>
+            )}
+            <button
+              type="button"
+              disabled={actionLoading === `task-delete-${m.id}`}
+              onClick={() => handleDeleteTask(m.id)}
+              title="Delete Proof"
+              className="p-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 transition disabled:opacity-50"
+            >
+              {actionLoading === `task-delete-${m.id}` ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Trash2 className="w-4 h-4" />
+              )}
+            </button>
+          </>
+        ) : (
+          <>
+            {!m.isApproved ? (
+              <button
+                disabled={actionLoading === `material-approve-${m.id}`}
+                onClick={() => handleApproveMaterial(m.id, true)}
+                title="Approve"
+                className="p-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 transition disabled:opacity-50"
+              >
+                {actionLoading === `material-approve-${m.id}` ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Check className="w-4 h-4" />
+                )}
+              </button>
+            ) : (
+              <button
+                disabled={actionLoading === `material-approve-${m.id}`}
+                onClick={() => handleApproveMaterial(m.id, false)}
+                title="Revoke Approval"
+                className="p-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100 transition disabled:opacity-50"
+              >
+                {actionLoading === `material-approve-${m.id}` ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <RotateCcw className="w-4 h-4" />
+                )}
+              </button>
+            )}
+            <button
+              type="button"
+              disabled={actionLoading === `material-delete-${m.id}`}
+              onClick={() => handleDeleteMaterial(m.id)}
+              title="Delete Material"
+              className="p-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 transition disabled:opacity-50"
+            >
+              {actionLoading === `material-delete-${m.id}` ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Trash2 className="w-4 h-4" />
+              )}
+            </button>
+          </>
+        )}
+      </div>
+    );
+  }
+
   const combinedApprovals: CombinedApprovalItem[] = [
     ...materials.map((m) => ({
       id: m.id,
@@ -1572,21 +1742,6 @@ export function AdminMaterialsPage() {
     return approvalSort === "oldest" ? timeA - timeB : timeB - timeA;
   });
 
-  const approvalPagination = useAdminPagination(
-    sortedFilteredApprovals,
-    [
-      selectedApprovalClassFolder,
-      approvalSearch,
-      approvalStatusFilter,
-      approvalTypeFilter,
-      approvalSort,
-      materials.length,
-      tasks.length,
-    ],
-    10
-  );
-
-  // Filters and sorting logic for Assign Tasks (recurringTasks) - flat list
   const RECURRING_TASK_CLASS_OPTIONS = [
     { id: "ALL", label: "All Classes" },
     { id: "Playgroup", label: "Playgroup" },
@@ -1855,20 +2010,41 @@ export function AdminMaterialsPage() {
                         <AdminListEmpty message={`No learning materials or task proofs match your search or filters for ${selectedApprovalClassFolder}.`} />
                       ) : (
                         <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex-1 min-h-0 flex flex-col">
-                          <div className="overflow-x-auto flex-1 min-h-0 overflow-y-auto modern-scrollbar">
-                            <table className="w-full text-left text-sm whitespace-nowrap">
-                              <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium text-xs sticky top-0 z-10">
-                                <tr>
-                                  <th className="px-4 py-3 font-semibold w-[35%]">Material / Task Uploaded</th>
-                                  <th className="px-4 py-3 font-semibold w-[15%]">Type</th>
-                                  <th className="px-4 py-3 font-semibold w-[20%]">Uploaded By</th>
-                                  <th className="px-4 py-3 font-semibold w-[15%]">Uploaded On</th>
-                                  <th className="px-4 py-3 font-semibold w-[15%]">Status</th>
-                                  <th className="px-4 py-3 font-semibold text-right">Actions</th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-slate-100">
-                                {approvalPagination.paginatedItems.map((m) => (
+                          <div className="hidden lg:flex flex-col flex-1 min-h-0 overflow-hidden">
+                            <div className="overflow-x-auto shrink-0 border-b border-slate-200 bg-slate-50">
+                              <table className="w-full text-left text-sm table-fixed whitespace-nowrap">
+                                <colgroup>
+                                  <col style={{ width: "30%" }} />
+                                  <col style={{ width: "12%" }} />
+                                  <col style={{ width: "18%" }} />
+                                  <col style={{ width: "12%" }} />
+                                  <col style={{ width: "12%" }} />
+                                  <col style={{ width: "16%" }} />
+                                </colgroup>
+                                <thead className="text-slate-500 font-medium text-xs">
+                                  <tr>
+                                    <th className="px-4 py-3 font-semibold">Material / Task Uploaded</th>
+                                    <th className="px-4 py-3 font-semibold">Type</th>
+                                    <th className="px-4 py-3 font-semibold">Uploaded By</th>
+                                    <th className="px-4 py-3 font-semibold">Uploaded On</th>
+                                    <th className="px-4 py-3 font-semibold">Status</th>
+                                    <th className="px-4 py-3 font-semibold text-right">Actions</th>
+                                  </tr>
+                                </thead>
+                              </table>
+                            </div>
+                            <div className="overflow-x-auto flex-1 min-h-0 overflow-y-auto modern-scrollbar">
+                              <table className="w-full text-left text-sm table-fixed whitespace-nowrap">
+                                <colgroup>
+                                  <col style={{ width: "30%" }} />
+                                  <col style={{ width: "12%" }} />
+                                  <col style={{ width: "18%" }} />
+                                  <col style={{ width: "12%" }} />
+                                  <col style={{ width: "12%" }} />
+                                  <col style={{ width: "16%" }} />
+                                </colgroup>
+                                <tbody className="divide-y divide-slate-100">
+                                {sortedFilteredApprovals.map((m) => (
                                   <tr key={m.id} className="hover:bg-slate-50/80 transition-colors">
                                     <td className="px-4 py-3 align-middle min-w-0">
                                       <div className="flex flex-col space-y-1">
@@ -1906,184 +2082,53 @@ export function AdminMaterialsPage() {
                                     </td>
                                     <td className="px-4 py-3 align-middle">
                                       <div className="flex items-center gap-1.5">
-                                        {m.isTask ? (
-                                          <span
-                                            className={`px-2.5 py-0.5 rounded-lg text-2xs font-extrabold uppercase border shrink-0 ${
-                                              m.status === "APPROVED"
-                                                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                                : m.status === "REJECTED"
-                                                  ? "bg-rose-50 text-rose-700 border-rose-200"
-                                                  : m.status === "RESUBMITTED"
-                                                  ? "bg-purple-50 text-purple-700 border-purple-200"
-                                                  : m.status === "UNDER_REVIEW"
-                                                  ? "bg-sky-50 text-sky-700 border-sky-200"
-                                                  : "bg-blue-50 text-blue-700 border-blue-200"
-                                            }`}
-                                          >
-                                            {m.status === "APPROVED"
-                                              ? "Approved"
-                                              : m.status === "REJECTED"
-                                                ? "Rejected"
-                                                : m.status === "RESUBMITTED"
-                                                ? "Resubmitted"
-                                                : m.status === "UNDER_REVIEW"
-                                                ? "Under Review"
-                                                : "Submitted"}
-                                          </span>
-                                        ) : (
-                                          <span
-                                            className={`px-2.5 py-0.5 rounded-lg text-2xs font-extrabold uppercase border shrink-0 ${
-                                              m.isApproved
-                                                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                                : "bg-amber-50 text-amber-700 border-amber-200"
-                                            }`}
-                                          >
-                                            {m.isApproved ? "Approved" : "Pending Review"}
-                                          </span>
-                                        )}
+                                        {renderApprovalStatusBadge(m)}
                                       </div>
                                     </td>
                                     <td className="px-4 py-2 text-right align-middle">
-                                      <div className="flex items-center justify-end gap-1.5">
-                                        <button
-                                          type="button"
-                                          onClick={() => setViewDetailsModal(m)}
-                                          title="View Details"
-                                          className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100 transition"
-                                        >
-                                          <Eye className="w-4 h-4" />
-                                        </button>
-                                        {m.isTask ? (
-                                          <>
-                                            <button
-                                              type="button"
-                                              onClick={() => handleViewHistory(m.id)}
-                                              title="View History"
-                                              className="p-1.5 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 transition"
-                                            >
-                                              <HistoryIcon className="w-4 h-4" />
-                                            </button>
-                                            {(m.status === "SUBMITTED" || m.status === "RESUBMITTED" || m.status === "UNDER_REVIEW" || m.status === "REJECTED") && (
-                                              <button
-                                                disabled={actionLoading === `task-approve-${m.id}`}
-                                                onClick={() => handleApproveTaskProof(m.id, true)}
-                                                title="Approve"
-                                                className="p-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 transition disabled:opacity-50"
-                                              >
-                                                {actionLoading === `task-approve-${m.id}` ? (
-                                                  <Loader2 className="w-4 h-4 animate-spin" />
-                                                ) : (
-                                                  <Check className="w-4 h-4" />
-                                                )}
-                                              </button>
-                                            )}
-                                            {(m.status === "SUBMITTED" || m.status === "RESUBMITTED" || m.status === "UNDER_REVIEW") && (
-                                              <button
-                                                disabled={actionLoading === `task-approve-${m.id}`}
-                                                onClick={() => {
-                                                  setRejectTaskForm({ id: m.id, reason: "" });
-                                                  setShowRejectTaskForm(true);
-                                                }}
-                                                title="Reject"
-                                                className="p-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 transition disabled:opacity-50"
-                                              >
-                                                {actionLoading === `task-approve-${m.id}` ? (
-                                                  <Loader2 className="w-4 h-4 animate-spin" />
-                                                ) : (
-                                                  <X className="w-4 h-4" />
-                                                )}
-                                              </button>
-                                            )}
-                                            {(m.status === "APPROVED" || m.status === "REJECTED") && (
-                                              <button
-                                                disabled={actionLoading === `task-approve-${m.id}`}
-                                                onClick={() => handleRevokeTaskProof(m.id)}
-                                                title="Revoke Approval/Rejection"
-                                                className="p-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100 transition disabled:opacity-50"
-                                              >
-                                                {actionLoading === `task-approve-${m.id}` ? (
-                                                  <Loader2 className="w-4 h-4 animate-spin" />
-                                                ) : (
-                                                  <RotateCcw className="w-4 h-4" />
-                                                )}
-                                              </button>
-                                            )}
-                                            <button
-                                              type="button"
-                                              disabled={actionLoading === `task-delete-${m.id}`}
-                                              onClick={() => handleDeleteTask(m.id)}
-                                              title="Delete Proof"
-                                              className="p-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 transition disabled:opacity-50"
-                                            >
-                                              {actionLoading === `task-delete-${m.id}` ? (
-                                                <Loader2 className="w-4 h-4 animate-spin" />
-                                              ) : (
-                                                <Trash2 className="w-4 h-4" />
-                                              )}
-                                            </button>
-                                          </>
-                                        ) : (
-                                          <>
-                                            {!m.isApproved ? (
-                                              <button
-                                                disabled={actionLoading === `material-approve-${m.id}`}
-                                                onClick={() => handleApproveMaterial(m.id, true)}
-                                                title="Approve"
-                                                className="p-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 transition disabled:opacity-50"
-                                              >
-                                                {actionLoading === `material-approve-${m.id}` ? (
-                                                  <Loader2 className="w-4 h-4 animate-spin" />
-                                                ) : (
-                                                  <Check className="w-4 h-4" />
-                                                )}
-                                              </button>
-                                            ) : (
-                                              <button
-                                                disabled={actionLoading === `material-approve-${m.id}`}
-                                                onClick={() => handleApproveMaterial(m.id, false)}
-                                                title="Revoke Approval"
-                                                className="p-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100 transition disabled:opacity-50"
-                                              >
-                                                {actionLoading === `material-approve-${m.id}` ? (
-                                                  <Loader2 className="w-4 h-4 animate-spin" />
-                                                ) : (
-                                                  <RotateCcw className="w-4 h-4" />
-                                                )}
-                                              </button>
-                                            )}
-                                            <button
-                                              type="button"
-                                              disabled={actionLoading === `material-delete-${m.id}`}
-                                              onClick={() => handleDeleteMaterial(m.id)}
-                                              title="Delete Material"
-                                              className="p-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 transition disabled:opacity-50"
-                                            >
-                                              {actionLoading === `material-delete-${m.id}` ? (
-                                                <Loader2 className="w-4 h-4 animate-spin" />
-                                              ) : (
-                                                <Trash2 className="w-4 h-4" />
-                                              )}
-                                            </button>
-                                          </>
-                                        )}
-                                      </div>
+                                      {renderApprovalActions(m)}
                                     </td>
                                   </tr>
                                 ))}
                               </tbody>
                             </table>
+                            </div>
                           </div>
-                          <div className="p-4 bg-slate-50 border-t border-slate-200">
-                            <AdminListPagination
-                              rangeStart={approvalPagination.rangeStart}
-                              rangeEnd={approvalPagination.rangeEnd}
-                              total={sortedFilteredApprovals.length}
-                              safePage={approvalPagination.safePage}
-                              totalPages={approvalPagination.totalPages}
-                              pageNumbers={approvalPagination.pageNumbers}
-                              onPageChange={approvalPagination.setCurrentPage}
-                              itemLabel="uploads"
-                            />
+                          <div className="lg:hidden flex-1 min-h-0 overflow-y-auto modern-scrollbar p-3 space-y-3">
+                            {sortedFilteredApprovals.map((m) => (
+                              <div key={m.id} className="p-4 bg-white border border-slate-200 rounded-2xl flex flex-col gap-3 shadow-sm">
+                                <div className="min-w-0 space-y-2">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <span className="text-2xs font-extrabold uppercase tracking-wider text-slate-500">
+                                      {m.isTask ? "Task Proof" : "Learning Material"}
+                                    </span>
+                                    {renderApprovalStatusBadge(m)}
+                                  </div>
+                                  <h4 className="font-bold text-sm text-[#8AC926] break-words leading-tight">{m.title}</h4>
+                                  {m.description ? (
+                                    <p className="text-2xs text-slate-400 line-clamp-3 break-words">{m.description}</p>
+                                  ) : null}
+                                  <div className="text-2xs text-slate-500 space-y-0.5">
+                                    <p>
+                                      <span className="font-bold text-slate-600">By:</span>{" "}
+                                      {m.uploadedBy?.name ?? "Admin"}
+                                    </p>
+                                    {m.uploadedBy?.email ? (
+                                      <p className="break-all">{m.uploadedBy.email}</p>
+                                    ) : null}
+                                    <p>
+                                      <span className="font-bold text-slate-600">Uploaded:</span>{" "}
+                                      {new Date(m.createdAt).toLocaleDateString("en-IN", {
+                                        month: "short",
+                                        day: "numeric",
+                                        year: "numeric",
+                                      })}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="border-t border-slate-100 pt-2.5">{renderApprovalActions(m)}</div>
+                              </div>
+                            ))}
                           </div>
                         </div>
                       )}

@@ -169,19 +169,40 @@ export function AdminPaymentsPanel({ token, onError }: AdminPaymentsPanelProps) 
           <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex-1 min-h-0 flex flex-col">
 
             {/* Desktop Table — md and above */}
-            <div className="hidden md:block overflow-x-auto flex-1 min-h-0 overflow-y-auto modern-scrollbar">
-              <table className="w-full text-left text-sm">
-                <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium text-xs sticky top-0 z-10">
-                  <tr>
-                    <th className="px-4 py-3 font-semibold whitespace-nowrap">Payer</th>
-                    <th className="px-4 py-3 font-semibold whitespace-nowrap">Class</th>
-                    <th className="px-4 py-3 font-semibold whitespace-nowrap">Amount</th>
-                    <th className="px-4 py-3 font-semibold whitespace-nowrap">Status</th>
-                    <th className="px-4 py-3 font-semibold whitespace-nowrap">Date</th>
-                    <th className="px-4 py-3 font-semibold text-right whitespace-nowrap">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
+            <div className="hidden lg:flex flex-col flex-1 min-h-0 overflow-hidden">
+              <div className="overflow-x-auto shrink-0 border-b border-slate-200 bg-slate-50">
+                <table className="w-full text-left text-sm table-fixed">
+                  <colgroup>
+                    <col style={{ width: "22%" }} />
+                    <col style={{ width: "14%" }} />
+                    <col style={{ width: "12%" }} />
+                    <col style={{ width: "12%" }} />
+                    <col style={{ width: "14%" }} />
+                    <col style={{ width: "26%" }} />
+                  </colgroup>
+                  <thead className="text-slate-500 font-medium text-xs">
+                    <tr>
+                      <th className="px-4 py-3 font-semibold whitespace-nowrap">Payer</th>
+                      <th className="px-4 py-3 font-semibold whitespace-nowrap">Class</th>
+                      <th className="px-4 py-3 font-semibold whitespace-nowrap">Amount</th>
+                      <th className="px-4 py-3 font-semibold whitespace-nowrap">Status</th>
+                      <th className="px-4 py-3 font-semibold whitespace-nowrap">Date</th>
+                      <th className="px-4 py-3 font-semibold text-right whitespace-nowrap">Actions</th>
+                    </tr>
+                  </thead>
+                </table>
+              </div>
+              <div className="overflow-x-auto flex-1 min-h-0 overflow-y-auto">
+                <table className="w-full text-left text-sm table-fixed">
+                  <colgroup>
+                    <col style={{ width: "22%" }} />
+                    <col style={{ width: "14%" }} />
+                    <col style={{ width: "12%" }} />
+                    <col style={{ width: "12%" }} />
+                    <col style={{ width: "14%" }} />
+                    <col style={{ width: "26%" }} />
+                  </colgroup>
+                  <tbody className="divide-y divide-slate-100">
                   {sorted.map((p) => (
                     <tr key={p.id} className="hover:bg-slate-50/80 transition-colors">
                       <td className="px-4 py-3 align-middle whitespace-nowrap">
@@ -230,10 +251,11 @@ export function AdminPaymentsPanel({ token, onError }: AdminPaymentsPanelProps) 
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
 
             {/* Mobile Card Layout — below md */}
-            <div className="md:hidden divide-y divide-slate-200/50 flex-1 overflow-y-auto modern-scrollbar bg-slate-50/50">
+            <div className="lg:hidden divide-y divide-slate-200/50 flex-1 overflow-y-auto modern-scrollbar bg-slate-50/50">
               {sorted.map((p) => {
                 const cls = p.course?.level || p.user?.studentClass;
                 return (

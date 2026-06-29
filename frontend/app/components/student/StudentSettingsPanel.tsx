@@ -1,12 +1,32 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 import { api, ApiError, type AuthUser } from "../../lib/api";
 import { getUser, saveSession, clearSession } from "../../lib/auth";
 import { PORTAL_AUTH } from "../../lib/authPortalPaths";
 import { PasswordInput } from "../PasswordInput";
-import { AdminPageBody, AdminPageHeader, AdminPageShell } from "../AdminPageShell";
+import { AdminPageBody, AdminPageShell } from "../AdminPageShell";
+import {
+  PortalSettingsCard,
+  PortalSettingsLayout,
+  PortalSettingsLoading,
+  PortalSettingsPageHeader,
+  PortalSettingsSessionBar,
+  portalSettingsGridClass,
+  portalSettingsInputClass,
+  portalSettingsLabelClass,
+  portalSettingsPasswordClass,
+} from "../PortalSettingsUi";
 import { AccountStatusBadge } from "../AccountStatusBadge";
-import { GraduationCap, Loader2, Mail, Phone, Shield, User, LogOut } from "lucide-react";
+import {
+  GraduationCap,
+  Loader2,
+  Mail,
+  Phone,
+  Shield,
+  User,
+  Key,
+  CheckCircle2,
+} from "lucide-react";
 
 interface StudentSettingsPanelProps {
   token: string;
@@ -32,8 +52,19 @@ export function StudentSettingsPanel({
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
+  const [sendingReset, setSendingReset] = useState(false);
 
   const display = profile ?? user;
+  const email = display?.email ?? "";
+
+  const memberSince = display?.createdAt
+    ? new Date(display.createdAt).toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
+    : null;
 
   async function handlePasswordSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -48,6 +79,7 @@ export function StudentSettingsPanel({
     }
 
     setPasswordLoading(true);
+    setPasswordSuccess(false);
     try {
       await api.changePassword(token, { currentPassword, newPassword });
       const sessionUser = getUser();
@@ -59,7 +91,9 @@ export function StudentSettingsPanel({
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
+      setPasswordSuccess(true);
       onNotify("Password updated successfully.");
+      setTimeout(() => setPasswordSuccess(false), 3000);
     } catch (err) {
       onError(err instanceof ApiError ? err.message : "Failed to change password.");
     } finally {
@@ -67,171 +101,158 @@ export function StudentSettingsPanel({
     }
   }
 
-  const memberSince = display?.createdAt
-    ? new Date(display.createdAt).toLocaleDateString(undefined, {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
-    : null;
+  async function handleForgotPasswordReset() {
+    if (!email) {
+      onError("No email on file for password reset.");
+      return;
+    }
+    setSendingReset(true);
+    try {
+      const res = await api.forgotPassword(email, "student");
+      onNotify(res.message || "Password reset email sent successfully!");
+    } catch (err) {
+      onError(err instanceof ApiError ? err.message : "Failed to trigger password reset email.");
+    } finally {
+      setSendingReset(false);
+    }
+  }
 
   function handleLogout() {
     clearSession();
-    navigate("/login");
+    navigate(PORTAL_AUTH.student.loginPath);
   }
 
   return (
-    <AdminPageShell>
-      <AdminPageHeader
-        title="Account Settings"
-        description="View your profile details and update your login password."
-      />
-
-      <AdminPageBody>
+    <AdminPageShell className="h-full flex flex-col min-h-0 overflow-hidden">
+      <AdminPageBody className="flex-1 min-h-0 overflow-y-auto !mt-0 !pt-0">
         {profileLoading ? (
-          <div className="flex items-center justify-center py-16 gap-3">
-            <Loader2 className="w-8 h-8 animate-spin text-[#FF9F1C]" />
-            <p className="font-bold text-slate-600 text-sm">Loading profile…</p>
-          </div>
+          <PortalSettingsLoading spinnerClassName="text-[#FF9F1C]" />
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <section className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
-              <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-[#FF9F1C] to-[#e88f0a] p-0.5 shrink-0">
-                  <div className="w-full h-full rounded-full bg-white flex items-center justify-center font-bold text-[#FF9F1C] text-sm uppercase">
-                    {display?.name ? display.name.substring(0, 2) : "ST"}
-                  </div>
-                </div>
-                <div className="min-w-0">
-                  <h3 className="font-bold text-slate-900 truncate">{display?.name ?? "Student"}</h3>
-                  <p className="text-xs text-slate-500 font-medium">Student Portal</p>
-                </div>
-                {display?.status ? <AccountStatusBadge status={display.status} /> : null}
-              </div>
+          <PortalSettingsLayout>
+            <PortalSettingsPageHeader
+              title="Academy Settings"
+              description="Manage your profile, password, and secure session."
+            />
 
-              <dl className="space-y-3 text-sm">
-                <div className="flex items-start gap-3">
-                  <Mail className="w-4 h-4 text-[#FF9F1C] mt-0.5 shrink-0" />
-                  <div className="min-w-0">
-                    <dt className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Email</dt>
-                    <dd className="font-semibold text-slate-800 break-all">{display?.email ?? "—"}</dd>
+            <div className={portalSettingsGridClass}>
+              <PortalSettingsCard
+                icon={<User className="w-5 h-5 text-[#FF9F1C]" />}
+                iconWrapClassName="bg-[#FF9F1C]/10 border border-[#FF9F1C]/15"
+                title="Profile Settings"
+                subtitle="Your student portal account details"
+                trailing={display?.status ? <AccountStatusBadge status={display.status} /> : null}
+              >
+                <div className="flex flex-col flex-1 min-h-0 h-full">
+                  <div className="space-y-4 flex-1">
+                    {[
+                      { label: "Full Name", icon: User, value: display?.name ?? "" },
+                      { label: "Email Address", icon: Mail, value: email },
+                      { label: "Phone", icon: Phone, value: display?.phone?.trim() || "Not provided" },
+                      { label: "Class", icon: GraduationCap, value: display?.studentClass ?? "Not set" },
+                    ].map((field) => (
+                      <div key={field.label}>
+                        <label className={portalSettingsLabelClass}>{field.label}</label>
+                        <div className="relative">
+                          <field.icon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                          <input
+                            type="text"
+                            readOnly
+                            value={field.value}
+                            className={`${portalSettingsInputClass} cursor-default`}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex items-start gap-3 pt-4 mt-auto shrink-0 border-t border-slate-100">
+                    <Shield className="w-4 h-4 text-[#FF9F1C] mt-0.5 shrink-0" />
+                    <p className="text-[10px] font-semibold text-slate-500">
+                      Role: <span className="text-slate-800 font-bold">Student</span>
+                      {memberSince ? (
+                        <>
+                          {" "}
+                          · Member since <span className="text-slate-800 font-bold">{memberSince}</span>
+                        </>
+                      ) : null}
+                    </p>
                   </div>
                 </div>
-                <div className="flex items-start gap-3">
-                  <Phone className="w-4 h-4 text-[#FF9F1C] mt-0.5 shrink-0" />
-                  <div className="min-w-0">
-                    <dt className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Phone</dt>
-                    <dd className="font-semibold text-slate-800">{display?.phone?.trim() || "Not provided"}</dd>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Shield className="w-4 h-4 text-[#FF9F1C] mt-0.5 shrink-0" />
-                  <div className="min-w-0">
-                    <dt className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Role</dt>
-                    <dd className="font-semibold text-slate-800">Student</dd>
-                  </div>
-                </div>
-                {display?.studentClass ? (
-                  <div className="flex items-start gap-3">
-                    <GraduationCap className="w-4 h-4 text-[#FF9F1C] mt-0.5 shrink-0" />
-                    <div className="min-w-0">
-                      <dt className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Class</dt>
-                      <dd className="font-semibold text-slate-800">{display.studentClass}</dd>
+              </PortalSettingsCard>
+
+              <PortalSettingsCard
+                icon={<Key className="w-5 h-5 text-slate-600" />}
+                iconWrapClassName="bg-slate-100"
+                title="Security Settings"
+                subtitle="Change password preferences"
+              >
+                <form onSubmit={handlePasswordSubmit} className="flex flex-col flex-1 min-h-0 h-full" noValidate autoComplete="off">
+                  <div className="space-y-4 flex-1">
+                    <div>
+                      <label className={portalSettingsLabelClass}>Current Password</label>
+                      <PasswordInput
+                        required
+                        value={currentPassword}
+                        onChange={setCurrentPassword}
+                        placeholder="Enter current password"
+                        className={`${portalSettingsPasswordClass} focus:border-[#FF9F1C] focus:bg-white`}
+                      />
+                    </div>
+                    <div>
+                      <label className={portalSettingsLabelClass}>New Password</label>
+                      <PasswordInput
+                        required
+                        minLength={8}
+                        value={newPassword}
+                        onChange={setNewPassword}
+                        placeholder="At least 8 characters"
+                        className={`${portalSettingsPasswordClass} focus:border-[#FF9F1C] focus:bg-white`}
+                      />
+                    </div>
+                    <div>
+                      <label className={portalSettingsLabelClass}>Confirm New Password</label>
+                      <PasswordInput
+                        required
+                        minLength={8}
+                        value={confirmPassword}
+                        onChange={setConfirmPassword}
+                        placeholder="Repeat new password"
+                        className={`${portalSettingsPasswordClass} focus:border-[#FF9F1C] focus:bg-white`}
+                      />
+                      <p className="mt-2 text-right">
+                        <button
+                          type="button"
+                          disabled={sendingReset}
+                          onClick={handleForgotPasswordReset}
+                          className="text-[10px] font-black text-slate-400 hover:text-[#FF9F1C] uppercase tracking-wider"
+                        >
+                          {sendingReset ? "Sending Link..." : "Forgot password?"}
+                        </button>
+                      </p>
                     </div>
                   </div>
-                ) : null}
-                {memberSince ? (
-                  <p className="text-[10px] text-slate-400 font-semibold pt-1">Member since {memberSince}</p>
-                ) : null}
-              </dl>
-            </section>
-
-            <section className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
-              <h3 className="font-bold text-slate-900 text-sm mb-1">Change Password</h3>
-              <p className="text-xs text-slate-500 font-medium mb-4">
-                Use a strong password with at least 8 characters.
-              </p>
-
-              <form onSubmit={handlePasswordSubmit} className="space-y-4" noValidate autoComplete="off">
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1.5">
-                    Current password
-                  </label>
-                  <PasswordInput
-                    required
-                    value={currentPassword}
-                    onChange={setCurrentPassword}
-                    placeholder="Enter current password"
-                    className="w-full rounded-xl border border-slate-200 px-4 py-2.5 pr-12 bg-white text-sm outline-none focus:border-[#FF9F1C]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1.5">
-                    New password
-                  </label>
-                  <PasswordInput
-                    required
-                    minLength={8}
-                    value={newPassword}
-                    onChange={setNewPassword}
-                    placeholder="At least 8 characters"
-                    className="w-full rounded-xl border border-slate-200 px-4 py-2.5 pr-12 bg-white text-sm outline-none focus:border-[#FF9F1C]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1.5">
-                    Confirm new password
-                  </label>
-                  <PasswordInput
-                    required
-                    minLength={8}
-                    value={confirmPassword}
-                    onChange={setConfirmPassword}
-                    placeholder="Repeat new password"
-                    className="w-full rounded-xl border border-slate-200 px-4 py-2.5 pr-12 bg-white text-sm outline-none focus:border-[#FF9F1C]"
-                  />
-                  <p className="mt-2 text-right">
-                    <Link
-                      to={PORTAL_AUTH.student.forgotPath}
-                      className="text-[10px] font-bold text-[#FF9F1C] hover:underline"
+                  <div className="pt-4 mt-auto shrink-0 border-t border-slate-100">
+                    <button
+                      type="submit"
+                      disabled={passwordLoading}
+                      className="w-full py-2.5 rounded-xl bg-slate-900 text-white font-sans font-extrabold text-xs uppercase tracking-wider hover:bg-slate-800 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                     >
-                      Forgot password?
-                    </Link>
-                  </p>
-                </div>
-                <button
-                  type="submit"
-                  disabled={passwordLoading}
-                  className="w-full py-2.5 rounded-xl bg-[#FF9F1C] text-white font-bold text-xs tracking-wider uppercase hover:bg-[#e88f0a] transition shadow-md shadow-[#FF9F1C]/10 flex items-center justify-center gap-2 disabled:opacity-60"
-                >
-                  {passwordLoading ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" /> Updating…
-                    </>
-                  ) : (
-                    "Update password"
-                  )}
-                </button>
-              </form>
-            </section>
-          </div>
-        )}
+                      {passwordLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Update Password"}
+                    </button>
+                    {passwordSuccess && (
+                      <span className="flex items-center justify-center gap-1.5 text-xs font-bold text-emerald-600 mt-2.5">
+                        <CheckCircle2 className="w-3.5 h-3.5" /> Password changed!
+                      </span>
+                    )}
+                  </div>
+                </form>
+              </PortalSettingsCard>
 
-        {!profileLoading && (
-          <div className="mt-6 p-5 rounded-2xl bg-rose-50/50 border border-rose-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="space-y-1">
-              <h4 className="font-bold text-xs uppercase text-rose-800 tracking-wider">Active Session</h4>
-              <p className="text-2xs text-rose-600 font-semibold">Logout of the Student Portal securely.</p>
+              <PortalSettingsSessionBar
+                description="Logout of the Student Portal securely."
+                onLogout={handleLogout}
+              />
             </div>
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition shadow-md shadow-rose-600/10 cursor-pointer w-fit"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              LOGOUT
-            </button>
-          </div>
+          </PortalSettingsLayout>
         )}
       </AdminPageBody>
     </AdminPageShell>

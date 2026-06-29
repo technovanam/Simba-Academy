@@ -1,6 +1,7 @@
 import { google } from "googleapis";
 import { env } from "../config/env.js";
 import fs from "node:fs/promises";
+import path from "node:path";
 import { AppError } from "../utils/errors.js";
 import stream from "node:stream";
 
@@ -10,31 +11,68 @@ let driveInstance: any = null;
 const folderAccessCache = new Map<string, { allowed: boolean; expiry: number }>();
 const CACHE_TTL_MS = 60 * 60 * 1000;
 
-export async function getDriveClient() {
-  if (driveInstance) return driveInstance;
+function formatGoogleAuthError(err: unknown): string {
+  const message = err instanceof Error ? err.message : String(err);
+  if (message.includes("invalid_grant")) {
+    return [
+      "Google Drive authentication failed (invalid_grant).",
+      "1) Sync your PC clock: Windows Settings → Time & language → Sync now.",
+      "2) Restart the backend after syncing.",
+      "3) If it still fails, create a new service account key in Google Cloud Console and update GOOGLE_SERVICE_ACCOUNT_JSON.",
+      "4) Share your Drive folder with the service account email as Editor.",
+    ].join(" ");
+  }
+  if (message.includes("ENOENT") || message.includes("no such file")) {
+    return "Google service account JSON file not found. Check GOOGLE_SERVICE_ACCOUNT_JSON in backend/.env.";
+  }
+  return `Google Drive authentication failed: ${message}`;
+}
 
+export function resetDriveClient() {
+  driveInstance = null;
+}
+
+async function loadServiceAccountCredentials(): Promise<{
+  client_email: string;
+  private_key: string;
+}> {
   const credentialsStringOrPath = env.GOOGLE_SERVICE_ACCOUNT_JSON;
   if (!credentialsStringOrPath) {
     throw new AppError("Google service account credentials are not configured", 500);
   }
 
-  let credentials: any;
   try {
     if (credentialsStringOrPath.trim().startsWith("{")) {
-      credentials = JSON.parse(credentialsStringOrPath);
-    } else {
-      const fileContent = await fs.readFile(credentialsStringOrPath, "utf-8");
-      credentials = JSON.parse(fileContent);
+      return JSON.parse(credentialsStringOrPath);
     }
+
+    const resolvedPath = path.isAbsolute(credentialsStringOrPath)
+      ? credentialsStringOrPath
+      : path.resolve(process.cwd(), credentialsStringOrPath);
+    const fileContent = await fs.readFile(resolvedPath, "utf-8");
+    return JSON.parse(fileContent);
   } catch (err: any) {
     throw new AppError(`Failed to load Google Service Account JSON: ${err.message}`, 500);
   }
+}
+
+export async function getDriveClient() {
+  if (driveInstance) return driveInstance;
+
+  const credentials = await loadServiceAccountCredentials();
 
   const auth = new google.auth.JWT({
     email: credentials.client_email,
     key: credentials.private_key,
     scopes: ["https://www.googleapis.com/auth/drive"],
   });
+
+  try {
+    await auth.authorize();
+  } catch (err) {
+    resetDriveClient();
+    throw new AppError(formatGoogleAuthError(err), 503);
+  }
 
   driveInstance = google.drive({ version: "v3", auth });
   return driveInstance;

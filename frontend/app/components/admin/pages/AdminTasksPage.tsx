@@ -106,10 +106,15 @@ import {
 } from "../../PortalPageShell";
 import {
   AdminListEmpty,
-  AdminListPagination,
   AdminRecordList,
   AdminSearchInput,
   PillSelect,
+  adminActionBtnDelete,
+  adminActionBtnEdit,
+  adminActionBtnHistory,
+  adminActionBtnLock,
+  adminActionBtnUnlock,
+  adminActionBtnView,
   adminListRowClass,
   adminListRowStackClass,
   useAdminPagination,
@@ -1733,19 +1738,6 @@ export function AdminTasksPage() {
     return recurringTaskSort === "oldest" ? timeA - timeB : timeB - timeA;
   });
 
-  const recurringTaskPagination = useAdminPagination(
-    sortedFilteredRecurringTasks,
-    [
-      selectedTaskFolder,
-      recurringTaskSearch,
-      recurringTaskClassFilter,
-      recurringTaskStatusFilter,
-      recurringTaskSort,
-      recurringTasks.length,
-    ],
-    10
-  );
-
   async function handleMarkAdminNotificationRead(notificationId: string) {
     if (!token || isActionBusy(actionLoading)) return;
     setActionLoading(`notification-read-${notificationId}`);
@@ -2022,7 +2014,7 @@ export function AdminTasksPage() {
                                           });
                                           setShowTaskFolderForm(true);
                                         }}
-                                        className="absolute top-4 right-10 p-1.5 rounded-lg text-slate-400 hover:text-indigo-650 hover:bg-indigo-50 opacity-0 group-hover:opacity-100 transition"
+                                        className={`absolute top-4 right-10 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition ${adminActionBtnEdit}`}
                                         title="Edit Folder"
                                       >
                                         <Edit2 className="w-4 h-4" />
@@ -2033,7 +2025,7 @@ export function AdminTasksPage() {
                                           e.stopPropagation();
                                           handleDeleteTaskFolder(folder.id);
                                         }}
-                                        className="absolute top-4 right-4 p-1.5 rounded-lg text-slate-400 hover:text-rose-650 hover:bg-rose-50 opacity-0 group-hover:opacity-100 transition"
+                                        className={`absolute top-4 right-4 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition ${adminActionBtnDelete}`}
                                         title="Delete Folder"
                                       >
                                         <Trash2 className="w-4 h-4" />
@@ -2051,21 +2043,40 @@ export function AdminTasksPage() {
                               No general/uncategorized tasks found.
                             </div>
                           ) : (
-                            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex-1 min-h-[480px] flex flex-col">
-                              {/* Desktop Table View */}
-                              <div className="hidden md:block overflow-x-hidden flex-1 min-h-0 overflow-y-auto modern-scrollbar">
-                                <table className="w-full text-left text-sm">
-                                  <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium text-xs sticky top-0 z-10">
-                                    <tr>
-                                      <th className="px-4 py-3 font-semibold w-[20%] whitespace-nowrap">Class</th>
-                                      <th className="px-4 py-3 font-semibold w-[40%] whitespace-nowrap">Task Title &amp; Details</th>
-                                      <th className="px-4 py-3 font-semibold w-[15%] whitespace-nowrap">Repeat Day</th>
-                                      <th className="px-4 py-3 font-semibold w-[10%] whitespace-nowrap">Status</th>
-                                      <th className="px-4 py-3 font-semibold text-right whitespace-nowrap">Actions</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody className="divide-y divide-slate-100">
-                                    {recurringTaskPagination.paginatedItems.map((rt) => (
+                            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex-1 min-h-0 flex flex-col">
+                              {/* Desktop Table View — header fixed, body scrolls */}
+                              <div className="hidden lg:flex flex-col flex-1 min-h-0 overflow-hidden">
+                                <div className="overflow-x-auto shrink-0 border-b border-slate-200 bg-slate-50">
+                                  <table className="w-full text-left text-sm table-fixed">
+                                    <colgroup>
+                                      <col style={{ width: "15%" }} />
+                                      <col style={{ width: "38%" }} />
+                                      <col style={{ width: "17%" }} />
+                                      <col style={{ width: "12%" }} />
+                                      <col style={{ width: "18%" }} />
+                                    </colgroup>
+                                    <thead className="text-slate-500 font-medium text-xs">
+                                      <tr>
+                                        <th className="px-4 py-3 font-semibold whitespace-nowrap">Class</th>
+                                        <th className="px-4 py-3 font-semibold whitespace-nowrap">Task Title &amp; Details</th>
+                                        <th className="px-4 py-3 font-semibold whitespace-nowrap">Repeat Day</th>
+                                        <th className="px-4 py-3 font-semibold whitespace-nowrap">Status</th>
+                                        <th className="px-4 py-3 font-semibold text-right whitespace-nowrap">Actions</th>
+                                      </tr>
+                                    </thead>
+                                  </table>
+                                </div>
+                                <div className="overflow-x-auto flex-1 min-h-0 overflow-y-auto modern-scrollbar">
+                                  <table className="w-full text-left text-sm table-fixed">
+                                    <colgroup>
+                                      <col style={{ width: "15%" }} />
+                                      <col style={{ width: "38%" }} />
+                                      <col style={{ width: "17%" }} />
+                                      <col style={{ width: "12%" }} />
+                                      <col style={{ width: "18%" }} />
+                                    </colgroup>
+                                    <tbody className="divide-y divide-slate-100">
+                                    {sortedFilteredRecurringTasks.map((rt) => (
                                       <tr key={rt.id} className="hover:bg-slate-50/80 transition-colors">
                                         <td className="px-4 py-3 align-middle text-xs text-[#8AC926] font-bold whitespace-normal">
                                           {rt.studentClass ? rt.studentClass.split(',').join(', ') : ''}
@@ -2109,7 +2120,7 @@ export function AdminTasksPage() {
                                             <button
                                               type="button"
                                               onClick={() => setViewTaskDetailsModal(rt)}
-                                              className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-450 hover:text-emerald-650 hover:bg-emerald-50 transition"
+                                              className={adminActionBtnView}
                                               title="View Details"
                                             >
                                               <Eye className="w-4 h-4" />
@@ -2117,11 +2128,7 @@ export function AdminTasksPage() {
                                             <button
                                               type="button"
                                               onClick={() => handleToggleRecurringTask(rt.id, rt.isActive)}
-                                              className={`p-1.5 rounded-lg border transition ${
-                                                rt.isActive
-                                                  ? "bg-amber-50 border-amber-200 text-amber-600 hover:bg-amber-100"
-                                                  : "bg-emerald-50 border-emerald-200 text-emerald-600 hover:bg-emerald-100"
-                                              }`}
+                                              className={rt.isActive ? adminActionBtnLock : adminActionBtnUnlock}
                                               title={rt.isActive ? "Deactivate Task" : "Activate Task"}
                                             >
                                               {rt.isActive ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
@@ -2129,7 +2136,7 @@ export function AdminTasksPage() {
                                             <button
                                               type="button"
                                               onClick={() => loadRecurringTaskHistory(rt.id)}
-                                              className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-400 hover:text-blue-650 hover:bg-blue-50 transition"
+                                              className={adminActionBtnHistory}
                                               title="View Assignment History"
                                             >
                                               <HistoryIcon className="w-4 h-4" />
@@ -2150,7 +2157,7 @@ export function AdminTasksPage() {
                                                 );
                                                 setShowRecurringTaskForm(true);
                                               }}
-                                              className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-400 hover:text-indigo-650 hover:bg-indigo-50 transition"
+                                              className={adminActionBtnEdit}
                                               title="Edit Task"
                                             >
                                               <Edit2 className="w-4 h-4" />
@@ -2158,7 +2165,7 @@ export function AdminTasksPage() {
                                             <button
                                               type="button"
                                               onClick={() => handleDeleteRecurringTask(rt.id)}
-                                              className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-400 hover:text-rose-650 hover:bg-rose-50 transition"
+                                              className={adminActionBtnDelete}
                                               title="Delete Task"
                                             >
                                               <Trash2 className="w-4 h-4" />
@@ -2169,11 +2176,12 @@ export function AdminTasksPage() {
                                     ))}
                                   </tbody>
                                 </table>
+                                </div>
                               </div>
 
                               {/* Mobile/Tablet Card Layout */}
-                              <div className="md:hidden divide-y divide-slate-150 flex-1 overflow-y-auto modern-scrollbar bg-slate-50/50">
-                                {recurringTaskPagination.paginatedItems.map((rt) => (
+                              <div className="lg:hidden divide-y divide-slate-150 flex-1 overflow-y-auto modern-scrollbar bg-slate-50/50">
+                                {sortedFilteredRecurringTasks.map((rt) => (
                                   <div key={rt.id} className="p-4 hover:bg-slate-55 transition-colors flex flex-col gap-2.5">
                                     <div className="flex items-start justify-between gap-3">
                                       <div className="min-w-0 flex-1">
@@ -2186,7 +2194,7 @@ export function AdminTasksPage() {
                                         <button
                                           type="button"
                                           onClick={() => setViewTaskDetailsModal(rt)}
-                                          className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-450 hover:text-emerald-650 hover:bg-emerald-55 transition flex items-center justify-center"
+                                          className={`${adminActionBtnView} flex items-center justify-center`}
                                           title="View Details"
                                         >
                                           <Eye className="w-3.5 h-3.5" />
@@ -2194,11 +2202,7 @@ export function AdminTasksPage() {
                                         <button
                                           type="button"
                                           onClick={() => handleToggleRecurringTask(rt.id, rt.isActive)}
-                                          className={`p-1.5 rounded-lg border transition flex items-center justify-center ${
-                                            rt.isActive
-                                              ? "bg-amber-50 border-amber-200 text-amber-600 hover:bg-amber-100"
-                                              : "bg-emerald-50 border-emerald-200 text-emerald-600 hover:bg-emerald-100"
-                                          }`}
+                                          className={rt.isActive ? `${adminActionBtnLock} flex items-center justify-center` : `${adminActionBtnUnlock} flex items-center justify-center`}
                                           title={rt.isActive ? "Deactivate Task" : "Activate Task"}
                                         >
                                           {rt.isActive ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
@@ -2206,7 +2210,7 @@ export function AdminTasksPage() {
                                         <button
                                           type="button"
                                           onClick={() => loadRecurringTaskHistory(rt.id)}
-                                          className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-400 hover:text-blue-650 hover:bg-blue-50 transition flex items-center justify-center"
+                                          className={`${adminActionBtnHistory} flex items-center justify-center`}
                                           title="View Assignment History"
                                         >
                                           <HistoryIcon className="w-3.5 h-3.5" />
@@ -2227,7 +2231,7 @@ export function AdminTasksPage() {
                                             );
                                             setShowRecurringTaskForm(true);
                                           }}
-                                          className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-400 hover:text-indigo-650 hover:bg-indigo-50 transition flex items-center justify-center"
+                                          className={`${adminActionBtnEdit} flex items-center justify-center`}
                                           title="Edit Task"
                                         >
                                           <Edit2 className="w-3.5 h-3.5" />
@@ -2235,7 +2239,7 @@ export function AdminTasksPage() {
                                         <button
                                           type="button"
                                           onClick={() => handleDeleteRecurringTask(rt.id)}
-                                          className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-450 hover:text-rose-650 hover:bg-rose-50 transition flex items-center justify-center"
+                                          className={`${adminActionBtnDelete} flex items-center justify-center`}
                                           title="Delete Task"
                                         >
                                           <Trash2 className="w-3.5 h-3.5" />
@@ -2268,18 +2272,6 @@ export function AdminTasksPage() {
                                   </div>
                                 ))}
                               </div>
-                              <div className="p-4 bg-slate-50 border-t border-slate-200">
-                                <AdminListPagination
-                                  rangeStart={recurringTaskPagination.rangeStart}
-                                  rangeEnd={recurringTaskPagination.rangeEnd}
-                                  total={sortedFilteredRecurringTasks.length}
-                                  safePage={recurringTaskPagination.safePage}
-                                  totalPages={recurringTaskPagination.totalPages}
-                                  pageNumbers={recurringTaskPagination.pageNumbers}
-                                  onPageChange={recurringTaskPagination.setCurrentPage}
-                                  itemLabel="tasks"
-                                />
-                              </div>
                             </div>
                           )}
                         </div>
@@ -2292,21 +2284,40 @@ export function AdminTasksPage() {
                     {sortedFilteredRecurringTasks.length === 0 ? (
                       <AdminListEmpty message={`No tasks inside the folder "${selectedTaskFolder.name}".`} />
                     ) : (
-                      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex-1 min-h-[480px] flex flex-col">
-                        {/* Desktop Table View */}
-                        <div className="hidden md:block overflow-x-hidden flex-1 min-h-0 overflow-y-auto modern-scrollbar">
-                          <table className="w-full text-left text-sm">
-                            <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium text-xs sticky top-0 z-10">
-                              <tr>
-                                <th className="px-4 py-3 font-semibold w-[15%]">Class</th>
-                                <th className="px-4 py-3 font-semibold w-[45%]">Task Title &amp; Details</th>
-                                <th className="px-4 py-3 font-semibold w-[15%]">Repeat Day</th>
-                                <th className="px-4 py-3 font-semibold w-[10%]">Status</th>
-                                <th className="px-4 py-3 font-semibold text-right">Actions</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                              {recurringTaskPagination.paginatedItems.map((rt) => (
+                      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex-1 min-h-0 flex flex-col">
+                        {/* Desktop Table View — header fixed, body scrolls */}
+                        <div className="hidden lg:flex flex-col flex-1 min-h-0 overflow-hidden">
+                          <div className="overflow-x-auto shrink-0 border-b border-slate-200 bg-slate-50">
+                            <table className="w-full text-left text-sm table-fixed">
+                              <colgroup>
+                                <col style={{ width: "12%" }} />
+                                <col style={{ width: "40%" }} />
+                                <col style={{ width: "18%" }} />
+                                <col style={{ width: "12%" }} />
+                                <col style={{ width: "18%" }} />
+                              </colgroup>
+                              <thead className="text-slate-500 font-medium text-xs">
+                                <tr>
+                                  <th className="px-4 py-3 font-semibold whitespace-nowrap">Class</th>
+                                  <th className="px-4 py-3 font-semibold whitespace-nowrap">Task Title &amp; Details</th>
+                                  <th className="px-4 py-3 font-semibold whitespace-nowrap">Repeat Day</th>
+                                  <th className="px-4 py-3 font-semibold whitespace-nowrap">Status</th>
+                                  <th className="px-4 py-3 font-semibold text-right whitespace-nowrap">Actions</th>
+                                </tr>
+                              </thead>
+                            </table>
+                          </div>
+                          <div className="overflow-x-auto flex-1 min-h-0 overflow-y-auto modern-scrollbar">
+                            <table className="w-full text-left text-sm table-fixed">
+                              <colgroup>
+                                <col style={{ width: "12%" }} />
+                                <col style={{ width: "40%" }} />
+                                <col style={{ width: "18%" }} />
+                                <col style={{ width: "12%" }} />
+                                <col style={{ width: "18%" }} />
+                              </colgroup>
+                              <tbody className="divide-y divide-slate-100">
+                              {sortedFilteredRecurringTasks.map((rt) => (
                                 <tr key={rt.id} className="hover:bg-slate-50/80 transition-colors">
                                   <td className="px-4 py-3 align-middle text-xs text-[#8AC926] font-bold whitespace-normal">
                                     {rt.studentClass ? rt.studentClass.split(',').join(', ') : ''}
@@ -2345,7 +2356,7 @@ export function AdminTasksPage() {
                                     <div className="flex items-center justify-end gap-1.5">
                                       <button
                                         onClick={() => setViewTaskDetailsModal(rt)}
-                                        className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-450 hover:text-emerald-650 hover:bg-emerald-50 transition"
+                                        className={adminActionBtnView}
                                         title="View Details"
                                       >
                                         <Eye className="w-4 h-4" />
@@ -2362,7 +2373,7 @@ export function AdminTasksPage() {
                                       </button>
                                       <button
                                         onClick={() => loadRecurringTaskHistory(rt.id)}
-                                        className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-400 hover:text-blue-650 hover:bg-blue-50 transition"
+                                        className={adminActionBtnHistory}
                                         title="View Assignment History"
                                       >
                                         <HistoryIcon className="w-4 h-4" />
@@ -2382,14 +2393,14 @@ export function AdminTasksPage() {
                                           );
                                           setShowRecurringTaskForm(true);
                                         }}
-                                        className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-450 hover:text-indigo-655 hover:bg-indigo-50 transition"
+                                        className={adminActionBtnEdit}
                                         title="Edit Task"
                                       >
                                         <Edit2 className="w-4 h-4" />
                                       </button>
                                       <button
                                         onClick={() => handleDeleteRecurringTask(rt.id)}
-                                        className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-450 hover:text-rose-655 hover:bg-rose-50 transition"
+                                        className={adminActionBtnDelete}
                                         title="Delete Task"
                                       >
                                         <Trash2 className="w-4 h-4" />
@@ -2400,11 +2411,12 @@ export function AdminTasksPage() {
                               ))}
                             </tbody>
                           </table>
+                          </div>
                         </div>
 
                         {/* Mobile/Tablet Card Layout */}
-                        <div className="md:hidden divide-y divide-slate-150 flex-1 overflow-y-auto modern-scrollbar bg-slate-50/50">
-                          {recurringTaskPagination.paginatedItems.map((rt) => (
+                        <div className="lg:hidden divide-y divide-slate-150 flex-1 overflow-y-auto modern-scrollbar bg-slate-50/50">
+                          {sortedFilteredRecurringTasks.map((rt) => (
                             <div key={rt.id} className="p-4 hover:bg-slate-55 transition-colors flex flex-col gap-2.5">
                               <div className="flex items-start justify-between gap-3">
                                 <div className="min-w-0 flex-1">
@@ -2416,7 +2428,7 @@ export function AdminTasksPage() {
                                 <div className="flex items-center gap-1 shrink-0">
                                   <button
                                     onClick={() => setViewTaskDetailsModal(rt)}
-                                    className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-450 hover:text-emerald-650 hover:bg-emerald-55 transition flex items-center justify-center"
+                                    className={`${adminActionBtnView} flex items-center justify-center`}
                                     title="View Details"
                                   >
                                     <Eye className="w-3.5 h-3.5" />
@@ -2433,7 +2445,7 @@ export function AdminTasksPage() {
                                   </button>
                                   <button
                                     onClick={() => loadRecurringTaskHistory(rt.id)}
-                                    className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-400 hover:text-blue-650 hover:bg-blue-50 transition flex items-center justify-center"
+                                    className={`${adminActionBtnHistory} flex items-center justify-center`}
                                     title="View Assignment History"
                                   >
                                     <HistoryIcon className="w-3.5 h-3.5" />
@@ -2453,14 +2465,14 @@ export function AdminTasksPage() {
                                       );
                                       setShowRecurringTaskForm(true);
                                     }}
-                                    className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-450 hover:text-indigo-655 hover:bg-indigo-50 transition flex items-center justify-center"
+                                    className={`${adminActionBtnEdit} flex items-center justify-center`}
                                     title="Edit Task"
                                   >
                                     <Edit2 className="w-3.5 h-3.5" />
                                   </button>
                                   <button
                                     onClick={() => handleDeleteRecurringTask(rt.id)}
-                                    className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-450 hover:text-rose-655 hover:bg-rose-50 transition flex items-center justify-center"
+                                    className={`${adminActionBtnDelete} flex items-center justify-center`}
                                     title="Delete Task"
                                   >
                                     <Trash2 className="w-3.5 h-3.5" />
@@ -2488,18 +2500,6 @@ export function AdminTasksPage() {
                               </div>
                             </div>
                           ))}
-                        </div>
-                        <div className="p-4 bg-slate-50 border-t border-slate-200">
-                          <AdminListPagination
-                            rangeStart={recurringTaskPagination.rangeStart}
-                            rangeEnd={recurringTaskPagination.rangeEnd}
-                            total={sortedFilteredRecurringTasks.length}
-                            safePage={recurringTaskPagination.safePage}
-                            totalPages={recurringTaskPagination.totalPages}
-                            pageNumbers={recurringTaskPagination.pageNumbers}
-                            onPageChange={recurringTaskPagination.setCurrentPage}
-                            itemLabel="tasks"
-                          />
                         </div>
                       </div>
                     )}
@@ -2720,8 +2720,8 @@ export function AdminTasksPage() {
 
                           <div>
                             <label className="block text-slate-700 font-bold mb-1.5">Repeat Day / Date</label>
-                            <div className="flex flex-row gap-2">
-                              <div className={!["DAILY", "TODAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"].includes(recurringTaskForm.repeatDay) ? "w-1/2" : "w-full"}>
+                            <div className="flex flex-col sm:flex-row gap-2">
+                              <div className={!["DAILY", "TODAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"].includes(recurringTaskForm.repeatDay) ? "w-full sm:w-1/2" : "w-full"}>
                                 <ThemeSelect
                                   value={
                                     ["DAILY", "TODAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"].includes(recurringTaskForm.repeatDay)
@@ -2750,7 +2750,7 @@ export function AdminTasksPage() {
                                 />
                               </div>
                               {!["DAILY", "TODAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"].includes(recurringTaskForm.repeatDay) && (
-                                <div className="w-1/2">
+                                <div className="w-full sm:w-1/2">
                                   <ThemeDatePicker
                                     value={recurringTaskForm.repeatDay}
                                     onChange={(val) => setRecurringTaskForm({ ...recurringTaskForm, repeatDay: val })}
@@ -2930,7 +2930,8 @@ export function AdminTasksPage() {
                             No tasks have been automatically generated yet.
                           </div>
                         ) : (
-                          <table className="w-full text-left text-xs">
+                          <div className="overflow-x-auto">
+                          <table className="w-full text-left text-xs min-w-[280px]">
                             <thead className="bg-slate-100 sticky top-0 text-slate-500 font-bold uppercase tracking-wider">
                               <tr>
                                 <th className="px-4 py-3">Date</th>
@@ -2946,7 +2947,7 @@ export function AdminTasksPage() {
                                   </td>
                                   <td className="px-4 py-3">
                                     <div className="font-bold text-slate-800">{th.teacher?.name}</div>
-                                    <div className="text-[10px] text-slate-500">{th.teacher?.email}</div>
+                                    <div className="text-[10px] text-slate-500 break-all">{th.teacher?.email}</div>
                                   </td>
                                   <td className="px-4 py-3">
                                     <span
@@ -2967,6 +2968,7 @@ export function AdminTasksPage() {
                               ))}
                             </tbody>
                           </table>
+                          </div>
                         )}
                       </div>
                     </div>

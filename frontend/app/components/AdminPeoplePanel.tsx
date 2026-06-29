@@ -16,7 +16,7 @@ import { AccountStatusBadge } from "./AccountStatusBadge";
 import { ThemeSelect } from "./ThemeSelect";
 import { ThemeClassMultiSelect } from "./ThemeClassMultiSelect";
 import { AdminPageBody, AdminPageHeader, AdminPageShell } from "./AdminPageShell";
-import { adminListContainerClass, adminListRowStackClass } from "./AdminListUi";
+import { adminActionBtnDelete, adminActionBtnEdit, adminActionBtnMail, adminListContainerClass, adminListRowStackClass } from "./AdminListUi";
 import { STUDENT_CLASS_OPTIONS } from "../lib/constants";
 import {
   ChevronDown,
@@ -88,15 +88,42 @@ const emptyTeacherForm = {
   assignedClasses: [] as string[],
 };
 
-function teacherClassesLabel(u: AuthUser): string {
-  const classes =
-    u.assignedClasses && u.assignedClasses.length > 0
-      ? u.assignedClasses
-      : u.studentClass
-        ? [u.studentClass]
-        : [];
-  return classes.length > 0 ? classes.join(", ") : "";
+function teacherAssignedClasses(u: AuthUser): string[] {
+  if (u.assignedClasses && u.assignedClasses.length > 0) return u.assignedClasses;
+  if (u.studentClass) return [u.studentClass];
+  return [];
 }
+
+function TeacherClassBadges({ user }: { user: AuthUser }) {
+  const classes = teacherAssignedClasses(user);
+  if (classes.length === 0) {
+    return <span className="text-slate-450">—</span>;
+  }
+  return (
+    <div className="flex flex-wrap gap-1 max-w-full">
+      {classes.map((className) => (
+        <span
+          key={className}
+          className="inline-flex px-1.5 py-0.5 rounded-md bg-[#8AC926]/10 text-[#5a8218] text-[10px] font-bold border border-[#8AC926]/20 leading-tight"
+        >
+          {className}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+const TEACHER_TABLE_COLS = (
+  <colgroup>
+    <col style={{ width: "15%" }} />
+    <col style={{ width: "18%" }} />
+    <col style={{ width: "20%" }} />
+    <col style={{ width: "12%" }} />
+    <col style={{ width: "12%" }} />
+    <col style={{ width: "8%" }} />
+    <col style={{ width: "15%" }} />
+  </colgroup>
+);
 
 const CLASS_FILTER_OPTIONS = [
   { id: "ALL", label: "All Classes" },
@@ -552,21 +579,52 @@ export function AdminPeoplePanel({
           </div>
         ) : (
           <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex-1 min-h-0 flex flex-col">
-            <div className="hidden md:block overflow-x-auto flex-1 min-h-0 overflow-y-auto modern-scrollbar">
-              <table className="w-full text-left text-sm">
-                <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium text-xs sticky top-0 z-10">
-                  <tr>
-                    <th className="px-4 py-3 font-semibold whitespace-nowrap">Name</th>
-                    <th className="px-4 py-3 font-semibold whitespace-nowrap">Email</th>
-                    <th className="px-4 py-3 font-semibold whitespace-nowrap">Class</th>
-                    <th className="px-4 py-3 font-semibold whitespace-nowrap">Phone Number</th>
-                    {mode === "users" && <th className="px-4 py-3 font-semibold whitespace-nowrap">Joining Date</th>}
-                    {mode === "teachers" && <th className="px-4 py-3 font-semibold whitespace-nowrap">Joined Date</th>}
-                    {mode === "teachers" && <th className="px-4 py-3 font-semibold whitespace-nowrap">Strength</th>}
-                    <th className="px-4 py-3 font-semibold text-right whitespace-nowrap">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
+            <div className="hidden lg:flex flex-col flex-1 min-h-0 overflow-hidden">
+              <div className="overflow-x-auto shrink-0 border-b border-slate-200 bg-slate-50">
+                <table className="w-full text-left text-sm table-fixed">
+                  {mode === "users" ? (
+                    <colgroup>
+                      <col style={{ width: "20%" }} />
+                      <col style={{ width: "24%" }} />
+                      <col style={{ width: "10%" }} />
+                      <col style={{ width: "14%" }} />
+                      <col style={{ width: "14%" }} />
+                      <col style={{ width: "18%" }} />
+                    </colgroup>
+                  ) : (
+                    TEACHER_TABLE_COLS
+                  )}
+                  <thead className="text-slate-500 font-medium text-xs">
+                    <tr>
+                      <th className="px-4 py-3 font-semibold whitespace-nowrap">Name</th>
+                      <th className="px-4 py-3 font-semibold whitespace-nowrap">Email</th>
+                      <th className="px-4 py-3 font-semibold whitespace-nowrap">Class</th>
+                      <th className="px-4 py-3 font-semibold whitespace-nowrap">Phone Number</th>
+                      {mode === "users" && <th className="px-4 py-3 font-semibold whitespace-nowrap">Joining Date</th>}
+                      {mode === "teachers" && <th className="px-4 py-3 font-semibold whitespace-nowrap">Joined Date</th>}
+                      {mode === "teachers" && (
+                        <th className="px-4 py-3 font-semibold whitespace-nowrap text-right">Strength</th>
+                      )}
+                      <th className="px-4 py-3 font-semibold text-right whitespace-nowrap">Actions</th>
+                    </tr>
+                  </thead>
+                </table>
+              </div>
+              <div className="overflow-x-auto flex-1 min-h-0 overflow-y-auto">
+                <table className="w-full text-left text-sm table-fixed">
+                  {mode === "users" ? (
+                    <colgroup>
+                      <col style={{ width: "20%" }} />
+                      <col style={{ width: "24%" }} />
+                      <col style={{ width: "10%" }} />
+                      <col style={{ width: "14%" }} />
+                      <col style={{ width: "14%" }} />
+                      <col style={{ width: "18%" }} />
+                    </colgroup>
+                  ) : (
+                    TEACHER_TABLE_COLS
+                  )}
+                  <tbody className="divide-y divide-slate-100">
                   {paginatedRecords.map((u) => (
                     <tr key={u.id} className="hover:bg-slate-50/80 transition-colors">
                       <td className="px-4 py-3 align-middle whitespace-nowrap">
@@ -579,16 +637,14 @@ export function AdminPeoplePanel({
                           <span className="font-bold text-sm text-slate-800">{u.name}</span>
                         </div>
                       </td>
-                      <td className="px-4 py-3 align-middle text-xs text-slate-600 font-medium whitespace-nowrap">
-                        {u.email}
+                      <td className="px-4 py-3 align-middle text-xs text-slate-600 font-medium">
+                        <span className="block truncate" title={u.email}>
+                          {u.email}
+                        </span>
                       </td>
-                      <td className="px-4 py-3 align-middle text-xs text-slate-650 whitespace-nowrap">
+                      <td className="px-4 py-3 align-top text-xs text-slate-650">
                         {mode === "teachers" ? (
-                          teacherClassesLabel(u) ? (
-                            <span className="text-[#8AC926] font-bold">{teacherClassesLabel(u)}</span>
-                          ) : (
-                            <span className="text-slate-450">—</span>
-                          )
+                          <TeacherClassBadges user={u} />
                         ) : u.studentClass ? (
                           <span className="text-[#8AC926] font-bold">{u.studentClass}</span>
                         ) : (
@@ -624,7 +680,7 @@ export function AdminPeoplePanel({
                               <span className="text-slate-450">—</span>
                             )}
                           </td>
-                          <td className="px-4 py-3 align-middle text-xs text-slate-500 font-bold whitespace-nowrap">
+                          <td className="px-4 py-3 align-middle text-xs text-slate-700 font-bold whitespace-nowrap text-right tabular-nums">
                             {u.classStrength !== undefined ? u.classStrength : 0}
                           </td>
                         </>
@@ -656,7 +712,7 @@ export function AdminPeoplePanel({
                               disabled={actionLoading === `reset-${u.id}` || u.status !== "ACTIVE"}
                               onClick={() => handleSendReset(u)}
                               title="Send password reset email"
-                              className="px-2 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100 disabled:opacity-50 flex items-center justify-center"
+                              className={adminActionBtnMail}
                             >
                               {actionLoading === `reset-${u.id}` ? (
                                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -669,7 +725,7 @@ export function AdminPeoplePanel({
                           <button
                             type="button"
                             onClick={() => openEditTeacher(u)}
-                            className="px-2 py-1.5 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 flex items-center justify-center"
+                            className={adminActionBtnEdit}
                             title={mode === "teachers" ? "Edit teacher" : "Edit student"}
                           >
                             <Pencil className="w-3 h-3" />
@@ -679,7 +735,7 @@ export function AdminPeoplePanel({
                             type="button"
                             disabled={u.id === currentUserId || actionLoading === `delete-${u.id}`}
                             onClick={() => setDeleteTarget(u)}
-                            className="px-2 py-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 disabled:opacity-50 flex items-center justify-center"
+                            className={adminActionBtnDelete}
                             title="Delete account"
                           >
                             {actionLoading === `delete-${u.id}` ? (
@@ -694,10 +750,11 @@ export function AdminPeoplePanel({
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
 
             {/* Mobile/Tablet Card Layout */}
-            <div className="md:hidden divide-y divide-slate-200/50 flex-1 overflow-y-auto modern-scrollbar bg-slate-50/50">
+            <div className="lg:hidden divide-y divide-slate-200/50 flex-1 overflow-y-auto modern-scrollbar bg-slate-50/50">
               {paginatedRecords.map((u) => (
                 <div key={u.id} className="p-4 hover:bg-slate-50 transition-colors flex flex-col gap-2.5">
                   <div className="flex items-start justify-between gap-3">
@@ -710,7 +767,7 @@ export function AdminPeoplePanel({
                         )}
                         <h4 className="font-extrabold text-sm text-slate-800 break-all leading-tight">{u.name}</h4>
                       </div>
-                      <p className="text-2xs text-slate-500 font-semibold mt-1 whitespace-nowrap">{u.email}</p>
+                      <p className="text-2xs text-slate-500 font-semibold mt-1 break-all">{u.email}</p>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
                       <button
@@ -738,7 +795,7 @@ export function AdminPeoplePanel({
                           disabled={actionLoading === `reset-${u.id}` || u.status !== "ACTIVE"}
                           onClick={() => handleSendReset(u)}
                           title="Send password reset email"
-                          className="p-1.5 rounded-lg bg-slate-55 border border-slate-200 text-slate-700 hover:bg-slate-100 disabled:opacity-50 flex items-center justify-center"
+                          className={adminActionBtnMail}
                         >
                           {actionLoading === `reset-${u.id}` ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -751,7 +808,7 @@ export function AdminPeoplePanel({
                       <button
                         type="button"
                         onClick={() => openEditTeacher(u)}
-                        className="p-1.5 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 flex items-center justify-center"
+                        className={adminActionBtnEdit}
                         title={mode === "teachers" ? "Edit teacher" : "Edit student"}
                       >
                         <Pencil className="w-3.5 h-3.5" />
@@ -761,7 +818,7 @@ export function AdminPeoplePanel({
                         type="button"
                         disabled={u.id === currentUserId || actionLoading === `delete-${u.id}`}
                         onClick={() => setDeleteTarget(u)}
-                        className="p-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 disabled:opacity-50 flex items-center justify-center"
+                        className={adminActionBtnDelete}
                         title="Delete account"
                       >
                         {actionLoading === `delete-${u.id}` ? (
@@ -779,11 +836,7 @@ export function AdminPeoplePanel({
                     <div>
                       <span className="text-slate-400 font-semibold block uppercase text-[9px] tracking-wider mb-0.5">Class</span>
                       {mode === "teachers" ? (
-                        teacherClassesLabel(u) ? (
-                          <span className="text-[#8AC926] font-extrabold">{teacherClassesLabel(u)}</span>
-                        ) : (
-                          <span className="text-slate-400">—</span>
-                        )
+                        <TeacherClassBadges user={u} />
                       ) : u.studentClass ? (
                         <span className="text-[#8AC926] font-extrabold">{u.studentClass}</span>
                       ) : (
@@ -834,7 +887,7 @@ export function AdminPeoplePanel({
         title="Create Teacher Account"
       >
         <form onSubmit={handleCreateTeacher} noValidate autoComplete="off" className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <input
               required
               placeholder="First name"
@@ -896,7 +949,7 @@ export function AdminPeoplePanel({
         title={mode === "teachers" ? "Edit Teacher" : "Edit Student"}
       >
         <form onSubmit={handleSaveTeacherEdit} noValidate autoComplete="off" className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <input
               required
               placeholder="First name"

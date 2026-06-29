@@ -48,7 +48,7 @@ export function StudentTabBody({ tab }: { tab: StudentTab }) {
 
   if (tab === "overview") {
     return (
-      <PortalPageShell>
+      <PortalPageShell className="h-full !overflow-hidden flex flex-col min-h-0">
         <StudentOverviewPage />
       </PortalPageShell>
     );
@@ -73,7 +73,7 @@ export function StudentTabBody({ tab }: { tab: StudentTab }) {
 
   if (tab === "settings" && token) {
     return (
-      <PortalPageShell className="overflow-y-auto">
+      <PortalPageShell className="h-full !overflow-hidden flex flex-col min-h-0">
         <StudentSettingsPanel
           token={token}
           user={localUser}

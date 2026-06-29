@@ -8,7 +8,7 @@ export interface DocumentViewerModalProps {
   title: string;
   token: string;
   onClose: () => void;
-  accent?: "green" | "orange";
+  accent?: "green" | "orange" | "blue";
   role?: "ADMIN" | "TEACHER" | "STUDENT";
   mimeType?: string;
 }
@@ -88,7 +88,8 @@ export function DocumentViewerModal({
     }
   }, [role, token, fileId, title]);
 
-  const accentSpin = accent === "orange" ? "text-[#FF9F1C]" : "text-[#8AC926]";
+  const accentSpin =
+    accent === "orange" ? "text-[#FF9F1C]" : accent === "blue" ? "text-blue-600" : "text-[#8AC926]";
   const isPpt =
     mimeType?.includes("presentation") ||
     mimeType?.includes("powerpoint") ||
@@ -829,7 +830,9 @@ export function DocumentViewerModal({
       {showConfirmModal && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl p-6 max-w-sm w-full relative overflow-hidden animate-in fade-in zoom-in-95 duration-200 text-center">
-            <div className={`absolute top-0 inset-x-0 h-1 ${accent === "orange" ? "bg-[#FF9F1C]" : "bg-[#8AC926]"}`} />
+            <div className={`absolute top-0 inset-x-0 h-1 ${
+              accent === "orange" ? "bg-[#FF9F1C]" : accent === "blue" ? "bg-blue-600" : "bg-[#8AC926]"
+            }`} />
             
             <div className="mx-auto w-12 h-12 bg-emerald-50 rounded-full flex items-center justify-center text-xl mb-4 mt-2">
               📖
@@ -852,7 +855,11 @@ export function DocumentViewerModal({
                 type="button"
                 onClick={confirmMarkAsRead}
                 className={`flex-1 py-2.5 rounded-xl text-white font-bold transition-colors shadow-md text-xs cursor-pointer ${
-                  accent === "orange" ? "bg-[#FF9F1C] hover:bg-[#e88f0a]" : "bg-[#8AC926] hover:bg-[#72ad1e]"
+                  accent === "orange"
+                    ? "bg-[#FF9F1C] hover:bg-[#e88f0a]"
+                    : accent === "blue"
+                      ? "bg-blue-600 hover:bg-blue-700"
+                      : "bg-[#8AC926] hover:bg-[#72ad1e]"
                 }`}
               >
                 Confirm

@@ -1761,36 +1761,10 @@ export function AdminReviewsPage() {
     <>
 <AdminPageShell>
               <AdminPageHeader
-                title="Parent Reviews & Testimonials"
-                description="Connect Google Business to load full written feedback from every branch. Manual testimonials are added below."
+                title="Parent Reviews"
+                description="Browse Google reviews from each Simba Preschool branch."
                 actions={
                   <>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        if (!token) return;
-                        try {
-                          const { url, message } = await api.getGoogleBusinessAuthUrl(token);
-                          if (message) {
-                            setError(message);
-                            return;
-                          }
-                          window.open(url, "_blank", "noopener,noreferrer");
-                          setMessage(
-                            "Complete Google sign-in in the new tab, then paste the refresh token into backend .env."
-                          );
-                        } catch (err) {
-                          setError(
-                            err instanceof ApiError
-                              ? err.message
-                              : "Could not start Google connect."
-                          );
-                        }
-                      }}
-                      className="px-4 py-2 rounded-xl border border-blue-200 bg-blue-50 text-blue-800 font-sans font-bold text-xs tracking-wider hover:bg-blue-100 transition whitespace-nowrap"
-                    >
-                      Connect Google Business
-                    </button>
                     <button
                       type="button"
                       onClick={async () => {
@@ -1844,46 +1818,12 @@ export function AdminReviewsPage() {
                     >
                       {actionLoading === "google-refresh" ? "Refreshing…" : "Refresh now"}
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowTestimonialForm(true)}
-                      className="px-4 py-2 rounded-xl bg-[#8AC926] text-white font-sans font-bold text-xs tracking-wider flex items-center gap-2 hover:bg-[#78B020] transition shadow-md shadow-[#8AC926]/10 whitespace-nowrap"
-                    >
-                      <Plus className="w-4 h-4" /> Add Review
-                    </button>
                   </>
                 }
               />
 
               <AdminPageBody>
-                {/* ── Google Business reviews (all locations) ── */}
-                <section className="mb-10">
-                  <div className="flex flex-wrap items-end justify-between gap-3 mb-4">
-                    <div>
-                      <h3 className="font-sans text-sm font-extrabold text-slate-900">
-                        Google Business reviews
-                      </h3>
-                      <p className="text-2xs text-slate-600 font-medium mt-0.5">
-                        {googleReviewsMeta.fetchMode === "business_profile"
-                          ? "Full review text from your Google Business account (all locations)"
-                          : googleReviewsMeta.fetchMode === "oauth_pending"
-                            ? "Finish Connect Google Business — refresh token not in .env yet"
-                            : "Places API mode — use Connect Google Business for written feedback"}
-                      </p>
-                    </div>
-                    {googleReviewsMeta.configured && googleReviewsMeta.rating != null && (
-                      <p className="text-xs font-bold text-slate-800">
-                        Overall <span className="text-[#FF9F1C]">★ {googleReviewsMeta.rating}</span>
-                        {googleReviewsMeta.totalRatings != null && (
-                          <span className="text-slate-600">
-                            {" "}
-                            · {googleReviewsMeta.totalRatings} total ratings
-                          </span>
-                        )}
-                      </p>
-                    )}
-                  </div>
-
+                <section>
                   {googleReviewsMeta.hint && (
                     <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-2xs font-semibold text-amber-900">
                       {googleReviewsMeta.hint}
@@ -1893,137 +1833,58 @@ export function AdminReviewsPage() {
                   {!googleReviewsMeta.configured ? (
                     <div className="bg-white rounded-2xl p-8 text-center text-sm font-semibold text-slate-600 border border-slate-200">
                       Google reviews not configured. Set GOOGLE_PLACES_API_KEY and GOOGLE_PLACE_IDS
-                      in backend .env, then click Refresh Google.
+                      in backend .env, then click Refresh now.
                     </div>
                   ) : (
                     <>
                       {googleLocations.length > 0 && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-5">
+                        <div className="flex flex-col gap-3 w-full min-w-0">
                           {googleLocations.map((loc) => (
                             <button
                               key={loc.placeId}
+                              type="button"
                               onClick={() => setSelectedLocationForReviews(loc)}
-                              className="bg-white rounded-xl border border-slate-200 px-4 py-3 shadow-xs text-left hover:shadow-md hover:border-slate-300 transition cursor-pointer flex flex-col justify-center"
+                              className="w-full bg-white rounded-xl border border-slate-200 px-5 py-4 shadow-xs text-left hover:shadow-md hover:border-slate-300 transition cursor-pointer flex items-center justify-between gap-6 min-h-[76px]"
                             >
-                              <p className="font-bold text-2xs text-slate-900 truncate">
-                                {loc.placeName}
-                              </p>
-                              <p className="text-3xs text-slate-600 mt-1 font-medium flex items-center justify-between">
-                                <span>
+                              <div className="min-w-0 flex-1">
+                                <p className="font-bold text-sm text-slate-900">
+                                  {loc.placeName}
+                                </p>
+                                <p className="text-xs text-slate-600 mt-1 font-medium flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
                                   {loc.rating != null && (
-                                    <span className="text-[#FF9F1C] mr-1">★ {loc.rating}</span>
+                                    <span className="text-[#FF9F1C] font-bold">★ {loc.rating}</span>
                                   )}
-                                  {loc.totalRatings ?? 0} ratings · {loc.reviewsReturned} loaded here
-                                </span>
-                                <span className="text-slate-400 font-bold group-hover:text-blue-500 transition">View →</span>
-                              </p>
+                                  <span>
+                                    {loc.totalRatings ?? 0} ratings · {loc.reviewsReturned} loaded here
+                                  </span>
+                                </p>
+                              </div>
+                              <span className="text-sm font-bold text-blue-600 shrink-0">View →</span>
                             </button>
                           ))}
                         </div>
                       )}
 
-                      {googleReviews.length === 0 && (
+                      {googleLocations.length === 0 && googleReviews.length === 0 && (
                         <div className="bg-white rounded-2xl p-8 text-center text-sm font-semibold text-slate-600 border border-slate-200">
                           {googleReviewsMeta.fetchMode === "oauth_pending" ? (
                             <>
-                              OAuth is not finished. Click <strong>Connect Google Business</strong>,
-                              then add{" "}
+                              Google Business OAuth is not configured. Add{" "}
                               <code className="text-2xs bg-slate-100 px-1 rounded">
                                 GOOGLE_BUSINESS_REFRESH_TOKEN
                               </code>{" "}
-                              to backend .env.
-                            </>
-                          ) : googleReviewsMeta.fetchMode === "business_profile" ? (
-                            <>
-                              No reviews loaded yet. Click <strong>Refresh Google</strong> once. If
-                              you see a rate-limit message above, wait 5 minutes before trying
-                              again.
+                              to backend .env, then click <strong>Refresh now</strong>.
                             </>
                           ) : (
                             <>
-                              No written reviews yet for {googleLocations.length || "your"}{" "}
-                              location(s). Connect Google Business or check Places API settings in
-                              backend .env.
+                              No reviews loaded yet. Click <strong>Refresh now</strong> to sync from
+                              Google.
                             </>
                           )}
                         </div>
                       )}
                     </>
                   )}
-                </section>
-
-                {/* ── Manual testimonials (database) ── */}
-                <section>
-                  <h3 className="font-sans text-sm font-extrabold text-slate-900 mb-4">
-                    Manual website testimonials
-                  </h3>
-                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-                    {testimonials.length === 0 ? (
-                      <div className="col-span-full bg-white rounded-2xl p-8 text-center text-sm font-semibold text-slate-600 border border-slate-200">
-                        No manual testimonials yet. Use Add Review to create one.
-                      </div>
-                    ) : (
-                      testimonials.map((t) => (
-                        <div
-                          key={t.id}
-                          className="bg-white rounded-2xl p-5 border border-slate-200 shadow-md flex flex-col justify-between hover:shadow-lg transition group/review min-w-0"
-                        >
-                          <div>
-                            <div className="flex justify-between items-center mb-3">
-                              <div className="flex text-[#FF9F1C] gap-0.5">
-                                {Array.from({ length: t.rating }).map((_, idx) => (
-                                  <span key={idx}>★</span>
-                                ))}
-                              </div>
-                              <span
-                                className={`px-2 py-0.5 rounded-lg text-4xs font-extrabold uppercase border ${
-                                  t.isApproved
-                                    ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                                    : "bg-amber-500/10 text-amber-400 border-amber-500/20 animate-pulse"
-                                }`}
-                              >
-                                {t.isApproved ? "PUBLISHED" : "HIDDEN"}
-                              </span>
-                            </div>
-                            <p className="text-xs italic text-slate-700 break-words">
-                              &ldquo;{t.content}&rdquo;
-                            </p>
-                            <h5 className="font-sans font-bold text-xs text-[#8AC926] mt-3 break-words">
-                              — {t.name}
-                            </h5>
-                          </div>
-
-                          <div className="border-t border-slate-200 pt-4 mt-4 flex gap-2">
-                            {!t.isApproved && (
-                              <button
-                                disabled={actionLoading === `testimonial-approve-${t.id}`}
-                                onClick={() => handleApproveTestimonial(t.id, true)}
-                                className="flex-1 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 font-bold text-2xs transition"
-                              >
-                                Publish Review
-                              </button>
-                            )}
-                            {t.isApproved && (
-                              <button
-                                disabled={actionLoading === `testimonial-approve-${t.id}`}
-                                onClick={() => handleApproveTestimonial(t.id, false)}
-                                className="flex-1 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100 font-bold text-2xs transition"
-                              >
-                                Hide Review
-                              </button>
-                            )}
-                            <button
-                              disabled={actionLoading === `testimonial-delete-${t.id}`}
-                              onClick={() => handleDeleteTestimonial(t.id)}
-                              className="px-3 py-1.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 transition flex items-center justify-center"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
                 </section>
               </AdminPageBody>
 

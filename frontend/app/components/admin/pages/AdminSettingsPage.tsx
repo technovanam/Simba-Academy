@@ -96,7 +96,6 @@ import { resolveStorageUrl } from "../../../lib/storage";
 import { isDateTodayOrFuture, localDateInputMin } from "../../../lib/dates";
 import { ModalCloseButton } from "../../ModalCloseButton";
 import { GoogleReviewCard } from "../../GoogleReviewCard";
-import { AdminPageBody, AdminPageHeader, AdminPageShell } from "../../AdminPageShell";
 import {
   PortalPageShell,
   portalDashboardBodyClass,
@@ -1756,19 +1755,5 @@ export function AdminSettingsPage() {
     { id: "CUSTOM", label: "Custom Range" },
   ];
 
-  return (
-    <>
-<AdminPageShell>
-              <AdminPageHeader
-                title="Academy Settings"
-                description="Manage your profile, password, and secure session."
-              />
-              <AdminPageBody>
-                <div className="mt-6">
-                  <AdminSettingsPanel user={user!} token={token!} />
-                </div>
-              </AdminPageBody>
-            </AdminPageShell>
-    </>
-  );
+  return <AdminSettingsPanel user={user!} token={token!} />;
 }

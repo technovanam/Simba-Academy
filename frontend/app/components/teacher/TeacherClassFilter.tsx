@@ -55,8 +55,8 @@ export function TeacherClassFilter({
                 onClick={() => onChange(opt.id)}
                 className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wide whitespace-nowrap border transition shrink-0 ${
                   active
-                    ? "bg-[#8AC926] text-white border-[#78B020] shadow-sm"
-                    : "bg-white text-slate-600 border-slate-200 hover:border-[#8AC926]/40"
+                    ? "bg-blue-600 text-white border-blue-700 shadow-sm"
+                    : "bg-white text-slate-600 border-slate-200 hover:border-blue-400/40"
                 }`}
               >
                 {opt.label}
@@ -73,14 +73,14 @@ export function TeacherClassFilter({
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className="px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-800 font-bold text-2xs flex items-center gap-1.5 shadow-xs hover:bg-[#8AC926]/10 hover:border-[#8AC926]/40 transition-all duration-300"
+        className="px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-800 font-bold text-2xs flex items-center gap-1.5 shadow-xs hover:bg-blue-50 hover:border-blue-300 transition-all duration-300"
         aria-label={`Class filter: ${activeLabel}`}
         aria-expanded={open}
         aria-haspopup="listbox"
       >
-        <SlidersHorizontal className="w-3.5 h-3.5 text-[#8AC926] shrink-0" />
+        <SlidersHorizontal className="w-3.5 h-3.5 text-blue-600 shrink-0" />
         <span className="hidden sm:inline">Filter</span>
-        <span className="text-[#6B9E1A] font-extrabold truncate max-w-[5.5rem] sm:max-w-[7rem]">
+        <span className="text-blue-700 font-extrabold truncate max-w-[5.5rem] sm:max-w-[7rem]">
           {activeLabel}
         </span>
       </button>
@@ -105,12 +105,12 @@ export function TeacherClassFilter({
                 }}
                 className={`w-full px-3 py-2 text-left text-2xs font-bold flex items-center justify-between gap-2 transition ${
                   active
-                    ? "bg-[#8AC926]/10 text-[#5a8a18]"
+                    ? "bg-blue-50 text-blue-700"
                     : "text-slate-700 hover:bg-slate-50"
                 }`}
               >
                 <span className="truncate">{opt.label}</span>
-                {active ? <Check className="w-3.5 h-3.5 text-[#8AC926] shrink-0" /> : null}
+                {active ? <Check className="w-3.5 h-3.5 text-blue-600 shrink-0" /> : null}
               </button>
             );
           })}

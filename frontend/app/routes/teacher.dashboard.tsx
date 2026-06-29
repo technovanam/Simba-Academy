@@ -25,19 +25,26 @@ import { TeacherClassFilter } from "../components/teacher/TeacherClassFilter";
 import { TeacherNotificationsPage } from "../components/teacher/pages/TeacherNotificationsPage";
 import { AdminPageBody, AdminPageHeader, AdminPageShell } from "../components/AdminPageShell";
 import {
-  portalDashboardBodyClass,
-  portalDashboardLowerGridClass,
+  portalDashboardOverviewClass,
+  portalDashboardLowerGridShellClass,
+  portalDashboardMainPanelClass,
+  portalAnalyticsHeaderClass,
+  portalAnalyticsLabelClass,
+  portalAnalyticsListClass,
+  portalAnalyticsPanelClass,
+  portalAnalyticsRowClass,
+  portalAnalyticsTitleClass,
+  portalAnalyticsValueClass,
+  portalHeroMetricClass,
 } from "../components/PortalPageShell";
 import { DashboardSkeleton, FullPortalSkeleton } from "../components/DashboardSkeleton";
 import {
   AdminListEmpty,
-  AdminListPagination,
   AdminRecordList,
   AdminSearchInput,
   PillSelect,
   adminListContainerClass,
   adminListRowClass,
-  useAdminPagination,
 } from "../components/AdminListUi";
 import {
   LogOut,
@@ -444,7 +451,11 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
     );
   });
 
-  const plannerPagination = useAdminPagination(filteredLessonPlans, [plannerSearch]);
+  const sortedLessonPlans = [...filteredLessonPlans].sort((a, b) => {
+    const aDate = a.planDate ? new Date(a.planDate).getTime() : new Date(a.createdAt).getTime();
+    const bDate = b.planDate ? new Date(b.planDate).getTime() : new Date(b.createdAt).getTime();
+    return bDate - aDate;
+  });
 
   const recentLessonPlans = [...lessonPlans]
     .sort((a, b) => {
@@ -536,7 +547,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                   }`}
               >
                 <div className="flex items-center gap-3 py-1">
-                  <Icon className="w-4 h-4 transition-transform duration-300 group-hover/btn:scale-110 text-[#8AC926]" />
+                  <Icon className="w-4 h-4 transition-transform duration-300 group-hover/btn:scale-110 text-blue-600" />
                   <span>{tab.label}</span>
                 </div>
                 {tab.id === "notifications" && unreadNotificationCount > 0 ? (
@@ -580,7 +591,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
               <button
                 type="button"
                 onClick={() => goToTab("settings")}
-                className="flex items-center gap-2.5 pl-3 pr-2.5 py-1.5 rounded-xl border transition-all duration-200 bg-white border-slate-200 hover:border-[#8AC926]/40 hover:bg-slate-50"
+                className="flex items-center gap-2.5 pl-3 pr-2.5 py-1.5 rounded-xl border transition-all duration-200 bg-white border-slate-200 hover:border-blue-400/40 hover:bg-slate-50"
                 aria-label="Open account settings"
               >
                 <div className="text-right hidden sm:block min-w-0">
@@ -590,8 +601,8 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                   <p className="text-[10px] text-slate-500 font-medium">Account settings</p>
                 </div>
                 <div className="relative shrink-0">
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#8AC926] to-[#78B020] p-0.5 shadow-sm">
-                    <div className="w-full h-full rounded-full bg-white flex items-center justify-center font-bold text-[#8AC926] text-[10px] uppercase">
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-600 to-blue-700 p-0.5 shadow-sm">
+                    <div className="w-full h-full rounded-full bg-white flex items-center justify-center font-bold text-blue-600 text-[10px] uppercase">
                       {user?.name ? user.name.substring(0, 2) : "TE"}
                     </div>
                   </div>
@@ -618,7 +629,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
           {loading && activeTab !== "settings" && activeTab !== "notifications" ? (
             <DashboardSkeleton />
           ) : activeTab === "overview" ? (
-            <div className={`${portalDashboardBodyClass} h-full overflow-hidden !pb-0`}>
+            <div className={portalDashboardOverviewClass}>
               {/* ─────────────── OVERVIEW DASHBOARD ─────────────── */}
                   <div className="flex flex-wrap items-center justify-between gap-3 shrink-0">
                     <div className="min-w-0">
@@ -642,30 +653,30 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
 
                   {/* Three summary panels (matches admin dashboard style) */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch shrink-0">
-                    {/* Assigned tasks ÔÇö light green */}
-                    <div className="bg-[#F3FAEB] border border-green-100 rounded-2xl p-5 text-slate-800 flex flex-col justify-between min-h-[190px]">
+                    {/* Assigned tasks — light blue */}
+                    <div className="bg-[#EEF4FF] border border-blue-100 rounded-2xl p-5 text-slate-800 flex flex-col justify-between min-h-[190px]">
                       <div>
                         <div className="flex justify-between items-center mb-3">
-                          <span className="font-bold tracking-wider text-[10px] uppercase text-green-800">Assigned Tasks</span>
-                          <div className="p-1.5 bg-green-100 rounded-xl border border-green-200">
-                            <Calendar className="w-3.5 h-3.5 text-[#6B9E1A]" />
+                          <span className="font-bold tracking-wider text-[10px] uppercase text-blue-800">Assigned Tasks</span>
+                          <div className="p-1.5 bg-blue-100 rounded-xl border border-blue-200">
+                            <Calendar className="w-3.5 h-3.5 text-blue-600" />
                           </div>
                         </div>
                         <div className="space-y-2">
                           <div className="space-y-1">
-                            <span className="text-[9px] font-bold text-green-600/80 tracking-widest block uppercase">Awaiting proof</span>
-                            <h3 className="text-2xl font-bold text-slate-800 leading-none tracking-tight">
+                            <span className="text-[9px] font-bold text-blue-600/80 tracking-widest block uppercase">Awaiting proof</span>
+                            <h3 className={portalHeroMetricClass}>
                               {pendingTasksCount + rejectedTasksCount} Active
                             </h3>
                           </div>
                           <div className="space-y-1.5">
                             {recentTasks.length === 0 ? (
-                              <div className="bg-white rounded-xl p-2.5 border border-green-100 text-xs text-center text-slate-600 font-semibold">
+                              <div className="bg-white rounded-xl p-2.5 border border-blue-100 text-xs text-center text-slate-600 font-semibold">
                                 No tasks assigned yet.
                               </div>
                             ) : (
                               recentTasks.map((task) => (
-                                <div key={task.id} className="bg-white rounded-xl p-2.5 border border-green-100 text-xs flex flex-col gap-1">
+                                <div key={task.id} className="bg-white rounded-xl p-2.5 border border-blue-100 text-xs flex flex-col gap-1">
                                   <div className="flex justify-between items-start gap-1">
                                     <span className="font-bold text-slate-800 text-2xs truncate max-w-[140px]">{task.title}</span>
                                     <span className={`px-1 py-0.5 rounded-md text-[8px] font-extrabold uppercase shrink-0 ${
@@ -689,11 +700,11 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                           </div>
                         </div>
                       </div>
-                      <div className="flex justify-between items-center border-t border-green-100 pt-2 mt-2">
+                      <div className="flex justify-between items-center border-t border-blue-100 pt-2 mt-2">
                         <button
                           type="button"
                           onClick={() => goToTab("tasks")}
-                          className="text-[9px] font-extrabold uppercase tracking-widest text-green-700 hover:underline inline-flex items-center gap-0.5"
+                          className="text-[9px] font-extrabold uppercase tracking-widest text-blue-700 hover:underline inline-flex items-center gap-0.5"
                         >
                           View tasks <ChevronRight className="w-2.5 h-2.5" />
                         </button>
@@ -713,7 +724,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                         <div className="space-y-2">
                           <div className="space-y-1">
                             <span className="text-[9px] font-bold text-blue-600/80 tracking-widest block uppercase">Published plans</span>
-                            <h3 className="text-2xl font-bold text-slate-800 leading-none tracking-tight">
+                            <h3 className={portalHeroMetricClass}>
                               {lessonPlans.length} Plans
                             </h3>
                           </div>
@@ -749,10 +760,8 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                       </div>
                     </div>
 
-                    {/* Upcoming deadlines ÔÇö light violet */}
-                    <div className={`bg-[#F5F3FF] border border-violet-100 rounded-2xl p-5 text-slate-800 flex flex-col md:col-span-2 lg:col-span-1 ${
-                      upcomingTasks.length === 0 ? "justify-between gap-2 self-start w-full min-h-[190px]" : "justify-between min-h-[190px]"
-                    }`}>
+                    {/* Upcoming deadlines — light violet */}
+                    <div className="bg-[#F5F3FF] border border-violet-100 rounded-2xl p-5 text-slate-800 flex flex-col justify-between min-h-[190px]">
                       <div>
                         <div className="flex justify-between items-center mb-3">
                           <span className="font-bold tracking-wider text-[10px] uppercase text-violet-800">Upcoming Deadlines</span>
@@ -763,7 +772,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                         <div className="space-y-2">
                           <div className="space-y-1">
                             <span className="text-[9px] font-bold text-violet-600/80 tracking-widest block uppercase">Needs attention</span>
-                            <h3 className="text-2xl font-bold text-slate-800 leading-none tracking-tight">
+                            <h3 className={portalHeroMetricClass}>
                               {upcomingTasks.length} Due soon
                             </h3>
                           </div>
@@ -801,8 +810,8 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                   </div>
 
                   {/* Split workspace */}
-                  <div className={`${portalDashboardLowerGridClass} flex-1 min-h-0 overflow-hidden`}>
-                    <div className="lg:col-span-2 bg-white rounded-2xl p-5 border border-slate-200 flex flex-col flex-1 min-h-0 overflow-hidden">
+                  <div className={portalDashboardLowerGridShellClass}>
+                    <div className={portalDashboardMainPanelClass}>
                       <div className="flex flex-wrap justify-between items-center gap-4 mb-4">
                         <div>
                           <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Recent Tasks</h3>
@@ -813,7 +822,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                         <button
                           type="button"
                           onClick={() => goToTab("tasks")}
-                          className="text-[9px] font-extrabold uppercase tracking-widest text-green-700 hover:underline inline-flex items-center gap-0.5"
+                          className="text-[9px] font-extrabold uppercase tracking-widest text-blue-700 hover:underline inline-flex items-center gap-0.5"
                         >
                           View all <ChevronRight className="w-2.5 h-2.5" />
                         </button>
@@ -857,7 +866,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                                       setSelectedProofFile(null);
                                       setShowProofModal(true);
                                     }}
-                                    className="px-2.5 py-1 rounded-lg bg-[#8AC926] text-white font-bold text-[10px] hover:bg-[#78B020] transition"
+                                    className="px-2.5 py-1 rounded-lg bg-blue-600 text-white font-bold text-[10px] hover:bg-blue-700 transition"
                                   >
                                     Submit proof
                                   </button>
@@ -869,32 +878,30 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                       </div>
                     </div>
 
-                    <div className="bg-white rounded-2xl p-5 border border-slate-200 flex flex-col flex-1 min-h-0 overflow-hidden">
-                      <div className="flex items-center justify-between pb-2 border-b border-slate-100 mb-4">
-                        <h4 className="font-bold text-xs uppercase text-slate-800 tracking-wider">Workspace Summary</h4>
-                        <TrendingUp className="w-5 h-5 text-[#8AC926]" />
+                    <div className={portalAnalyticsPanelClass}>
+                      <div className={portalAnalyticsHeaderClass}>
+                        <h4 className={portalAnalyticsTitleClass}>Workspace Summary</h4>
+                        <TrendingUp className="w-4 h-4 text-blue-600 shrink-0" />
                       </div>
 
-                      <div className="grid grid-cols-1 gap-2.5 flex-1">
+                      <div className={portalAnalyticsListClass}>
                         {[
-                          { label: "Pending proof", value: pendingTasksCount, tone: "amber" },
-                          { label: "Submitted", value: completedTasksCount, tone: "sky" },
-                          { label: "Approved tasks", value: approvedTasksCount, tone: "emerald" },
-                          { label: "Lesson plans", value: lessonPlans.length, tone: "green" },
-                          { label: "Students", value: classStudents.length, tone: "sky" },
+                          { label: "Pending proof", value: pendingTasksCount, className: "bg-amber-50 border-amber-100" },
+                          { label: "Submitted", value: completedTasksCount, className: "bg-blue-50 border-blue-100" },
+                          { label: "Approved tasks", value: approvedTasksCount, className: "bg-indigo-50 border-indigo-100" },
+                          { label: "Lesson plans", value: lessonPlans.length, className: "bg-sky-50 border-sky-100" },
+                          { label: "Students", value: classStudents.length, className: "bg-slate-50 border-slate-100" },
                         ].map((item) => (
                           <div
                             key={item.label}
-                            className={`p-3 rounded-xl border flex items-center justify-between ${
-                              item.tone === "amber" ? "bg-amber-50 border-amber-100" :
-                              item.tone === "sky" ? "bg-sky-50 border-sky-100" :
-                              item.tone === "emerald" ? "bg-emerald-50 border-emerald-100" :
-                              item.tone === "green" ? "bg-[#8AC926]/5 border-[#8AC926]/15" :
-                              "bg-[#FF9F1C]/5 border-[#FF9F1C]/15"
-                            }`}
+                            className={`${portalAnalyticsRowClass} ${item.className}`}
                           >
-                            <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">{item.label}</span>
-                            <span className="text-xl font-bold text-slate-800 leading-none">{item.value}</span>
+                            <span className={portalAnalyticsLabelClass}>
+                              {item.label}
+                            </span>
+                            <span className={portalAnalyticsValueClass}>
+                              {item.value}
+                            </span>
                           </div>
                         ))}
                       </div>
@@ -917,6 +924,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                           onChange={setTaskSearch}
                           placeholder="Search tasks..."
                           ariaLabel="Search tasks"
+                          accent="blue"
                         />
                         <TeacherClassFilter
                           assignedClasses={assignedClasses}
@@ -929,6 +937,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                           onChange={setTaskStatusFilter}
                           ariaLabel="Filter by status"
                           align="right"
+                          accent="blue"
                         />
                       </>
                     }
@@ -1077,7 +1086,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                                               className={`w-28 h-[30px] flex items-center justify-center rounded-xl text-white font-sans font-bold text-2xs transition shadow-md whitespace-nowrap ${
                                                 t.status === "REJECTED" || t.status === "OVERDUE"
                                                   ? "bg-rose-500 hover:bg-rose-600 shadow-rose-500/20"
-                                                  : "bg-[#8AC926] hover:bg-[#78B020] shadow-[#8AC926]/10"
+                                                  : "bg-blue-600 hover:bg-blue-700 shadow-blue-500/10"
                                               }`}
                                             >
                                               {t.status === "REJECTED" ? "Re-submit" :
@@ -1125,7 +1134,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                                   <div className="flex flex-col gap-1">
                                     <span className="font-bold text-sm text-slate-800">{t.title}</span>
                                     {t.description && (
-                                      <p className="text-xs text-slate-500 font-medium truncate block">{t.description}</p>
+                                      <p className="text-xs text-slate-500 font-medium line-clamp-2 break-words">{t.description}</p>
                                     )}
                                   </div>
                                   <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100/60 pt-2.5">
@@ -1229,7 +1238,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                                         className={`px-4 py-2 rounded-xl text-white font-sans font-bold text-xs transition shadow-md whitespace-nowrap ${
                                           t.status === "REJECTED" || t.status === "OVERDUE"
                                             ? "bg-rose-500 hover:bg-rose-600 shadow-rose-500/20"
-                                            : "bg-[#8AC926] hover:bg-[#78B020] shadow-[#8AC926]/10"
+                                            : "bg-blue-600 hover:bg-blue-700 shadow-blue-500/10"
                                         }`}
                                       >
                                         {t.status === "REJECTED" ? "Re-submit" :
@@ -1292,6 +1301,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                           onChange={setPlannerSearch}
                           placeholder="Search lesson plans..."
                           ariaLabel="Search lesson plans"
+                          accent="blue"
                         />
                         <TeacherClassFilter
                           assignedClasses={assignedClasses}
@@ -1307,9 +1317,9 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                     {filteredLessonPlans.length === 0 ? (
                       <AdminListEmpty message="No published lesson plans matched your search." />
                     ) : (
-                      <div className={`${adminListContainerClass} flex-1 min-h-0 flex flex-col justify-between`}>
-                        <div className="space-y-1.5 flex-1 min-h-0 overflow-y-auto bg-white">
-                          {plannerPagination.paginatedItems.map((plan) => (
+                      <div className={`${adminListContainerClass} flex-1 min-h-0 flex flex-col overflow-hidden`}>
+                        <div className="space-y-1.5 flex-1 min-h-0 overflow-y-auto modern-scrollbar bg-white">
+                          {sortedLessonPlans.map((plan) => (
                             <div key={plan.id} className={adminListRowClass}>
                               <div className="flex-1 min-w-[180px]">
                                 <p className="font-bold text-sm text-slate-800 truncate max-w-md">{plan.title}</p>
@@ -1318,7 +1328,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                                 <button
                                   type="button"
                                   onClick={() => setLessonPlanViewer(plan)}
-                                  className="px-3 py-1.5 rounded-lg font-bold text-2xs flex items-center gap-1 border bg-blue-50 border-blue-200 text-blue-800 hover:bg-blue-100"
+                                  className="px-3 py-1.5 rounded-lg font-bold text-2xs flex items-center gap-1 border bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
                                 >
                                   <Eye className="w-3.5 h-3.5" />
                                   View
@@ -1327,16 +1337,6 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                             </div>
                           ))}
                         </div>
-                        <AdminListPagination
-                          rangeStart={plannerPagination.rangeStart}
-                          rangeEnd={plannerPagination.rangeEnd}
-                          total={filteredLessonPlans.length}
-                          safePage={plannerPagination.safePage}
-                          totalPages={plannerPagination.totalPages}
-                          pageNumbers={plannerPagination.pageNumbers}
-                          onPageChange={plannerPagination.setCurrentPage}
-                          itemLabel="plans"
-                        />
                       </div>
                     )}
                   </AdminPageBody>
@@ -1389,6 +1389,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                           onChange={setStudentSearch}
                           placeholder="Search students"
                           ariaLabel="Search students"
+                          accent="blue"
                         />
                         <TeacherClassFilter
                           assignedClasses={assignedClasses}
@@ -1436,13 +1437,13 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                                 <div 
                                   key={student.id} 
                                   onClick={() => handleOpenStudentProgress(student)}
-                                  className="px-6 py-4 flex flex-col md:grid md:grid-cols-12 md:items-center gap-2 md:gap-4 hover:bg-slate-50/80 transition duration-200 cursor-pointer"
+                                  className="px-3 sm:px-6 py-4 flex flex-col md:grid md:grid-cols-12 md:items-center gap-2 md:gap-4 hover:bg-slate-50/80 transition duration-200 cursor-pointer"
                                 >
                                   {/* Name column */}
                                   <div className="col-span-4 min-w-0 md:col-span-4">
                                     <p className="font-bold text-sm text-slate-800 truncate">{student.name}</p>
                                     {activeClassFilter === "all" && assignedClasses.length > 1 && student.studentClass ? (
-                                      <span className="md:hidden mt-1 inline-block px-2 py-0.5 rounded-full bg-[#8AC926]/10 text-[#5a8a18] text-[10px] font-bold border border-[#8AC926]/20">
+                                      <span className="md:hidden mt-1 inline-block px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
                                         {student.studentClass}
                                       </span>
                                     ) : null}
@@ -1450,13 +1451,13 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
 
                                   {/* Email column */}
                                   <div className="col-span-3 min-w-0 md:col-span-3">
-                                    <p className="text-2xs text-slate-600 font-semibold truncate">{student.email}</p>
+                                    <p className="text-2xs text-slate-600 font-semibold break-all sm:truncate" title={student.email}>{student.email}</p>
                                     {student.phone && <p className="text-[10px] text-slate-400 font-medium truncate mt-0.5">{student.phone}</p>}
                                   </div>
 
                                   {activeClassFilter === "all" && assignedClasses.length > 1 ? (
                                     <div className="hidden md:block col-span-2 min-w-0">
-                                      <span className="px-2 py-0.5 rounded-full bg-[#8AC926]/10 text-[#5a8a18] text-[10px] font-bold border border-[#8AC926]/20">
+                                      <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
                                         {student.studentClass ?? "—"}
                                       </span>
                                     </div>
@@ -1513,7 +1514,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
               <div className="overflow-y-auto flex-1 pr-1 space-y-4 min-h-0">
                 <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 shrink-0">
                   <p className="font-bold text-slate-900 text-2xs">Active Task:</p>
-                  <p className="font-bold text-[#8AC926] text-xs mt-0.5">{selectedTask.title}</p>
+                  <p className="font-bold text-blue-600 text-xs mt-0.5">{selectedTask.title}</p>
                   {selectedTask.description && <p className="text-3xs text-slate-600 mt-1 line-clamp-2">{selectedTask.description}</p>}
                 </div>
 
@@ -1525,7 +1526,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                     placeholder="Describe your completion results (e.g. Completed worksheets uploaded, lesson photos attached...)"
                     value={proofForm.description}
                     onChange={(e) => setProofForm({ ...proofForm, description: e.target.value })}
-                    className="w-full rounded-xl bg-white border border-slate-200 px-4 py-2.5 text-slate-900 outline-none focus:border-[#8AC926] placeholder-slate-400 transition"
+                    className="w-full rounded-xl bg-white border border-slate-200 px-4 py-2.5 text-slate-900 outline-none focus:border-blue-500 placeholder-slate-400 transition"
                   />
                 </div>
 
@@ -1538,14 +1539,14 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
 
                   {/* Show existing attachment indicator when editing */}
                   {selectedTask.proofUrl && !selectedProofFile && (
-                    <div className="flex items-center gap-2 px-3 py-2.5 mb-2 bg-[#8AC926]/5 border border-[#8AC926]/30 rounded-xl">
-                      <FileCheck2 className="w-4 h-4 text-[#8AC926] shrink-0" />
+                    <div className="flex items-center gap-2 px-3 py-2.5 mb-2 bg-blue-600/5 border border-blue-200 rounded-xl">
+                      <FileCheck2 className="w-4 h-4 text-blue-600 shrink-0" />
                       <span className="text-xs font-semibold text-slate-700 flex-1">Current file attached — will be kept</span>
                       <a
                         href={resolveStorageUrl(selectedTask.proofUrl)}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-[10px] font-bold text-[#8AC926] hover:underline whitespace-nowrap"
+                        className="text-[10px] font-bold text-blue-600 hover:underline whitespace-nowrap"
                       >
                         View
                       </a>
@@ -1553,7 +1554,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                   )}
 
                   <div className="flex items-center justify-center w-full">
-                    <label className="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-slate-300 rounded-xl cursor-pointer bg-slate-50 hover:bg-slate-100 hover:border-[#8AC926] transition">
+                    <label className="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-slate-300 rounded-xl cursor-pointer bg-slate-50 hover:bg-slate-100 hover:border-blue-500 transition">
                       <div className="flex flex-col items-center justify-center pt-5 pb-6">
                         <Upload className="w-7 h-7 text-slate-400 mb-2" />
                         <p className="text-xs text-slate-500 font-bold px-2 text-center break-all">
@@ -1578,7 +1579,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
               <button
                 type="submit"
                 disabled={actionLoading === "proof-submit"}
-                className="w-full py-3 rounded-xl bg-[#8AC926] text-white font-sans font-bold text-xs tracking-wider uppercase hover:bg-[#78B020] transition shadow-md shadow-[#8AC926]/10 flex items-center justify-center gap-1.5 shrink-0"
+                className="w-full py-3 rounded-xl bg-blue-600 text-white font-sans font-bold text-xs tracking-wider uppercase hover:bg-blue-700 transition shadow-md shadow-blue-500/10 flex items-center justify-center gap-1.5 shrink-0"
               >
                 {actionLoading === "proof-submit" ? (
                   <>
@@ -1618,7 +1619,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                 className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-500 hover:text-slate-800 transition disabled:opacity-50 shrink-0 mt-0.5"
                 title="Refresh reading progress"
               >
-                <RefreshCw className={`w-3.5 h-3.5 ${refreshingStudentBooks ? "animate-spin text-[#8AC926]" : ""}`} />
+                <RefreshCw className={`w-3.5 h-3.5 ${refreshingStudentBooks ? "animate-spin text-blue-600" : ""}`} />
               </button>
             </div>
 
@@ -1792,7 +1793,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
               <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
                 <p className="font-bold text-slate-900 text-xs mb-1">Active Task</p>
                 <div className="flex items-center gap-2 mb-2 flex-wrap">
-                  <span className="font-bold text-[#8AC926] text-sm">{taskDetailsModal.title}</span>
+                  <span className="font-bold text-blue-600 text-sm">{taskDetailsModal.title}</span>
                   <span className={`px-2 py-0.5 rounded text-4xs font-extrabold uppercase border ${
                     taskDetailsModal.status === "APPROVED"
                       ? "bg-emerald-50 text-emerald-700 border-emerald-200"

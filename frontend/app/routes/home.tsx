@@ -224,7 +224,7 @@ export default function LandingPage() {
             <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-white tracking-tight leading-[1.1] drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)]">
               Where Little Minds <span className="text-[#E8AF34] drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">Grow Big</span>
             </h1>
-            <p className="text-base sm:text-lg text-white font-medium leading-relaxed max-w-2xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-black/60 via-black/20 to-transparent px-10 py-6">
+            <p className="text-base sm:text-lg text-white font-medium leading-relaxed max-w-2xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-black/60 via-black/20 to-transparent px-4 sm:px-10 py-6">
               We deliver an immersive, premium early childhood education that transforms learning into lifelong success story.
             </p>
             <div className="flex flex-col sm:flex-row gap-5 pt-6 justify-center">
@@ -272,7 +272,7 @@ export default function LandingPage() {
           />
         </picture>
 
-        <div className="w-full max-w-[1400px] mx-auto pl-6 pr-6 sm:pl-12 sm:pr-8 md:pl-24 md:pr-12 lg:pr-16 xl:pr-20 flex justify-end items-center relative z-10">
+        <div className="w-full max-w-[1400px] mx-auto px-6 sm:px-12 md:pl-24 md:pr-12 lg:pr-16 xl:pr-20 flex justify-center sm:justify-end items-center relative z-10">
           <div className="max-w-xl text-left flex flex-col items-start space-y-6 mr-0">
              <h2 className="text-5xl sm:text-6xl font-extrabold text-[#E8AF34] tracking-tight leading-tight">
               Simba Preschool
@@ -324,9 +324,9 @@ export default function LandingPage() {
           </div>
 
           {/* Content Layer (Parchment Board UI) */}
-          <div className="relative z-10 w-full max-w-[1400px] pl-[25%] pr-1 sm:pl-12 sm:pr-8 md:pl-24 md:pr-12 lg:pr-16 xl:pr-20 flex flex-col items-end justify-center text-center mt-12 sm:mt-0">
+          <div className="relative z-10 w-full max-w-[1400px] px-6 sm:px-12 md:px-24 lg:pr-16 xl:pr-20 flex flex-col items-center sm:items-end justify-center text-center mt-12 sm:mt-0">
             {/* parchment board wrapper */}
-            <div className="w-[85%] sm:w-full max-w-[560px] aspect-[4/3] flex flex-col items-center justify-center px-0 py-6 sm:p-12 relative ml-auto mr-0">
+            <div className="w-full max-w-[min(100%,560px)] aspect-[4/3] flex flex-col items-center justify-center px-2 py-6 sm:p-12 relative mx-auto sm:ml-auto sm:mr-0">
               
               {coursesList.map((course, idx) => (
                 <div
@@ -336,9 +336,9 @@ export default function LandingPage() {
                       ? "opacity-100 translate-y-0 scale-100" 
                       : "opacity-0 translate-y-4 scale-95 pointer-events-none"
                   } ${
-                    (idx === 0 || idx === 4) ? "-translate-x-[14px] sm:translate-x-0" :
-                    (idx === 1 || idx === 5) ? "-translate-x-[12px] sm:translate-x-0" :
-                    (idx === 2 || idx === 6) ? "-translate-x-[12px] -mt-[100px] sm:-mt-0 sm:translate-x-0" : ""
+                    (idx === 0 || idx === 4) ? "sm:-translate-x-[14px]" :
+                    (idx === 1 || idx === 5) ? "sm:-translate-x-[12px]" :
+                    (idx === 2 || idx === 6) ? "sm:-translate-x-[12px]" : ""
                   }`}
                 >
                   <h3 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-slate-800 mb-2.5 tracking-tight">
@@ -490,20 +490,20 @@ export default function LandingPage() {
         <div className="absolute inset-0 bg-slate-950/5 pointer-events-none" />
 
         <div className="max-w-7xl mx-auto px-6 sm:px-12 w-full text-center relative z-10">
-          <div className="relative -translate-y-44 sm:-translate-y-16">
+          <div className="relative -translate-y-20 sm:-translate-y-16">
             <div className="text-center mb-10">
               <span className="text-xs font-bold tracking-widest text-[#E8AF34] uppercase block mb-3">Our Network</span>
               <h2 className="text-4xl sm:text-5xl font-extrabold text-slate-900 tracking-tight">Our Branches</h2>
               <div className="w-12 h-1 bg-[#E8AF34] mx-auto mt-4 rounded-full" />
             </div>
 
-            <p className="text-white sm:text-slate-700 font-semibold text-base sm:text-lg max-w-2xl mx-auto mb-10 drop-shadow-sm">
+            <p className="text-slate-800 sm:text-slate-700 font-semibold text-base sm:text-lg max-w-2xl mx-auto mb-10 drop-shadow-sm bg-white/85 sm:bg-transparent px-4 py-3 rounded-xl sm:px-0 sm:py-0">
               Simba Academy is expanding! Discover our interactive locations and flagship campuses across the region.
             </p>
           </div>
 
           {/* Interactive Google Map Box */}
-          <div className="w-[65%] sm:w-full max-w-[520px] mx-auto h-[200px] sm:h-[276px] overflow-hidden rounded-none bg-white/95 backdrop-blur-sm shadow-2xl -mt-24 sm:-mt-10 relative z-20">
+          <div className="w-full sm:max-w-[520px] mx-auto h-[220px] sm:h-[276px] overflow-hidden rounded-none bg-white/95 backdrop-blur-sm shadow-2xl -mt-12 sm:-mt-10 relative z-20">
             <iframe
               title="Simba Academy Salem Branches Map"
               src="https://maps.google.com/maps?q=Simba%20Preschool,%20Salem&t=&z=12&ie=UTF8&iwloc=&output=embed"
@@ -576,7 +576,7 @@ export default function LandingPage() {
               />
               
               {/* Inner Content */}
-              <div className="relative z-10 flex flex-col items-center justify-center px-10 py-8 max-w-[85%] h-full">
+              <div className="relative z-10 flex flex-col items-center justify-center px-4 sm:px-10 py-8 max-w-[90%] sm:max-w-[85%] h-full">
                 <h3 className="text-xl sm:text-4xl font-extrabold text-slate-800 mb-2 sm:mb-3 tracking-tight drop-shadow-sm">
                   Student Portal
                 </h3>
@@ -598,7 +598,7 @@ export default function LandingPage() {
               />
               
               {/* Inner Content */}
-              <div className="relative z-10 flex flex-col items-center justify-center px-10 py-8 max-w-[85%] h-full">
+              <div className="relative z-10 flex flex-col items-center justify-center px-4 sm:px-10 py-8 max-w-[90%] sm:max-w-[85%] h-full">
                 <h3 className="text-xl sm:text-4xl font-extrabold text-slate-800 mb-2 sm:mb-3 tracking-tight drop-shadow-sm">
                   Teacher Portal
                 </h3>
@@ -621,7 +621,7 @@ export default function LandingPage() {
 
 function TestimonialCard({ testimonial }: { testimonial: Testimonial & { role?: string; profilePhotoUrl?: string } }) {
   return (
-    <div className="w-[350px] md:w-[420px] bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
+    <div className="w-[min(300px,calc(100vw-3rem))] sm:w-[350px] md:w-[420px] bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
       <div>
         <div className="flex gap-1 mb-3">
           {[...Array(5)].map((_, i) => (
