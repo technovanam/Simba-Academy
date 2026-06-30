@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import {
   isRouteErrorResponse,
   Links,
@@ -7,12 +7,12 @@ import {
   Scripts,
   ScrollRestoration,
   useNavigate,
-  useLocation,
 } from "react-router";
 import { getToken, getUser, clearSession } from "./lib/auth";
 
 import type { Route } from "./+types/root";
 import { FormAutofillBlocker } from "./components/FormAutofillBlocker";
+import { LenisScroll } from "./components/LenisScroll";
 import { captureClientError, initMonitoring } from "./lib/monitoring";
 import "./app.css";
 
@@ -58,10 +58,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   const navigate = useNavigate();
-  const location = useLocation();
 
   useEffect(() => {
     initMonitoring();
+  }, []);
+
+  const recordSessionActivity = useCallback(() => {
+    const LAST_ACTIVITY_KEY = "simba_last_activity";
+    if (getToken()) {
+      localStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString());
+    }
   }, []);
 
   useEffect(() => {
@@ -75,16 +81,10 @@ export default function App() {
       }
     }
 
-    function handleActivity() {
-      if (getToken()) {
-        localStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString());
-      }
-    }
-
     // List of events to listen to
     const events = ["mousedown", "keydown", "mousemove", "scroll", "touchstart"];
     events.forEach((event) => {
-      window.addEventListener(event, handleActivity, { passive: true });
+      window.addEventListener(event, recordSessionActivity, { passive: true });
     });
 
     // Check interval every 10 seconds
@@ -122,14 +122,15 @@ export default function App() {
 
     return () => {
       events.forEach((event) => {
-        window.removeEventListener(event, handleActivity);
+        window.removeEventListener(event, recordSessionActivity);
       });
       clearInterval(interval);
     };
-  }, [navigate]);
+  }, [navigate, recordSessionActivity]);
 
   return (
     <>
+      <LenisScroll onScroll={recordSessionActivity} />
       <FormAutofillBlocker />
       <Outlet />
     </>
