@@ -14,14 +14,20 @@ import type { Route } from "./+types/root";
 import { FormAutofillBlocker } from "./components/FormAutofillBlocker";
 import { LenisScroll } from "./components/LenisScroll";
 import { captureClientError, initMonitoring } from "./lib/monitoring";
+import { APPLE_TOUCH_ICON_SRC } from "./lib/constants";
 import "./app.css";
 
 export const links: Route.LinksFunction = () => [
-  { rel: "icon", href: "/favicon.ico", sizes: "48x48" },
-  { rel: "icon", type: "image/png", sizes: "32x32", href: "/favicon-32x32.png" },
-  { rel: "icon", type: "image/png", sizes: "16x16", href: "/favicon-16x16.png" },
-  { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon.png" },
-  { rel: "manifest", href: "/site.webmanifest" },
+  { rel: "icon", href: "/favicons/favicon.ico", sizes: "48x48" },
+  { rel: "icon", type: "image/png", sizes: "32x32", href: "/favicons/favicon-32x32.png" },
+  { rel: "icon", type: "image/png", sizes: "16x16", href: "/favicons/favicon-16x16.png" },
+  { rel: "icon", type: "image/webp", href: "/favicons/favicon.webp" },
+  {
+    rel: "apple-touch-icon",
+    sizes: "180x180",
+    href: APPLE_TOUCH_ICON_SRC,
+  },
+  { rel: "manifest", href: "/favicons/site.webmanifest" },
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
   {
     rel: "preconnect",

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router";
-import { SOCIAL_LINKS } from "../lib/constants";
+import { SOCIAL_LINKS, SIMBA_LOGO_SRC } from "../lib/constants";
 import { FaFacebook, FaInstagram, FaYoutube, FaWhatsapp } from "react-icons/fa";
 import { MapPin, Phone, Mail, X, ExternalLink } from "lucide-react";
 
@@ -35,7 +35,7 @@ export function JungleFooter() {
         <div className="space-y-6">
           <div className="flex items-center gap-3">
             <div className="w-20 h-20 flex items-center justify-center shrink-0">
-              <img loading="lazy" decoding="async" src="/Simba Logo 2025.pdf.png" alt="Simba Preschool" className="w-full h-full object-contain scale-150" />
+              <img loading="lazy" decoding="async" src={SIMBA_LOGO_SRC} alt="Simba Preschool" className="w-full h-full object-contain scale-150" />
             </div>
           </div>
         </div>

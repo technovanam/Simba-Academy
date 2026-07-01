@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router";
 import { AlertCircle, Check, Home, Loader2 } from "lucide-react";
-import { STUDENT_AUTH_BG_DESKTOP, STUDENT_AUTH_BG_MOBILE } from "../lib/constants";
+import { STUDENT_AUTH_BG_DESKTOP, STUDENT_AUTH_BG_MOBILE, SIMBA_LOGO_SRC } from "../lib/constants";
 
 const studentAuthBgImgClass =
   "absolute inset-0 h-full w-full object-cover object-center pointer-events-none";
@@ -339,7 +339,7 @@ export function AuthLayout({
           {!isStudentParchment && (
             <div className="flex flex-col items-center text-center mb-6">
               <img
-                src="/Simba Logo 2025.pdf.png"
+                src={SIMBA_LOGO_SRC}
                 alt="Simba Preschool"
                 className="w-44 h-14 object-contain mb-2"
               />
@@ -406,7 +406,7 @@ export function AuthSplitLayout({
           <div className="relative z-10 px-4 py-5 sm:px-6 sm:py-6 flex flex-col gap-4">
             <div className="flex items-center gap-3">
               <div className="w-20 h-10 rounded-xl bg-white/95 px-2 flex items-center justify-center shadow-sm shrink-0">
-                <img loading="lazy" decoding="async" src="/Simba Logo 2025.pdf.png" alt="" className="w-full h-full object-contain" />
+                <img loading="lazy" decoding="async" src={SIMBA_LOGO_SRC} alt="" className="w-full h-full object-contain" />
               </div>
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/70">Simba Academy</p>
@@ -437,7 +437,7 @@ export function AuthSplitLayout({
           <div className="relative z-10 p-7 sm:p-8 lg:p-9 flex flex-col gap-6 lg:min-h-full lg:justify-center w-full">
             <div className="flex items-center gap-3">
               <div className="w-24 h-12 rounded-xl bg-white/95 px-2 flex items-center justify-center shadow-sm shrink-0">
-                <img loading="lazy" decoding="async" src="/Simba Logo 2025.pdf.png" alt="" className="w-full h-full object-contain" />
+                <img loading="lazy" decoding="async" src={SIMBA_LOGO_SRC} alt="" className="w-full h-full object-contain" />
               </div>
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/70">Simba Academy</p>

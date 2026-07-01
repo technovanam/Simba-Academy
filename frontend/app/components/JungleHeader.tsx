@@ -1,9 +1,7 @@
 import { Link, useLocation } from "react-router";
 import { useState, useEffect } from "react";
-import { HEADER_LINKS } from "../lib/constants";
+import { HEADER_LINKS, SIMBA_LOGO_SRC } from "../lib/constants";
 import { Menu, X } from "lucide-react";
-
-const LOGO_SRC = "/Simba Logo 2025.pdf.png";
 
 const CENTER_NAV_LINKS = HEADER_LINKS.filter((link) => link.to !== "/contact");
 
@@ -63,7 +61,7 @@ export function JungleHeader({ variant = "solid" }: JungleHeaderProps) {
           aria-label="Simba Academy home"
         >
           <img
-            src={LOGO_SRC}
+            src={SIMBA_LOGO_SRC}
             alt="Simba Academy"
             className="h-16 w-auto max-w-none object-contain transition-transform duration-300 group-hover:scale-[1.02] sm:h-[4.5rem] md:h-20 lg:h-[5.5rem]"
           />

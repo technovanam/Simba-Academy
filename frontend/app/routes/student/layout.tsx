@@ -9,6 +9,7 @@ import {
 } from "../../lib/studentRoutes";
 import { api, type AuthUser, type DriveItem } from "../../lib/api";
 import { clearSession, getToken, getUser } from "../../lib/auth";
+import { SIMBA_LOGO_SRC } from "../../lib/constants";
 import { PortalToasts } from "../../components/Toast";
 import { PortalSidebarLayout } from "../../components/PortalSidebarLayout";
 import { StudentOutletProvider } from "../../components/student/StudentOutletContext";
@@ -178,7 +179,7 @@ export default function StudentLayout() {
       <div className="flex-1 min-h-0 overflow-y-auto scrollbar-hide px-2 -mx-2 py-1">
       <div className="space-y-4">
         <div className="flex items-center gap-2.5 bg-slate-100/80 p-2 rounded-xl border border-slate-200/80">
-          <img loading="lazy" decoding="async" src="/Simba Logo 2025.pdf.png" alt="Simba Academy" className="w-15 h-8 shrink-0 object-contain" />
+          <img loading="lazy" decoding="async" src={SIMBA_LOGO_SRC} alt="Simba Academy" className="w-15 h-8 shrink-0 object-contain" />
           <div className="flex flex-col min-w-0">
             <h3 className="text-sm font-bold text-slate-900 truncate leading-tight">{user?.name}</h3>
             <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mt-0.5">

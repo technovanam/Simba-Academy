@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import type { Route } from "./+types/student.checkout";
 import { api, ApiError, type AuthUser, type Course } from "../lib/api";
-import { PAYMENTS_ENABLED, PAYMENTS_MOCK_MODE } from "../lib/constants";
+import { PAYMENTS_ENABLED, PAYMENTS_MOCK_MODE, SIMBA_LOGO_SRC } from "../lib/constants";
 import { useMockPaymentGateway } from "../lib/useMockPaymentGateway";
 import { clearSession, getToken, getUser } from "../lib/auth";
 import { isActionBusy } from "../lib/actionGuard";
@@ -145,7 +145,7 @@ export default function StudentCheckoutPage() {
 
       <header className="h-16 border-b border-slate-200 bg-white px-6 flex items-center justify-between shrink-0 z-20">
         <div className="flex items-center gap-3">
-          <img loading="lazy" decoding="async" src="/Simba Logo 2025.pdf.png" alt="" className="w-18 h-10 object-contain" />
+          <img loading="lazy" decoding="async" src={SIMBA_LOGO_SRC} alt="" className="w-18 h-10 object-contain" />
           <div>
             <span className="font-bold text-sm text-slate-900 block">Simba Academy</span>
             <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Student Portal</span>

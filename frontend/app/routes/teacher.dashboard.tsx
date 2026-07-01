@@ -14,6 +14,7 @@ import { clearSession, getToken, getUser, saveSession, getTeacherAssignedClasses
 import { resolveStorageUrl } from "../lib/storage";
 import { isActionBusy } from "../lib/actionGuard";
 import { TEACHER_TAB_PATHS } from "../lib/teacherRoutes";
+import { SIMBA_LOGO_SRC } from "../lib/constants";
 import { PortalToasts } from "../components/Toast";
 import { PortalSidebarLayout } from "../components/PortalSidebarLayout";
 import { DriveLibraryPanel } from "../components/DriveLibraryPanel";
@@ -507,7 +508,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
       <div className="space-y-4">
         <div className="flex items-center gap-2.5 bg-slate-100/80 p-2 rounded-xl border border-slate-200/80">
           <img
-            src="/Simba Logo 2025.pdf.png"
+            src={SIMBA_LOGO_SRC}
             alt="Simba Preschool"
             className="w-15 h-8 shrink-0 object-contain"
           />

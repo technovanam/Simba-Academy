@@ -1,6 +1,6 @@
 import type { Route } from "./+types/about";
 import { PageShell } from "../components/PageShell";
-import { ShieldCheck, Users, Quote, CheckCircle2 } from "lucide-react";
+import { Quote } from "lucide-react";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -64,15 +64,30 @@ export default function AboutPage() {
         
         {/* Content at the right */}
         <div className="relative z-10 w-full max-w-7xl mx-auto px-6 sm:px-12 flex justify-center sm:justify-end">
-          <div className="max-w-lg p-6 sm:p-12 sm:mr-12 md:mr-24 lg:mr-32 translate-y-8 sm:translate-y-0 bg-white/90 sm:bg-transparent rounded-2xl sm:rounded-none backdrop-blur-sm sm:backdrop-blur-none">
+          <div className="max-w-lg sm:max-w-xl p-6 sm:p-12 sm:mr-12 md:mr-24 lg:mr-32 translate-y-8 sm:translate-y-0 bg-white/90 sm:bg-transparent rounded-2xl sm:rounded-none backdrop-blur-sm sm:backdrop-blur-none">
             <Quote className="w-8 h-8 text-[#E8AF34] mb-6" />
             <h3 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-4">Founder&apos;s Message</h3>
-            <p className="text-slate-800 text-sm sm:text-base leading-relaxed italic mb-8 font-medium">
-              &ldquo;Every child is born with natural curiosity, eager to explore a vast and exciting world. At Simba Academy, our role is not to restrict that curiosity with standard benches and walls, but to provide a secure, guidance-rich environment where they can discover, make mistakes, and learn to thrive. We are committed to making their first educational steps unforgettable, creative, and safe.&rdquo;
-            </p>
-            <div>
-              <h4 className="text-xl font-bold text-slate-900">Ms. Nirmala Umesh</h4>
-              <p className="text-xs font-bold text-slate-600 mt-1 uppercase tracking-wider">Founder</p>
+            <div className="space-y-3.5 text-slate-800 text-sm sm:text-base leading-relaxed font-medium">
+              <p>
+                Children have always held a special place in my heart. Their innocence, curiosity, and joyful smiles remind me why I chose early childhood education.
+              </p>
+              <p>
+                Teaching is my passion, not just my profession. At Simba Preschool, we create a home away from home where every child feels safe, valued, and loved.
+              </p>
+              <p>
+                Our classrooms are filled with laughter, exploration, and meaningful learning. We celebrate every achievement and nurture each child&apos;s talents with warmth and compassion.
+              </p>
+              <p>
+                To every parent who trusts us, thank you. We are honoured to be part of your child&apos;s early years and committed to a joyful environment where they learn with confidence and grow with happiness.
+              </p>
+              <p>
+                Together, let us nurture kind hearts, curious minds, and confident little learners.
+              </p>
+            </div>
+            <div className="mt-6 sm:mt-8">
+              <p className="text-slate-700 text-sm sm:text-base font-medium italic">With love,</p>
+              <h4 className="text-xl font-bold text-slate-900 mt-2">Founder</h4>
+              <p className="text-xs font-bold text-[#9A6B1A] mt-1 uppercase tracking-wider">Simba Preschool</p>
             </div>
           </div>
         </div>

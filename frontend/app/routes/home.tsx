@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useRef } from "react";
+import { useEffect, useState, useMemo } from "react";
 import type { Route } from "./+types/home";
 import { Link } from "react-router";
 import { PageShell } from "../components/PageShell";
@@ -15,6 +15,14 @@ import {
   Users,
   Rocket,
   Pencil,
+  Home,
+  Smartphone,
+  QrCode,
+  Shield,
+  GraduationCap,
+  Heart,
+  Handshake,
+  Sparkles,
 } from "lucide-react";
 
 export function meta({}: Route.MetaArgs) {
@@ -65,14 +73,13 @@ const programsList = [
     age: "2 – 3 Years",
     icon: Users,
     intro:
-      "A gentle and joyful introduction to school life through music, movement, storytelling, sensory activities, and social interaction.",
+      "A joyful introduction to school through music, movement, storytelling, and play.",
     learnLabel: "Children learn:",
     highlights: [
       "Social interaction",
       "Basic communication",
-      "Motor skill development",
+      "Motor skills",
       "Sensory exploration",
-      "Classroom routine adaptation",
     ],
     whatsappMsg: "Hi, I am interested in enrolling my child in Play Group. Please share details.",
   },
@@ -126,7 +133,77 @@ const programsList = [
   },
 ];
 
-const PROGRAM_COUNT = programsList.length;
+const parentAppFeatures = [
+  "Activity photos",
+  "Learning activities",
+  "Snacks & meals",
+  "Water intake",
+  "Potty/Loo routine",
+  "Nap time",
+  "Mood & well-being",
+  "Teacher's notes",
+  "Daily achievements & milestones",
+];
+
+const whyChooseSimba = [
+  {
+    icon: Home,
+    title: "A Home Away From Home",
+    description:
+      "A warm, loving, and nurturing environment where every Little Simbian feels safe, valued, and happy.",
+  },
+  {
+    icon: Smartphone,
+    title: "Live Parent Updates",
+    description:
+      "Never miss a precious moment! Through our Simba Parent App, receive real-time updates on your child's day, including:",
+    features: parentAppFeatures,
+    wide: true,
+  },
+  {
+    icon: QrCode,
+    title: "QR-Based Check-In & Check-Out",
+    description:
+      "Every child is issued a unique ID card with a QR code. Secure scan-in and scan-out ensure accurate attendance records and provide parents with instant notifications when their child arrives at or leaves the preschool.",
+  },
+  {
+    icon: Shield,
+    title: "Safety First",
+    description:
+      "A secure campus with caring staff and child-friendly facilities, ensuring your little one is always safe and well cared for.",
+  },
+  {
+    icon: Palette,
+    title: "Play-Based Learning",
+    description:
+      "Fun, engaging activities that inspire creativity, confidence, communication, and lifelong learning.",
+  },
+  {
+    icon: GraduationCap,
+    title: "Passionate Educators",
+    description:
+      "Dedicated teachers who nurture every child with love, patience, encouragement, and individual attention.",
+  },
+  {
+    icon: Heart,
+    title: "Health & Well-being",
+    description:
+      "We care for every child's physical and emotional well-being through healthy routines, nutritious snacks, and attentive care.",
+  },
+  {
+    icon: Handshake,
+    title: "Parent Partnership",
+    description:
+      "Strong communication, transparency, and daily updates help parents stay involved in every step of their child's learning journey.",
+  },
+  {
+    icon: Sparkles,
+    title: "Happy Childhood, Bright Future",
+    description:
+      "We nurture curious minds, kind hearts, and confident learners—giving every Little Simbian the happiest start and the strongest foundation for life.",
+    wide: true,
+  },
+];
 
 const defaultGalleryItems = [
   { id: "def-1", imageUrl: "https://images.unsplash.com/photo-1544605151-a2798e21183d?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80", title: "Creative Time" },
@@ -141,8 +218,8 @@ const defaultGalleryItems = [
 export default function LandingPage() {
   const [gallery, setGallery] = useState<GalleryItem[]>([]);
   const [testimonials, setTestimonials] = useState<Array<Testimonial & { role?: string; profilePhotoUrl?: string }>>([]);
-  const programsSectionRef = useRef<HTMLDivElement>(null);
-  const [activeProgramStep, setActiveProgramStep] = useState(0);
+  const [activeProgramIndex, setActiveProgramIndex] = useState(0);
+  const [activeWhyChooseIndex, setActiveWhyChooseIndex] = useState(0);
 
   useEffect(() => {
     Promise.all([
@@ -171,30 +248,19 @@ export default function LandingPage() {
   }, []);
 
   useEffect(() => {
-    const handleScroll = () => {
-      if (!programsSectionRef.current) return;
-      const rect = programsSectionRef.current.getBoundingClientRect();
-      const sectionHeight = rect.height;
-      const scrolled = -rect.top;
-      const viewportHeight = window.innerHeight;
-      const totalScrollable = sectionHeight - viewportHeight;
+    const timer = window.setInterval(() => {
+      setActiveProgramIndex((prev) => (prev + 1) % programsList.length);
+    }, 2000);
 
-      if (totalScrollable <= 0) return;
+    return () => window.clearInterval(timer);
+  }, []);
 
-      if (scrolled >= 0 && scrolled <= totalScrollable) {
-        const progress = scrolled / totalScrollable;
-        const step = Math.min(Math.floor(progress * PROGRAM_COUNT), PROGRAM_COUNT - 1);
-        setActiveProgramStep(step);
-      } else if (rect.top > 0) {
-        setActiveProgramStep(0);
-      } else {
-        setActiveProgramStep(PROGRAM_COUNT - 1);
-      }
-    };
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setActiveWhyChooseIndex((prev) => (prev + 1) % whyChooseSimba.length);
+    }, 4000);
 
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    handleScroll();
-    return () => window.removeEventListener("scroll", handleScroll);
+    return () => window.clearInterval(timer);
   }, []);
 
   // Merge database items with fallback items to guarantee at least 6 items
@@ -239,22 +305,23 @@ export default function LandingPage() {
         {/* 1. Hero Section */}
         <section className="relative overflow-hidden min-h-screen flex items-center pt-24 pb-12 bg-black">
           {/* Responsive Background Images */}
-          <picture className="absolute inset-0 w-full h-full opacity-80 lg:opacity-100">
+          <picture className="absolute inset-0 w-full h-full">
             <source media="(min-width: 1024px)" srcSet="/Hero%20Section.png" />
-            <source media="(min-width: 640px)" srcSet="/Hero%20Tab.png" />
+            <source
+              media="(min-width: 640px) and (max-width: 1023px) and (orientation: portrait)"
+              srcSet="/Hero%20Section%20Tab%20Potrait.png"
+            />
+            <source media="(min-width: 640px)" srcSet="/Hero%20Section%20Tab.png" />
             <img loading="lazy" decoding="async" 
-              src="/Hero%20Mobile.png" 
+              src="/Hero%20Section%20Mobile.png"
               alt="Simba Academy Background" 
               className="w-full h-full object-cover object-center"
               fetchPriority="high"
               decoding="async"
             />
           </picture>
-
-          {/* Dark radial overlay to make text pop against the bright jungle background */}
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-black/40 via-black/20 lg:from-black/60 lg:via-black/30 to-transparent z-0 pointer-events-none" />
         
-        <div className="max-w-6xl mx-auto px-6 sm:px-12 w-full relative z-10 flex flex-col items-center justify-center text-center">
+        <div className="hero-content max-w-6xl mx-auto px-6 sm:px-12 w-full relative z-10 flex flex-col items-center justify-center text-center">
           <div className="space-y-6 flex flex-col items-center w-full">
             <div className="flex flex-col items-center gap-1 sm:gap-1.5">
               <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-black tracking-tight leading-[1.1]">
@@ -295,10 +362,14 @@ export default function LandingPage() {
         {/* Responsive Background Images */}
         <picture className="absolute inset-0 w-full h-full pointer-events-none">
           <source media="(min-width: 1024px)" srcSet="/About.png" />
-          <source media="(min-width: 640px)" srcSet="/Home%20About%20Tab.png" />
-          <img loading="lazy" decoding="async" 
-            src="/Home%20About%20Mobile.png" 
-            alt="About Simba Academy Background" 
+          <source
+            media="(min-width: 640px) and (max-width: 1023px) and (orientation: portrait)"
+            srcSet="/About%20Section%20Tab%20Potrait.png"
+          />
+          <source media="(min-width: 640px)" srcSet="/About%20Section%20Tab.png" />
+          <img
+            src="/About%20Section%20Mobile.png"
+            alt="About Simba Academy Background"
             className="w-full h-full object-cover object-center"
             loading="lazy"
             decoding="async"
@@ -306,7 +377,7 @@ export default function LandingPage() {
         </picture>
 
         <div className="w-full max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 xl:px-16 relative z-10">
-          <div className="w-full max-w-xl ml-auto pl-10 sm:pl-0 sm:ml-[16%] md:ml-[32%] lg:ml-auto lg:translate-x-6 lg:w-[46%] xl:w-[42%] lg:max-w-2xl text-left flex flex-col items-start space-y-6">
+          <div className="about-section-content w-full max-w-xl ml-auto pl-10 sm:pl-0 sm:ml-[16%] md:ml-[32%] lg:ml-auto lg:translate-x-6 lg:w-[46%] xl:w-[42%] lg:max-w-2xl text-left flex flex-col items-start space-y-6">
              <h2 className="text-5xl sm:text-6xl font-extrabold text-[#E8AF34] tracking-tight leading-tight">
               About Simba Preschool
             </h2>
@@ -342,147 +413,119 @@ export default function LandingPage() {
 
       {/* 3. Vision & Mission */}
       <section className="relative h-screen w-full bg-white overflow-hidden">
-        <img
-          src="/Vision and Mission.png"
-          alt=""
-          aria-hidden
-          className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none select-none"
-          loading="lazy"
-          decoding="async"
-        />
+        <picture className="absolute inset-0 w-full h-full pointer-events-none select-none">
+          <source media="(min-width: 1024px)" srcSet="/Vision%20Mission.png" />
+          <source
+            media="(min-width: 640px) and (max-width: 1023px) and (orientation: portrait)"
+            srcSet="/Vision%20Mission%20Tab%20Potrait.png"
+          />
+          <source media="(min-width: 640px)" srcSet="/Vision%20Mission%20Tab.png" />
+          <img
+            src="/Vission%20Mission%20Mobile.png"
+            alt=""
+            aria-hidden
+            className="absolute inset-0 w-full h-full object-cover object-center"
+            loading="lazy"
+            decoding="async"
+          />
+        </picture>
 
-        <div className="absolute inset-0 z-10 font-sans">
-          <div className="absolute left-1/2 -translate-x-1/2 top-[44%] sm:top-[43%] lg:top-[42%] translate-y-2 sm:translate-y-3 w-[min(72%,26rem)] sm:w-[min(66%,30rem)] text-center px-3 sm:px-4 bg-transparent">
-            <span className="text-xs sm:text-sm font-bold tracking-widest text-[#8B6914] uppercase block mb-1.5 sm:mb-2">
+        <div className="absolute inset-0 z-10 font-sans flex flex-col items-center px-5 pt-[31vh] sm:max-lg:portrait:pt-[28vh] sm:max-lg:landscape:block sm:max-lg:landscape:p-0 lg:block lg:p-0">
+          <div className="vision-mission-header-block w-full max-w-[21rem] max-lg:portrait:max-w-[26rem] text-center px-3 mb-7 mx-auto sm:max-lg:landscape:absolute sm:max-lg:landscape:left-1/2 sm:max-lg:landscape:-translate-x-1/2 sm:max-lg:landscape:top-[43%] sm:max-lg:landscape:translate-y-3 sm:max-lg:landscape:w-[min(66%,30rem)] sm:max-lg:landscape:max-w-none sm:max-lg:landscape:mb-0 sm:max-lg:landscape:mx-0 lg:absolute lg:left-1/2 lg:-translate-x-1/2 lg:top-[42%] lg:translate-y-3 lg:w-[min(66%,30rem)] lg:max-w-none lg:mb-0 lg:mx-0 lg:px-4">
+            <span className="text-sm font-bold tracking-widest text-[#8B6914] uppercase block mb-2 lg:text-sm lg:mb-2">
               Our Purpose
             </span>
-            <h2 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold text-[#4A3728] tracking-tight leading-tight">
+            <h2 className="text-3xl max-lg:portrait:text-4xl sm:max-lg:landscape:text-4xl lg:text-5xl font-extrabold text-[#4A3728] tracking-tight leading-tight">
               Vision & Mission
             </h2>
           </div>
 
-          <div className="absolute left-[11%] sm:left-[14%] lg:left-[16%] top-[71%] sm:top-[70%] lg:top-[69%] translate-y-7 sm:translate-y-8 translate-x-2 sm:translate-x-3 w-[36%] sm:w-[32%] lg:w-[30%] flex flex-col items-center justify-center text-center px-2 sm:px-3 bg-transparent">
-            <h3 className="text-sm sm:text-base lg:text-lg font-extrabold text-[#4A3728] mb-1 sm:mb-1.5 leading-tight">
+          <div className="vision-mission-vision-block w-full max-w-[19rem] sm:max-lg:portrait:max-w-[24rem] mx-auto mb-6 mt-10 lg:mt-0 text-center px-2 sm:max-lg:landscape:absolute sm:max-lg:landscape:left-[14%] sm:max-lg:landscape:top-[70%] sm:max-lg:landscape:translate-y-8 sm:max-lg:landscape:translate-x-3 sm:max-lg:landscape:w-[32%] sm:max-lg:landscape:max-w-none sm:max-lg:landscape:mb-0 sm:max-lg:landscape:mx-0 lg:absolute lg:left-[16%] lg:top-[69%] lg:translate-y-8 lg:translate-x-3 lg:w-[30%] lg:max-w-none lg:mb-0 lg:mx-0 lg:px-3 lg:flex lg:flex-col lg:items-center lg:justify-center">
+            <h3 className="text-lg sm:max-lg:portrait:text-3xl sm:max-lg:landscape:text-base lg:text-lg font-extrabold text-[#4A3728] mb-2 sm:max-lg:landscape:mb-1.5 lg:mb-1.5 leading-tight">
               Vision
             </h3>
-            <p className="text-[9px] sm:text-[10px] md:text-xs lg:text-sm text-[#5C4033] font-semibold leading-snug sm:leading-relaxed">
+            <p className="text-xs sm:max-lg:portrait:text-base sm:max-lg:landscape:text-[10px] sm:max-lg:landscape:leading-snug lg:text-sm text-[#5C4033] font-semibold leading-relaxed lg:leading-relaxed">
               To create a world where every Little Simbian feels loved, valued, and inspired to learn by building 100+ Simba Preschool centres across India that become a second home for children and a trusted partner for families.
             </p>
           </div>
 
-          <div className="absolute right-[11%] sm:right-[14%] lg:right-[16%] top-[71%] sm:top-[70%] lg:top-[69%] translate-y-7 sm:translate-y-8 -translate-x-4 sm:-translate-x-5 w-[36%] sm:w-[32%] lg:w-[30%] flex flex-col items-center justify-center text-center px-2 sm:px-3 bg-transparent">
-            <h3 className="text-sm sm:text-base lg:text-lg font-extrabold text-[#4A3728] mb-1 sm:mb-1.5 leading-tight">
+          <div className="vision-mission-mission-block w-full max-w-[19rem] sm:max-lg:portrait:max-w-[24rem] mx-auto text-center px-2 sm:max-lg:landscape:absolute sm:max-lg:landscape:right-[14%] sm:max-lg:landscape:top-[70%] sm:max-lg:landscape:translate-y-8 sm:max-lg:landscape:-translate-x-5 sm:max-lg:landscape:w-[32%] sm:max-lg:landscape:max-w-none sm:max-lg:landscape:mx-0 lg:absolute lg:right-[16%] lg:top-[69%] lg:translate-y-8 lg:-translate-x-5 lg:w-[30%] lg:max-w-none lg:mx-0 lg:px-3 lg:flex lg:flex-col lg:items-center lg:justify-center">
+            <h3 className="text-lg sm:max-lg:portrait:text-3xl sm:max-lg:landscape:text-base lg:text-lg font-extrabold text-[#4A3728] mb-2 sm:max-lg:landscape:mb-1.5 lg:mb-1.5 leading-tight">
               Mission
             </h3>
-            <p className="text-[9px] sm:text-[10px] md:text-xs lg:text-sm text-[#5C4033] font-semibold leading-snug sm:leading-relaxed">
-              At Simba Preschool, every child is loved, celebrated, and encouraged to shine. We nurture safe, joyful learning through love and play, helping every Little Simbian thrive with educators, parents, and partners across India.
+            <p className="text-xs sm:max-lg:portrait:text-base sm:max-lg:landscape:text-[10px] sm:max-lg:landscape:leading-snug lg:text-sm text-[#5C4033] font-semibold leading-relaxed lg:leading-relaxed">
+              At Simba Preschool, every child is loved, celebrated, and encouraged to shine. We nurture safe, joyful learning through love and play, helping every Little Simbian thrive with educators and parents across India.
             </p>
           </div>
         </div>
       </section>
 
-      {/* 4. Our Programs (sticky scrollytelling) */}
-      <section
-        id="programs"
-        ref={programsSectionRef}
-        className="relative h-[400vh] w-full bg-white"
-      >
-        <div className="sticky top-0 h-screen w-full overflow-hidden">
+      {/* 4. Our Programs */}
+      <section id="programs" className="relative h-screen w-full bg-white overflow-hidden">
+        <picture className="absolute inset-0 w-full h-full pointer-events-none select-none">
+          <source media="(min-width: 1024px)" srcSet="/Our%20Programs.png" />
+          <source
+            media="(min-width: 640px) and (max-width: 1023px) and (orientation: portrait)"
+            srcSet="/Our%20Programs%20Tab%20Potrait.png"
+          />
+          <source media="(min-width: 640px)" srcSet="/Our%20Programs%20Tab.png" />
           <img
-            src="/Our Programs.png"
+            src="/Our%20Programs%20Mobile.png"
             alt=""
             aria-hidden
-            className="absolute inset-0 w-full h-full object-cover object-bottom pointer-events-none select-none"
+            className="absolute inset-0 w-full h-full object-cover object-bottom"
             loading="lazy"
             decoding="async"
           />
+        </picture>
 
-          <div className="relative z-10 flex flex-col h-full w-full">
-            <div className="text-center pt-5 sm:pt-7 lg:pt-8 px-6 shrink-0">
-              <span className="text-xs font-bold tracking-widest text-[#E8AF34] uppercase block mb-3">What We Offer</span>
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight">Our Programs</h2>
-            </div>
+        <div className="absolute inset-x-0 top-0 z-10 text-center pt-5 sm:pt-7 lg:pt-8 px-6">
+          <span className="text-xs font-bold tracking-widest text-[#E8AF34] uppercase block mb-3">What We Offer</span>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight">Our Programs</h2>
+        </div>
 
-            <div className="flex-1 flex items-end justify-center w-full px-6 sm:px-10 lg:px-12 pb-[6%] sm:pb-[7%] lg:pb-[8%] font-sans">
-              <div className="relative w-full max-w-xl sm:max-w-2xl lg:max-w-3xl min-h-[12rem] sm:min-h-[14rem] lg:min-h-[15rem] mx-auto translate-y-2 sm:translate-y-3">
-                {programsList.map((program, idx) => {
-                  const ProgramIcon = program.icon;
-                  const isActive = activeProgramStep === idx;
-                  const isBefore = idx < activeProgramStep;
-                  return (
-                    <div
-                      key={program.title}
-                      className={`absolute inset-0 flex flex-col items-center justify-center text-center px-3 sm:px-6 transition-all duration-500 text-slate-900 ${
-                        isActive
-                          ? "opacity-100 translate-x-0"
-                          : isBefore
-                            ? "opacity-0 -translate-x-8 pointer-events-none"
-                            : "opacity-0 translate-x-8 pointer-events-none"
-                      }`}
-                    >
-                      <div className="flex items-center justify-center gap-2 mb-2 sm:mb-3">
-                        <ProgramIcon className="w-5 h-5 sm:w-6 sm:h-6 text-[#FFE08A] shrink-0 drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]" />
-                        <p className="font-extrabold text-base sm:text-lg lg:text-xl leading-tight">
-                          <span className="text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.45)]">{program.title}</span>{" "}
-                          <span className="text-white/95 font-bold drop-shadow-[0_1px_3px_rgba(0,0,0,0.45)]">({program.age})</span>
-                        </p>
-                      </div>
-
-                      {program.intro ? (
-                        <p className="text-sm sm:text-base leading-relaxed mb-2 sm:mb-3 max-w-lg text-slate-900 font-medium">
-                          {program.intro}
-                        </p>
-                      ) : null}
-
-                      <p className="text-sm sm:text-base font-bold text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.45)] mb-1.5 sm:mb-2">
-                        {program.learnLabel}
-                      </p>
-                      <ul className="space-y-1 list-none mb-2 sm:mb-3 columns-1 sm:columns-2 gap-x-6 text-left max-w-md sm:max-w-lg mx-auto">
-                        {program.highlights.map((item) => (
-                          <li key={item} className="flex items-start gap-1.5 text-sm sm:text-base break-inside-avoid mb-1 text-slate-900 font-medium">
-                            <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-[#FFE08A] fill-[#FFF5D6]/50 shrink-0 mt-0.5 drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]" strokeWidth={2.5} />
-                            <span>{item}</span>
-                          </li>
-                        ))}
-                      </ul>
-
-                      {program.closing ? (
-                        <p className="text-sm sm:text-base leading-relaxed mb-3 sm:mb-4 max-w-lg text-slate-900 font-medium">
-                          {program.closing}
-                        </p>
-                      ) : null}
-
-                      <a
-                        href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(program.whatsappMsg)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center justify-center gap-2 px-6 py-2.5 sm:px-8 sm:py-3 rounded-full bg-[#E8AF34] border-2 border-[#c59124] text-white font-bold text-sm sm:text-base hover:bg-[#d69f2e] hover:-translate-y-0.5 transition-all shadow-md shadow-[#E8AF34]/30"
-                        tabIndex={isActive ? 0 : -1}
-                      >
-                        Enroll <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
-                      </a>
-                    </div>
-                  );
-                })}
+        <div className="programs-carousel-slot z-20 h-[28rem] sm:max-lg:portrait:h-[37rem] sm:max-lg:landscape:h-[29.5rem] lg:h-[21.25rem] max-w-[13rem] sm:max-lg:portrait:max-w-[25.5rem] sm:max-lg:landscape:max-w-[42rem] lg:max-w-[38rem] px-4 sm:max-lg:portrait:px-5 sm:max-lg:landscape:px-10 lg:px-12">
+          {programsList.map((program, idx) => {
+            const isActive = activeProgramIndex === idx;
+            return (
+              <div
+                key={program.title}
+                className={`absolute inset-0 flex flex-col items-center justify-center transition-all duration-700 ease-in-out ${
+                  isActive
+                    ? "opacity-100 translate-y-0 scale-100 z-10"
+                    : "opacity-0 translate-y-3 scale-[0.98] pointer-events-none z-0"
+                }`}
+                aria-hidden={!isActive}
+              >
+                <ProgramCard program={program} />
               </div>
-            </div>
-          </div>
+            );
+          })}
+
         </div>
       </section>
 
       {/* 5. Why Parents Choose Us */}
       <section className="relative h-screen w-full bg-white overflow-hidden">
-        <img
-          src="/Parent Choose Us.png"
-          alt=""
-          aria-hidden
-          className="absolute inset-0 w-full h-full object-cover object-right pointer-events-none select-none"
-          loading="lazy"
-          decoding="async"
-        />
+        <picture className="absolute inset-0 w-full h-full pointer-events-none select-none">
+          <source media="(min-width: 1024px)" srcSet="/Parent%20Choose%20Us.png" />
+          <source
+            media="(min-width: 640px) and (max-width: 1023px) and (orientation: portrait)"
+            srcSet="/Parent%20Choose%20Us%20Tab%20Potrait.png"
+          />
+          <source media="(min-width: 640px)" srcSet="/Parent%20Choose%20Us%20Tab.png" />
+          <img
+            src="/Parent%20Choose%20Us%20Mobile.png"
+            alt=""
+            aria-hidden
+            className="absolute inset-0 w-full h-full object-cover object-right"
+            loading="lazy"
+            decoding="async"
+          />
+        </picture>
 
-        <div className="relative z-10 flex h-full w-full items-center">
-          <div className="w-full lg:w-[55%] xl:w-[50%] px-6 sm:px-10 lg:px-14 py-12 sm:py-16">
+        <div className="parent-choose-layout relative z-10 flex h-full w-full items-center">
+          <div className="parent-choose-content w-full lg:w-[55%] xl:w-[50%] px-6 sm:px-10 lg:px-14 py-12 sm:py-16">
             <div className="text-left mb-8 sm:mb-10">
               <span className="text-xs font-bold tracking-widest text-[#E8AF34] uppercase block mb-3">Why Simba</span>
               <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight">Why Parents Choose Us</h2>
@@ -511,16 +554,55 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* 5b. Why Choose Simba Preschool */}
+      <section className="relative h-screen max-h-screen w-full bg-[#FDF5E5] overflow-hidden flex flex-col">
+        <div className="text-center pt-5 sm:pt-7 lg:pt-8 px-6 shrink-0">
+          <span className="text-xs font-bold tracking-widest text-[#E8AF34] uppercase block mb-2">Why Simba</span>
+          <h2 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight">
+            Why Choose Simba Preschool?
+          </h2>
+          <div className="w-12 h-1 bg-[#E8AF34] mx-auto mt-2 sm:mt-3 rounded-full" />
+        </div>
+
+        <div className="relative flex-1 min-h-0 w-full max-w-4xl mx-auto px-6 sm:px-10 pb-6 sm:pb-8">
+          {whyChooseSimba.map((item, idx) => {
+            const isActive = activeWhyChooseIndex === idx;
+            return (
+              <div
+                key={item.title}
+                className={`absolute inset-x-6 sm:inset-x-10 top-0 bottom-0 transition-all duration-700 ease-in-out ${
+                  isActive
+                    ? "opacity-100 translate-y-0 z-10"
+                    : "opacity-0 translate-y-3 pointer-events-none z-0"
+                }`}
+                aria-hidden={!isActive}
+              >
+                <WhyChooseCard item={item} />
+              </div>
+            );
+          })}
+
+        </div>
+      </section>
+
       {/* 6. Our Learning Approach */}
       <section className="relative h-screen w-full bg-white overflow-hidden">
-        <img
-          src="/Learning Approach.png"
-          alt=""
-          aria-hidden
-          className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none select-none"
-          loading="lazy"
-          decoding="async"
-        />
+        <picture className="absolute inset-0 w-full h-full pointer-events-none select-none">
+          <source media="(min-width: 1024px)" srcSet="/Learning%20Approach.png" />
+          <source
+            media="(min-width: 640px) and (max-width: 1023px) and (orientation: portrait)"
+            srcSet="/Learning%20Apprach%20Tab%20Potrait.png"
+          />
+          <source media="(min-width: 640px)" srcSet="/Learning%20Apprach%20Tab.png" />
+          <img
+            src="/Learning%20Apprach%20Mobile.png"
+            alt=""
+            aria-hidden
+            className="absolute inset-0 w-full h-full object-cover object-center"
+            loading="lazy"
+            decoding="async"
+          />
+        </picture>
 
         <div className="relative z-10 text-center pt-8 sm:pt-10 lg:pt-12 px-6 sm:px-10">
           <span className="text-xs font-bold tracking-widest text-[#E8AF34] uppercase block mb-3">How We Teach</span>
@@ -532,14 +614,22 @@ export default function LandingPage() {
 
       {/* 7. Facilities */}
       <section className="relative h-screen w-full bg-[#FDF5E5] overflow-hidden">
-        <img
-          src="/Facilities.png"
-          alt=""
-          aria-hidden
-          className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none select-none"
-          loading="lazy"
-          decoding="async"
-        />
+        <picture className="absolute inset-0 w-full h-full pointer-events-none select-none">
+          <source media="(min-width: 1024px)" srcSet="/Facilities.png" />
+          <source
+            media="(min-width: 640px) and (max-width: 1023px) and (orientation: portrait)"
+            srcSet="/Facilities%20Tab%20Potrait.png"
+          />
+          <source media="(min-width: 640px)" srcSet="/Facilities%20Tab.png" />
+          <img
+            src="/Facilities%20Mobile.png"
+            alt=""
+            aria-hidden
+            className="absolute inset-0 w-full h-full object-cover object-center"
+            loading="lazy"
+            decoding="async"
+          />
+        </picture>
 
         <div className="relative z-10 text-center pt-0 sm:pt-0.5 lg:pt-1 px-6 -translate-y-1 sm:-translate-y-1.5">
           <span className="text-xs font-bold tracking-widest text-[#E8AF34] uppercase block mb-3">Our Campus</span>
@@ -819,6 +909,100 @@ export default function LandingPage() {
 
     </PageShell>
     </>
+  );
+}
+
+function WhyChooseCard({ item }: { item: (typeof whyChooseSimba)[number] }) {
+  const ItemIcon = item.icon;
+
+  return (
+    <article className="program-card w-full h-full max-h-full mx-auto flex flex-col items-center text-center px-4 sm:px-6 py-3 sm:py-4 min-h-0 overflow-hidden">
+      <span className="inline-flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[#E8AF34]/25 border border-[#C59124]/50 shadow-sm mb-2 sm:mb-3 shrink-0">
+        <ItemIcon className="w-5 h-5 text-[#7A4F10]" strokeWidth={2.25} />
+      </span>
+
+      <h3 className="text-base sm:text-xl lg:text-2xl font-extrabold text-[#2C1810] mb-1.5 sm:mb-2 leading-tight shrink-0 px-2">
+        {item.title}
+      </h3>
+
+      <div className="w-10 h-0.5 rounded-full bg-[#E8AF34]/70 mb-2 shrink-0" aria-hidden />
+
+      <div className="flex-1 min-h-0 w-full overflow-y-auto flex flex-col items-center px-1 sm:px-2">
+        <p className="text-xs sm:text-sm lg:text-base leading-snug text-[#4A3728] font-medium max-w-2xl">
+          {item.description}
+        </p>
+
+        {item.features ? (
+          <ul className="mt-2 sm:mt-3 grid grid-cols-2 sm:grid-cols-3 gap-x-2 sm:gap-x-3 gap-y-1 sm:gap-y-1.5 w-full max-w-2xl text-left">
+            {item.features.map((feature) => (
+              <li key={feature} className="flex items-start gap-1 text-[11px] sm:text-xs lg:text-sm text-[#2C1810] font-semibold">
+                <CheckCircle2
+                  className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#FFFBF5] fill-[#C59124] shrink-0 mt-0.5"
+                  strokeWidth={2.5}
+                />
+                <span>{feature}</span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </div>
+    </article>
+  );
+}
+
+function ProgramCard({ program }: { program: (typeof programsList)[number] }) {
+  const ProgramIcon = program.icon;
+
+  return (
+    <article className="program-card w-full h-full mx-auto flex flex-col items-center text-center px-4 py-4 sm:max-lg:landscape:px-6 sm:max-lg:landscape:py-5 lg:px-6 lg:py-5 font-sans min-h-0 overflow-hidden">
+      <div className="program-card-header flex flex-col items-center gap-2 mb-2 sm:max-lg:landscape:flex-row sm:max-lg:landscape:gap-2.5 lg:flex-row lg:gap-2.5 sm:max-lg:landscape:mb-3 lg:mb-3 shrink-0">
+        <span className="inline-flex items-center justify-center w-9 h-9 sm:max-lg:portrait:w-10 sm:max-lg:portrait:h-10 sm:max-lg:landscape:w-10 sm:max-lg:landscape:h-10 lg:w-11 lg:h-11 rounded-full bg-[#E8AF34]/25 border border-[#C59124]/50 shadow-sm">
+          <ProgramIcon className="w-5 h-5 sm:max-lg:portrait:w-[1.35rem] sm:max-lg:portrait:h-[1.35rem] lg:w-6 lg:h-6 text-[#7A4F10]" strokeWidth={2.25} />
+        </span>
+        <p className="font-extrabold text-sm sm:max-lg:portrait:text-lg sm:max-lg:landscape:text-xl lg:text-2xl leading-tight text-[#2C1810]">
+          {program.title}{" "}
+          <span className="text-[#9A6B1A] font-bold">({program.age})</span>
+        </p>
+      </div>
+
+      <div className="w-10 h-0.5 rounded-full bg-[#E8AF34]/70 mb-2 sm:max-lg:landscape:mb-2.5 shrink-0" aria-hidden />
+
+      <div className="program-card-body flex flex-1 min-h-0 w-full flex-col items-center overflow-hidden">
+      {program.intro ? (
+        <p className="text-xs sm:max-lg:portrait:text-base sm:max-lg:landscape:text-lg lg:text-lg leading-snug text-[#4A3728] font-medium mb-2 w-full shrink-0 px-1">
+          {program.intro}
+        </p>
+      ) : null}
+
+      <p className="text-[11px] sm:max-lg:portrait:text-sm sm:max-lg:landscape:text-base lg:text-base font-bold uppercase tracking-wider text-[#9A6B1A] mb-1.5 sm:max-lg:landscape:mb-2 shrink-0">
+        {program.learnLabel}
+      </p>
+
+      <ul className="program-card-highlights w-full space-y-1.5 list-none columns-1 sm:max-lg:landscape:columns-2 lg:columns-2 gap-x-5 text-left max-w-[12.5rem] sm:max-lg:portrait:max-w-[18.5rem] sm:max-lg:landscape:max-w-sm lg:max-w-md mx-auto shrink-0">
+        {program.highlights.map((item) => (
+          <li key={item} className="flex items-start gap-2 text-xs sm:max-lg:portrait:text-base sm:max-lg:landscape:text-lg lg:text-lg break-inside-avoid mb-0.5 text-[#2C1810] font-semibold">
+            <CheckCircle2 className="w-3.5 h-3.5 sm:max-lg:portrait:w-4 sm:max-lg:portrait:h-4 sm:max-lg:landscape:w-[1.125rem] sm:max-lg:landscape:h-[1.125rem] lg:w-5 lg:h-5 text-[#FFFBF5] fill-[#C59124] shrink-0 mt-0.5" strokeWidth={2.5} />
+            <span>{item}</span>
+          </li>
+        ))}
+      </ul>
+
+      {program.closing ? (
+        <p className="text-xs sm:max-lg:portrait:text-base sm:max-lg:landscape:text-lg lg:text-lg leading-snug text-[#5C4033] font-medium italic mt-2 mb-2 w-full shrink-0 px-1">
+          {program.closing}
+        </p>
+      ) : null}
+      </div>
+
+      <a
+        href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(program.whatsappMsg)}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center justify-center gap-2 px-6 py-2 sm:max-lg:portrait:px-7 sm:max-lg:portrait:py-2.5 sm:max-lg:landscape:px-8 sm:max-lg:landscape:py-3 lg:px-8 lg:py-3 rounded-full bg-[#E8AF34] border-2 border-[#A67C1A] text-[#2C1810] font-extrabold text-xs sm:max-lg:portrait:text-base sm:max-lg:landscape:text-lg lg:text-lg hover:bg-[#D9A42E] hover:-translate-y-0.5 transition-all shadow-[0_4px_14px_rgba(198,145,36,0.45)] shrink-0 mt-auto"
+      >
+        Enroll <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 lg:w-5 lg:h-5" />
+      </a>
+    </article>
   );
 }
 
