@@ -15,15 +15,8 @@ import {
   Users,
   Rocket,
   Pencil,
-  Home,
-  Smartphone,
-  QrCode,
-  Shield,
-  GraduationCap,
-  Heart,
-  Handshake,
-  Sparkles,
 } from "lucide-react";
+import { BranchesSection } from "../components/BranchesSection";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -133,78 +126,6 @@ const programsList = [
   },
 ];
 
-const parentAppFeatures = [
-  "Activity photos",
-  "Learning activities",
-  "Snacks & meals",
-  "Water intake",
-  "Potty/Loo routine",
-  "Nap time",
-  "Mood & well-being",
-  "Teacher's notes",
-  "Daily achievements & milestones",
-];
-
-const whyChooseSimba = [
-  {
-    icon: Home,
-    title: "A Home Away From Home",
-    description:
-      "A warm, loving, and nurturing environment where every Little Simbian feels safe, valued, and happy.",
-  },
-  {
-    icon: Smartphone,
-    title: "Live Parent Updates",
-    description:
-      "Never miss a precious moment! Through our Simba Parent App, receive real-time updates on your child's day, including:",
-    features: parentAppFeatures,
-    wide: true,
-  },
-  {
-    icon: QrCode,
-    title: "QR-Based Check-In & Check-Out",
-    description:
-      "Every child is issued a unique ID card with a QR code. Secure scan-in and scan-out ensure accurate attendance records and provide parents with instant notifications when their child arrives at or leaves the preschool.",
-  },
-  {
-    icon: Shield,
-    title: "Safety First",
-    description:
-      "A secure campus with caring staff and child-friendly facilities, ensuring your little one is always safe and well cared for.",
-  },
-  {
-    icon: Palette,
-    title: "Play-Based Learning",
-    description:
-      "Fun, engaging activities that inspire creativity, confidence, communication, and lifelong learning.",
-  },
-  {
-    icon: GraduationCap,
-    title: "Passionate Educators",
-    description:
-      "Dedicated teachers who nurture every child with love, patience, encouragement, and individual attention.",
-  },
-  {
-    icon: Heart,
-    title: "Health & Well-being",
-    description:
-      "We care for every child's physical and emotional well-being through healthy routines, nutritious snacks, and attentive care.",
-  },
-  {
-    icon: Handshake,
-    title: "Parent Partnership",
-    description:
-      "Strong communication, transparency, and daily updates help parents stay involved in every step of their child's learning journey.",
-  },
-  {
-    icon: Sparkles,
-    title: "Happy Childhood, Bright Future",
-    description:
-      "We nurture curious minds, kind hearts, and confident learners—giving every Little Simbian the happiest start and the strongest foundation for life.",
-    wide: true,
-  },
-];
-
 const defaultGalleryItems = [
   { id: "def-1", imageUrl: "https://images.unsplash.com/photo-1544605151-a2798e21183d?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80", title: "Creative Time" },
   { id: "def-2", imageUrl: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80", title: "Learning Fun" },
@@ -219,7 +140,6 @@ export default function LandingPage() {
   const [gallery, setGallery] = useState<GalleryItem[]>([]);
   const [testimonials, setTestimonials] = useState<Array<Testimonial & { role?: string; profilePhotoUrl?: string }>>([]);
   const [activeProgramIndex, setActiveProgramIndex] = useState(0);
-  const [activeWhyChooseIndex, setActiveWhyChooseIndex] = useState(0);
 
   useEffect(() => {
     Promise.all([
@@ -251,14 +171,6 @@ export default function LandingPage() {
     const timer = window.setInterval(() => {
       setActiveProgramIndex((prev) => (prev + 1) % programsList.length);
     }, 2000);
-
-    return () => window.clearInterval(timer);
-  }, []);
-
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      setActiveWhyChooseIndex((prev) => (prev + 1) % whyChooseSimba.length);
-    }, 4000);
 
     return () => window.clearInterval(timer);
   }, []);
@@ -555,33 +467,30 @@ export default function LandingPage() {
       </section>
 
       {/* 5b. Why Choose Simba Preschool */}
-      <section className="relative h-screen max-h-screen w-full bg-[#FDF5E5] overflow-hidden flex flex-col">
-        <div className="text-center pt-5 sm:pt-7 lg:pt-8 px-6 shrink-0">
-          <span className="text-xs font-bold tracking-widest text-[#E8AF34] uppercase block mb-2">Why Simba</span>
-          <h2 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight">
+      <section className="relative h-screen max-h-screen w-full overflow-hidden bg-[#FAF8F2]">
+        <picture className="absolute inset-0 w-full h-full pointer-events-none select-none">
+          <source media="(min-width: 1024px)" srcSet="/Why.png" />
+          <source
+            media="(min-width: 640px) and (max-width: 1023px) and (orientation: portrait)"
+            srcSet="/Why%20Tab%20Potrait.png"
+          />
+          <source media="(min-width: 640px)" srcSet="/Why%20Tab.png" />
+          <img
+            src="/Why%20Mobile.png"
+            alt=""
+            aria-hidden
+            className="absolute inset-0 h-full w-full object-cover object-center"
+            loading="lazy"
+            decoding="async"
+          />
+        </picture>
+
+        <div className="relative z-10 text-center pt-5 sm:pt-7 lg:pt-8 px-6">
+          <span className="text-xs font-bold tracking-widest text-[#E8AF34] uppercase block mb-3">Why Simba</span>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight drop-shadow-sm">
             Why Choose Simba Preschool?
           </h2>
-          <div className="w-12 h-1 bg-[#E8AF34] mx-auto mt-2 sm:mt-3 rounded-full" />
-        </div>
-
-        <div className="relative flex-1 min-h-0 w-full max-w-4xl mx-auto px-6 sm:px-10 pb-6 sm:pb-8">
-          {whyChooseSimba.map((item, idx) => {
-            const isActive = activeWhyChooseIndex === idx;
-            return (
-              <div
-                key={item.title}
-                className={`absolute inset-x-6 sm:inset-x-10 top-0 bottom-0 transition-all duration-700 ease-in-out ${
-                  isActive
-                    ? "opacity-100 translate-y-0 z-10"
-                    : "opacity-0 translate-y-3 pointer-events-none z-0"
-                }`}
-                aria-hidden={!isActive}
-              >
-                <WhyChooseCard item={item} />
-              </div>
-            );
-          })}
-
+          <div className="w-12 h-1 bg-[#E8AF34] mx-auto mt-3 sm:mt-4 rounded-full" />
         </div>
       </section>
 
@@ -739,20 +648,20 @@ export default function LandingPage() {
       </section>
 
       {/* 9. Portals Link */}
-      <section className="min-h-screen flex items-center justify-center py-24 bg-white relative overflow-hidden">
+      <section className="portals-section min-h-screen flex items-center justify-center py-24 bg-white relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-6 sm:px-12 text-center w-full">
-          <div className="text-center mb-16">
+          <div className="portals-section-header text-center mb-16">
             <span className="text-xs font-bold tracking-widest text-[#E8AF34] uppercase block mb-3">Access Your Dashboard</span>
             <h2 className="text-4xl sm:text-5xl font-extrabold text-slate-900 tracking-tight">Our Portals</h2>
             <div className="w-12 h-1 bg-[#E8AF34] mx-auto mt-4 rounded-full" />
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 max-w-[95%] xl:max-w-7xl mx-auto">
+          <div className="portals-grid grid grid-cols-1 md:grid-cols-2 gap-10 max-w-[95%] xl:max-w-7xl mx-auto">
             {/* Student Portal */}
-            <div className="relative flex flex-col items-center justify-center text-center w-full aspect-[4/3] sm:aspect-[16/9] md:aspect-[4/3] lg:aspect-[16/9]">
+            <div className="portal-card relative flex flex-col items-center justify-center text-center w-full aspect-[4/3] sm:aspect-[16/9] md:aspect-[4/3] lg:aspect-[16/9]">
               <div 
                 className="absolute inset-0 bg-contain bg-center bg-no-repeat z-0" 
-                style={{ backgroundImage: "url('/Portal.png')" }} 
+                style={{ backgroundImage: "url('/Portal.webp')" }} 
               />
               
               <div className="relative z-10 flex flex-col items-center justify-center px-4 sm:px-10 py-8 max-w-[90%] sm:max-w-[85%] h-full">
@@ -769,10 +678,10 @@ export default function LandingPage() {
             </div>
 
             {/* Teacher Portal */}
-            <div className="relative flex flex-col items-center justify-center text-center w-full aspect-[4/3] sm:aspect-[16/9] md:aspect-[4/3] lg:aspect-[16/9]">
+            <div className="portal-card relative flex flex-col items-center justify-center text-center w-full aspect-[4/3] sm:aspect-[16/9] md:aspect-[4/3] lg:aspect-[16/9]">
               <div 
                 className="absolute inset-0 bg-contain bg-center bg-no-repeat z-0" 
-                style={{ backgroundImage: "url('/Portal.png')" }} 
+                style={{ backgroundImage: "url('/Portal.webp')" }} 
               />
               
               <div className="relative z-10 flex flex-col items-center justify-center px-4 sm:px-10 py-8 max-w-[90%] sm:max-w-[85%] h-full">
@@ -792,7 +701,7 @@ export default function LandingPage() {
       </section>
 
       {/* 10. Testimonials (Double Marquee) */}
-      <section className="py-24 bg-slate-50 overflow-hidden border-t border-slate-200">
+      <section className="testimonials-section py-24 bg-slate-50 overflow-hidden border-t border-slate-200">
         <div className="max-w-7xl mx-auto px-6 sm:px-12 text-center mb-16">
           <span className="text-xs font-bold tracking-widest text-[#E8AF34] uppercase block mb-3">Testimonials</span>
           <h2 className="text-4xl sm:text-5xl font-extrabold text-slate-900 tracking-tight">What Parents Say</h2>
@@ -805,7 +714,7 @@ export default function LandingPage() {
             <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-slate-50 to-transparent z-10 pointer-events-none" />
 
             <div className="flex overflow-hidden group">
-              <div className="flex animate-scroll-left gap-6 w-max shrink-0 hover:![animation-play-state:paused] group-hover:![animation-play-state:paused]" style={{ animationDuration: '360s' }}>
+              <div className="testimonials-marquee testimonials-marquee--left flex gap-6 w-max shrink-0 hover:![animation-play-state:paused] group-hover:![animation-play-state:paused]">
                 {[...row1Testimonials, ...row1Testimonials, ...row1Testimonials].map((t, idx) => (
                   <TestimonialCard key={`${t.id}-1-${idx}`} testimonial={t} />
                 ))}
@@ -814,7 +723,7 @@ export default function LandingPage() {
 
             {row2Testimonials.length > 0 && (
               <div className="flex overflow-hidden group">
-                <div className="flex animate-scroll-right gap-6 w-max shrink-0 hover:![animation-play-state:paused] group-hover:![animation-play-state:paused]" style={{ animationDuration: '360s' }}>
+                <div className="testimonials-marquee testimonials-marquee--right flex gap-6 w-max shrink-0 hover:![animation-play-state:paused] group-hover:![animation-play-state:paused]">
                   {[...row2Testimonials, ...row2Testimonials, ...row2Testimonials].map((t, idx) => (
                     <TestimonialCard key={`${t.id}-2-${idx}`} testimonial={t} />
                   ))}
@@ -829,46 +738,7 @@ export default function LandingPage() {
         )}
       </section>
 
-      {/* 11. Contact & Location */}
-      <section className="min-h-screen flex items-center py-24 relative overflow-hidden">
-        <picture className="absolute inset-0 w-full h-full pointer-events-none">
-          <source media="(min-width: 1024px)" srcSet="/Map.webp" />
-          <source media="(min-width: 640px)" srcSet="/Map%20Tab.png" />
-          <img loading="lazy" decoding="async" 
-            src="/Map%20Mobile.png" 
-            alt="Simba Academy Branches Map Background" 
-            className="w-full h-full object-cover object-center"
-            decoding="async"
-          />
-        </picture>
-
-        <div className="absolute inset-0 bg-slate-950/5 pointer-events-none" />
-
-        <div className="max-w-7xl mx-auto px-6 sm:px-12 w-full text-center relative z-10">
-          <div className="relative -translate-y-20 sm:-translate-y-16">
-            <div className="text-center mb-10">
-              <span className="text-xs font-bold tracking-widest text-[#E8AF34] uppercase block mb-3">Get in Touch</span>
-              <h2 className="text-4xl sm:text-5xl font-extrabold text-slate-900 tracking-tight">Contact Us</h2>
-              <div className="w-12 h-1 bg-[#E8AF34] mx-auto mt-4 rounded-full" />
-            </div>
-
-            <p className="text-slate-800 sm:text-slate-700 font-semibold text-base sm:text-lg max-w-2xl mx-auto mb-10 drop-shadow-sm bg-white/85 sm:bg-transparent px-4 py-3 rounded-xl sm:px-0 sm:py-0">
-              Simba Preschool — Salem. Reach us for admissions, campus visits, and program details.
-            </p>
-          </div>
-
-          <div className="w-full sm:max-w-[520px] mx-auto h-[220px] sm:h-[276px] overflow-hidden rounded-none bg-white/95 backdrop-blur-sm shadow-2xl -mt-12 sm:-mt-10 relative z-20">
-            <iframe
-              title="Simba Academy Salem Branches Map"
-              src="https://maps.google.com/maps?q=Simba%20Preschool,%20Salem&t=&z=12&ie=UTF8&iwloc=&output=embed"
-              className="w-full h-full border-0"
-              allowFullScreen
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-            />
-          </div>
-        </div>
-      </section>
+      <BranchesSection />
 
       {/* 12. Admissions */}
       <section className="min-h-[70vh] flex flex-col justify-center py-20 bg-white">
@@ -909,44 +779,6 @@ export default function LandingPage() {
 
     </PageShell>
     </>
-  );
-}
-
-function WhyChooseCard({ item }: { item: (typeof whyChooseSimba)[number] }) {
-  const ItemIcon = item.icon;
-
-  return (
-    <article className="program-card w-full h-full max-h-full mx-auto flex flex-col items-center text-center px-4 sm:px-6 py-3 sm:py-4 min-h-0 overflow-hidden">
-      <span className="inline-flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[#E8AF34]/25 border border-[#C59124]/50 shadow-sm mb-2 sm:mb-3 shrink-0">
-        <ItemIcon className="w-5 h-5 text-[#7A4F10]" strokeWidth={2.25} />
-      </span>
-
-      <h3 className="text-base sm:text-xl lg:text-2xl font-extrabold text-[#2C1810] mb-1.5 sm:mb-2 leading-tight shrink-0 px-2">
-        {item.title}
-      </h3>
-
-      <div className="w-10 h-0.5 rounded-full bg-[#E8AF34]/70 mb-2 shrink-0" aria-hidden />
-
-      <div className="flex-1 min-h-0 w-full overflow-y-auto flex flex-col items-center px-1 sm:px-2">
-        <p className="text-xs sm:text-sm lg:text-base leading-snug text-[#4A3728] font-medium max-w-2xl">
-          {item.description}
-        </p>
-
-        {item.features ? (
-          <ul className="mt-2 sm:mt-3 grid grid-cols-2 sm:grid-cols-3 gap-x-2 sm:gap-x-3 gap-y-1 sm:gap-y-1.5 w-full max-w-2xl text-left">
-            {item.features.map((feature) => (
-              <li key={feature} className="flex items-start gap-1 text-[11px] sm:text-xs lg:text-sm text-[#2C1810] font-semibold">
-                <CheckCircle2
-                  className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#FFFBF5] fill-[#C59124] shrink-0 mt-0.5"
-                  strokeWidth={2.5}
-                />
-                <span>{feature}</span>
-              </li>
-            ))}
-          </ul>
-        ) : null}
-      </div>
-    </article>
   );
 }
 
@@ -1008,7 +840,7 @@ function ProgramCard({ program }: { program: (typeof programsList)[number] }) {
 
 function TestimonialCard({ testimonial }: { testimonial: Testimonial & { role?: string; profilePhotoUrl?: string } }) {
   return (
-    <div className="w-[min(300px,calc(100vw-3rem))] sm:w-[350px] md:w-[420px] bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
+    <div className="testimonial-card w-[min(300px,calc(100vw-3rem))] sm:w-[350px] md:w-[420px] bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
       <div>
         <div className="flex gap-1 mb-3">
           {[...Array(5)].map((_, i) => (

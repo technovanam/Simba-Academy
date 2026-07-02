@@ -712,6 +712,31 @@ html:has(.portal-app-shell) body {
   animation: scroll-right 40s linear infinite;
 }
 
+.testimonials-section {
+  --testimonials-marquee-duration: 360s;
+}
+
+.testimonials-marquee--left {
+  animation: scroll-left var(--testimonials-marquee-duration) linear infinite;
+}
+
+.testimonials-marquee--right {
+  animation: scroll-right var(--testimonials-marquee-duration) linear infinite;
+}
+
+@media (max-width: 767px) {
+  .testimonials-section {
+    --testimonials-marquee-duration: 55s;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 1023px) {
+  .testimonial-card {
+    width: 420px !important;
+    max-width: 420px;
+  }
+}
+
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
@@ -767,6 +792,433 @@ html:has(.portal-app-shell) body {
 
   .parent-choose-content {
     transform: none;
+  }
+}
+
+.branches-section {
+  background: #dff3ff;
+}
+
+.branches-section-overlay {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.18) 0%,
+    rgba(255, 255, 255, 0.08) 45%,
+    rgba(255, 255, 255, 0.12) 100%
+  );
+}
+
+.branches-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  align-items: stretch;
+}
+
+@media (min-width: 640px) {
+  .branches-row {
+    gap: 1rem;
+  }
+}
+
+/* Tablet landscape — horizontal scroll */
+@media (min-width: 640px) and (max-width: 1023px) and (orientation: landscape) {
+  .branches-row {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 1rem;
+    overflow-x: auto;
+    padding-bottom: 0.75rem;
+    scroll-snap-type: x mandatory;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .branches-row .branch-card {
+    width: min(84vw, 18.5rem);
+    flex-shrink: 0;
+    scroll-snap-align: center;
+  }
+}
+
+@media (min-width: 1024px) {
+  .branches-row {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+    overflow: visible;
+  }
+}
+
+@media (max-width: 639px) {
+  .branches-row {
+    overflow: visible;
+  }
+
+  .branch-card-header {
+    min-height: 2.75rem;
+  }
+
+  .branch-card-header h3 {
+    font-size: 0.72rem;
+    line-height: 1.3;
+  }
+
+  .branch-card-index {
+    height: 1.65rem;
+    width: 1.65rem;
+    font-size: 0.58rem;
+  }
+
+  .branch-card-body {
+    padding: 0.65rem !important;
+  }
+
+  .branch-card-details {
+    min-height: 0;
+    padding: 0.4rem 0.45rem;
+  }
+
+  .branch-detail-icon {
+    height: 1.45rem;
+    width: 1.45rem;
+  }
+
+  .branch-detail-icon svg {
+    height: 0.75rem;
+    width: 0.75rem;
+  }
+
+  .branch-detail-label {
+    font-size: 0.52rem;
+  }
+
+  .branch-detail-value {
+    font-size: 0.62rem;
+    line-height: 1.3;
+  }
+
+  .branch-card-actions {
+    min-height: 0;
+    padding-top: 0.5rem;
+  }
+
+  .branch-card-actions a:first-child {
+    height: 2rem;
+    font-size: 0.62rem;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+
+  .branch-card-actions a:last-child {
+    height: 2rem;
+    width: 2rem;
+  }
+
+  .branch-card-map-wrap {
+    padding: 0.35rem 0.45rem 0.45rem !important;
+  }
+
+  .branch-card-map {
+    height: 5.5rem;
+  }
+
+  .branch-card-map a {
+    bottom: 0.35rem;
+    right: 0.35rem;
+    padding: 0.2rem 0.45rem;
+    font-size: 0.55rem;
+  }
+}
+
+.branches-row::-webkit-scrollbar {
+  display: none;
+}
+
+.branch-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 1.25rem;
+  border: 1px solid rgba(198, 145, 36, 0.35);
+  background: linear-gradient(
+    165deg,
+    rgba(255, 251, 245, 0.98) 0%,
+    rgba(255, 245, 230, 0.95) 100%
+  );
+  box-shadow:
+    0 10px 28px rgba(62, 39, 35, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(6px);
+  transition:
+    transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.branch-card:hover {
+  transform: translateY(-5px);
+  box-shadow:
+    0 18px 40px rgba(62, 39, 35, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.branch-card-accent {
+  height: 4px;
+  background: linear-gradient(90deg, #e8af34 0%, #c59124 55%, #e8af34 100%);
+}
+
+.branch-card-index {
+  display: inline-flex;
+  height: 2rem;
+  width: 2rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.65rem;
+  border: 1px solid rgba(198, 145, 36, 0.35);
+  background: rgba(232, 175, 52, 0.18);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #9a6b1a;
+}
+
+.branch-card-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.branch-card-header {
+  min-height: 3.25rem;
+}
+
+.branch-card-details {
+  min-height: 7.5rem;
+  border-radius: 0.9rem;
+  border: 1px solid rgba(198, 145, 36, 0.16);
+  background: rgba(255, 255, 255, 0.55);
+  padding: 0.55rem 0.65rem;
+}
+
+.branch-card-actions {
+  min-height: 3rem;
+  padding-top: 0.65rem;
+}
+
+.branch-detail-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  border-radius: 0.65rem;
+  padding: 0.35rem 0.25rem;
+  transition: background-color 0.2s ease;
+}
+
+a.branch-detail-row:hover {
+  background: rgba(232, 175, 52, 0.08);
+}
+
+.branch-detail-icon {
+  display: inline-flex;
+  height: 1.75rem;
+  width: 1.75rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: 1px solid rgba(198, 145, 36, 0.28);
+  background: rgba(232, 175, 52, 0.14);
+}
+
+.branch-detail-label {
+  display: block;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #9a6b1a;
+}
+
+.branch-detail-value {
+  display: block;
+  margin-top: 0.1rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: #2c1810;
+  transition: color 0.2s ease;
+}
+
+.branch-card-map {
+  height: 10.25rem;
+  border-radius: 0.85rem;
+  border: 1px solid rgba(198, 145, 36, 0.22);
+  background: #f1f5f9;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+@media (min-width: 640px) {
+  .branch-card-map {
+    height: 11.5rem;
+  }
+
+  .branch-detail-value {
+    font-size: 0.78rem;
+  }
+}
+
+/* Tablet portrait — compact branch cards */
+@media (min-width: 640px) and (max-width: 1023px) and (orientation: portrait) {
+  .branches-row {
+    overflow: visible;
+    gap: 0.85rem;
+  }
+
+  .branch-card-header {
+    min-height: 0;
+    margin-bottom: 0.45rem;
+  }
+
+  .branch-card-header h3 {
+    font-size: 0.76rem;
+    line-height: 1.25;
+  }
+
+  .branch-card-index {
+    height: 1.55rem;
+    width: 1.55rem;
+    font-size: 0.56rem;
+  }
+
+  .branch-card-body {
+    padding: 0.65rem !important;
+  }
+
+  .branch-card-details {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 0.4rem;
+    row-gap: 0.4rem;
+    min-height: 0;
+    padding: 0.4rem 0.45rem;
+  }
+
+  .branch-card-details > * + * {
+    margin-top: 0 !important;
+  }
+
+  .branch-card-details > :first-child {
+    grid-column: 1 / -1;
+  }
+
+  .branch-card-details > :nth-child(2) {
+    grid-column: 1;
+  }
+
+  .branch-card-details > :nth-child(3) {
+    grid-column: 2;
+  }
+
+  .branch-detail-row {
+    gap: 0.45rem;
+    padding: 0.28rem 0.2rem;
+    min-width: 0;
+  }
+
+  .branch-detail-icon {
+    height: 1.45rem;
+    width: 1.45rem;
+  }
+
+  .branch-detail-icon svg {
+    height: 0.75rem;
+    width: 0.75rem;
+  }
+
+  .branch-detail-label {
+    font-size: 0.52rem;
+  }
+
+  .branch-detail-value {
+    font-size: 0.66rem;
+    line-height: 1.25;
+  }
+
+  .branch-card-actions {
+    min-height: 0;
+    padding-top: 0.5rem;
+  }
+
+  .branch-card-actions a:first-child {
+    height: 1.85rem;
+    font-size: 0.64rem;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+
+  .branch-card-actions a:last-child {
+    height: 1.85rem;
+    width: 1.85rem;
+  }
+
+  .branch-card-map-wrap {
+    padding: 0.35rem 0.45rem 0.45rem !important;
+  }
+
+  .branch-card-map {
+    height: 6.5rem;
+  }
+
+  .branch-card-map a {
+    bottom: 0.3rem;
+    right: 0.3rem;
+    padding: 0.18rem 0.4rem;
+    font-size: 0.54rem;
+  }
+}
+
+/* Home — portals section tablet portrait (stacked vertically) */
+@media (min-width: 640px) and (max-width: 1023px) and (orientation: portrait) {
+  .portals-section {
+    min-height: 100dvh;
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+  }
+
+  .portals-section-header {
+    margin-bottom: 1.5rem;
+  }
+
+  .portals-section-header h2 {
+    font-size: 2.25rem;
+  }
+
+  .portals-grid {
+    display: flex !important;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.25rem;
+    max-width: 24rem;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .portals-grid .portal-card {
+    width: 100%;
+    max-width: 24rem;
+    aspect-ratio: 4 / 3;
+    min-height: 0;
+  }
+
+  .portals-grid .portal-card h3 {
+    font-size: 1.35rem;
+  }
+
+  .portals-grid .portal-card p {
+    font-size: 0.8rem;
+    margin-bottom: 0.85rem;
   }
 }
 
@@ -875,4 +1327,278 @@ html:has(.portal-app-shell) body {
 
 .program-card .program-card-body::-webkit-scrollbar {
   display: none;
+}
+
+/* Franchise page — equal form height only on large screens */
+@media (min-width: 1024px) {
+  .franchise-enquiry-section .franchise-form-aside {
+    display: flex;
+    min-height: 100%;
+  }
+
+  .franchise-enquiry-section .franchise-form-card {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 100%;
+  }
+
+  .franchise-enquiry-section .franchise-form-body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .franchise-enquiry-section .franchise-form-fill {
+    display: flex;
+    height: 100%;
+    min-height: 0;
+    flex-direction: column;
+  }
+
+  .franchise-enquiry-section .franchise-form-fill form {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .franchise-enquiry-section .franchise-form-message {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .franchise-enquiry-section .franchise-form-message textarea {
+    flex: 1;
+    min-height: 4rem;
+  }
+}
+
+/* Mobile & tablet portrait — content on top, form below */
+@media (max-width: 1023px) {
+  .franchise-enquiry-section .franchise-enquiry-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2rem;
+  }
+
+  .franchise-enquiry-section .franchise-form-card {
+    min-height: auto;
+  }
+
+  .franchise-enquiry-section .franchise-form-body form textarea {
+    flex: none;
+    min-height: 5rem;
+  }
+}
+
+/* Footer — tablet portrait: Contact top-right, Courses under logo */
+@media (min-width: 768px) and (max-width: 1023px) and (orientation: portrait) {
+  .footer-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: 2.5rem;
+    row-gap: 1.5rem;
+    align-items: start;
+  }
+
+  .footer-identity-col {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .footer-contact-col {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .footer-courses-col {
+    grid-column: 1;
+    grid-row: 1;
+    margin-top: 6.75rem;
+    align-self: start;
+  }
+
+  .footer-social-col {
+    grid-column: 2;
+    grid-row: 2;
+  }
+}
+
+/* Franchise hero — nudge title right on mobile & tablet portrait */
+@media (max-width: 767px) {
+  .franchise-hero-title {
+    transform: translateX(1.25rem);
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) and (orientation: portrait) {
+  .franchise-hero-title {
+    transform: translateX(1.75rem);
+  }
+}
+
+/* About hero — text positioning (edit values in .about-hero-section variables) */
+.about-hero-section {
+  --about-hero-mobile-padding: 86%;
+  --about-hero-mobile-shift: 8.5rem;
+  --about-hero-tab-landscape-top: 64%;
+  --about-hero-tab-portrait-padding: 72%;
+  --about-hero-tab-portrait-shift: 10rem;
+  --about-hero-laptop-landscape-top: 58%;
+  --about-hero-laptop-top: 52%;
+}
+
+.about-hero-section .about-hero-overlay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: 30%;
+  text-align: center;
+}
+
+.about-hero-section .about-hero-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 56rem;
+  transform: translateY(7rem);
+}
+
+.about-hero-section .about-hero-title {
+  white-space: nowrap;
+}
+
+@media (max-width: 639px) {
+  .about-hero-section .about-hero-overlay {
+    padding-top: var(--about-hero-mobile-padding) !important;
+  }
+
+  .about-hero-section .about-hero-text {
+    width: 88% !important;
+    max-width: 16.5rem !important;
+    transform: translateY(var(--about-hero-mobile-shift)) !important;
+  }
+
+  .about-hero-section .about-hero-title {
+    white-space: normal;
+  }
+}
+
+/* Tablet landscape — touch devices (any width, incl. 1280px tablets) */
+@media (min-width: 640px) and (max-height: 920px) and (min-aspect-ratio: 4/3) and (any-pointer: coarse) {
+  .about-hero-section .about-hero-overlay {
+    display: block !important;
+    padding: 0 !important;
+  }
+
+  .about-hero-section .about-hero-text {
+    position: absolute !important;
+    left: 50% !important;
+    top: var(--about-hero-tab-landscape-top) !important;
+    width: min(88%, 42rem) !important;
+    transform: translateX(-50%) !important;
+  }
+}
+
+/* Laptop landscape — mouse/trackpad only (won't override touch tablets) */
+@media (min-width: 1024px) and (max-height: 920px) and (min-aspect-ratio: 4/3) and (hover: hover) and (pointer: fine) {
+  .about-hero-section .about-hero-overlay {
+    display: block !important;
+    padding: 0 !important;
+  }
+
+  .about-hero-section .about-hero-text {
+    position: absolute !important;
+    left: 50% !important;
+    top: var(--about-hero-laptop-landscape-top) !important;
+    width: min(88%, 42rem) !important;
+    transform: translateX(-50%) !important;
+  }
+}
+
+/* Tablet portrait */
+@media (min-width: 640px) and (max-aspect-ratio: 3/4) {
+  .about-hero-section .about-hero-overlay {
+    padding-top: var(--about-hero-tab-portrait-padding) !important;
+  }
+
+  .about-hero-section .about-hero-text {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    width: 100% !important;
+    transform: translateY(var(--about-hero-tab-portrait-shift)) !important;
+  }
+}
+
+/* Laptop / desktop tall (1280px+ wide, 921px+ tall) — moved up */
+@media (min-width: 1280px) and (min-height: 921px) {
+  .about-hero-section .about-hero-overlay {
+    display: block !important;
+    padding: 0 !important;
+  }
+
+  .about-hero-section .about-hero-text {
+    position: absolute !important;
+    left: 50% !important;
+    top: var(--about-hero-laptop-top) !important;
+    width: min(88%, 42rem) !important;
+    transform: translateX(-50%) !important;
+  }
+}
+
+/* About founder — responsive text positioning */
+.about-founder-section {
+  --about-founder-tab-portrait-shift: 10rem;
+  --about-founder-mobile-shift: 8rem;
+}
+
+@media (max-width: 639px) {
+  .about-founder-section .about-founder-content {
+    transform: translateY(var(--about-founder-mobile-shift));
+  }
+
+  .about-founder-section .about-founder-card {
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border-radius: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  .about-founder-section .about-founder-card h3 {
+    font-size: 1.25rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .about-founder-section .about-founder-card p {
+    font-size: 0.8125rem;
+    line-height: 1.55;
+  }
+
+  .about-founder-section .about-founder-body > * + * {
+    margin-top: 0.625rem;
+  }
+
+  .about-founder-section .about-founder-card h4 {
+    font-size: 1.0625rem;
+  }
+
+  .about-founder-section .about-founder-card svg {
+    width: 1.5rem;
+    height: 1.5rem;
+    margin-bottom: 1rem;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) and (orientation: portrait) {
+  .about-founder-section .about-founder-content {
+    transform: translateY(var(--about-founder-tab-portrait-shift));
+  }
 }

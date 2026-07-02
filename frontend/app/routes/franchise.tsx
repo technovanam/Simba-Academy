@@ -1,137 +1,133 @@
 import type { Route } from "./+types/franchise";
 import { PageShell } from "../components/PageShell";
 import { FranchiseForm } from "../components/FranchiseForm";
-import { ShieldCheck, Award, TrendingUp, HelpCircle, Phone, ArrowRight, BookOpen, Users, Compass, Laptop } from "lucide-react";
+import { ArrowRight, Phone } from "lucide-react";
 import { WHATSAPP_URL } from "../lib/constants";
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "Franchise Opportunity | Simba Academy" },
-    { name: "description", content: "Partner with Simba Academy to bring a premium learning experience to your city. Explore franchise benefits, support, and apply today." },
+    { title: "Franchise Opportunity | Simba Preschool" },
+    {
+      name: "description",
+      content:
+        "Become a Simba Preschool franchise partner. Build a meaningful business with proven curriculum, training, and ongoing support.",
+    },
   ];
 }
-
-const BENEFITS = [
-  {
-    title: "Established Brand Trust",
-    desc: "Leverage Simba Academy's premium brand name and parent-approved educational model.",
-    icon: Award,
-    color: "text-blue-600",
-    bg: "bg-blue-50"
-  },
-  {
-    title: "High Returns (ROI)",
-    desc: "Enjoy rapid break-even and highly attractive returns driven by our high retention rates.",
-    icon: TrendingUp,
-    color: "text-emerald-600",
-    bg: "bg-emerald-50"
-  },
-  {
-    title: "Proprietary Software Suite",
-    desc: "Full automated platform covering fee payments, lesson plans, portals, and teacher checks.",
-    icon: Laptop,
-    color: "text-indigo-600",
-    bg: "bg-indigo-50"
-  },
-  {
-    title: "Zero-Risk Curriculum",
-    desc: "Acquire full rights to our accredited early childhood and science syllabus.",
-    icon: ShieldCheck,
-    color: "text-purple-600",
-    bg: "bg-purple-50"
-  }
-];
-
-const SUPPORTS = [
-  {
-    title: "Architectural Setup",
-    desc: "Complete interior blueprints, specifications, sourcing, and classroom safety layout plans.",
-    icon: Compass
-  },
-  {
-    title: "Teacher Recruitment & Training",
-    desc: "Standard screening protocols, guide manuals, child care workshops, and onboarding programs.",
-    icon: Users
-  },
-  {
-    title: "Admissions Marketing Kit",
-    desc: "Localized launch plans, brochures, digital media templates, and customized flyers.",
-    icon: BookOpen
-  }
-];
-
-const FAQS = [
-  {
-    q: "What is the typical property area required?",
-    a: "A minimum carpet area of 1,500 - 2,500 sq.ft. on a ground floor property with secure access and play area."
-  },
-  {
-    q: "How long does it take to launch a branch?",
-    a: "Usually between 45 to 60 days once property leasing and agreements are finalized."
-  },
-  {
-    q: "Do I get exclusive regional rights?",
-    a: "Yes! We secure territorial rights for each partner to ensure zero internal competition within designated bounds."
-  }
-];
 
 export default function FranchisePage() {
   return (
     <PageShell headerVariant="overlay">
-      {/* Hero Section */}
-      <section className="relative w-full min-h-screen flex items-center justify-center bg-[#FFFAF0]">
-        {/* Responsive Background Images */}
-        <picture className="absolute inset-0 w-full h-full">
-          <source media="(min-width: 1024px)" srcSet="/Franchise.webp" />
-          <source media="(min-width: 640px)" srcSet="/Franchise%20tab.webp" />
-          <img loading="lazy" decoding="async" 
-            src="/Franchise%20Phone.webp" 
-            alt="Franchise Background" 
-            className="w-full h-full object-cover object-center"
-            fetchPriority="high"
+      {/* Hero */}
+      <section className="relative min-h-screen w-full overflow-hidden bg-[#FDF5E5]">
+        <picture className="absolute inset-0 w-full h-full pointer-events-none select-none">
+          <source media="(min-width: 1024px)" srcSet="/Franchise.png" />
+          <source
+            media="(min-width: 768px) and (max-width: 1023px) and (orientation: portrait)"
+            srcSet="/Franchise%20Tab%20Potrait.png"
+          />
+          <source media="(min-width: 640px)" srcSet="/Franchise%20Tab.png" />
+          <img
+            src="/Franchise%20Mobile.png"
+            alt=""
+            aria-hidden
+            className="absolute inset-0 h-full w-full object-cover object-center"
+            loading="eager"
             decoding="async"
           />
         </picture>
-        
-        {/* Text Overlay */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6 sm:px-12 z-10 pt-[2%] sm:pt-[4%]">
-          <div className="space-y-4 md:space-y-6 flex flex-col items-center max-w-4xl mx-auto">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight leading-[1.2] drop-shadow-sm">
-              Bring <br className="sm:hidden" />
-              <span className="text-slate-900">Simba Preschool</span> <br className="sm:hidden" />
-              <span className="hidden sm:inline"> to </span>
-              <span className="sm:hidden">To </span><br/>
-              Your City
-            </h1>
-            <p className="text-sm sm:text-base lg:text-lg text-slate-800 font-medium leading-relaxed max-w-[min(100%,20rem)] sm:max-w-2xl mx-auto drop-shadow-sm px-2 md:px-4">
-              <span className="sm:hidden">Join our premium preschool network with all the tools you need to succeed.</span>
-              <span className="hidden sm:inline">Join a fast-growing network of premium preschools. We provide all the tools, curriculum, and technology required to run a successful center.</span>
-            </p>
-          </div>
-        </div>
 
-        {/* Curved Bottom Divider */}
-        <div className="absolute bottom-0 left-0 w-full overflow-hidden leading-[0] z-20">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320" preserveAspectRatio="none" className="w-full h-[40px] sm:h-[60px] lg:h-[80px]">
-            <path fill="#FFFAF0" d="M0,128 C360,256 1080,256 1440,128 L1440,320 L0,320 Z"></path>
-          </svg>
+        <div className="absolute inset-0 flex items-center justify-center px-6 pt-10 text-center sm:px-12 sm:pt-14">
+          <h1 className="franchise-hero-title relative z-10 max-w-5xl text-balance text-4xl font-extrabold leading-[1.05] tracking-tight text-[#2C1810] drop-shadow-sm sm:text-5xl lg:text-6xl">
+            <span className="md:hidden">
+              Become a
+              <br />
+              Simba
+              <br />
+              Preschool
+              <br />
+              Franchise
+              <br />
+              Partner
+            </span>
+            <span className="hidden md:contents">
+              <span className="block">Become a Simba Preschool</span>
+              <span className="block">Franchise Partner</span>
+            </span>
+          </h1>
         </div>
       </section>
 
-      <div className="py-20 px-6 sm:px-12 w-full bg-[#FFFAF0]">
-        <div className="max-w-7xl mx-auto">
-          {/* Franchise Inquiry Form */}
-          <div className="max-w-3xl mx-auto">
-            <div className="bg-white border border-slate-200 rounded-3xl p-8 sm:p-12 shadow-sm">
-              <h3 className="text-2xl font-bold text-slate-900 mb-2">Franchise Inquiry Form</h3>
-              <p className="text-slate-600 mb-8">
-                Fill out the form below to receive our detailed curriculum booklet and financial model spreadsheets.
+      {/* Section 2 — Content & enquiry */}
+      <section className="franchise-enquiry-section relative w-full bg-white py-20 sm:py-24">
+        <div className="mx-auto max-w-7xl px-6 sm:px-12">
+          <div className="franchise-enquiry-grid grid grid-cols-1 gap-10 lg:grid-cols-2 lg:items-stretch lg:gap-16">
+            {/* Content — top on mobile & tablet portrait */}
+            <div className="franchise-content-column order-1">
+              <span className="text-xs font-bold uppercase tracking-widest text-[#E8AF34]">Grow With Us</span>
+              <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+                Start Your Journey Today!
+              </h2>
+              <div className="mt-4 h-1 w-12 rounded-full bg-[#E8AF34]" />
+
+              <div className="mt-8 space-y-4 text-base font-medium leading-relaxed text-slate-700 sm:text-lg">
+                <p>
+                  Build a meaningful business and shape young minds. Partner with Simba Preschool—a trusted brand
+                  dedicated to nurturing children and inspiring lifelong learning.
+                </p>
+                <p>
+                  Get proven curriculum, training, operations support, marketing help, and ongoing guidance to grow
+                  your preschool.
+                </p>
+                <p>
+                  Whether you&apos;re an entrepreneur or educator, join us to make a lasting impact and build a
+                  rewarding venture.
+                </p>
+              </div>
+
+              <p className="mt-6 text-base font-medium leading-relaxed text-slate-700 sm:text-lg">
+                Join the Simba family and grow together—one child, one classroom at a time.
               </p>
-              <FranchiseForm />
+
+              <p className="mt-3 text-base font-semibold leading-relaxed text-[#5C4033] sm:text-lg">
+                Enquire now to become a Simba Preschool Franchise Partner.
+              </p>
+
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                <a
+                  href={WHATSAPP_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-[#E8AF34] px-7 py-3.5 text-sm font-bold text-white shadow-lg shadow-[#E8AF34]/30 transition-all hover:-translate-y-0.5 hover:bg-[#d69f2e]"
+                >
+                  Enquire on WhatsApp
+                  <ArrowRight className="h-4 w-4" />
+                </a>
+                <a
+                  href="tel:+919884866727"
+                  className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-7 py-3.5 text-sm font-bold text-slate-800 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-slate-50"
+                >
+                  <Phone className="h-4 w-4 text-[#E8AF34]" />
+                  Call Us
+                </a>
+              </div>
             </div>
+
+            {/* Form — below content on mobile & tablet portrait */}
+            <aside className="franchise-form-aside order-2 w-full">
+              <div className="franchise-form-card rounded-3xl border border-slate-200 bg-[#FFFAF0] p-6 shadow-sm sm:p-7">
+                <h3 className="text-xl font-bold text-slate-900 sm:text-2xl">Franchise Enquiry</h3>
+                <p className="mt-1.5 text-sm text-slate-600">
+                  Share your details—we&apos;ll get in touch shortly.
+                </p>
+                <div className="franchise-form-body mt-5">
+                  <FranchiseForm singleColumn fillHeight />
+                </div>
+              </div>
+            </aside>
           </div>
         </div>
-      </div>
+      </section>
     </PageShell>
   );
 }

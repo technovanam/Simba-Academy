@@ -20,19 +20,23 @@ export function JungleFooter() {
       {/* Responsive Background Images */}
       <picture className="absolute inset-0 w-full h-full pointer-events-none -z-10">
         <source media="(min-width: 1024px)" srcSet="/Fotter.webp" />
+        <source
+          media="(min-width: 768px) and (max-width: 1023px) and (orientation: portrait)"
+          srcSet="/Fotter%20Tab%20Potrait.png"
+        />
         <source media="(min-width: 640px)" srcSet="/Fotter%20Tab.png" />
-        <img loading="lazy" decoding="async" 
-          src="/Fotter%20Mobile.png" 
-          alt="Simba Academy Footer Background" 
+        <img
+          src="/Fotter%20Mobile.png"
+          alt="Simba Academy Footer Background"
           className="w-full h-full object-cover object-bottom"
           loading="lazy"
           decoding="async"
         />
       </picture>
 
-      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 relative">
+      <div className="footer-grid max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 relative">
         {/* Column 1: Identity */}
-        <div className="space-y-6">
+        <div className="footer-identity-col order-1 space-y-6">
           <div className="flex items-center gap-3">
             <div className="w-20 h-20 flex items-center justify-center shrink-0">
               <img loading="lazy" decoding="async" src={SIMBA_LOGO_SRC} alt="Simba Preschool" className="w-full h-full object-contain scale-150" />
@@ -41,7 +45,7 @@ export function JungleFooter() {
         </div>
 
         {/* Column 2: Courses links */}
-        <div className="space-y-4 lg:-ml-12">
+        <div className="footer-courses-col order-2 space-y-4 lg:-ml-12">
           <h5 className="text-sm font-bold uppercase tracking-wider text-[#c26d2e] relative pb-2 after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-6 after:h-0.5 after:bg-[#c26d2e]">
             Courses
           </h5>
@@ -90,7 +94,7 @@ export function JungleFooter() {
         </div>
 
         {/* Column 3: Contact Info */}
-        <div className="space-y-4">
+        <div className="footer-contact-col order-3 space-y-4">
           <h5 className="text-sm font-bold uppercase tracking-wider text-[#c26d2e] relative pb-2 after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-6 after:h-0.5 after:bg-[#c26d2e]">
             Contact Us
           </h5>
@@ -134,7 +138,7 @@ export function JungleFooter() {
         </div>
 
         {/* Column 4: Social Links */}
-        <div className="space-y-4">
+        <div className="footer-social-col order-4 space-y-4">
           <h5 className="text-sm font-bold uppercase tracking-wider text-[#c26d2e] relative pb-2 after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-6 after:h-0.5 after:bg-[#c26d2e]">
             Follow Us
           </h5>

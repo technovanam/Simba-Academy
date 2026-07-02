@@ -60,6 +60,68 @@ export const BRANCHES = [
   { name: "Ammapet", address: "81, Anna Street, Ammapet Road, Salem - 636001" },
 ];
 
+export type PreschoolBranch = {
+  name: string;
+  locationLabel: string;
+  mapsUrl: string;
+  mapEmbedUrl: string;
+  instagramUrl: string;
+  branchHead: string;
+  phone: string;
+  phoneTel: string;
+};
+
+export const PRESCHOOL_BRANCHES: PreschoolBranch[] = [
+  {
+    name: "Near Cluny (Ramakrishna Park)",
+    locationLabel: "Near Cluny, Ramakrishna Park, Salem",
+    mapsUrl: "https://maps.app.goo.gl/u9jnVog3h76FLuX5A",
+    mapEmbedUrl:
+      "https://maps.google.com/maps?q=Simba+Preschool+Ramakrishna+Park+Salem&z=16&ie=UTF8&iwloc=&output=embed",
+    instagramUrl:
+      "https://www.instagram.com/simbapreschool_ramakrishnapark?igsh=ZWdoY3UyMmUxMWY0",
+    branchHead: "Ms. Nirmala",
+    phone: "98848 66727",
+    phoneTel: "+919884866727",
+  },
+  {
+    name: "Ponnamapet",
+    locationLabel: "Ponnamapet, Salem",
+    mapsUrl: "https://maps.app.goo.gl/bQuZnVqQ83GDAkpp8",
+    mapEmbedUrl:
+      "https://maps.google.com/maps?q=Simba+Preschool+Ponnamapet+Salem&z=16&ie=UTF8&iwloc=&output=embed",
+    instagramUrl:
+      "https://www.instagram.com/simba_preschool_ponnamapet?igsh=MWo2M3VsMTBjbDN3OA==",
+    branchHead: "Ms. Nirmala",
+    phone: "98848 66727",
+    phoneTel: "+919884866727",
+  },
+  {
+    name: "Steel Plant",
+    locationLabel: "Steel Plant, Salem",
+    mapsUrl: "https://maps.app.goo.gl/PesENfcJFHetqpoaA",
+    mapEmbedUrl:
+      "https://maps.google.com/maps?q=Simba+Preschool+Steel+Plant+Salem&z=16&ie=UTF8&iwloc=&output=embed",
+    instagramUrl:
+      "https://www.instagram.com/simba_preschool_steelplant?igsh=MTd5c29xMnpndnp4NQ==",
+    branchHead: "Ms. Deepika",
+    phone: "97917 97080",
+    phoneTel: "+919791797080",
+  },
+  {
+    name: "Kondalampatti (Opp. Sowdeshwari College)",
+    locationLabel: "Kondalampatti, Opp. Sowdeshwari College, Salem",
+    mapsUrl: "https://maps.app.goo.gl/7FymeBBh9XFXmYTs8",
+    mapEmbedUrl:
+      "https://maps.google.com/maps?q=Simba+Preschool+Kondalampatti+Salem&z=16&ie=UTF8&iwloc=&output=embed",
+    instagramUrl:
+      "https://www.instagram.com/simbapreschool_kondalampatti?igsh=MW96dTZyYnl2ejRhaw==",
+    branchHead: "Ms. Jothi",
+    phone: "86670 47306",
+    phoneTel: "+918667047306",
+  },
+];
+
 export const COURSE_LEVELS = [
   "Daycare",
   "Playgroup",

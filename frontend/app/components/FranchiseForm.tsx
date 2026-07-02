@@ -3,7 +3,14 @@ import { api, ApiError, formatApiError } from "../lib/api";
 import { AlertCircle } from "lucide-react";
 import { Toast } from "./Toast";
 
-export function FranchiseForm() {
+export function FranchiseForm({
+  singleColumn = false,
+  fillHeight = false,
+}: {
+  singleColumn?: boolean;
+  fillHeight?: boolean;
+}) {
+  const compact = singleColumn;
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -80,14 +87,19 @@ export function FranchiseForm() {
   }
 
   return (
-    <div className="relative">
+    <div className={`relative ${fillHeight ? "franchise-form-fill" : ""}`}>
       <Toast message={error} variant="error" onDismiss={() => setError("")} />
       <Toast message={successMessage} variant="success" onDismiss={() => setSuccessMessage("")} />
 
-      <form onSubmit={handleSubmit} noValidate autoComplete="off" className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <form
+        onSubmit={handleSubmit}
+        noValidate
+        autoComplete="off"
+        className={compact ? "space-y-4" : "space-y-6"}
+      >
+        <div className={`grid grid-cols-1 ${compact ? "gap-3" : "gap-5"} ${singleColumn ? "" : "md:grid-cols-2"}`}>
           <div>
-            <label className={`block text-sm font-bold mb-2 transition-colors ${nameError ? "text-red-500" : "text-slate-700"}`}>Full Name *</label>
+            <label className={`block text-sm font-bold ${compact ? "mb-1" : "mb-2"} transition-colors ${nameError ? "text-red-500" : "text-slate-700"}`}>Full Name *</label>
             <div className="relative">
               <input
                 type="text"
@@ -97,7 +109,7 @@ export function FranchiseForm() {
                   setForm({ ...form, name: e.target.value });
                   if (nameError) setNameError("");
                 }}
-                className={`w-full rounded-xl px-4 py-3.5 outline-none transition-all ${
+                className={`w-full rounded-xl px-4 ${compact ? "py-2.5" : "py-3.5"} outline-none transition-all ${
                   nameError 
                     ? "bg-red-50 border-2 border-red-500 text-red-900 placeholder-red-300" 
                     : "bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#E8AF34] focus:ring-4 focus:ring-[#E8AF34]/10"
@@ -112,7 +124,7 @@ export function FranchiseForm() {
             )}
           </div>
           <div>
-            <label className={`block text-sm font-bold mb-2 transition-colors ${emailError ? "text-red-500" : "text-slate-700"}`}>Email Address *</label>
+            <label className={`block text-sm font-bold ${compact ? "mb-1" : "mb-2"} transition-colors ${emailError ? "text-red-500" : "text-slate-700"}`}>Email Address *</label>
             <div className="relative">
               <input
                 type="email"
@@ -122,7 +134,7 @@ export function FranchiseForm() {
                   setForm({ ...form, email: e.target.value });
                   if (emailError) setEmailError("");
                 }}
-                className={`w-full rounded-xl px-4 py-3.5 outline-none transition-all ${
+                className={`w-full rounded-xl px-4 ${compact ? "py-2.5" : "py-3.5"} outline-none transition-all ${
                   emailError 
                     ? "bg-red-50 border-2 border-red-500 text-red-900 placeholder-red-300" 
                     : "bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#E8AF34] focus:ring-4 focus:ring-[#E8AF34]/10"
@@ -138,9 +150,9 @@ export function FranchiseForm() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div className={`grid grid-cols-2 ${compact ? "gap-3" : "gap-5"}`}>
           <div>
-            <label className={`block text-sm font-bold mb-2 transition-colors ${phoneError ? "text-red-500" : "text-slate-700"}`}>Phone Number *</label>
+            <label className={`block text-sm font-bold ${compact ? "mb-1" : "mb-2"} transition-colors ${phoneError ? "text-red-500" : "text-slate-700"}`}>Phone Number *</label>
             <div className="relative">
               <input
                 type="tel"
@@ -150,7 +162,7 @@ export function FranchiseForm() {
                   setForm({ ...form, phone: e.target.value });
                   if (phoneError) setPhoneError("");
                 }}
-                className={`w-full rounded-xl px-4 py-3.5 outline-none transition-all ${
+                className={`w-full rounded-xl px-4 ${compact ? "py-2.5" : "py-3.5"} outline-none transition-all ${
                   phoneError 
                     ? "bg-red-50 border-2 border-red-500 text-red-900 placeholder-red-300" 
                     : "bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#E8AF34] focus:ring-4 focus:ring-[#E8AF34]/10"
@@ -165,32 +177,32 @@ export function FranchiseForm() {
             )}
           </div>
           <div>
-            <label className="block text-sm font-bold mb-2 text-slate-700">Preferred Location</label>
+            <label className={`block text-sm font-bold ${compact ? "mb-1" : "mb-2"} text-slate-700`}>Preferred Location</label>
             <input
               type="text"
               autoComplete="off"
               value={form.location}
               onChange={(e) => setForm({ ...form, location: e.target.value })}
-              className="w-full rounded-xl bg-slate-50 border border-slate-200 px-4 py-3.5 focus:bg-white focus:border-[#E8AF34] focus:ring-4 focus:ring-[#E8AF34]/10 outline-none transition-all"
+              className={`w-full rounded-xl bg-slate-50 border border-slate-200 px-4 ${compact ? "py-2.5" : "py-3.5"} focus:bg-white focus:border-[#E8AF34] focus:ring-4 focus:ring-[#E8AF34]/10 outline-none transition-all`}
             />
           </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-bold mb-2 text-slate-700">Message or Questions</label>
+        <div className={fillHeight ? "franchise-form-message" : ""}>
+          <label className={`block text-sm font-bold ${compact ? "mb-1" : "mb-2"} text-slate-700`}>Message or Questions</label>
           <textarea
-            rows={4}
+            rows={compact ? 2 : 4}
             autoComplete="off"
             value={form.message}
             onChange={(e) => setForm({ ...form, message: e.target.value })}
-            className="w-full rounded-xl bg-slate-50 border border-slate-200 px-4 py-3.5 focus:bg-white focus:border-[#E8AF34] focus:ring-4 focus:ring-[#E8AF34]/10 outline-none resize-none transition-all"
+            className={`w-full rounded-xl bg-slate-50 border border-slate-200 px-4 ${compact ? "py-2.5" : "py-3.5"} focus:bg-white focus:border-[#E8AF34] focus:ring-4 focus:ring-[#E8AF34]/10 outline-none resize-none transition-all`}
           />
         </div>
 
         <button
           type="submit"
           disabled={status === "loading"}
-          className="w-full py-4 mt-4 rounded-xl bg-[#E8AF34] text-white font-extrabold text-base hover:bg-[#d69f2e] disabled:opacity-60 transition-all cursor-pointer shadow-md shadow-[#E8AF34]/20 hover:-translate-y-1"
+          className={`w-full ${compact ? "py-3 mt-1" : "py-4 mt-4"} rounded-xl bg-[#E8AF34] text-white font-extrabold text-base hover:bg-[#d69f2e] disabled:opacity-60 transition-all cursor-pointer shadow-md shadow-[#E8AF34]/20 hover:-translate-y-1`}
         >
           {status === "loading" ? "Submitting..." : "Submit Franchise Inquiry"}
         </button>
