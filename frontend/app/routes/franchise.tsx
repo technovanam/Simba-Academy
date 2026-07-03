@@ -21,14 +21,14 @@ export default function FranchisePage() {
       {/* Hero */}
       <section className="relative min-h-screen w-full overflow-hidden bg-[#FDF5E5]">
         <picture className="absolute inset-0 w-full h-full pointer-events-none select-none">
-          <source media="(min-width: 1024px)" srcSet="/Franchise.png" />
+          <source media="(min-width: 1024px)" srcSet="/Franchise.webp" />
           <source
             media="(min-width: 768px) and (max-width: 1023px) and (orientation: portrait)"
-            srcSet="/Franchise%20Tab%20Potrait.png"
+            srcSet="/Franchise%20Tab%20Potrait.webp"
           />
-          <source media="(min-width: 640px)" srcSet="/Franchise%20Tab.png" />
+          <source media="(min-width: 640px)" srcSet="/Franchise%20Tab.webp" />
           <img
-            src="/Franchise%20Mobile.png"
+            src="/Franchise%20Mobile.webp"
             alt=""
             aria-hidden
             className="absolute inset-0 h-full w-full object-cover object-center"

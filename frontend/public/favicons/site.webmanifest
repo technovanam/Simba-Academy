@@ -3,28 +3,23 @@
   "short_name": "Simba",
   "icons": [
     {
-      "src": "/favicons/apple-touch-icon.png",
+      "src": "/favicons/apple-touch-icon.webp",
       "sizes": "180x180",
-      "type": "image/png"
+      "type": "image/webp"
     },
     {
-      "src": "/favicons/android-chrome-192x192.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "/favicons/android-chrome-512x512.png",
-      "sizes": "512x512",
-      "type": "image/png"
-    },
-    {
-      "src": "/favicons/favicon.webp",
+      "src": "/favicons/android-chrome-192x192.webp",
       "sizes": "192x192",
       "type": "image/webp"
     },
     {
       "src": "/favicons/android-chrome-512x512.webp",
       "sizes": "512x512",
+      "type": "image/webp"
+    },
+    {
+      "src": "/favicons/favicon.webp",
+      "sizes": "192x192",
       "type": "image/webp"
     }
   ],

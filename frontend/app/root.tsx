@@ -19,8 +19,8 @@ import "./app.css";
 
 export const links: Route.LinksFunction = () => [
   { rel: "icon", href: "/favicons/favicon.ico", sizes: "48x48" },
-  { rel: "icon", type: "image/png", sizes: "32x32", href: "/favicons/favicon-32x32.png" },
-  { rel: "icon", type: "image/png", sizes: "16x16", href: "/favicons/favicon-16x16.png" },
+  { rel: "icon", type: "image/webp", sizes: "32x32", href: "/favicons/favicon-32x32.webp" },
+  { rel: "icon", type: "image/webp", sizes: "16x16", href: "/favicons/favicon-16x16.webp" },
   { rel: "icon", type: "image/webp", href: "/favicons/favicon.webp" },
   {
     rel: "apple-touch-icon",

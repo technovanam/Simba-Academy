@@ -42,15 +42,15 @@ export function isValidStoryBookFile(file: File): boolean {
 }
 
 /** Jungle-themed auth backgrounds — mobile vs laptop/desktop */
-export const STUDENT_AUTH_BG_MOBILE = "/student-auth-bg-mobile.png";
-export const STUDENT_AUTH_BG_DESKTOP = "/student-auth-bg-desktop.png";
+export const STUDENT_AUTH_BG_MOBILE = "/student-auth-bg-mobile.webp";
+export const STUDENT_AUTH_BG_DESKTOP = "/student-auth-bg-desktop.webp";
 
 export const WHATSAPP_NUMBER = "919884866727";
 export const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}`;
 
-export const SIMBA_LOGO_SRC = "/logos/simba-preschool-logo.png";
-export const SIMBA_LOGO_TRANSPARENT_SRC = "/logos/simba-logo-transparent.png";
-export const APPLE_TOUCH_ICON_SRC = "/favicons/apple-touch-icon.png";
+export const SIMBA_LOGO_SRC = "/logos/simba-preschool-logo.webp";
+export const SIMBA_LOGO_TRANSPARENT_SRC = "/logos/simba-logo-transparent.webp";
+export const APPLE_TOUCH_ICON_SRC = "/favicons/apple-touch-icon.webp";
 
 export const BRANCHES = [
   { name: "Ramakrishna Park", address: "Near Ramakrishna Park, Salem" },

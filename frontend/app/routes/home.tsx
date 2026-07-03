@@ -218,14 +218,14 @@ export default function LandingPage() {
         <section className="relative overflow-hidden min-h-screen flex items-center pt-24 pb-12 bg-black">
           {/* Responsive Background Images */}
           <picture className="absolute inset-0 w-full h-full">
-            <source media="(min-width: 1024px)" srcSet="/Hero%20Section.png" />
+            <source media="(min-width: 1024px)" srcSet="/Hero%20Section.webp" />
             <source
               media="(min-width: 640px) and (max-width: 1023px) and (orientation: portrait)"
-              srcSet="/Hero%20Section%20Tab%20Potrait.png"
+              srcSet="/Hero%20Section%20Tab%20Potrait.webp"
             />
-            <source media="(min-width: 640px)" srcSet="/Hero%20Section%20Tab.png" />
+            <source media="(min-width: 640px)" srcSet="/Hero%20Section%20Tab.webp" />
             <img loading="lazy" decoding="async" 
-              src="/Hero%20Section%20Mobile.png"
+              src="/Hero%20Section%20Mobile.webp"
               alt="Simba Academy Background" 
               className="w-full h-full object-cover object-center"
               fetchPriority="high"
@@ -273,14 +273,14 @@ export default function LandingPage() {
       <section className="min-h-screen flex items-center py-20 relative overflow-hidden">
         {/* Responsive Background Images */}
         <picture className="absolute inset-0 w-full h-full pointer-events-none">
-          <source media="(min-width: 1024px)" srcSet="/About.png" />
+          <source media="(min-width: 1024px)" srcSet="/About.webp" />
           <source
             media="(min-width: 640px) and (max-width: 1023px) and (orientation: portrait)"
-            srcSet="/About%20Section%20Tab%20Potrait.png"
+            srcSet="/About%20Section%20Tab%20Potrait.webp"
           />
-          <source media="(min-width: 640px)" srcSet="/About%20Section%20Tab.png" />
+          <source media="(min-width: 640px)" srcSet="/About%20Section%20Tab.webp" />
           <img
-            src="/About%20Section%20Mobile.png"
+            src="/About%20Section%20Mobile.webp"
             alt="About Simba Academy Background"
             className="w-full h-full object-cover object-center"
             loading="lazy"
@@ -326,14 +326,14 @@ export default function LandingPage() {
       {/* 3. Vision & Mission */}
       <section className="relative h-screen w-full bg-white overflow-hidden">
         <picture className="absolute inset-0 w-full h-full pointer-events-none select-none">
-          <source media="(min-width: 1024px)" srcSet="/Vision%20Mission.png" />
+          <source media="(min-width: 1024px)" srcSet="/Vision%20Mission.webp" />
           <source
             media="(min-width: 640px) and (max-width: 1023px) and (orientation: portrait)"
-            srcSet="/Vision%20Mission%20Tab%20Potrait.png"
+            srcSet="/Vision%20Mission%20Tab%20Potrait.webp"
           />
-          <source media="(min-width: 640px)" srcSet="/Vision%20Mission%20Tab.png" />
+          <source media="(min-width: 640px)" srcSet="/Vision%20Mission%20Tab.webp" />
           <img
-            src="/Vission%20Mission%20Mobile.png"
+            src="/Vission%20Mission%20Mobile.webp"
             alt=""
             aria-hidden
             className="absolute inset-0 w-full h-full object-cover object-center"
@@ -375,14 +375,14 @@ export default function LandingPage() {
       {/* 4. Our Programs */}
       <section id="programs" className="relative h-screen w-full bg-white overflow-hidden">
         <picture className="absolute inset-0 w-full h-full pointer-events-none select-none">
-          <source media="(min-width: 1024px)" srcSet="/Our%20Programs.png" />
+          <source media="(min-width: 1024px)" srcSet="/Our%20Programs.webp" />
           <source
             media="(min-width: 640px) and (max-width: 1023px) and (orientation: portrait)"
-            srcSet="/Our%20Programs%20Tab%20Potrait.png"
+            srcSet="/Our%20Programs%20Tab%20Potrait.webp"
           />
-          <source media="(min-width: 640px)" srcSet="/Our%20Programs%20Tab.png" />
+          <source media="(min-width: 640px)" srcSet="/Our%20Programs%20Tab.webp" />
           <img
-            src="/Our%20Programs%20Mobile.png"
+            src="/Our%20Programs%20Mobile.webp"
             alt=""
             aria-hidden
             className="absolute inset-0 w-full h-full object-cover object-bottom"
@@ -420,14 +420,14 @@ export default function LandingPage() {
       {/* 5. Why Parents Choose Us */}
       <section className="relative h-screen w-full bg-white overflow-hidden">
         <picture className="absolute inset-0 w-full h-full pointer-events-none select-none">
-          <source media="(min-width: 1024px)" srcSet="/Parent%20Choose%20Us.png" />
+          <source media="(min-width: 1024px)" srcSet="/Parent%20Choose%20Us.webp" />
           <source
             media="(min-width: 640px) and (max-width: 1023px) and (orientation: portrait)"
-            srcSet="/Parent%20Choose%20Us%20Tab%20Potrait.png"
+            srcSet="/Parent%20Choose%20Us%20Tab%20Potrait.webp"
           />
-          <source media="(min-width: 640px)" srcSet="/Parent%20Choose%20Us%20Tab.png" />
+          <source media="(min-width: 640px)" srcSet="/Parent%20Choose%20Us%20Tab.webp" />
           <img
-            src="/Parent%20Choose%20Us%20Mobile.png"
+            src="/Parent%20Choose%20Us%20Mobile.webp"
             alt=""
             aria-hidden
             className="absolute inset-0 w-full h-full object-cover object-right"
@@ -469,14 +469,14 @@ export default function LandingPage() {
       {/* 5b. Why Choose Simba Preschool */}
       <section className="relative h-screen max-h-screen w-full overflow-hidden bg-[#FAF8F2]">
         <picture className="absolute inset-0 w-full h-full pointer-events-none select-none">
-          <source media="(min-width: 1024px)" srcSet="/Why.png" />
+          <source media="(min-width: 1024px)" srcSet="/Why.webp" />
           <source
             media="(min-width: 640px) and (max-width: 1023px) and (orientation: portrait)"
-            srcSet="/Why%20Tab%20Potrait.png"
+            srcSet="/Why%20Tab%20Potrait.webp"
           />
-          <source media="(min-width: 640px)" srcSet="/Why%20Tab.png" />
+          <source media="(min-width: 640px)" srcSet="/Why%20Tab.webp" />
           <img
-            src="/Why%20Mobile.png"
+            src="/Why%20Mobile.webp"
             alt=""
             aria-hidden
             className="absolute inset-0 h-full w-full object-cover object-center"
@@ -497,14 +497,14 @@ export default function LandingPage() {
       {/* 6. Our Learning Approach */}
       <section className="relative h-screen w-full bg-white overflow-hidden">
         <picture className="absolute inset-0 w-full h-full pointer-events-none select-none">
-          <source media="(min-width: 1024px)" srcSet="/Learning%20Approach.png" />
+          <source media="(min-width: 1024px)" srcSet="/Learning%20Approach.webp" />
           <source
             media="(min-width: 640px) and (max-width: 1023px) and (orientation: portrait)"
-            srcSet="/Learning%20Apprach%20Tab%20Potrait.png"
+            srcSet="/Learning%20Apprach%20Tab%20Potrait.webp"
           />
-          <source media="(min-width: 640px)" srcSet="/Learning%20Apprach%20Tab.png" />
+          <source media="(min-width: 640px)" srcSet="/Learning%20Apprach%20Tab.webp" />
           <img
-            src="/Learning%20Apprach%20Mobile.png"
+            src="/Learning%20Apprach%20Mobile.webp"
             alt=""
             aria-hidden
             className="absolute inset-0 w-full h-full object-cover object-center"
@@ -524,14 +524,14 @@ export default function LandingPage() {
       {/* 7. Facilities */}
       <section className="relative h-screen w-full bg-[#FDF5E5] overflow-hidden">
         <picture className="absolute inset-0 w-full h-full pointer-events-none select-none">
-          <source media="(min-width: 1024px)" srcSet="/Facilities.png" />
+          <source media="(min-width: 1024px)" srcSet="/Facilities.webp" />
           <source
             media="(min-width: 640px) and (max-width: 1023px) and (orientation: portrait)"
-            srcSet="/Facilities%20Tab%20Potrait.png"
+            srcSet="/Facilities%20Tab%20Potrait.webp"
           />
-          <source media="(min-width: 640px)" srcSet="/Facilities%20Tab.png" />
+          <source media="(min-width: 640px)" srcSet="/Facilities%20Tab.webp" />
           <img
-            src="/Facilities%20Mobile.png"
+            src="/Facilities%20Mobile.webp"
             alt=""
             aria-hidden
             className="absolute inset-0 w-full h-full object-cover object-center"

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router";
 import { SOCIAL_LINKS, SIMBA_LOGO_SRC } from "../lib/constants";
-import { FaFacebook, FaInstagram, FaYoutube, FaWhatsapp } from "react-icons/fa";
+import { FaInstagram, FaWhatsapp } from "react-icons/fa";
 import { MapPin, Phone, Mail, X, ExternalLink } from "lucide-react";
 
 const IG_BRANCHES = [
@@ -22,11 +22,11 @@ export function JungleFooter() {
         <source media="(min-width: 1024px)" srcSet="/Fotter.webp" />
         <source
           media="(min-width: 768px) and (max-width: 1023px) and (orientation: portrait)"
-          srcSet="/Fotter%20Tab%20Potrait.png"
+          srcSet="/Fotter%20Tab%20Potrait.webp"
         />
-        <source media="(min-width: 640px)" srcSet="/Fotter%20Tab.png" />
+        <source media="(min-width: 640px)" srcSet="/Fotter%20Tab.webp" />
         <img
-          src="/Fotter%20Mobile.png"
+          src="/Fotter%20Mobile.webp"
           alt="Simba Academy Footer Background"
           className="w-full h-full object-cover object-bottom"
           loading="lazy"
@@ -143,39 +143,22 @@ export function JungleFooter() {
             Follow Us
           </h5>
           <div className="flex flex-wrap gap-3 pt-2">
-            {Object.entries(SOCIAL_LINKS).map(([name, url]) => {
-              let svgIcon = <span className="font-bold text-xs uppercase">{name[0]}</span>;
-              if (name === "facebook") {
-                svgIcon = <FaFacebook className="w-5 h-5 text-[#1877F2] group-hover:text-white transition-colors" />;
-              } else if (name === "instagram") {
-                svgIcon = <FaInstagram className="w-5 h-5 text-[#E4405F] group-hover:text-white transition-colors" />;
-              } else if (name === "youtube") {
-                svgIcon = <FaYoutube className="w-5 h-5 text-[#FF0000] group-hover:text-white transition-colors" />;
-              } else if (name === "whatsapp") {
-                svgIcon = <FaWhatsapp className="w-5 h-5 text-[#25D366] group-hover:text-white transition-colors" />;
-              }
-              return name === "instagram" ? (
-                <button
-                  key={name}
-                  onClick={() => setShowIgPopup(true)}
-                  className="group w-10 h-10 rounded-lg bg-white border border-slate-200 flex items-center justify-center hover:bg-[#c26d2e] transition-all shadow-sm cursor-pointer"
-                  aria-label={`Visit our ${name}`}
-                >
-                  {svgIcon}
-                </button>
-              ) : (
-                <a
-                  key={name}
-                  href={url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="group w-10 h-10 rounded-lg bg-white border border-slate-200 flex items-center justify-center hover:bg-[#c26d2e] transition-all shadow-sm cursor-pointer"
-                  aria-label={`Visit our ${name}`}
-                >
-                  {svgIcon}
-                </a>
-              );
-            })}
+            <a
+              href={SOCIAL_LINKS.whatsapp}
+              target="_blank"
+              rel="noreferrer"
+              className="group w-10 h-10 rounded-lg bg-white border border-slate-200 flex items-center justify-center hover:bg-[#c26d2e] transition-all shadow-sm cursor-pointer"
+              aria-label="Chat on WhatsApp"
+            >
+              <FaWhatsapp className="w-5 h-5 text-[#25D366] group-hover:text-white transition-colors" />
+            </a>
+            <button
+              onClick={() => setShowIgPopup(true)}
+              className="group w-10 h-10 rounded-lg bg-white border border-slate-200 flex items-center justify-center hover:bg-[#c26d2e] transition-all shadow-sm cursor-pointer"
+              aria-label="Follow us on Instagram"
+            >
+              <FaInstagram className="w-5 h-5 text-[#E4405F] group-hover:text-white transition-colors" />
+            </button>
           </div>
         </div>
       </div>

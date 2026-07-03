@@ -19,14 +19,14 @@ export default function AboutPage() {
       <section className="about-hero-section relative w-full min-h-screen flex items-center justify-center bg-[#fdfcf8]">
         {/* Responsive Background Images */}
         <picture className="absolute inset-0 w-full h-full">
-          <source media="(min-width: 1024px)" srcSet="/About%20Hero.png" />
+          <source media="(min-width: 1024px)" srcSet="/About%20Hero.webp" />
           <source
             media="(min-width: 768px) and (max-width: 1023px) and (orientation: portrait)"
-            srcSet="/About%20Hero%20Tab%20Potrait.png"
+            srcSet="/About%20Hero%20Tab%20Potrait.webp"
           />
-          <source media="(min-width: 640px)" srcSet="/About%20Hero%20Tab.png" />
+          <source media="(min-width: 640px)" srcSet="/About%20Hero%20Tab.webp" />
           <img
-            src="/About%20Hero%20Mobile.png"
+            src="/About%20Hero%20Mobile.webp"
             alt="About Simba Academy Hero"
             className="w-full h-full object-cover object-bottom"
             loading="eager"
@@ -60,14 +60,14 @@ export default function AboutPage() {
       {/* Section 2: Founder Message */}
       <section className="about-founder-section relative w-full min-h-screen flex items-center justify-end overflow-hidden">
         <picture className="absolute inset-0 w-full h-full pointer-events-none select-none">
-          <source media="(min-width: 1024px)" srcSet="/Founder.png" />
+          <source media="(min-width: 1024px)" srcSet="/Founder.webp" />
           <source
             media="(min-width: 768px) and (max-width: 1023px) and (orientation: portrait)"
-            srcSet="/Founder%20Tab%20Potrait.png"
+            srcSet="/Founder%20Tab%20Potrait.webp"
           />
-          <source media="(min-width: 640px)" srcSet="/Founder%20Tab.png" />
+          <source media="(min-width: 640px)" srcSet="/Founder%20Tab.webp" />
           <img
-            src="/Founder%20Mobile.png"
+            src="/Founder%20Mobile.webp"
             alt=""
             aria-hidden
             className="absolute inset-0 h-full w-full object-cover object-center"
