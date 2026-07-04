@@ -269,15 +269,15 @@ export default function LandingPage() {
               alt="Simba Academy Background" 
               className="w-full h-full object-cover object-center"
               fetchPriority="high"
-              decoding="async"
             />
           </picture>
         
         <div className="hero-content max-w-6xl mx-auto px-6 sm:px-12 w-full relative z-10 flex flex-col items-center justify-center text-center">
           <div className="space-y-6 flex flex-col items-center w-full">
             <div className="flex flex-col items-center gap-1 sm:gap-1.5">
-              <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-black tracking-tight leading-[1.1]">
-                Welcome to <span className="text-[#E8AF34]">Simba Preschool</span>
+              <h1 className="text-3xl min-[380px]:text-[2rem] min-[430px]:text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-black tracking-tight leading-[1.1]">
+                Welcome to <br className="sm:hidden" />
+                <span className="text-[#E8AF34] whitespace-nowrap">Simba Preschool</span>
               </h1>
               <p className="text-lg sm:text-xl text-[#E8AF34] font-bold tracking-wide">
                 Where Little Steps Begin Big Dreams
@@ -310,9 +310,9 @@ export default function LandingPage() {
 
 
       {/* 2. Small About Section */}
-      <section className="min-h-screen flex items-center py-20 relative overflow-hidden">
+      <section className="home-about-section min-h-screen flex items-center py-20 relative overflow-hidden bg-white">
         {/* Responsive Background Images */}
-        <picture className="absolute inset-0 w-full h-full pointer-events-none">
+        <picture className="absolute inset-x-0 top-0 w-full h-[60vh] lg:h-full max-h-screen pointer-events-none">
           <source media="(min-width: 1024px)" srcSet="/About.webp" />
           <source
             media="(min-width: 640px) and (max-width: 1023px) and (orientation: portrait)"
@@ -322,7 +322,7 @@ export default function LandingPage() {
           <img
             src="/About%20Section%20Mobile.webp"
             alt="About Simba Academy Background"
-            className="w-full h-full object-cover object-center"
+            className="w-full h-full object-cover object-top"
             loading="lazy"
             decoding="async"
           />
@@ -382,30 +382,30 @@ export default function LandingPage() {
           />
         </picture>
 
-        <div className="absolute inset-0 z-10 font-sans flex flex-col items-center px-5 pt-[31vh] sm:max-lg:portrait:pt-[28vh] sm:max-lg:landscape:block sm:max-lg:landscape:p-0 lg:block lg:p-0">
-          <div className="vision-mission-header-block w-full max-w-[21rem] max-lg:portrait:max-w-[26rem] text-center px-3 mb-7 mx-auto sm:max-lg:landscape:absolute sm:max-lg:landscape:left-1/2 sm:max-lg:landscape:-translate-x-1/2 sm:max-lg:landscape:top-[43%] sm:max-lg:landscape:translate-y-3 sm:max-lg:landscape:w-[min(66%,30rem)] sm:max-lg:landscape:max-w-none sm:max-lg:landscape:mb-0 sm:max-lg:landscape:mx-0 lg:absolute lg:left-1/2 lg:-translate-x-1/2 lg:top-[42%] lg:translate-y-3 lg:w-[min(66%,30rem)] lg:max-w-none lg:mb-0 lg:mx-0 lg:px-4">
-            <span className="text-sm font-bold tracking-widest text-[#8B6914] uppercase block mb-2 lg:text-sm lg:mb-2">
+        <div className="absolute inset-0 z-10 font-sans px-5 sm:max-lg:landscape:block sm:max-lg:landscape:p-0 lg:block lg:p-0">
+          <div className="vision-mission-header-block absolute left-1/2 -translate-x-1/2 top-[max(36vh,64vw)] sm:max-lg:portrait:top-[max(32vh,42vw)] -translate-y-1/2 w-full max-w-[21rem] max-lg:portrait:max-w-[26rem] text-center px-4 mx-auto sm:max-lg:landscape:absolute sm:max-lg:landscape:left-1/2 sm:max-lg:landscape:-translate-x-1/2 sm:max-lg:landscape:top-[43%] sm:max-lg:landscape:translate-y-3 sm:max-lg:landscape:w-[min(66%,30rem)] sm:max-lg:landscape:max-w-none sm:max-lg:landscape:mb-0 sm:max-lg:landscape:mx-0 lg:absolute lg:left-1/2 lg:-translate-x-1/2 lg:top-[42%] lg:translate-y-3 lg:w-[min(66%,30rem)] lg:max-w-none lg:mb-0 lg:mx-0 lg:px-4">
+            <span className="text-[clamp(0.75rem,2.5vw,0.875rem)] font-bold tracking-widest text-[#8B6914] uppercase block mb-1 sm:mb-2 lg:text-sm lg:mb-2">
               Our Purpose
             </span>
-            <h2 className="text-3xl max-lg:portrait:text-4xl sm:max-lg:landscape:text-4xl lg:text-5xl font-extrabold text-[#4A3728] tracking-tight leading-tight">
+            <h2 className="text-[clamp(1.75rem,7vw,2.25rem)] max-lg:portrait:text-4xl sm:max-lg:landscape:text-4xl lg:text-5xl font-extrabold text-[#4A3728] tracking-tight leading-tight">
               Vision & Mission
             </h2>
           </div>
 
-          <div className="vision-mission-vision-block w-full max-w-[19rem] sm:max-lg:portrait:max-w-[24rem] mx-auto mb-6 mt-10 lg:mt-0 text-center px-2 sm:max-lg:landscape:absolute sm:max-lg:landscape:left-[14%] sm:max-lg:landscape:top-[70%] sm:max-lg:landscape:translate-y-8 sm:max-lg:landscape:translate-x-3 sm:max-lg:landscape:w-[32%] sm:max-lg:landscape:max-w-none sm:max-lg:landscape:mb-0 sm:max-lg:landscape:mx-0 lg:absolute lg:left-[16%] lg:top-[69%] lg:translate-y-8 lg:translate-x-3 lg:w-[30%] lg:max-w-none lg:mb-0 lg:mx-0 lg:px-3 lg:flex lg:flex-col lg:items-center lg:justify-center">
-            <h3 className="text-lg sm:max-lg:portrait:text-3xl sm:max-lg:landscape:text-base lg:text-lg font-extrabold text-[#4A3728] mb-2 sm:max-lg:landscape:mb-1.5 lg:mb-1.5 leading-tight">
+          <div className="vision-mission-vision-block absolute left-1/2 -translate-x-1/2 top-[max(59vh,105vw)] sm:max-lg:portrait:top-[max(54vh,72vw)] -translate-y-1/2 w-[85vw] max-w-[19rem] sm:max-lg:portrait:max-w-[24rem] mx-auto text-center px-3 sm:max-lg:landscape:absolute sm:max-lg:landscape:left-[14%] sm:max-lg:landscape:top-[70%] sm:max-lg:landscape:translate-y-8 sm:max-lg:landscape:translate-x-3 sm:max-lg:landscape:w-[32%] sm:max-lg:landscape:max-w-none sm:max-lg:landscape:mb-0 sm:max-lg:landscape:mx-0 lg:absolute lg:left-[16%] lg:top-[69%] lg:translate-y-8 lg:translate-x-3 lg:w-[30%] lg:max-w-none lg:mb-0 lg:mx-0 lg:px-3 lg:flex lg:flex-col lg:items-center lg:justify-center">
+            <h3 className="text-[clamp(1rem,4vw,1.125rem)] sm:max-lg:portrait:text-3xl sm:max-lg:landscape:text-base lg:text-lg font-extrabold text-[#4A3728] mb-1 sm:mb-2 sm:max-lg:landscape:mb-1.5 lg:mb-1.5 leading-tight">
               Vision
             </h3>
-            <p className="text-xs sm:max-lg:portrait:text-base sm:max-lg:landscape:text-[10px] sm:max-lg:landscape:leading-snug lg:text-sm text-[#5C4033] font-semibold leading-relaxed lg:leading-relaxed">
+            <p className="text-[clamp(0.65rem,2.8vw,0.85rem)] sm:max-lg:portrait:text-base sm:max-lg:landscape:text-[10px] sm:max-lg:landscape:leading-snug lg:text-sm text-[#5C4033] font-semibold leading-snug sm:leading-relaxed lg:leading-relaxed">
               To create a world where every Little Simbian feels loved, valued, and inspired to learn by building 100+ Simba Preschool centres across India that become a second home for children and a trusted partner for families.
             </p>
           </div>
 
-          <div className="vision-mission-mission-block w-full max-w-[19rem] sm:max-lg:portrait:max-w-[24rem] mx-auto text-center px-2 sm:max-lg:landscape:absolute sm:max-lg:landscape:right-[14%] sm:max-lg:landscape:top-[70%] sm:max-lg:landscape:translate-y-8 sm:max-lg:landscape:-translate-x-5 sm:max-lg:landscape:w-[32%] sm:max-lg:landscape:max-w-none sm:max-lg:landscape:mx-0 lg:absolute lg:right-[16%] lg:top-[69%] lg:translate-y-8 lg:-translate-x-5 lg:w-[30%] lg:max-w-none lg:mx-0 lg:px-3 lg:flex lg:flex-col lg:items-center lg:justify-center">
-            <h3 className="text-lg sm:max-lg:portrait:text-3xl sm:max-lg:landscape:text-base lg:text-lg font-extrabold text-[#4A3728] mb-2 sm:max-lg:landscape:mb-1.5 lg:mb-1.5 leading-tight">
+          <div className="vision-mission-mission-block absolute left-1/2 -translate-x-1/2 top-[max(76vh,135vw)] sm:max-lg:portrait:top-[max(73vh,97vw)] -translate-y-1/2 w-[85vw] max-w-[19rem] sm:max-lg:portrait:max-w-[24rem] mx-auto text-center px-3 sm:max-lg:landscape:absolute sm:max-lg:landscape:right-[14%] sm:max-lg:landscape:top-[70%] sm:max-lg:landscape:translate-y-8 sm:max-lg:landscape:-translate-x-5 sm:max-lg:landscape:w-[32%] sm:max-lg:landscape:max-w-none sm:max-lg:landscape:mx-0 lg:absolute lg:right-[16%] lg:top-[69%] lg:translate-y-8 lg:-translate-x-5 lg:w-[30%] lg:max-w-none lg:mx-0 lg:px-3 lg:flex lg:flex-col lg:items-center lg:justify-center">
+            <h3 className="text-[clamp(1rem,4vw,1.125rem)] sm:max-lg:portrait:text-3xl sm:max-lg:landscape:text-base lg:text-lg font-extrabold text-[#4A3728] mb-1 sm:mb-2 sm:max-lg:landscape:mb-1.5 lg:mb-1.5 leading-tight">
               Mission
             </h3>
-            <p className="text-xs sm:max-lg:portrait:text-base sm:max-lg:landscape:text-[10px] sm:max-lg:landscape:leading-snug lg:text-sm text-[#5C4033] font-semibold leading-relaxed lg:leading-relaxed">
+            <p className="text-[clamp(0.65rem,2.8vw,0.85rem)] sm:max-lg:portrait:text-base sm:max-lg:landscape:text-[10px] sm:max-lg:landscape:leading-snug lg:text-sm text-[#5C4033] font-semibold leading-snug sm:leading-relaxed lg:leading-relaxed">
               At Simba Preschool, every child is loved, celebrated, and encouraged to shine. We nurture safe, joyful learning through love and play, helping every Little Simbian thrive with educators and parents across India.
             </p>
           </div>
@@ -528,8 +528,8 @@ export default function LandingPage() {
       </section>
 
       {/* 6. Our Learning Approach */}
-      <section className="relative h-screen w-full bg-white overflow-hidden">
-        <picture className="absolute inset-0 w-full h-full pointer-events-none select-none">
+      <section className="relative w-full bg-white overflow-hidden lg:h-[100dvh]">
+        <picture className="block w-full lg:absolute lg:inset-0 lg:h-full lg:w-full pointer-events-none select-none">
           <source media="(min-width: 1024px)" srcSet="/Learning%20Approach.webp" />
           <source
             media="(min-width: 640px) and (max-width: 1023px) and (orientation: portrait)"
@@ -540,13 +540,13 @@ export default function LandingPage() {
             src="/Learning%20Apprach%20Mobile.webp"
             alt=""
             aria-hidden
-            className="absolute inset-0 w-full h-full object-cover object-center"
+            className="block w-full h-auto lg:absolute lg:inset-0 lg:w-full lg:h-full lg:object-cover lg:object-center"
             loading="lazy"
             decoding="async"
           />
         </picture>
 
-        <div className="relative z-10 text-center pt-8 sm:pt-10 lg:pt-12 px-6 sm:px-10">
+        <div className="absolute top-0 left-0 w-full z-10 text-center pt-8 sm:pt-10 lg:pt-12 px-6 sm:px-10 lg:relative">
           <span className="text-xs font-bold tracking-widest text-[#E8AF34] uppercase block mb-3">How We Teach</span>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight">Our Learning Approach</h2>
         </div>
@@ -555,8 +555,8 @@ export default function LandingPage() {
       <div className="learning-facilities-transition w-full bg-[#FDF5E5]" aria-hidden />
 
       {/* 7. Facilities */}
-      <section className="facilities-section relative min-h-[100dvh] h-[100dvh] w-full bg-[#FDF5E5] overflow-hidden">
-        <picture className="facilities-section-bg absolute inset-0 w-full h-full pointer-events-none select-none">
+      <section className="facilities-section relative w-full bg-[#FDF5E5] overflow-hidden lg:min-h-[100dvh] lg:h-[100dvh]">
+        <picture className="facilities-section-bg block w-full lg:absolute lg:inset-0 lg:h-full lg:w-full pointer-events-none select-none">
           <source media="(min-width: 1024px)" srcSet="/Facilities.webp" />
           <source
             media="(min-width: 640px) and (max-width: 1023px) and (orientation: portrait)"
@@ -567,13 +567,13 @@ export default function LandingPage() {
             src="/Facilities%20Mobile.webp"
             alt=""
             aria-hidden
-            className="facilities-section-bg-img absolute inset-0 w-full h-full object-cover object-center"
+            className="facilities-section-bg-img block w-full h-auto lg:absolute lg:inset-0 lg:w-full lg:h-full lg:object-cover lg:object-center"
             loading="lazy"
             decoding="async"
           />
         </picture>
 
-        <div className="facilities-section-header relative z-10 text-center px-6">
+        <div className="facilities-section-header absolute top-0 left-0 w-full z-10 text-center px-6 pt-8 sm:pt-10 lg:pt-12 lg:relative">
           <span className="text-xs font-bold tracking-widest text-[#E8AF34] uppercase block mb-2 sm:mb-3">Our Campus</span>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight">Facilities</h2>
         </div>
