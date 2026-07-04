@@ -1509,13 +1509,18 @@ a.branch-detail-row:hover {
 
 @media (max-width: 639px) {
   .about-hero-section .about-hero-overlay {
-    padding-top: var(--about-hero-mobile-padding) !important;
+    display: block !important;
+    padding: 0 !important;
   }
 
   .about-hero-section .about-hero-text {
+    position: absolute !important;
+    left: 50% !important;
+    top: auto !important;
+    bottom: max(82vw, 38vh) !important;
     width: 88% !important;
-    max-width: 16.5rem !important;
-    transform: translateY(var(--about-hero-mobile-shift)) !important;
+    max-width: 22rem !important;
+    transform: translate(-50%, 50%) !important;
   }
 
   .about-hero-section .about-hero-title {
@@ -1533,9 +1538,10 @@ a.branch-detail-row:hover {
   .about-hero-section .about-hero-text {
     position: absolute !important;
     left: 50% !important;
-    top: var(--about-hero-tab-landscape-top) !important;
+    top: auto !important;
+    bottom: max(15.5vw, 26vh) !important;
     width: min(88%, 42rem) !important;
-    transform: translateX(-50%) !important;
+    transform: translate(-50%, 50%) !important;
   }
 }
 
@@ -1549,24 +1555,27 @@ a.branch-detail-row:hover {
   .about-hero-section .about-hero-text {
     position: absolute !important;
     left: 50% !important;
-    top: var(--about-hero-laptop-landscape-top) !important;
+    top: auto !important;
+    bottom: max(15.5vw, 26vh) !important;
     width: min(88%, 42rem) !important;
-    transform: translateX(-50%) !important;
+    transform: translate(-50%, 50%) !important;
   }
 }
 
 /* Tablet portrait */
 @media (min-width: 640px) and (max-aspect-ratio: 3/4) {
   .about-hero-section .about-hero-overlay {
-    padding-top: var(--about-hero-tab-portrait-padding) !important;
+    display: block !important;
+    padding: 0 !important;
   }
 
   .about-hero-section .about-hero-text {
-    position: relative !important;
+    position: absolute !important;
+    left: 50% !important;
     top: auto !important;
-    left: auto !important;
-    width: 100% !important;
-    transform: translateY(var(--about-hero-tab-portrait-shift)) !important;
+    bottom: max(40.5vw, 30.5vh) !important;
+    width: min(88%, 32rem) !important;
+    transform: translate(-50%, 50%) !important;
   }
 }
 
@@ -1580,9 +1589,10 @@ a.branch-detail-row:hover {
   .about-hero-section .about-hero-text {
     position: absolute !important;
     left: 50% !important;
-    top: var(--about-hero-laptop-top) !important;
+    top: auto !important;
+    bottom: max(15.5vw, 26vh) !important;
     width: min(88%, 42rem) !important;
-    transform: translateX(-50%) !important;
+    transform: translate(-50%, 50%) !important;
   }
 }
 
@@ -1593,8 +1603,14 @@ a.branch-detail-row:hover {
 }
 
 @media (max-width: 639px) {
+  .about-founder-section {
+    align-items: flex-start !important;
+  }
+  
   .about-founder-section .about-founder-content {
-    transform: translateY(var(--about-founder-mobile-shift));
+    transform: none !important;
+    margin-top: max(85vw, 40vh);
+    padding-bottom: 4rem; /* add some space at the bottom */
   }
 
   .about-founder-section .about-founder-card {
@@ -1632,7 +1648,13 @@ a.branch-detail-row:hover {
 }
 
 @media (min-width: 768px) and (max-width: 1023px) and (orientation: portrait) {
+  .about-founder-section {
+    align-items: flex-start !important;
+  }
+
   .about-founder-section .about-founder-content {
-    transform: translateY(var(--about-founder-tab-portrait-shift));
+    transform: none !important;
+    margin-top: max(75vw, 35vh);
+    padding-bottom: 4rem;
   }
 }

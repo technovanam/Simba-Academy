@@ -38,8 +38,8 @@ export default function FranchisePage() {
         </picture>
 
         <div className="absolute inset-0 flex items-center justify-center px-6 pt-10 text-center sm:px-12 sm:pt-14">
-          <h1 className="franchise-hero-title relative z-10 max-w-5xl text-balance text-4xl font-extrabold leading-[1.05] tracking-tight text-[#2C1810] drop-shadow-sm sm:text-5xl lg:text-6xl">
-            <span className="md:hidden">
+          <h1 className="franchise-hero-title relative z-10 max-w-5xl text-balance text-3xl font-extrabold leading-[1.1] tracking-tight text-[#2C1810] drop-shadow-sm min-[400px]:text-[2rem] sm:text-4xl md:text-5xl lg:text-6xl">
+            <span className="min-[480px]:hidden">
               Become a
               <br />
               Simba
@@ -50,7 +50,12 @@ export default function FranchisePage() {
               <br />
               Partner
             </span>
-            <span className="hidden md:contents">
+            <span className="hidden min-[480px]:block lg:!hidden">
+              <span className="block">Become a</span>
+              <span className="block">Simba Preschool</span>
+              <span className="block">Franchise Partner</span>
+            </span>
+            <span className="hidden lg:block">
               <span className="block">Become a Simba Preschool</span>
               <span className="block">Franchise Partner</span>
             </span>

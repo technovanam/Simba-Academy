@@ -70,7 +70,7 @@ export default function AboutPage() {
             src="/Founder%20Mobile.webp"
             alt=""
             aria-hidden
-            className="absolute inset-0 h-full w-full object-cover object-center"
+            className="absolute inset-0 h-full w-full object-cover object-top"
             loading="lazy"
             decoding="async"
           />
