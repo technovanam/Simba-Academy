@@ -20,9 +20,11 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const BACKEND = resolve(__dirname, "..");
-const STAGING = join(BACKEND, "deploy", "simba-api");
 const REPO_ROOT = resolve(BACKEND, "..");
+const STAGING = join(BACKEND, "deploy", "simba-api");
 const OUT_ZIP = resolve(REPO_ROOT, "simba-api.zip");
+const SERVICE_ACCOUNT_SRC = resolve(REPO_ROOT, "simba-academy-498413-11a1a705ab62.json");
+const SERVICE_ACCOUNT_NAME = "google-service-account.json";
 
 const INCLUDE = [
   "dist",
@@ -30,6 +32,8 @@ const INCLUDE = [
   "prisma",
   "app.js",
   "scripts/cpanel-setup.mjs",
+  "scripts/cpanel-migrate-only.mjs",
+  "scripts/migrate-schema.mjs",
   "scripts/check-db.mjs",
   "package.json",
   "package-lock.json",
@@ -78,8 +82,18 @@ console.log("\n==> Staging zip (includes dist + app.js, excludes node_modules)�
 rmSync(join(BACKEND, "deploy"), { recursive: true, force: true });
 mkdirSync(STAGING, { recursive: true });
 
+console.log("\n==> Preparing production .env for cPanel…");
+run(`node scripts/prepare-cpanel-env.mjs "${join(STAGING, ".env")}"`);
+
 for (const rel of INCLUDE) {
   copyPath(join(BACKEND, rel), join(STAGING, rel));
+}
+
+if (existsSync(SERVICE_ACCOUNT_SRC)) {
+  cpSync(SERVICE_ACCOUNT_SRC, join(STAGING, SERVICE_ACCOUNT_NAME));
+  console.log(`Included ${SERVICE_ACCOUNT_NAME}`);
+} else {
+  console.warn(`Skip missing: ${SERVICE_ACCOUNT_NAME} (place ${relative(REPO_ROOT, SERVICE_ACCOUNT_SRC)} in repo root)`);
 }
 
 const deployGuide = join(REPO_ROOT, "DEPLOY-CPANEL.md");
@@ -117,8 +131,8 @@ writeFileSync(
     "Simba Academy API — cPanel (NO Terminal required)",
     "",
     "1. File Manager → extract into backend-api folder",
-    "2. File Manager → copy .env.production.example → .env → edit secrets",
-    "3. Setup Node.js App → Environment Variables (same as .env)",
+    "2. .env is included — verify DATABASE_URL matches cPanel MySQL",
+    "3. Setup Node.js App → Environment Variables (optional mirror of .env)",
     "4. Application startup file: app.js",
     "5. Click Run NPM Install",
     "6. Run JS script: scripts/cpanel-setup.mjs  (once — DB tables + admin)",

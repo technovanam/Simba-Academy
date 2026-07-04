@@ -17,9 +17,10 @@
     "db:seed": "npm run db:seed --prefix backend",
     "db:clear": "node backend/scripts/clear-db.mjs",
     "db:purge-teachers": "npm run db:purge-teachers --prefix backend",
+    "pack:clean": "node backend/scripts/clean-deploy-zips.mjs",
     "pack:backend": "npm run deploy:pack --prefix backend",
     "pack:frontend": "npm run deploy:pack --prefix frontend",
-    "pack:cpanel": "npm run pack:backend && npm run pack:frontend"
+    "pack:cpanel": "npm run pack:clean && npm run pack:backend && npm run pack:frontend"
   },
   "devDependencies": {
     "concurrently": "^9.2.1",

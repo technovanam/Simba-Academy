@@ -99,7 +99,7 @@ export function getInquiryAutoReplyHtml(name: string): string {
       ${renderCta("https://www.simbapreschool.in", "Visit Our Website", "orange")}
     `,
     footerTitle: "Simba Admissions Team",
-    footerLines: ["Salem, Tamil Nadu · +91 97894 54321", "contact@simbapreschool.in"],
+    footerLines: ["Salem, Tamil Nadu · +91 98848 66727", "contact@simbapreschool.in"],
   });
 }
 

@@ -41,24 +41,11 @@ export function isValidStoryBookFile(file: File): boolean {
   );
 }
 
-/** Jungle-themed auth backgrounds — mobile vs laptop/desktop */
-export const STUDENT_AUTH_BG_MOBILE = "/student-auth-bg-mobile.webp";
-export const STUDENT_AUTH_BG_DESKTOP = "/student-auth-bg-desktop.webp";
-
 export const WHATSAPP_NUMBER = "919884866727";
 export const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}`;
 
 export const SIMBA_LOGO_SRC = "/logos/simba-preschool-logo.webp";
-export const SIMBA_LOGO_TRANSPARENT_SRC = "/logos/simba-logo-transparent.webp";
 export const APPLE_TOUCH_ICON_SRC = "/favicons/apple-touch-icon.webp";
-
-export const BRANCHES = [
-  { name: "Ramakrishna Park", address: "Near Ramakrishna Park, Salem" },
-  { name: "Ponnamapet", address: "Ponnamapet, Salem" },
-  { name: "Kondalampatti", address: "Kondalampatti, Salem" },
-  { name: "Steel Plant", address: "Steel Plant Area, Salem" },
-  { name: "Ammapet", address: "81, Anna Street, Ammapet Road, Salem - 636001" },
-];
 
 export type PreschoolBranch = {
   name: string;
@@ -122,37 +109,9 @@ export const PRESCHOOL_BRANCHES: PreschoolBranch[] = [
   },
 ];
 
-export const COURSE_LEVELS = [
-  "Daycare",
-  "Playgroup",
-  "Pre-KG",
-  "LKG",
-  "UKG",
-  "Phonics",
-  "Handwriting",
-  "Spoken English",
-] as const;
-
-export const NAV_LINKS = [
-  { label: "Home", to: "/" },
-  { label: "About", to: "/about" },
-  { label: "Franchise", to: "/franchise" },
-  { label: "Gallery", to: "/gallery" },
-  { label: "Contact", to: "/contact" },
-];
-
 export const HEADER_LINKS = [
   { label: "Home", to: "/" },
   { label: "About", to: "/about" },
   { label: "Franchise", to: "/franchise" },
   { label: "Contact", to: "/contact" },
 ] as const;
-
-export const FOOTER_QUICK_LINKS = NAV_LINKS;
-
-export const SOCIAL_LINKS = {
-  facebook: "https://facebook.com",
-  instagram: "https://instagram.com",
-  youtube: "https://youtube.com",
-  whatsapp: WHATSAPP_URL,
-};

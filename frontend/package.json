@@ -5,6 +5,7 @@
   "scripts": {
     "build": "react-router build",
     "dev": "react-router dev",
+    "dev:clean": "node scripts/clean-vite-cache.mjs && react-router dev",
     "start": "react-router-serve ./build/server/index.js",
     "typecheck": "react-router typegen && tsc",
     "deploy:pack": "node scripts/pack-frontend.mjs"
@@ -31,6 +32,6 @@
     "sharp": "^0.35.2",
     "tailwindcss": "^4.2.2",
     "typescript": "^5.9.3",
-    "vite": "^8.0.3"
+    "vite": "^7.2.7"
   }
 }

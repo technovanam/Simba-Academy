@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import { JungleHeader } from "./JungleHeader";
 import { JungleFooter } from "./JungleFooter";
-import { FloatingWhatsApp } from "./FloatingWhatsApp";
 
 interface PageShellProps {
   children: ReactNode;

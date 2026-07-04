@@ -5,16 +5,17 @@ import { PageShell } from "../components/PageShell";
 import { api, type GalleryItem, type Testimonial } from "../lib/api";
 import { WHATSAPP_NUMBER, WHATSAPP_URL } from "../lib/constants";
 import { resolveStorageUrl } from "../lib/storage";
+import type { LucideIcon } from "lucide-react";
 import { 
   ArrowRight,
   Star,
   PlayCircle,
   CheckCircle2,
   Phone,
-  Palette,
-  Users,
-  Rocket,
-  Pencil,
+  Baby,
+  BookOpen,
+  NotebookPen,
+  GraduationCap,
 } from "lucide-react";
 import { BranchesSection } from "../components/BranchesSection";
 
@@ -60,26 +61,54 @@ const defaultParentQuotes = [
   },
 ];
 
-const programsList = [
+const programsList: Array<{
+  icon: LucideIcon;
+  title: string;
+  age: string;
+  intro?: string;
+  learnLabel: string;
+  highlights: string[];
+  closing?: string;
+  whatsappMsg: string;
+  theme: {
+    header: string;
+    icon: string;
+    badge: string;
+    bar: string;
+  };
+}> = [
   {
+    icon: Baby,
     title: "Play Group",
     age: "2 – 3 Years",
-    icon: Users,
+    theme: {
+      header: "bg-gradient-to-br from-amber-50 to-orange-50/80",
+      icon: "bg-white text-amber-600 border-amber-200/80",
+      badge: "bg-white/90 text-amber-800 border-amber-200/70",
+      bar: "from-amber-400 via-amber-300 to-orange-300",
+    },
     intro:
-      "A joyful introduction to school through music, movement, storytelling, and play.",
+      "A gentle and joyful introduction to school life through music, movement, storytelling, sensory activities, and social interaction.",
     learnLabel: "Children learn:",
     highlights: [
       "Social interaction",
       "Basic communication",
-      "Motor skills",
+      "Motor skill development",
       "Sensory exploration",
+      "Classroom routine adaptation",
     ],
     whatsappMsg: "Hi, I am interested in enrolling my child in Play Group. Please share details.",
   },
   {
+    icon: BookOpen,
     title: "Pre-KG",
     age: "3 – 4 Years",
-    icon: Pencil,
+    theme: {
+      header: "bg-gradient-to-br from-sky-50 to-blue-50/80",
+      icon: "bg-white text-sky-600 border-sky-200/80",
+      badge: "bg-white/90 text-sky-800 border-sky-200/70",
+      bar: "from-sky-400 via-sky-300 to-blue-300",
+    },
     learnLabel: "Building strong foundations in:",
     highlights: [
       "Phonics",
@@ -93,9 +122,15 @@ const programsList = [
     whatsappMsg: "Hi, I am interested in enrolling my child in Pre-KG. Please share details.",
   },
   {
+    icon: NotebookPen,
     title: "LKG",
     age: "4 – 5 Years",
-    icon: Palette,
+    theme: {
+      header: "bg-gradient-to-br from-violet-50 to-purple-50/80",
+      icon: "bg-white text-violet-600 border-violet-200/80",
+      badge: "bg-white/90 text-violet-800 border-violet-200/70",
+      bar: "from-violet-400 via-violet-300 to-purple-300",
+    },
     learnLabel: "Interactive learning through:",
     highlights: [
       "Reading readiness",
@@ -109,9 +144,15 @@ const programsList = [
     whatsappMsg: "Hi, I am interested in enrolling my child in LKG. Please share details.",
   },
   {
+    icon: GraduationCap,
     title: "UKG",
     age: "5 – 6 Years",
-    icon: Rocket,
+    theme: {
+      header: "bg-gradient-to-br from-emerald-50 to-teal-50/80",
+      icon: "bg-white text-emerald-600 border-emerald-200/80",
+      badge: "bg-white/90 text-emerald-800 border-emerald-200/70",
+      bar: "from-emerald-400 via-emerald-300 to-teal-300",
+    },
     learnLabel: "Preparing children confidently for primary school with:",
     highlights: [
       "Advanced phonics",
@@ -139,7 +180,6 @@ const defaultGalleryItems = [
 export default function LandingPage() {
   const [gallery, setGallery] = useState<GalleryItem[]>([]);
   const [testimonials, setTestimonials] = useState<Array<Testimonial & { role?: string; profilePhotoUrl?: string }>>([]);
-  const [activeProgramIndex, setActiveProgramIndex] = useState(0);
 
   useEffect(() => {
     Promise.all([
@@ -165,14 +205,6 @@ export default function LandingPage() {
         );
       }
     });
-  }, []);
-
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      setActiveProgramIndex((prev) => (prev + 1) % programsList.length);
-    }, 2000);
-
-    return () => window.clearInterval(timer);
   }, []);
 
   // Merge database items with fallback items to guarantee at least 6 items
@@ -210,6 +242,14 @@ export default function LandingPage() {
   const halfTestimonials = Math.ceil(displayTestimonials.length / 2);
   const row1Testimonials = displayTestimonials.length > 0 ? displayTestimonials.slice(0, halfTestimonials) : [];
   const row2Testimonials = displayTestimonials.length > 0 ? displayTestimonials.slice(halfTestimonials) : [];
+
+  const scrollingPrograms = useMemo(() => {
+    const extended = [];
+    for (let i = 0; i < 4; i++) {
+      extended.push(...programsList);
+    }
+    return extended;
+  }, []);
 
   return (
     <>
@@ -373,47 +413,40 @@ export default function LandingPage() {
       </section>
 
       {/* 4. Our Programs */}
-      <section id="programs" className="relative h-screen w-full bg-white overflow-hidden">
-        <picture className="absolute inset-0 w-full h-full pointer-events-none select-none">
-          <source media="(min-width: 1024px)" srcSet="/Our%20Programs.webp" />
-          <source
-            media="(min-width: 640px) and (max-width: 1023px) and (orientation: portrait)"
-            srcSet="/Our%20Programs%20Tab%20Potrait.webp"
-          />
-          <source media="(min-width: 640px)" srcSet="/Our%20Programs%20Tab.webp" />
-          <img
-            src="/Our%20Programs%20Mobile.webp"
-            alt=""
-            aria-hidden
-            className="absolute inset-0 w-full h-full object-cover object-bottom"
-            loading="lazy"
-            decoding="async"
-          />
-        </picture>
-
-        <div className="absolute inset-x-0 top-0 z-10 text-center pt-5 sm:pt-7 lg:pt-8 px-6">
-          <span className="text-xs font-bold tracking-widest text-[#E8AF34] uppercase block mb-3">What We Offer</span>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight">Our Programs</h2>
+      <section id="programs" className="programs-section min-h-screen flex flex-col justify-center py-20 bg-slate-50/50">
+        <div className="max-w-7xl mx-auto px-6 sm:px-12 w-full">
+          <div className="text-center mb-12 sm:mb-16">
+            <span className="text-xs font-bold tracking-widest text-[#E8AF34] uppercase block mb-3">What We Offer</span>
+            <h2 className="text-4xl sm:text-5xl font-extrabold text-slate-900 tracking-tight">Our Programs</h2>
+            <div className="w-12 h-1 bg-[#E8AF34] mx-auto mt-4 rounded-full" />
+          </div>
         </div>
 
-        <div className="programs-carousel-slot z-20 h-[28rem] sm:max-lg:portrait:h-[37rem] sm:max-lg:landscape:h-[29.5rem] lg:h-[21.25rem] max-w-[13rem] sm:max-lg:portrait:max-w-[25.5rem] sm:max-lg:landscape:max-w-[42rem] lg:max-w-[38rem] px-4 sm:max-lg:portrait:px-5 sm:max-lg:landscape:px-10 lg:px-12">
-          {programsList.map((program, idx) => {
-            const isActive = activeProgramIndex === idx;
-            return (
+        <div className="relative w-full overflow-hidden py-4">
+          <div className="absolute inset-y-0 left-0 w-24 sm:w-40 bg-gradient-to-r from-slate-50/50 to-transparent z-10 pointer-events-none" />
+          <div className="absolute inset-y-0 right-0 w-24 sm:w-40 bg-gradient-to-l from-slate-50/50 to-transparent z-10 pointer-events-none" />
+
+          <div className="flex programs-marquee--left gap-4 md:gap-6 w-max shrink-0 hover:![animation-play-state:paused]">
+            {scrollingPrograms.map((program, idx) => (
               <div
-                key={program.title}
-                className={`absolute inset-0 flex flex-col items-center justify-center transition-all duration-700 ease-in-out ${
-                  isActive
-                    ? "opacity-100 translate-y-0 scale-100 z-10"
-                    : "opacity-0 translate-y-3 scale-[0.98] pointer-events-none z-0"
-                }`}
-                aria-hidden={!isActive}
+                key={`programs-r1-${program.title}-${idx}`}
+                className="w-[min(340px,calc(100vw-3rem))] sm:w-[380px] md:w-[400px] shrink-0"
               >
                 <ProgramCard program={program} />
               </div>
-            );
-          })}
+            ))}
+          </div>
 
+          <div className="flex lg:hidden programs-marquee--right gap-4 md:gap-6 w-max shrink-0 hover:![animation-play-state:paused] mt-8 md:mt-12">
+            {[...scrollingPrograms].reverse().map((program, idx) => (
+              <div
+                key={`programs-r2-${program.title}-${idx}`}
+                className="w-[min(340px,calc(100vw-3rem))] sm:w-[380px] md:w-[400px] shrink-0"
+              >
+                <ProgramCard program={program} />
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -519,11 +552,11 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <div className="w-full h-10 sm:h-14 lg:h-16 bg-[#FDF5E5]" aria-hidden />
+      <div className="learning-facilities-transition w-full bg-[#FDF5E5]" aria-hidden />
 
       {/* 7. Facilities */}
-      <section className="relative h-screen w-full bg-[#FDF5E5] overflow-hidden">
-        <picture className="absolute inset-0 w-full h-full pointer-events-none select-none">
+      <section className="facilities-section relative min-h-[100dvh] h-[100dvh] w-full bg-[#FDF5E5] overflow-hidden">
+        <picture className="facilities-section-bg absolute inset-0 w-full h-full pointer-events-none select-none">
           <source media="(min-width: 1024px)" srcSet="/Facilities.webp" />
           <source
             media="(min-width: 640px) and (max-width: 1023px) and (orientation: portrait)"
@@ -534,14 +567,14 @@ export default function LandingPage() {
             src="/Facilities%20Mobile.webp"
             alt=""
             aria-hidden
-            className="absolute inset-0 w-full h-full object-cover object-center"
+            className="facilities-section-bg-img absolute inset-0 w-full h-full object-cover object-center"
             loading="lazy"
             decoding="async"
           />
         </picture>
 
-        <div className="relative z-10 text-center pt-0 sm:pt-0.5 lg:pt-1 px-6 -translate-y-1 sm:-translate-y-1.5">
-          <span className="text-xs font-bold tracking-widest text-[#E8AF34] uppercase block mb-3">Our Campus</span>
+        <div className="facilities-section-header relative z-10 text-center px-6">
+          <span className="text-xs font-bold tracking-widest text-[#E8AF34] uppercase block mb-2 sm:mb-3">Our Campus</span>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight">Facilities</h2>
         </div>
       </section>
@@ -783,57 +816,68 @@ export default function LandingPage() {
 }
 
 function ProgramCard({ program }: { program: (typeof programsList)[number] }) {
-  const ProgramIcon = program.icon;
+  const Icon = program.icon;
 
   return (
-    <article className="program-card w-full h-full mx-auto flex flex-col items-center text-center px-4 py-4 sm:max-lg:landscape:px-6 sm:max-lg:landscape:py-5 lg:px-6 lg:py-5 font-sans min-h-0 overflow-hidden">
-      <div className="program-card-header flex flex-col items-center gap-2 mb-2 sm:max-lg:landscape:flex-row sm:max-lg:landscape:gap-2.5 lg:flex-row lg:gap-2.5 sm:max-lg:landscape:mb-3 lg:mb-3 shrink-0">
-        <span className="inline-flex items-center justify-center w-9 h-9 sm:max-lg:portrait:w-10 sm:max-lg:portrait:h-10 sm:max-lg:landscape:w-10 sm:max-lg:landscape:h-10 lg:w-11 lg:h-11 rounded-full bg-[#E8AF34]/25 border border-[#C59124]/50 shadow-sm">
-          <ProgramIcon className="w-5 h-5 sm:max-lg:portrait:w-[1.35rem] sm:max-lg:portrait:h-[1.35rem] lg:w-6 lg:h-6 text-[#7A4F10]" strokeWidth={2.25} />
-        </span>
-        <p className="font-extrabold text-sm sm:max-lg:portrait:text-lg sm:max-lg:landscape:text-xl lg:text-2xl leading-tight text-[#2C1810]">
-          {program.title}{" "}
-          <span className="text-[#9A6B1A] font-bold">({program.age})</span>
-        </p>
+    <article className="program-card group flex h-[30rem] sm:h-[31rem] flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-slate-300">
+      <div className={`h-1.5 w-full bg-gradient-to-r ${program.theme.bar}`} aria-hidden />
+
+      <div className={`shrink-0 px-5 pt-5 pb-4 sm:px-6 sm:pt-6 ${program.theme.header}`}>
+        <div className="flex items-center gap-4">
+          <span
+            className={`inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border shadow-sm ${program.theme.icon}`}
+          >
+            <Icon className="h-7 w-7" strokeWidth={2} />
+          </span>
+          <div className="min-w-0">
+            <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 leading-tight">
+              {program.title}
+            </h3>
+            <span
+              className={`mt-2 inline-flex rounded-full border px-3 py-1 text-xs font-bold ${program.theme.badge}`}
+            >
+              {program.age}
+            </span>
+          </div>
+        </div>
       </div>
 
-      <div className="w-10 h-0.5 rounded-full bg-[#E8AF34]/70 mb-2 sm:max-lg:landscape:mb-2.5 shrink-0" aria-hidden />
+      <div className="flex flex-1 min-h-0 flex-col bg-white px-5 pb-5 sm:px-6 sm:pb-6">
+        <div className="program-card-body flex-1 min-h-0 overflow-y-auto scrollbar-hide pr-0.5">
+          {program.intro ? (
+            <p className="text-slate-600 text-sm leading-relaxed mb-4">{program.intro}</p>
+          ) : null}
 
-      <div className="program-card-body flex flex-1 min-h-0 w-full flex-col items-center overflow-hidden">
-      {program.intro ? (
-        <p className="text-xs sm:max-lg:portrait:text-base sm:max-lg:landscape:text-lg lg:text-lg leading-snug text-[#4A3728] font-medium mb-2 w-full shrink-0 px-1">
-          {program.intro}
-        </p>
-      ) : null}
+          <p className="text-[11px] font-bold uppercase tracking-wider text-[#9A6B1A] mb-2.5">
+            {program.learnLabel}
+          </p>
 
-      <p className="text-[11px] sm:max-lg:portrait:text-sm sm:max-lg:landscape:text-base lg:text-base font-bold uppercase tracking-wider text-[#9A6B1A] mb-1.5 sm:max-lg:landscape:mb-2 shrink-0">
-        {program.learnLabel}
-      </p>
+          <ul className="space-y-2.5 mb-3">
+            {program.highlights.map((item) => (
+              <li key={item} className="flex items-start gap-2.5 text-sm text-slate-700">
+                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#E8AF34]" aria-hidden />
+                <span className="font-medium leading-snug">{item}</span>
+              </li>
+            ))}
+          </ul>
 
-      <ul className="program-card-highlights w-full space-y-1.5 list-none columns-1 sm:max-lg:landscape:columns-2 lg:columns-2 gap-x-5 text-left max-w-[12.5rem] sm:max-lg:portrait:max-w-[18.5rem] sm:max-lg:landscape:max-w-sm lg:max-w-md mx-auto shrink-0">
-        {program.highlights.map((item) => (
-          <li key={item} className="flex items-start gap-2 text-xs sm:max-lg:portrait:text-base sm:max-lg:landscape:text-lg lg:text-lg break-inside-avoid mb-0.5 text-[#2C1810] font-semibold">
-            <CheckCircle2 className="w-3.5 h-3.5 sm:max-lg:portrait:w-4 sm:max-lg:portrait:h-4 sm:max-lg:landscape:w-[1.125rem] sm:max-lg:landscape:h-[1.125rem] lg:w-5 lg:h-5 text-[#FFFBF5] fill-[#C59124] shrink-0 mt-0.5" strokeWidth={2.5} />
-            <span>{item}</span>
-          </li>
-        ))}
-      </ul>
+          {program.closing ? (
+            <p className="rounded-xl bg-slate-50 px-3 py-2.5 text-sm leading-relaxed text-slate-600 italic">
+              {program.closing}
+            </p>
+          ) : null}
+        </div>
 
-      {program.closing ? (
-        <p className="text-xs sm:max-lg:portrait:text-base sm:max-lg:landscape:text-lg lg:text-lg leading-snug text-[#5C4033] font-medium italic mt-2 mb-2 w-full shrink-0 px-1">
-          {program.closing}
-        </p>
-      ) : null}
+        <a
+          href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(program.whatsappMsg)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#E8AF34] px-5 py-3 text-sm font-bold text-white shadow-md shadow-[#E8AF34]/20 transition-all group-hover:bg-[#d69f2e] shrink-0"
+        >
+          Enroll Now
+          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+        </a>
       </div>
-
-      <a
-        href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(program.whatsappMsg)}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex items-center justify-center gap-2 px-6 py-2 sm:max-lg:portrait:px-7 sm:max-lg:portrait:py-2.5 sm:max-lg:landscape:px-8 sm:max-lg:landscape:py-3 lg:px-8 lg:py-3 rounded-full bg-[#E8AF34] border-2 border-[#A67C1A] text-[#2C1810] font-extrabold text-xs sm:max-lg:portrait:text-base sm:max-lg:landscape:text-lg lg:text-lg hover:bg-[#D9A42E] hover:-translate-y-0.5 transition-all shadow-[0_4px_14px_rgba(198,145,36,0.45)] shrink-0 mt-auto"
-      >
-        Enroll <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 lg:w-5 lg:h-5" />
-      </a>
     </article>
   );
 }

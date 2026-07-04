@@ -5,4 +5,12 @@ import { defineConfig } from "vite";
 export default defineConfig({
   plugins: [tailwindcss(), reactRouter()],
   base: '/',
+  server: {
+    watch: {
+      ignored: ['**/build/**'],
+    },
+  },
+  optimizeDeps: {
+    include: ['lenis', '@sentry/react', 'react-router', 'react-router/dom'],
+  },
 });

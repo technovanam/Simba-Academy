@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router";
-import { SOCIAL_LINKS, SIMBA_LOGO_SRC } from "../lib/constants";
+import { WHATSAPP_URL, SIMBA_LOGO_SRC } from "../lib/constants";
 import { FaInstagram, FaWhatsapp } from "react-icons/fa";
 import { MapPin, Phone, Mail, X, ExternalLink } from "lucide-react";
 
@@ -144,7 +143,7 @@ export function JungleFooter() {
           </h5>
           <div className="flex flex-wrap gap-3 pt-2">
             <a
-              href={SOCIAL_LINKS.whatsapp}
+              href={WHATSAPP_URL}
               target="_blank"
               rel="noreferrer"
               className="group w-10 h-10 rounded-lg bg-white border border-slate-200 flex items-center justify-center hover:bg-[#c26d2e] transition-all shadow-sm cursor-pointer"

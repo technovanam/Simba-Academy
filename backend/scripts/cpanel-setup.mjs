@@ -77,8 +77,18 @@ try {
 
 try {
   run("node node_modules/prisma/build/index.js db push");
+  console.log("✅ Database schema synced (existing data kept).");
 } catch (err) {
-  console.warn("\n⚠️ Database push failed. If your database tables are not yet created, please configure Remote MySQL in cPanel and run 'npx prisma db push' locally from your PC.");
+  console.error("\n❌ prisma db push failed — admin pages will return 500 until this succeeds.");
+  console.error("   Check DATABASE_URL in .env matches cPanel MySQL (user simbapre_school, localhost).");
+  process.exit(1);
+}
+
+try {
+  run("node scripts/migrate-schema.mjs");
+  console.log("✅ Extra schema migrations applied.");
+} catch (err) {
+  console.warn("⚠️ migrate-schema.mjs failed:", err.message ?? err);
 }
 
 const { ensureDefaultAdmin } = await import("../dist/config/seedAdmin.js");

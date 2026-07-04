@@ -1,10 +1,7 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router";
 import { AlertCircle, Check, Home, Loader2 } from "lucide-react";
-import { STUDENT_AUTH_BG_DESKTOP, STUDENT_AUTH_BG_MOBILE, SIMBA_LOGO_SRC } from "../lib/constants";
-
-const studentAuthBgImgClass =
-  "absolute inset-0 h-full w-full object-cover object-center pointer-events-none";
+import { SIMBA_LOGO_SRC } from "../lib/constants";
 
 /** Student auth content wrapper — no outer box; sits on jungle background */
 export const studentAuthCardClass = "overflow-hidden";
@@ -201,22 +198,10 @@ export function AuthPageShell({
       }`}
     >
       {isStudentJungle ? (
-        <>
-          <img
-            src={STUDENT_AUTH_BG_MOBILE}
-            alt=""
-            className={`${studentAuthBgImgClass} lg:hidden`}
-            aria-hidden
-            fetchPriority="high"
-          />
-          <img
-            src={STUDENT_AUTH_BG_DESKTOP}
-            alt=""
-            className={`${studentAuthBgImgClass} hidden lg:block`}
-            aria-hidden
-            fetchPriority="high"
-          />
-        </>
+        <div
+          className="absolute inset-0 bg-gradient-to-b from-[#2d6a4f] via-[#1b4332] to-[#0d2818] pointer-events-none"
+          aria-hidden
+        />
       ) : (
         <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden>
           <div
