@@ -470,8 +470,16 @@ export default function LandingPage() {
       </section>
 
       {/* 5b. Why Choose Simba Preschool */}
-      <section className="relative h-screen max-h-screen w-full overflow-hidden bg-[#FAF8F2]">
-        <picture className="absolute inset-0 w-full h-full pointer-events-none select-none">
+      <section className="relative w-full overflow-hidden bg-[#FAF8F2]">
+        <div className="absolute top-0 left-0 w-full z-10 text-center pt-16 sm:pt-20 lg:pt-24 px-6 pointer-events-none">
+          <span className="text-xs font-bold tracking-widest text-[#E8AF34] uppercase block mb-3">Why Simba</span>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight drop-shadow-sm">
+            Why Choose Simba Preschool?
+          </h2>
+          <div className="w-12 h-1 bg-[#E8AF34] mx-auto mt-3 sm:mt-4 rounded-full" />
+        </div>
+        
+        <picture className="w-full h-auto pointer-events-none select-none block">
           <source media="(min-width: 1024px)" srcSet="/Why.webp" />
           <source
             media="(min-width: 640px) and (max-width: 1023px) and (orientation: portrait)"
@@ -480,26 +488,23 @@ export default function LandingPage() {
           <source media="(min-width: 640px)" srcSet="/Why%20Tab.webp" />
           <img
             src="/Why%20Mobile.webp"
-            alt=""
+            alt="Why Choose Simba"
             aria-hidden
-            className="absolute inset-0 h-full w-full object-cover object-center"
+            className="w-full h-auto object-contain block"
             loading="lazy"
             decoding="async"
           />
         </picture>
-
-        <div className="relative z-10 text-center pt-5 sm:pt-7 lg:pt-8 px-6">
-          <span className="text-xs font-bold tracking-widest text-[#E8AF34] uppercase block mb-3">Why Simba</span>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight drop-shadow-sm">
-            Why Choose Simba Preschool?
-          </h2>
-          <div className="w-12 h-1 bg-[#E8AF34] mx-auto mt-3 sm:mt-4 rounded-full" />
-        </div>
       </section>
 
       {/* 6. Our Learning Approach */}
-      <section className="relative w-full bg-white overflow-hidden lg:h-[100dvh]">
-        <picture className="block w-full lg:absolute lg:inset-0 lg:h-full lg:w-full pointer-events-none select-none">
+      <section className="relative w-full bg-white overflow-hidden">
+        <div className="absolute top-0 left-0 w-full z-10 text-center pt-16 sm:pt-20 lg:pt-24 px-6 sm:px-10 pointer-events-none">
+          <span className="text-xs font-bold tracking-widest text-[#E8AF34] uppercase block mb-3">How We Teach</span>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight">Our Learning Approach</h2>
+        </div>
+        
+        <picture className="block w-full pointer-events-none select-none">
           <source media="(min-width: 1024px)" srcSet="/Learning%20Approach.webp" />
           <source
             media="(min-width: 640px) and (max-width: 1023px) and (orientation: portrait)"
@@ -508,25 +513,25 @@ export default function LandingPage() {
           <source media="(min-width: 640px)" srcSet="/Learning%20Apprach%20Tab.webp" />
           <img
             src="/Learning%20Apprach%20Mobile.webp"
-            alt=""
+            alt="Learning Approach"
             aria-hidden
-            className="block w-full h-auto lg:absolute lg:inset-0 lg:w-full lg:h-full lg:object-cover lg:object-center"
+            className="block w-full h-auto object-contain"
             loading="lazy"
             decoding="async"
           />
         </picture>
-
-        <div className="absolute top-0 left-0 w-full z-10 text-center pt-8 sm:pt-10 lg:pt-12 px-6 sm:px-10 lg:relative">
-          <span className="text-xs font-bold tracking-widest text-[#E8AF34] uppercase block mb-3">How We Teach</span>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight">Our Learning Approach</h2>
-        </div>
       </section>
 
       <div className="learning-facilities-transition w-full bg-[#FDF5E5]" aria-hidden />
 
       {/* 7. Facilities */}
-      <section className="facilities-section relative w-full bg-[#FDF5E5] overflow-hidden lg:min-h-[100dvh] lg:h-[100dvh]">
-        <picture className="facilities-section-bg block w-full lg:absolute lg:inset-0 lg:h-full lg:w-full pointer-events-none select-none">
+      <section className="facilities-section relative w-full bg-[#FDF5E5] overflow-hidden">
+        <div className="facilities-section-header absolute top-0 left-0 w-full z-10 text-center pt-16 sm:pt-20 lg:pt-24 px-6 pointer-events-none">
+          <span className="text-xs font-bold tracking-widest text-[#E8AF34] uppercase block mb-2 sm:mb-3">Our Campus</span>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight">Facilities</h2>
+        </div>
+        
+        <picture className="facilities-section-bg block w-full pointer-events-none select-none">
           <source media="(min-width: 1024px)" srcSet="/Facilities.webp" />
           <source
             media="(min-width: 640px) and (max-width: 1023px) and (orientation: portrait)"
@@ -535,18 +540,13 @@ export default function LandingPage() {
           <source media="(min-width: 640px)" srcSet="/Facilities%20Tab.webp" />
           <img
             src="/Facilities%20Mobile.webp"
-            alt=""
+            alt="Facilities"
             aria-hidden
-            className="facilities-section-bg-img block w-full h-auto lg:absolute lg:inset-0 lg:w-full lg:h-full lg:object-cover lg:object-center"
+            className="facilities-section-bg-img block w-full h-auto object-contain"
             loading="lazy"
             decoding="async"
           />
         </picture>
-
-        <div className="facilities-section-header absolute top-0 left-0 w-full z-10 text-center px-6 pt-8 sm:pt-10 lg:pt-12 lg:relative">
-          <span className="text-xs font-bold tracking-widest text-[#E8AF34] uppercase block mb-2 sm:mb-3">Our Campus</span>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight">Facilities</h2>
-        </div>
       </section>
 
       {/* 8. Gallery (from Admin Panel) */}
