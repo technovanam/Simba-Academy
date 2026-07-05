@@ -60,7 +60,7 @@ export type PreschoolBranch = {
 
 export const PRESCHOOL_BRANCHES: PreschoolBranch[] = [
   {
-    name: "Near Cluny (Ramakrishna Park)",
+    name: "Simba Preschool - Near Cluny (Ramakrishna Park),Salem",
     locationLabel: "Near Cluny, Ramakrishna Park, Salem",
     mapsUrl: "https://maps.app.goo.gl/u9jnVog3h76FLuX5A",
     mapEmbedUrl:
@@ -72,7 +72,7 @@ export const PRESCHOOL_BRANCHES: PreschoolBranch[] = [
     phoneTel: "+919884866727",
   },
   {
-    name: "Ponnamapet",
+    name: "Simba Preschool - Ponnamapet, Salem",
     locationLabel: "Ponnamapet, Salem",
     mapsUrl: "https://maps.app.goo.gl/bQuZnVqQ83GDAkpp8",
     mapEmbedUrl:
@@ -84,7 +84,7 @@ export const PRESCHOOL_BRANCHES: PreschoolBranch[] = [
     phoneTel: "+919884866727",
   },
   {
-    name: "Steel Plant",
+    name: "Simba Preschool - Steel Plant RD, Salem",
     locationLabel: "Steel Plant, Salem",
     mapsUrl: "https://maps.app.goo.gl/PesENfcJFHetqpoaA",
     mapEmbedUrl:
@@ -96,7 +96,7 @@ export const PRESCHOOL_BRANCHES: PreschoolBranch[] = [
     phoneTel: "+919791797080",
   },
   {
-    name: "Kondalampatti (Opp. Sowdeshwari College)",
+    name: "Simba Preschool - Kondalmpatti, Salem",
     locationLabel: "Kondalampatti, Opp. Sowdeshwari College, Salem",
     mapsUrl: "https://maps.app.goo.gl/7FymeBBh9XFXmYTs8",
     mapEmbedUrl:
