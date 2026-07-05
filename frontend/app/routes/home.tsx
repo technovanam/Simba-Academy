@@ -364,52 +364,22 @@ export default function LandingPage() {
       </section>
 
       {/* 3. Vision & Mission */}
-      <section className="relative h-screen w-full bg-white overflow-hidden">
-        <picture className="absolute inset-0 w-full h-full pointer-events-none select-none">
-          <source media="(min-width: 1024px)" srcSet="/Vision%20Mission.webp" />
+      <section className="relative w-full bg-white overflow-hidden flex items-center justify-center py-10 sm:py-0">
+        <picture className="w-full h-auto pointer-events-none select-none">
+          <source media="(min-width: 1024px)" srcSet="/Vision%20Mission.png" />
           <source
             media="(min-width: 640px) and (max-width: 1023px) and (orientation: portrait)"
-            srcSet="/Vision%20Mission%20Tab%20Potrait.webp"
+            srcSet="/Vision%20Mission%20Tab%20Potrait.png"
           />
-          <source media="(min-width: 640px)" srcSet="/Vision%20Mission%20Tab.webp" />
+          <source media="(min-width: 640px)" srcSet="/Vision%20Mission%20Tab.png" />
           <img
-            src="/Vission%20Mission%20Mobile.webp"
-            alt=""
-            aria-hidden
-            className="absolute inset-0 w-full h-full object-cover object-center"
+            src="/Vission%20Mission%20Mobile.png"
+            alt="Vision and Mission"
+            className="w-full h-auto object-contain"
             loading="lazy"
             decoding="async"
           />
         </picture>
-
-        <div className="absolute inset-0 z-10 font-sans px-5 sm:max-lg:landscape:block sm:max-lg:landscape:p-0 lg:block lg:p-0">
-          <div className="vision-mission-header-block absolute left-1/2 -translate-x-1/2 top-[max(36vh,64vw)] sm:max-lg:portrait:top-[max(32vh,42vw)] -translate-y-1/2 w-full max-w-[21rem] max-lg:portrait:max-w-[26rem] text-center px-4 mx-auto sm:max-lg:landscape:absolute sm:max-lg:landscape:left-1/2 sm:max-lg:landscape:-translate-x-1/2 sm:max-lg:landscape:top-[43%] sm:max-lg:landscape:translate-y-3 sm:max-lg:landscape:w-[min(66%,30rem)] sm:max-lg:landscape:max-w-none sm:max-lg:landscape:mb-0 sm:max-lg:landscape:mx-0 lg:absolute lg:left-1/2 lg:-translate-x-1/2 lg:top-[42%] lg:translate-y-3 lg:w-[min(66%,30rem)] lg:max-w-none lg:mb-0 lg:mx-0 lg:px-4">
-            <span className="text-[clamp(0.75rem,2.5vw,0.875rem)] font-bold tracking-widest text-[#8B6914] uppercase block mb-1 sm:mb-2 lg:text-sm lg:mb-2">
-              Our Purpose
-            </span>
-            <h2 className="text-[clamp(1.75rem,7vw,2.25rem)] max-lg:portrait:text-4xl sm:max-lg:landscape:text-4xl lg:text-5xl font-extrabold text-[#4A3728] tracking-tight leading-tight">
-              Vision & Mission
-            </h2>
-          </div>
-
-          <div className="vision-mission-vision-block absolute left-1/2 -translate-x-1/2 top-[max(59vh,105vw)] sm:max-lg:portrait:top-[max(54vh,72vw)] -translate-y-1/2 w-[85vw] max-w-[19rem] sm:max-lg:portrait:max-w-[24rem] mx-auto text-center px-3 sm:max-lg:landscape:absolute sm:max-lg:landscape:left-[14%] sm:max-lg:landscape:top-[70%] sm:max-lg:landscape:translate-y-8 sm:max-lg:landscape:translate-x-3 sm:max-lg:landscape:w-[32%] sm:max-lg:landscape:max-w-none sm:max-lg:landscape:mb-0 sm:max-lg:landscape:mx-0 lg:absolute lg:left-[16%] lg:top-[69%] lg:translate-y-8 lg:translate-x-3 lg:w-[30%] lg:max-w-none lg:mb-0 lg:mx-0 lg:px-3 lg:flex lg:flex-col lg:items-center lg:justify-center">
-            <h3 className="text-[clamp(1rem,4vw,1.125rem)] sm:max-lg:portrait:text-3xl sm:max-lg:landscape:text-base lg:text-lg font-extrabold text-[#4A3728] mb-1 sm:mb-2 sm:max-lg:landscape:mb-1.5 lg:mb-1.5 leading-tight">
-              Vision
-            </h3>
-            <p className="text-[clamp(0.65rem,2.8vw,0.85rem)] sm:max-lg:portrait:text-base sm:max-lg:landscape:text-[10px] sm:max-lg:landscape:leading-snug lg:text-sm text-[#5C4033] font-semibold leading-snug sm:leading-relaxed lg:leading-relaxed">
-              To create a world where every Little Simbian feels loved, valued, and inspired to learn by building 100+ Simba Preschool centres across India that become a second home for children and a trusted partner for families.
-            </p>
-          </div>
-
-          <div className="vision-mission-mission-block absolute left-1/2 -translate-x-1/2 top-[max(76vh,135vw)] sm:max-lg:portrait:top-[max(73vh,97vw)] -translate-y-1/2 w-[85vw] max-w-[19rem] sm:max-lg:portrait:max-w-[24rem] mx-auto text-center px-3 sm:max-lg:landscape:absolute sm:max-lg:landscape:right-[14%] sm:max-lg:landscape:top-[70%] sm:max-lg:landscape:translate-y-8 sm:max-lg:landscape:-translate-x-5 sm:max-lg:landscape:w-[32%] sm:max-lg:landscape:max-w-none sm:max-lg:landscape:mx-0 lg:absolute lg:right-[16%] lg:top-[69%] lg:translate-y-8 lg:-translate-x-5 lg:w-[30%] lg:max-w-none lg:mx-0 lg:px-3 lg:flex lg:flex-col lg:items-center lg:justify-center">
-            <h3 className="text-[clamp(1rem,4vw,1.125rem)] sm:max-lg:portrait:text-3xl sm:max-lg:landscape:text-base lg:text-lg font-extrabold text-[#4A3728] mb-1 sm:mb-2 sm:max-lg:landscape:mb-1.5 lg:mb-1.5 leading-tight">
-              Mission
-            </h3>
-            <p className="text-[clamp(0.65rem,2.8vw,0.85rem)] sm:max-lg:portrait:text-base sm:max-lg:landscape:text-[10px] sm:max-lg:landscape:leading-snug lg:text-sm text-[#5C4033] font-semibold leading-snug sm:leading-relaxed lg:leading-relaxed">
-              At Simba Preschool, every child is loved, celebrated, and encouraged to shine. We nurture safe, joyful learning through love and play, helping every Little Simbian thrive with educators and parents across India.
-            </p>
-          </div>
-        </div>
       </section>
 
       {/* 4. Our Programs */}
