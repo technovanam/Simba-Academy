@@ -1,12 +1,11 @@
 import type { Route } from "./+types/about";
 import { PageShell } from "../components/PageShell";
+import { JsonLd } from "../components/JsonLd";
 import { Quote } from "lucide-react";
+import { ABOUT_SEO, aboutPageJsonLd, buildPageMeta } from "../lib/seo";
 
 export function meta({}: Route.MetaArgs) {
-  return [
-    { title: "About Us | Simba Preschool" },
-    { name: "description", content: "Discover Simba Preschool's mission, vision, core values, and message from our founder." },
-  ];
+  return buildPageMeta(ABOUT_SEO);
 }
 
 
@@ -15,6 +14,7 @@ export function meta({}: Route.MetaArgs) {
 export default function AboutPage() {
   return (
     <PageShell headerVariant="overlay">
+      <JsonLd data={aboutPageJsonLd()} />
       {/* Hero Section */}
       <section className="about-hero-section relative w-full min-h-screen flex items-center justify-center bg-[#fdfcf8]">
         {/* Responsive Background Images */}
@@ -83,7 +83,7 @@ export default function AboutPage() {
             <h3 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-4">Founder&apos;s Message</h3>
             <div className="about-founder-body space-y-3.5 text-slate-800 text-sm sm:text-base leading-relaxed font-medium">
               <p>
-                Children have always held a special place in my heart. Their innocence, curiosity, and joyful smiles remind me why I chose early childhood education.
+                Children have always held a special place in my heart. Their innocence, curiosity, and Joyful Smiles remind me why I chose early childhood education.
               </p>
               <p>
                 Teaching is my passion, not just my profession. At Simba Preschool, we create a home away from home where every child feels safe, valued, and loved.

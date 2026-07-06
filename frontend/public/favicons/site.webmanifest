@@ -1,29 +1,57 @@
 {
+  "id": "/",
   "name": "Simba Preschool",
   "short_name": "Simba",
+  "description": "Joyful Playgroup, Pre-KG, LKG and UKG Education across Salem, Tamil Nadu.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#8AC926",
+  "background_color": "#F8FAFC",
+  "lang": "en-IN",
   "icons": [
+    {
+      "src": "/favicons/favicon-16x16.webp",
+      "sizes": "16x16",
+      "type": "image/webp",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicons/favicon-32x32.webp",
+      "sizes": "32x32",
+      "type": "image/webp",
+      "purpose": "any"
+    },
     {
       "src": "/favicons/apple-touch-icon.webp",
       "sizes": "180x180",
-      "type": "image/webp"
+      "type": "image/webp",
+      "purpose": "any"
     },
     {
       "src": "/favicons/android-chrome-192x192.webp",
       "sizes": "192x192",
-      "type": "image/webp"
+      "type": "image/webp",
+      "purpose": "any"
     },
     {
       "src": "/favicons/android-chrome-512x512.webp",
       "sizes": "512x512",
-      "type": "image/webp"
+      "type": "image/webp",
+      "purpose": "any"
     },
     {
-      "src": "/favicons/favicon.webp",
+      "src": "/favicons/android-chrome-192x192.webp",
       "sizes": "192x192",
-      "type": "image/webp"
+      "type": "image/webp",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/favicons/android-chrome-512x512.webp",
+      "sizes": "512x512",
+      "type": "image/webp",
+      "purpose": "maskable"
     }
-  ],
-  "theme_color": "#8AC926",
-  "background_color": "#F8FAFC",
-  "display": "standalone"
+  ]
 }

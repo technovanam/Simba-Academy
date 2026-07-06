@@ -1,23 +1,19 @@
 import type { Route } from "./+types/franchise";
 import { PageShell } from "../components/PageShell";
 import { FranchiseForm } from "../components/FranchiseForm";
+import { JsonLd } from "../components/JsonLd";
 import { ArrowRight, Phone } from "lucide-react";
 import { WHATSAPP_URL } from "../lib/constants";
+import { FRANCHISE_SEO, buildPageMeta, franchisePageJsonLd } from "../lib/seo";
 
 export function meta({}: Route.MetaArgs) {
-  return [
-    { title: "Franchise Opportunity | Simba Preschool" },
-    {
-      name: "description",
-      content:
-        "Become a Simba Preschool franchise partner. Build a meaningful business with proven curriculum, training, and ongoing support.",
-    },
-  ];
+  return buildPageMeta(FRANCHISE_SEO);
 }
 
 export default function FranchisePage() {
   return (
     <PageShell headerVariant="overlay">
+      <JsonLd data={franchisePageJsonLd()} />
       {/* Hero */}
       <section className="relative min-h-screen w-full overflow-hidden bg-[#FDF5E5]">
         <picture className="absolute inset-0 w-full h-full pointer-events-none select-none">

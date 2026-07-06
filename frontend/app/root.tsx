@@ -15,9 +15,21 @@ import { FormAutofillBlocker } from "./components/FormAutofillBlocker";
 import { LenisScroll } from "./components/LenisScroll";
 import { captureClientError, initMonitoring } from "./lib/monitoring";
 import { APPLE_TOUCH_ICON_SRC } from "./lib/constants";
+import { SITE_NAME, absoluteUrl, DEFAULT_OG_IMAGE } from "./lib/seo";
 import "./app.css";
 
+export function meta({}: Route.MetaArgs) {
+  return [
+    { name: "application-name", content: SITE_NAME },
+    { name: "apple-mobile-web-app-title", content: "Simba" },
+    { name: "format-detection", content: "telephone=yes" },
+    { property: "og:site_name", content: SITE_NAME },
+    { property: "og:image", content: absoluteUrl(DEFAULT_OG_IMAGE) },
+  ];
+}
+
 export const links: Route.LinksFunction = () => [
+  { rel: "shortcut icon", href: "/favicons/favicon.ico" },
   { rel: "icon", href: "/favicons/favicon.ico", sizes: "48x48" },
   { rel: "icon", type: "image/webp", sizes: "32x32", href: "/favicons/favicon-32x32.webp" },
   { rel: "icon", type: "image/webp", sizes: "16x16", href: "/favicons/favicon-16x16.webp" },

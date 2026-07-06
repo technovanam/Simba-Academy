@@ -2,24 +2,26 @@ import type { Route } from "./+types/contact";
 import { PageShell } from "../components/PageShell";
 import { ContactForm } from "../components/ContactForm";
 import { BranchesSection } from "../components/BranchesSection";
+import { JsonLd } from "../components/JsonLd";
+import { CONTACT_SEO, buildPageMeta, contactPageJsonLd } from "../lib/seo";
 
 export function meta({}: Route.MetaArgs) {
-  return [
-    { title: "Contact Us | Simba Preschool" },
-    { name: "description", content: "Get in touch with Simba Preschool. Locate our branches in Salem, view working hours, and contact us directly via form or WhatsApp." },
-  ];
+  return buildPageMeta(CONTACT_SEO);
 }
 
 export default function ContactPage() {
   return (
     <PageShell>
+      <JsonLd data={contactPageJsonLd()} />
       <div className="py-20 px-6 sm:px-12 max-w-7xl mx-auto space-y-24">
         <div className="text-center max-w-3xl mx-auto pt-10">
           <h1 className="text-4xl sm:text-5xl font-bold text-slate-900 tracking-tight mb-6">
-            Get in Touch
+            Contact Simba Preschool
           </h1>
           <p className="text-lg text-slate-600 leading-relaxed">
-            Have questions about admissions, enrollment tracks, or franchise availability? We are here to help.
+            Have questions about admissions, Playgroup, Pre-KG, LKG, or UKG enrollment? Reach Simba
+            Preschool at Ramakrishna Park, Ponnamapet (Poonampet), Steel Plant, Kondalampatti, or
+            Ammapet — by form, phone, or WhatsApp.
           </p>
         </div>
 

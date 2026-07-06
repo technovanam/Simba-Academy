@@ -5,6 +5,8 @@ export default [
   route("about", "routes/about.tsx"),
   route("franchise", "routes/franchise.tsx"),
   route("contact", "routes/contact.tsx"),
+  route("branches", "routes/branches._index.tsx"),
+  route("branches/:slug", "routes/branches.$slug.tsx"),
   route("gallery", "routes/gallery.tsx"),
   route("login", "routes/login.tsx"),
   route("forgot-password", "routes/forgot-password.tsx"),

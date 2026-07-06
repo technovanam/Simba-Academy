@@ -48,6 +48,13 @@ export const SIMBA_LOGO_SRC = "/logos/simba-preschool-logo.webp";
 export const APPLE_TOUCH_ICON_SRC = "/favicons/apple-touch-icon.webp";
 
 export type PreschoolBranch = {
+  slug: string;
+  areaName: string;
+  searchAliases?: string[];
+  seoTitle: string;
+  seoDescription: string;
+  streetAddress: string;
+  geo: { latitude: number; longitude: number };
   name: string;
   locationLabel: string;
   mapsUrl: string;
@@ -60,6 +67,14 @@ export type PreschoolBranch = {
 
 export const PRESCHOOL_BRANCHES: PreschoolBranch[] = [
   {
+    slug: "ramakrishna-park",
+    areaName: "Ramakrishna Park",
+    searchAliases: ["Near Cluny", "Cluny Salem"],
+    seoTitle: "Simba Preschool Ramakrishna Park",
+    seoDescription:
+      "Simba Preschool Ramakrishna Park (Near Cluny), Salem — Playgroup, Pre-KG, LKG & UKG. Joyful Early Learning Campus led by Ms. Nirmala. Call 98848 66727.",
+    streetAddress: "Near Cluny, Ramakrishna Park",
+    geo: { latitude: 11.6647, longitude: 78.146 },
     name: "Simba Preschool - Near Cluny (Ramakrishna Park),Salem",
     locationLabel: "Near Cluny, Ramakrishna Park, Salem",
     mapsUrl: "https://maps.app.goo.gl/u9jnVog3h76FLuX5A",
@@ -72,6 +87,14 @@ export const PRESCHOOL_BRANCHES: PreschoolBranch[] = [
     phoneTel: "+919884866727",
   },
   {
+    slug: "ponnamapet",
+    areaName: "Ponnamapet",
+    searchAliases: ["Poonampet", "Poonamapet"],
+    seoTitle: "Simba Preschool Ponnamapet",
+    seoDescription:
+      "Simba Preschool Ponnamapet (also searched as Poonampet), Salem — Playgroup, Pre-KG, LKG & UKG admissions. Campus led by Ms. Nirmala. Call 98848 66727.",
+    streetAddress: "Ponnamapet",
+    geo: { latitude: 11.652, longitude: 78.159 },
     name: "Simba Preschool - Ponnamapet, Salem",
     locationLabel: "Ponnamapet, Salem",
     mapsUrl: "https://maps.app.goo.gl/bQuZnVqQ83GDAkpp8",
@@ -84,6 +107,14 @@ export const PRESCHOOL_BRANCHES: PreschoolBranch[] = [
     phoneTel: "+919884866727",
   },
   {
+    slug: "steel-plant",
+    areaName: "Steel Plant",
+    searchAliases: ["Steel Plant Road", "SAIL Salem"],
+    seoTitle: "Simba Preschool Steel Plant",
+    seoDescription:
+      "Simba Preschool Steel Plant Road, Salem — nurturing Playgroup, Pre-KG, LKG & UKG programs. Campus led by Ms. Deepika. Call 97917 97080.",
+    streetAddress: "Steel Plant Road",
+    geo: { latitude: 11.628, longitude: 78.082 },
     name: "Simba Preschool - Steel Plant RD, Salem",
     locationLabel: "Steel Plant, Salem",
     mapsUrl: "https://maps.app.goo.gl/PesENfcJFHetqpoaA",
@@ -96,6 +127,14 @@ export const PRESCHOOL_BRANCHES: PreschoolBranch[] = [
     phoneTel: "+919791797080",
   },
   {
+    slug: "kondalampatti",
+    areaName: "Kondalampatti",
+    searchAliases: ["Kondalmpatti", "Sowdeshwari College"],
+    seoTitle: "Simba Preschool Kondalampatti",
+    seoDescription:
+      "Simba Preschool Kondalampatti, Salem (Opp. Sowdeshwari College) — Playgroup, Pre-KG, LKG & UKG. Campus led by Ms. Jothi. Call 86670 47306.",
+    streetAddress: "Kondalampatti, Opp. Sowdeshwari College",
+    geo: { latitude: 11.686, longitude: 78.098 },
     name: "Simba Preschool - Kondalmpatti, Salem",
     locationLabel: "Kondalampatti, Opp. Sowdeshwari College, Salem",
     mapsUrl: "https://maps.app.goo.gl/7FymeBBh9XFXmYTs8",
@@ -108,6 +147,14 @@ export const PRESCHOOL_BRANCHES: PreschoolBranch[] = [
     phoneTel: "+918667047306",
   },
   {
+    slug: "ammapet",
+    areaName: "Ammapet",
+    searchAliases: ["Ammapet Salem"],
+    seoTitle: "Simba Preschool Ammapet",
+    seoDescription:
+      "Simba Preschool Ammapet, Salem — trusted Playgroup, Pre-KG, LKG & UKG early education. Campus led by Ms. Indhumathi. Call 86104 84363.",
+    streetAddress: "Ammapet",
+    geo: { latitude: 11.678, longitude: 78.128 },
     name: "Simba Preschool - Ammapet, Salem",
     locationLabel: "Ammapet, Salem",
     mapsUrl: "https://maps.app.goo.gl/FTYJ7yJ86NkXVttw7?g_st=aw",

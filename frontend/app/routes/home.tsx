@@ -18,16 +18,11 @@ import {
   GraduationCap,
 } from "lucide-react";
 import { BranchesSection } from "../components/BranchesSection";
+import { JsonLd } from "../components/JsonLd";
+import { buildPageMeta, HOME_SEO, homePageJsonLd } from "../lib/seo";
 
 export function meta({}: Route.MetaArgs) {
-  return [
-    { title: "Simba Preschool | Where Little Steps Begin Big Dreams" },
-    {
-      name: "description",
-      content:
-        "Simba Preschool celebrates childhood with laughter, learning, creativity, and love. Joyful early education in Play Group, Pre-KG, LKG, UKG, and after-school programs.",
-    },
-  ];
+  return buildPageMeta(HOME_SEO);
 }
 
 const defaultParentQuotes = [
@@ -88,7 +83,7 @@ const programsList: Array<{
       bar: "from-amber-400 via-amber-300 to-orange-300",
     },
     intro:
-      "A gentle and joyful introduction to school life through music, movement, storytelling, sensory activities, and social interaction.",
+      "A gentle and Joyful Introduction to school life through music, movement, storytelling, sensory activities, and social interaction.",
     learnLabel: "Children learn:",
     highlights: [
       "Social interaction",
@@ -253,6 +248,7 @@ export default function LandingPage() {
 
   return (
     <>
+      <JsonLd data={homePageJsonLd()} />
       <PageShell headerVariant="overlay">
         {/* 1. Hero Section */}
         <section className="relative overflow-hidden min-h-screen flex items-center pt-24 pb-12 bg-black">
@@ -336,7 +332,7 @@ export default function LandingPage() {
             
             <div className="space-y-6 w-full">
             <p className="text-black font-semibold text-base sm:text-lg leading-relaxed">
-              Simba Preschool is more than just a preschool — it is a joyful learning family built to nurture curious minds and happy hearts.
+              Simba Preschool is more than just a preschool — it is a Joyful Learning Family built to nurture curious minds and happy hearts.
             </p>
 
             <ul className="text-black font-semibold text-base sm:text-lg leading-relaxed space-y-3 list-none">
@@ -753,7 +749,7 @@ export default function LandingPage() {
           </div>
 
           <p className="text-slate-700 font-medium text-base sm:text-lg leading-relaxed max-w-2xl mx-auto mb-4">
-            Give your child the perfect start in a joyful learning environment.
+            Give your child the perfect start in a Joyful Learning Environment.
           </p>
           <p className="text-slate-800 font-semibold text-base mb-8">
             Limited seats available — enroll today.
