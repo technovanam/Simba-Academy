@@ -37,7 +37,7 @@ export function MockPaymentModal({
         <div className="flex items-center justify-center gap-2 mb-2">
           <CreditCard className="w-4 h-4 text-[#FF9F1C]" />
           <span className="text-[10px] font-bold uppercase tracking-widest text-[#c77a00]">
-            Simba Academy Checkout
+            Simba Preschool Checkout
           </span>
         </div>
 

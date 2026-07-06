@@ -25,7 +25,7 @@ import { AlertCircle, CreditCard, FileText, Presentation } from "lucide-react";
 import { AntiAutofillTrap, blockAutofillInputProps } from "../components/AntiAutofillTrap";
 
 export function meta({}: Route.MetaArgs) {
-  return [{ title: "Student Sign Up | Simba Academy" }];
+  return [{ title: "Student Sign Up | Simba Preschool" }];
 }
 
 export default function RegisterPage() {

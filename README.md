@@ -1,6 +1,6 @@
-# Simba Academy
+# Simba Preschool
 
-A modern web application and management portal for Simba Academy. It features separate portals for **Students** (storybooks, resources, notifications), **Teachers** (dashboard, tasks, lesson plans), and **Administrators** (user management, content approval, Google reviews, payments).
+A modern web application and management portal for Simba Preschool. It features separate portals for **Students** (storybooks, resources, notifications), **Teachers** (dashboard, tasks, lesson plans), and **Administrators** (user management, content approval, Google reviews, payments).
 
 ## 🚀 Repository Architecture
 

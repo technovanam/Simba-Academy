@@ -116,7 +116,7 @@ export function AdminSettingsPanel({
       <AdminPageBody className="flex-1 min-h-0 overflow-y-auto !mt-0 !pt-0">
         <PortalSettingsLayout>
           <PortalSettingsPageHeader
-            title="Academy Settings"
+            title="Preschool Settings"
             description="Manage your profile, password, and secure session."
           />
 

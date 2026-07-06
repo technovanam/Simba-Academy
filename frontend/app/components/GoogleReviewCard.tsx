@@ -33,7 +33,7 @@ export function GoogleReviewCard({ review }: { review: PublicReview }) {
           <Stars rating={review.rating} />
           <p className="text-2xs text-slate-500 font-medium mt-0.5 break-words">
             {[review.relativeTime, review.placeName].filter(Boolean).join(" · ") ||
-              (review.source === "google" ? "Google Review" : "Simba Academy Parent")}
+              (review.source === "google" ? "Google Review" : "Simba Preschool Parent")}
           </p>
         </div>
         {review.source === "google" && (

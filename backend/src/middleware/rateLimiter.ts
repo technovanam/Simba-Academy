@@ -13,7 +13,7 @@ interface RateLimitOptions {
 const rateLimit = cjsImport<(options: RateLimitOptions) => RequestHandler>("express-rate-limit");
 
 /**
- * General API rate limiter.
+ * Portal-wide rate limiters — all use RATE_LIMIT_MAX (default 10,000 per window).
  */
 export const apiLimiter = rateLimit({
   windowMs: env.RATE_LIMIT_WINDOW_MS,
@@ -25,12 +25,9 @@ export const apiLimiter = rateLimit({
   },
 });
 
-/**
- * Strict rate limiter for auth endpoints (login, register).
- */
 export const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  limit: process.env.NODE_ENV === "development" ? 10000 : 10000,
+  windowMs: env.RATE_LIMIT_WINDOW_MS,
+  limit: process.env.NODE_ENV === "development" ? 100000 : env.RATE_LIMIT_MAX,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
@@ -38,13 +35,9 @@ export const authLimiter = rateLimit({
   },
 });
 
-/**
- * Strict rate limiter for contact/inquiry endpoints.
- */
-/** Email availability checks — prevent enumeration spam */
 export const emailCheckLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  limit: process.env.NODE_ENV === "development" ? 10000 : 10000,
+  windowMs: env.RATE_LIMIT_WINDOW_MS,
+  limit: process.env.NODE_ENV === "development" ? 100000 : env.RATE_LIMIT_MAX,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
@@ -53,8 +46,8 @@ export const emailCheckLimiter = rateLimit({
 });
 
 export const contactLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  limit: process.env.NODE_ENV === "development" ? 10000 : 10000,
+  windowMs: env.RATE_LIMIT_WINDOW_MS,
+  limit: process.env.NODE_ENV === "development" ? 100000 : env.RATE_LIMIT_MAX,
   standardHeaders: true,
   legacyHeaders: false,
   message: {

@@ -41,7 +41,7 @@ router.post("/create-order", authenticate, async (req, res, next) => {
     const userId = req.user!.userId;
 
     let finalAmount: number;
-    let description = "Simba Academy payment";
+    let description = "Simba Preschool payment";
 
     if (courseId) {
       const course = await prisma.course.findUnique({ where: { id: courseId } });
@@ -147,7 +147,7 @@ router.post("/verify", authenticate, async (req, res, next) => {
     try {
       await sendEmail({
         to: payment.user.email,
-        subject: "Payment Successful - Simba Academy",
+        subject: "Payment Successful - Simba Preschool",
         html: getPaymentSuccessHtml(payment.user.name, payment.amount, payment.course?.title),
       });
     } catch {

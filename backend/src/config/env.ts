@@ -79,7 +79,7 @@ export const env = {
     `${(process.env.FRONTEND_URL ?? "http://localhost:5173").replace(/\/$/, "")}/backend`
   ).replace(/\/$/, ""),
 
-  // ── Rate Limiting ──────────────────────────────────────────────
+  // ── Rate Limiting (portal-wide: RATE_LIMIT_MAX requests per RATE_LIMIT_WINDOW_MS) ──
   RATE_LIMIT_WINDOW_MS: envInt("RATE_LIMIT_WINDOW_MS", 15 * 60 * 1000), // 15 min
   RATE_LIMIT_MAX: envInt("RATE_LIMIT_MAX", 10000),
 

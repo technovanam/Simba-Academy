@@ -119,7 +119,7 @@ export function AdminOverviewPage() {
       <div className="flex flex-wrap items-center justify-between gap-3 shrink-0">
         <div className="min-w-0">
           <h2 className="text-sm lg:text-base font-bold text-slate-900 tracking-wide uppercase truncate">
-            Simba Academy Workspace
+            Simba Preschool Workspace
           </h2>
           <p className="text-[10px] text-slate-600 font-semibold tracking-wider mt-0.5 uppercase truncate">
             Admin dashboard overview
@@ -394,7 +394,7 @@ export function AdminOverviewPage() {
             <div className={portalAnalyticsPanelClass}>
               <div className={portalAnalyticsHeaderClass}>
                 <h4 className={portalAnalyticsTitleClass}>
-                  Academy Analytics
+                  Preschool Analytics
                 </h4>
                 <TrendingUp className="w-4 h-4 text-[#8AC926] shrink-0" />
               </div>

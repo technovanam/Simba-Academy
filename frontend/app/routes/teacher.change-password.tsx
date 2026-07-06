@@ -15,7 +15,7 @@ import {
 import { Toast } from "../components/Toast";
 
 export function meta({}: Route.MetaArgs) {
-  return [{ title: "Change Password | Simba Academy" }];
+  return [{ title: "Change Password | Simba Preschool" }];
 }
 
 export default function TeacherChangePasswordPage() {

@@ -17,7 +17,7 @@ async function startServer() {
   startOverdueTaskNotifier();
 
   const server = app.listen(PORT, () => {
-    console.log(`🚀 Simba Academy API running at http://localhost:${PORT}`);
+    console.log(`🚀 Simba Preschool API running at http://localhost:${PORT}`);
     console.log(`🌐 Environment: ${env.NODE_ENV}`);
     console.log(`📁 Storage: ${storagePath}`);
     console.log(`✅ Allowed origins: ${env.ALLOWED_ORIGINS.join(", ")}`);

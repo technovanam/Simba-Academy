@@ -140,7 +140,7 @@ export function TeacherSettingsPanel({
         ) : (
           <PortalSettingsLayout>
             <PortalSettingsPageHeader
-              title="Academy Settings"
+              title="Preschool Settings"
               description="Manage your profile, password, and secure session."
             />
 

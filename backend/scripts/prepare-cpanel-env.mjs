@@ -86,6 +86,7 @@ const production = {
     "https://simbapreschool.in/backend/api/admin/google-reviews/oauth-callback",
   GOOGLE_SERVICE_ACCOUNT_JSON: "google-service-account.json",
   USE_WEBDAV: "false",
+  RATE_LIMIT_WINDOW_MS: base.RATE_LIMIT_WINDOW_MS || "900000",
   RATE_LIMIT_MAX: base.RATE_LIMIT_MAX || "10000",
 };
 

@@ -153,7 +153,7 @@ export interface OpenZohoCheckoutOptions {
 }
 
 export async function openZohoCheckout(options: OpenZohoCheckoutOptions): Promise<ZohoWidgetPaymentResult> {
-  const { session, description, business = "Simba Academy", customer } = options;
+  const { session, description, business = "Simba Preschool", customer } = options;
   const config: ZohoCheckoutConfig = {
     accountId: session.accountId,
     apiKey: session.apiKey,

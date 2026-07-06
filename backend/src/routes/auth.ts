@@ -218,7 +218,7 @@ router.post(
 
     if (!isValid) {
       throw new AppError(
-        "Payment could not be verified. If money was debited, contact Simba Academy with your payment reference.",
+        "Payment could not be verified. If money was debited, contact Simba Preschool with your payment reference.",
         400
       );
     }
@@ -266,11 +266,11 @@ router.post(
     try {
       await sendEmail({
         to: result.user.email,
-        subject: "Welcome to Simba Academy & Payment Successful",
+        subject: "Welcome to Simba Preschool & Payment Successful",
         html: getPaymentSuccessHtml(
           result.user.name,
           result.payment.amount,
-          "Simba Academy Platform Access"
+          "Simba Preschool Platform Access"
         ),
       });
     } catch (emailErr) {

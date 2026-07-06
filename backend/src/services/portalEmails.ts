@@ -45,7 +45,7 @@ export function getPortalNotificationEmailHtml(params: {
     theme: t.emailTheme,
     eyebrow: t.portalName,
     title: escapeHtml(params.headline),
-    subtitle: "You have a new update from Simba Academy",
+    subtitle: "You have a new update from Simba Preschool",
     content: `
       ${renderHeading(`Hello ${escapeHtml(params.recipientName)},`)}
       ${renderParagraph(escapeHtml(params.intro))}
@@ -54,7 +54,7 @@ export function getPortalNotificationEmailHtml(params: {
       ${renderLinkFallback(params.ctaUrl, t.emailTheme)}
       ${params.footerNote ? renderParagraph(escapeHtml(params.footerNote)) : ""}
     `,
-    footerTitle: "Simba Academy",
+    footerTitle: "Simba Preschool",
     footerLines: ["Salem, Tamil Nadu · www.simbapreschool.in"],
   });
 }

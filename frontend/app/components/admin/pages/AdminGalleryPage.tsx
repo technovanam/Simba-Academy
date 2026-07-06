@@ -1760,7 +1760,7 @@ export function AdminGalleryPage() {
     <>
 <AdminPageShell className="h-full flex flex-col min-h-0 overflow-hidden">
               <AdminPageHeader
-                title="Academy Media Gallery"
+                title="Preschool Media Gallery"
                 description="Manage photos for the public gallery — view, print, download, edit, or remove."
                 actions={
                   <>
@@ -1822,7 +1822,7 @@ export function AdminGalleryPage() {
                             <tr key={g.id} className="hover:bg-slate-50/80 transition-colors">
                               <td className="px-4 py-3 align-middle w-[35%] min-w-0">
                                 <span className="font-bold text-sm text-slate-800 block break-words">
-                                  {g.title || "Academy Activity"}
+                                  {g.title || "Preschool Activity"}
                                 </span>
                               </td>
                               <td className="px-4 py-3 align-middle text-xs text-slate-500 w-[20%] whitespace-nowrap">
@@ -1842,7 +1842,7 @@ export function AdminGalleryPage() {
                                     type="button"
                                     onClick={() => {
                                       setViewerImage(g.imageUrl);
-                                      setViewerTitle(g.title || "Academy Activity");
+                                      setViewerTitle(g.title || "Preschool Activity");
                                     }}
                                     className="px-3 py-1.5 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100 flex items-center gap-1 font-bold text-2xs transition"
                                   >
@@ -1886,7 +1886,7 @@ export function AdminGalleryPage() {
                           <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0 flex-1">
                               <h4 className="font-extrabold text-sm text-slate-800 break-words leading-tight">
-                                {g.title || "Academy Activity"}
+                                {g.title || "Preschool Activity"}
                               </h4>
                               <p className="text-2xs text-slate-500 font-semibold mt-1">
                                 Added: {g.createdAt ? new Date(g.createdAt).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" }) : "—"}
@@ -1897,7 +1897,7 @@ export function AdminGalleryPage() {
                                 type="button"
                                 onClick={() => {
                                   setViewerImage(g.imageUrl);
-                                  setViewerTitle(g.title || "Academy Activity");
+                                  setViewerTitle(g.title || "Preschool Activity");
                                 }}
                                 className="p-1.5 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100 flex items-center justify-center"
                                 title="View"

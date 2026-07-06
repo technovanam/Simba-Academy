@@ -170,7 +170,7 @@ export function renderEmailShell(params: {
   const theme = params.theme ?? "green";
   const t = THEMES[theme];
   const footerLines = params.footerLines ?? [
-    "Simba Academy · Salem, Tamil Nadu",
+    "Simba Preschool · Salem, Tamil Nadu",
     "www.simbapreschool.in",
   ];
 
@@ -189,7 +189,7 @@ export function renderEmailShell(params: {
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width:600px;width:100%;">
           <tr>
             <td style="padding:0 0 14px;text-align:center;">
-              <span style="display:inline-block;padding:8px 14px;border-radius:999px;background:#ffffff;border:1px solid #e2e8f0;font-size:11px;font-weight:800;letter-spacing:0.14em;text-transform:uppercase;color:#64748b;">Simba Academy</span>
+              <span style="display:inline-block;padding:8px 14px;border-radius:999px;background:#ffffff;border:1px solid #e2e8f0;font-size:11px;font-weight:800;letter-spacing:0.14em;text-transform:uppercase;color:#64748b;">Simba Preschool</span>
             </td>
           </tr>
           <tr>
@@ -209,7 +209,7 @@ export function renderEmailShell(params: {
                 </tr>
                 <tr>
                   <td style="padding:22px 30px 26px;background:#f8fafc;border-top:1px solid #e2e8f0;text-align:center;">
-                    <p style="margin:0 0 6px;font-size:14px;font-weight:800;color:#334155;">${escapeHtml(params.footerTitle ?? "Simba Academy Team")}</p>
+                    <p style="margin:0 0 6px;font-size:14px;font-weight:800;color:#334155;">${escapeHtml(params.footerTitle ?? "Simba Preschool Team")}</p>
                     ${footerLines
                       .map(
                         (line) =>
@@ -223,7 +223,7 @@ export function renderEmailShell(params: {
           </tr>
           <tr>
             <td style="padding:18px 8px 0;text-align:center;">
-              <p style="margin:0;font-size:11px;line-height:1.5;color:#94a3b8;">You received this email from Simba Academy. Please do not share passwords or private links.</p>
+              <p style="margin:0;font-size:11px;line-height:1.5;color:#94a3b8;">You received this email from Simba Preschool. Please do not share passwords or private links.</p>
             </td>
           </tr>
         </table>

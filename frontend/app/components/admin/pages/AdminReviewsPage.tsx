@@ -1928,7 +1928,7 @@ export function AdminReviewsPage() {
                         <textarea
                           rows={4}
                           required
-                          placeholder="Simba Academy has changed the way my daughter learns. The staff..."
+                          placeholder="Simba Preschool has changed the way my daughter learns. The staff..."
                           value={testimonialForm.content}
                           onChange={(e) =>
                             setTestimonialForm({ ...testimonialForm, content: e.target.value })

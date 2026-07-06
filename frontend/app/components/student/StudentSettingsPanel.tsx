@@ -130,7 +130,7 @@ export function StudentSettingsPanel({
         ) : (
           <PortalSettingsLayout>
             <PortalSettingsPageHeader
-              title="Academy Settings"
+              title="Preschool Settings"
               description="Manage your profile, password, and secure session."
             />
 
