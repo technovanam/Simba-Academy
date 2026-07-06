@@ -5,8 +5,8 @@ import { BranchesSection } from "../components/BranchesSection";
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "Contact Us | Simba Academy" },
-    { name: "description", content: "Get in touch with Simba Academy. Locate our branches in Salem, view working hours, and contact us directly via form or WhatsApp." },
+    { title: "Contact Us | Simba Preschool" },
+    { name: "description", content: "Get in touch with Simba Preschool. Locate our branches in Salem, view working hours, and contact us directly via form or WhatsApp." },
   ];
 }
 

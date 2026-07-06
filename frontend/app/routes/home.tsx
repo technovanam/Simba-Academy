@@ -266,7 +266,7 @@ export default function LandingPage() {
             <source media="(min-width: 640px)" srcSet="/Hero%20Section%20Tab.webp" />
             <img loading="lazy" decoding="async" 
               src="/Hero%20Section%20Mobile.webp"
-              alt="Simba Academy Background" 
+              alt="Simba Preschool Background" 
               className="w-full h-full object-cover object-center"
               fetchPriority="high"
             />
@@ -321,7 +321,7 @@ export default function LandingPage() {
           <source media="(min-width: 640px)" srcSet="/About%20Section%20Tab.webp" />
           <img
             src="/About%20Section%20Mobile.webp"
-            alt="About Simba Academy Background"
+            alt="About Simba Preschool Background"
             className="w-full h-full object-cover object-top"
             loading="lazy"
             decoding="async"

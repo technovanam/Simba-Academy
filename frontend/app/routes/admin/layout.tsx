@@ -35,7 +35,7 @@ import { AdminOutletProvider } from "../../components/admin/AdminOutletContext";
 import { FullPortalSkeleton } from "../../components/DashboardSkeleton";
 
 export function meta({}: Route.MetaArgs) {
-  return [{ title: "Admin Portal | Simba Academy" }];
+  return [{ title: "Admin Portal | Simba Preschool" }];
 }
 
 const NAV_ITEMS: { id: AdminTab; label: string; icon: typeof Layers }[] = [
@@ -90,7 +90,7 @@ export default function AdminLayout() {
   }, [section, navigate]);
 
   useEffect(() => {
-    document.title = `${adminTabTitle(activeTab)} | Simba Academy`;
+    document.title = `${adminTabTitle(activeTab)} | Simba Preschool`;
   }, [activeTab]);
 
   useEffect(() => {

@@ -394,7 +394,7 @@ export function AuthSplitLayout({
                 <img loading="lazy" decoding="async" src={SIMBA_LOGO_SRC} alt="" className="w-full h-full object-contain" />
               </div>
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/70">Simba Academy</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/70">Simba Preschool</p>
                 <p className="text-sm font-bold text-white">{meta.label}</p>
               </div>
             </div>
@@ -425,7 +425,7 @@ export function AuthSplitLayout({
                 <img loading="lazy" decoding="async" src={SIMBA_LOGO_SRC} alt="" className="w-full h-full object-contain" />
               </div>
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/70">Simba Academy</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/70">Simba Preschool</p>
                 <p className="text-sm font-bold text-white">{meta.label}</p>
               </div>
             </div>

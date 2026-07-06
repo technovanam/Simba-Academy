@@ -26,7 +26,7 @@ export function JungleFooter() {
         <source media="(min-width: 640px)" srcSet="/Fotter%20Tab.webp" />
         <img
           src="/Fotter%20Mobile.webp"
-          alt="Simba Academy Footer Background"
+          alt="Simba Preschool Footer Background"
           className="w-full h-full object-cover object-bottom"
           loading="lazy"
           decoding="async"

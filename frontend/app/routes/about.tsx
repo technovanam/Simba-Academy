@@ -4,8 +4,8 @@ import { Quote } from "lucide-react";
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "About Us | Simba Academy" },
-    { name: "description", content: "Discover Simba Academy's mission, vision, core values, and message from our founder." },
+    { title: "About Us | Simba Preschool" },
+    { name: "description", content: "Discover Simba Preschool's mission, vision, core values, and message from our founder." },
   ];
 }
 
@@ -27,7 +27,7 @@ export default function AboutPage() {
           <source media="(min-width: 640px)" srcSet="/About%20Hero%20Tab.webp" />
           <img
             src="/About%20Hero%20Mobile.webp"
-            alt="About Simba Academy Hero"
+            alt="About Simba Preschool Hero"
             className="w-full h-full object-cover object-bottom"
             loading="eager"
             decoding="async"

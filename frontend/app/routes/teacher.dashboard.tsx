@@ -75,7 +75,7 @@ import {
 const NOTIFICATION_POLL_MS = 12_000;
 
 export function meta({}: Route.MetaArgs) {
-  return [{ title: "Teacher Dashboard | Simba Academy" }];
+  return [{ title: "Teacher Dashboard | Simba Preschool" }];
 }
 
 type TabType = "overview" | "tasks" | "library" | "planner" | "notifications" | "settings" | "students";
@@ -635,7 +635,7 @@ export default function TeacherDashboardPage({ initialTab }: { initialTab?: TabT
                   <div className="flex flex-wrap items-center justify-between gap-3 shrink-0">
                     <div className="min-w-0">
                       <h2 className="text-sm lg:text-base font-bold text-slate-900 tracking-wide uppercase truncate">
-                        Simba Academy Teacher Portal
+                        Simba Preschool Teacher Portal
                       </h2>
                       <p className="text-[10px] text-slate-600 font-semibold tracking-wider mt-0.5 uppercase truncate">
                         Welcome back, {user?.name ?? "Teacher"}

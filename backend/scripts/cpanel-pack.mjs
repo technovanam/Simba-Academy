@@ -128,7 +128,7 @@ writeFileSync(join(STAGING, "uploads", ".gitkeep"), "");
 writeFileSync(
   join(STAGING, "README-DEPLOY.txt"),
   [
-    "Simba Academy API — cPanel (NO Terminal required)",
+    "Simba Preschool API — cPanel (NO Terminal required)",
     "",
     "1. File Manager → extract into backend-api folder",
     "2. .env is included — verify DATABASE_URL matches cPanel MySQL",

@@ -57,7 +57,7 @@ export const env = {
   RESEND_API_KEY: envString("RESEND_API_KEY", "re_xxxxxxxxx"),
   EMAIL_FROM: process.env.EMAIL_FROM ?? "contact@simbapreschool.in",
   EMAIL_TO: process.env.EMAIL_TO ?? "contact@simbapreschool.in",
-  PLATFORM_NAME: process.env.PLATFORM_NAME ?? "Simba Academy",
+  PLATFORM_NAME: process.env.PLATFORM_NAME ?? "Simba Preschool",
   FRONTEND_URL: (process.env.FRONTEND_URL ?? "https://simbapreschool.in").replace(/\/$/, ""),
   PASSWORD_RESET_EXPIRES_MINUTES: envInt("PASSWORD_RESET_EXPIRES_MINUTES", 30),
 

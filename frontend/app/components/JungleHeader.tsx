@@ -58,11 +58,11 @@ export function JungleHeader({ variant = "solid" }: JungleHeaderProps) {
         <Link
           to="/"
           className="group justify-self-start"
-          aria-label="Simba Academy home"
+          aria-label="Simba Preschool home"
         >
           <img
             src={SIMBA_LOGO_SRC}
-            alt="Simba Academy"
+            alt="Simba Preschool"
             className="h-16 w-auto max-w-none object-contain transition-transform duration-300 group-hover:scale-[1.02] sm:h-[4.5rem] md:h-20 lg:h-[5.5rem]"
           />
         </Link>
