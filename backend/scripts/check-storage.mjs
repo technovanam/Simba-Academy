@@ -104,7 +104,7 @@ async function checkWebdav() {
 }
 
 async function main() {
-  console.log("Simba Academy — storage check\n");
+  console.log("Simba Preschool — storage check\n");
   console.log(`USE_WEBDAV=${USE_WEBDAV}`);
 
   const result = USE_WEBDAV ? await checkWebdav() : await checkLocal();

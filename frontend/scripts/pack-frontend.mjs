@@ -54,7 +54,7 @@ if (!existsSync(BUILD_CLIENT)) {
 writeFileSync(
   resolve(BUILD_CLIENT, "README-DEPLOY.txt"),
   [
-    "Simba Academy Frontend — cPanel",
+    "Simba Preschool Frontend — cPanel",
     "",
     "1. File Manager → public_html",
     "2. Upload & extract simba-frontend.zip here",

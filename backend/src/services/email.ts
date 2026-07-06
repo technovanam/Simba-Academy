@@ -56,7 +56,7 @@ export async function sendEmail({ to, subject, html, replyTo }: SendEmailParams)
     }
 
     const { data, error } = await resend.emails.send({
-      from: `"Simba Academy" <${env.EMAIL_FROM}>`,
+      from: `"Simba Preschool" <${env.EMAIL_FROM}>`,
       to,
       subject,
       html,
@@ -86,10 +86,10 @@ export function getInquiryAutoReplyHtml(name: string): string {
     theme: "green",
     eyebrow: "Admissions",
     title: "We Received Your Inquiry",
-    subtitle: "Thank you for contacting Simba Academy",
+    subtitle: "Thank you for contacting Simba Preschool",
     content: `
       ${renderHeading(`Hello ${escapeHtml(name)},`)}
-      ${renderParagraph("Thank you for reaching out to <strong>Simba Academy</strong>. Your inquiry has been received and our admissions team is reviewing it now.")}
+      ${renderParagraph("Thank you for reaching out to <strong>Simba Preschool</strong>. Your inquiry has been received and our admissions team is reviewing it now.")}
       ${renderParagraph("A member of our team will get back to you shortly with details about our programs, curriculum, enrollment process, and campus visits.")}
       ${renderHighlightBox(
         "Explore Simba Online",
@@ -108,10 +108,10 @@ export function getFranchiseAutoReplyHtml(name: string): string {
     theme: "orange",
     eyebrow: "Franchise",
     title: "Partnership Inquiry Received",
-    subtitle: "Thank you for your interest in Simba Academy",
+    subtitle: "Thank you for your interest in Simba Preschool",
     content: `
       ${renderHeading(`Hello ${escapeHtml(name)},`)}
-      ${renderParagraph("Thank you for your interest in partnering with <strong>Simba Academy</strong>. We have successfully received your franchise inquiry.")}
+      ${renderParagraph("Thank you for your interest in partnering with <strong>Simba Preschool</strong>. We have successfully received your franchise inquiry.")}
       ${renderParagraph("Our franchise development team will review your details and contact you within <strong>2–3 business days</strong> to discuss collaboration opportunities and next steps.")}
       ${renderHighlightBox(
         "Build With a Trusted Brand",
@@ -147,13 +147,13 @@ export function getAdminInquiryHtml(data: {
     title,
     subtitle: "A new message arrived from the website form",
     content: `
-      ${renderParagraph("A visitor submitted a new inquiry through the Simba Academy website. Review the details below and follow up when ready.")}
+      ${renderParagraph("A visitor submitted a new inquiry through the Simba Preschool website. Review the details below and follow up when ready.")}
       ${renderDetailsTable(rows, data.isFranchise ? "orange" : "green")}
       <p style="margin:0 0 8px;font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#64748b;">Message</p>
       ${renderMessageQuote(data.message)}
     `,
     footerTitle: "Simba Website Notifications",
-    footerLines: ["Received from Simba Academy landing page form"],
+    footerLines: ["Received from Simba Preschool landing page form"],
   });
 }
 
@@ -244,7 +244,7 @@ export function getPaymentSuccessHtml(name: string, amount: number, courseName?:
       }
       ${renderCta(`${env.FRONTEND_URL}/student/dashboard`, "Open Student Portal", "orange")}
     `,
-    footerTitle: "Simba Academy Billing",
+    footerTitle: "Simba Preschool Billing",
     footerLines: ["Keep this email for your payment records"],
   });
 }

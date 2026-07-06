@@ -10,7 +10,7 @@ import { Toast } from "../components/Toast";
 import { LogOut, Loader2, CreditCard, ArrowRight } from "lucide-react";
 
 export function meta({}: Route.MetaArgs) {
-  return [{ title: "Enrollment Checkout | Simba Academy" }];
+  return [{ title: "Enrollment Checkout | Simba Preschool" }];
 }
 
 export default function StudentCheckoutPage() {
@@ -147,7 +147,7 @@ export default function StudentCheckoutPage() {
         <div className="flex items-center gap-3">
           <img loading="lazy" decoding="async" src={SIMBA_LOGO_SRC} alt="" className="w-18 h-10 object-contain" />
           <div>
-            <span className="font-bold text-sm text-slate-900 block">Simba Academy</span>
+            <span className="font-bold text-sm text-slate-900 block">Simba Preschool</span>
             <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Student Portal</span>
           </div>
         </div>
@@ -240,7 +240,7 @@ export default function StudentCheckoutPage() {
       </main>
 
       <footer className="h-12 border-t border-slate-200 bg-white px-6 flex items-center justify-center shrink-0 text-[10px] font-semibold text-slate-400">
-        Simba Academy © {new Date().getFullYear()} —{" "}
+        Simba Preschool © {new Date().getFullYear()} —{" "}
         {PAYMENTS_MOCK_MODE ? "Demo checkout" : "Secure payments via Zoho Payments"}
       </footer>
     </div>

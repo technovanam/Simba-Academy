@@ -25,8 +25,8 @@ export const PORTAL_AUTH: Record<AuthPortal, PortalAuthPaths> = {
     forgotTitle: "Forgot password",
     resetTitle: "Reset password",
     resetSubtitle: "Choose a new password for your student account",
-    pageTitleForgot: "Forgot Password | Simba Academy",
-    pageTitleReset: "Reset Password | Simba Academy",
+    pageTitleForgot: "Forgot Password | Simba Preschool",
+    pageTitleReset: "Reset Password | Simba Preschool",
   },
   teacher: {
     portal: "teacher",
@@ -38,8 +38,8 @@ export const PORTAL_AUTH: Record<AuthPortal, PortalAuthPaths> = {
     forgotTitle: "Forgot password",
     resetTitle: "Reset password",
     resetSubtitle: "Choose a new password for your teacher account",
-    pageTitleForgot: "Forgot Password | Simba Academy",
-    pageTitleReset: "Reset Password | Simba Academy",
+    pageTitleForgot: "Forgot Password | Simba Preschool",
+    pageTitleReset: "Reset Password | Simba Preschool",
   },
   admin: {
     portal: "admin",
@@ -51,7 +51,7 @@ export const PORTAL_AUTH: Record<AuthPortal, PortalAuthPaths> = {
     forgotTitle: "Forgot password",
     resetTitle: "Reset password",
     resetSubtitle: "Choose a new password for your admin account",
-    pageTitleForgot: "Forgot Password | Simba Academy",
-    pageTitleReset: "Reset Password | Simba Academy",
+    pageTitleForgot: "Forgot Password | Simba Preschool",
+    pageTitleReset: "Reset Password | Simba Preschool",
   },
 };

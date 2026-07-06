@@ -18,7 +18,7 @@ export async function createOrder(params: {
   const session = await createPaymentSession({
     amountInr,
     currency: params.currency,
-    description: params.description ?? "Simba Academy payment",
+    description: params.description ?? "Simba Preschool payment",
     referenceNumber: params.receipt,
     meta: params.notes
       ? Object.entries(params.notes).slice(0, 5).map(([key, value]) => ({

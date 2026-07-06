@@ -36,7 +36,7 @@ interface PortalSidebarLayoutProps {
 export function PortalSidebarLayout({
   children,
   sidebar,
-  mobileTitle = "Simba Academy",
+  mobileTitle = "Simba Preschool",
   hideMobileBar = false,
 }: PortalSidebarLayoutProps) {
   const location = useLocation();

@@ -16,7 +16,7 @@ import { Toast } from "../components/Toast";
 import { AlertCircle } from "lucide-react";
 
 export function meta({}: Route.MetaArgs) {
-  return [{ title: "Teacher Login | Simba Academy" }];
+  return [{ title: "Teacher Login | Simba Preschool" }];
 }
 
 export default function TeacherLoginPage() {

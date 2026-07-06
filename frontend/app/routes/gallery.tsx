@@ -7,8 +7,8 @@ import { ImageIcon } from "lucide-react";
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "Gallery | Simba Academy Preschool" },
-    { name: "description", content: "View photos and moments from Simba Academy preschool activities and events." },
+    { title: "Gallery | Simba Preschool Preschool" },
+    { name: "description", content: "View photos and moments from Simba Preschool preschool activities and events." },
   ];
 }
 

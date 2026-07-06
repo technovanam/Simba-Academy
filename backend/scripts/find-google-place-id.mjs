@@ -1,10 +1,10 @@
 /**
  * Find Google Place ID for your business (Places API New).
- * Usage: node scripts/find-google-place-id.mjs "Simba Academy Salem"
+ * Usage: node scripts/find-google-place-id.mjs "Simba Preschool Salem"
  */
 import "dotenv/config";
 
-const query = process.argv.slice(2).join(" ") || "Simba Academy Salem Ammapet";
+const query = process.argv.slice(2).join(" ") || "Simba Preschool Salem Ammapet";
 const apiKey = process.env.GOOGLE_PLACES_API_KEY;
 
 async function main() {

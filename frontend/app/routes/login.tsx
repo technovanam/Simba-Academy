@@ -16,7 +16,7 @@ import { getDashboardPath, getUser, saveSession } from "../lib/auth";
 import { AlertCircle } from "lucide-react";
 
 export function meta({}: Route.MetaArgs) {
-  return [{ title: "Student Login | Simba Academy" }];
+  return [{ title: "Student Login | Simba Preschool" }];
 }
 
 export default function LoginPage() {

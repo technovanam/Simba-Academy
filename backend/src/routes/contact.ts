@@ -35,7 +35,7 @@ router.post(
       try {
         await sendEmail({
           to: email,
-          subject: "Thank you for contacting Simba Academy",
+          subject: "Thank you for contacting Simba Preschool",
           html: getInquiryAutoReplyHtml(name),
         });
       } catch {
@@ -53,7 +53,7 @@ router.post(
         for (const toEmail of recipients) {
           await sendEmail({
             to: toEmail,
-            subject: `New Inquiry from ${name} - Simba Academy`,
+            subject: `New Inquiry from ${name} - Simba Preschool`,
             html: getAdminInquiryHtml({ name, email, phone, message: fullMessage }),
           });
         }
@@ -87,7 +87,7 @@ router.post(
       try {
         await sendEmail({
           to: email,
-          subject: "Thank you for your interest in a Simba Academy Franchise",
+          subject: "Thank you for your interest in a Simba Preschool Franchise",
           html: getFranchiseAutoReplyHtml(name),
         });
       } catch {
@@ -105,7 +105,7 @@ router.post(
         for (const toEmail of recipients) {
           await sendEmail({
             to: toEmail,
-            subject: `Franchise Inquiry from ${name} - Simba Academy`,
+            subject: `Franchise Inquiry from ${name} - Simba Preschool`,
             html: getAdminInquiryHtml({
               name,
               email,

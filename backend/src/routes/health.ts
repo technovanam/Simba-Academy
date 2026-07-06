@@ -95,7 +95,7 @@ export function renderHealthPage(data: HealthStatus): string {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Simba Academy API — Status</title>
+  <title>Simba Preschool API — Status</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -167,7 +167,7 @@ export function renderHealthPage(data: HealthStatus): string {
 <body>
   <div class="card">
     <div class="header">
-      <h1>Simba Academy API</h1>
+      <h1>Simba Preschool API</h1>
       <p>Backend server status</p>
       <span class="badge">${badge}</span>
     </div>
