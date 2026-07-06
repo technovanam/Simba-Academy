@@ -27,7 +27,7 @@ export function BranchesSection() {
       <div className="relative z-10 max-w-[90rem] mx-auto px-6 sm:px-12 w-full">
         <div className="text-center mb-10 sm:mb-14">
           <span className="text-xs font-bold tracking-widest text-[#E8AF34] uppercase block mb-3">Visit Us</span>
-          <h2 className="text-4xl sm:text-5xl font-extrabold text-slate-900 tracking-tight">Our Preschool Branches</h2>
+          <h2 className="text-4xl sm:text-5xl font-extrabold text-slate-900 tracking-tight">Our joyful campuses</h2>
           <div className="w-12 h-1 bg-[#E8AF34] mx-auto mt-4 rounded-full" />
           <p className="text-slate-600 font-medium text-base sm:text-lg max-w-2xl mx-auto mt-6">
             Four joyful campuses across Salem — find your nearest Simba Preschool branch.

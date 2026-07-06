@@ -401,7 +401,7 @@ export function AuthSplitLayout({
 
             <div className="space-y-2">
               <h1 className="text-xl sm:text-2xl font-extrabold leading-snug tracking-tight">
-                Join Simba Academy
+                Join Simba Preschool
               </h1>
               {subtitle ? (
                 <p className="text-sm text-white/85 font-medium leading-relaxed">{subtitle}</p>
@@ -432,7 +432,7 @@ export function AuthSplitLayout({
 
             <div className="space-y-2.5">
               <h1 className="text-2xl font-extrabold leading-snug tracking-tight">
-                Join Simba Academy
+                Join Simba Preschool
               </h1>
               {subtitle ? (
                 <p className="text-sm text-white/85 font-medium leading-relaxed">{subtitle}</p>
