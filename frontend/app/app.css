@@ -839,43 +839,38 @@ html:has(.portal-app-shell) body {
 }
 
 .branches-row {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.75rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1.5rem;
   align-items: stretch;
+}
+
+.branches-row > .branch-card {
+  width: 100%;
 }
 
 @media (min-width: 640px) {
   .branches-row {
     gap: 1rem;
   }
-}
-
-/* Tablet landscape — horizontal scroll */
-@media (min-width: 640px) and (max-width: 1023px) and (orientation: landscape) {
-  .branches-row {
-    display: flex;
-    flex-wrap: nowrap;
-    gap: 1rem;
-    overflow-x: auto;
-    padding-bottom: 0.75rem;
-    scroll-snap-type: x mandatory;
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-
-  .branches-row .branch-card {
-    width: min(84vw, 18.5rem);
-    flex-shrink: 0;
-    scroll-snap-align: center;
+  
+  .branches-row > .branch-card {
+    width: calc(50% - 0.5rem);
   }
 }
 
 @media (min-width: 1024px) {
-  .branches-row {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 1rem;
-    overflow: visible;
+  .branches-row > .branch-card {
+    width: calc(25% - 0.75rem);
+  }
+
+  /* If exactly 3, 5, or 6 cards, use a 3-column layout (33.3%) */
+  /* For 5 cards, this creates exactly 3 on the first row and 2 centered on the second row */
+  .branches-row:has(> .branch-card:last-child:nth-child(3)) > .branch-card,
+  .branches-row:has(> .branch-card:last-child:nth-child(5)) > .branch-card,
+  .branches-row:has(> .branch-card:last-child:nth-child(6)) > .branch-card {
+    width: calc(33.333% - 0.667rem);
   }
 }
 
@@ -884,19 +879,6 @@ html:has(.portal-app-shell) body {
   flex: 1 1 auto;
   flex-direction: column;
   min-height: 0;
-}
-
-@media (max-width: 639px) {
-  .branches-row {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-    overflow: visible;
-  }
-}
-
-.branches-row::-webkit-scrollbar {
-  display: none;
 }
 
 .branch-card {

@@ -107,6 +107,18 @@ export const PRESCHOOL_BRANCHES: PreschoolBranch[] = [
     phone: "86670 47306",
     phoneTel: "+918667047306",
   },
+  {
+    name: "Simba Preschool - Ammapet, Salem",
+    locationLabel: "Ammapet, Salem",
+    mapsUrl: "https://maps.app.goo.gl/FTYJ7yJ86NkXVttw7?g_st=aw",
+    mapEmbedUrl:
+      "https://maps.google.com/maps?q=Simba+Preschool+Ammapet+Salem&z=16&ie=UTF8&iwloc=&output=embed",
+    instagramUrl:
+      "https://www.instagram.com/simba_preschool_ammapet?igsh=OHY1dGJnOXZtY3Nm",
+    branchHead: "Ms. Indhumathi",
+    phone: "86104 84363",
+    phoneTel: "+918610484363",
+  },
 ];
 
 export const HEADER_LINKS = [
