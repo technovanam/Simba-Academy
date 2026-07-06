@@ -86,7 +86,7 @@ export default function AdminLoginPage() {
       <AuthLayout
         portal="admin"
         title="Admin sign in"
-        subtitle="Manage academy operations and content"
+        subtitle="Manage preschool operations and content"
       >
       <form onSubmit={handleSubmit} noValidate autoComplete="off" className="space-y-5">
         <AuthField label="Email" error={emailError} portal="admin">
@@ -94,7 +94,7 @@ export default function AdminLoginPage() {
             <input
               type="email"
               autoComplete="off"
-              placeholder="director@simbaacademy.in"
+              placeholder="director@simbapreschool.in"
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value);

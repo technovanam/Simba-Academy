@@ -98,7 +98,7 @@ export default function TeacherLoginPage() {
             <input
               type="email"
               autoComplete="off"
-              placeholder="teacher@simbaacademy.in"
+              placeholder="teacher@simbapreschool.in"
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value);
