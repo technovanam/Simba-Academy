@@ -22,7 +22,6 @@ import {
   type StudentClassLevel,
 } from "../lib/constants";
 import { AlertCircle, CreditCard, FileText, Presentation } from "lucide-react";
-import { AntiAutofillTrap, blockAutofillInputProps } from "../components/AntiAutofillTrap";
 
 export function meta({}: Route.MetaArgs) {
   return [{ title: "Student Sign Up | Simba Preschool" }];
@@ -226,19 +225,16 @@ export default function RegisterPage() {
         <form
           onSubmit={handleSubmit}
           noValidate
-          autoComplete="off"
-          data-autofill="block"
           className="space-y-3.5"
         >
-          <AntiAutofillTrap />
-
           <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-2">
             <AuthField label="Full name" error={nameError} portal="student" softLabel>
               <div className="relative">
                 <input
                   type="text"
+                  name="name"
+                  id="name"
                   placeholder="Parent / guardian name"
-                  {...blockAutofillInputProps}
                   value={form.name}
                   onChange={(e) => {
                     setForm({ ...form, name: e.target.value });
@@ -255,10 +251,11 @@ export default function RegisterPage() {
             <AuthField label="Email" error={emailError} portal="student" softLabel>
               <div className="relative">
                 <input
-                  type="text"
-                  inputMode="email"
+                  type="email"
+                  name="email"
+                  id="email"
                   placeholder="you@example.com"
-                  {...blockAutofillInputProps}
+                  autoComplete="email"
                   value={form.email}
                   onChange={(e) => {
                     setForm({ ...form, email: e.target.value });
@@ -292,10 +289,11 @@ export default function RegisterPage() {
             <AuthField label="Phone number" error={phoneError} portal="student" softLabel>
               <div className="relative">
                 <input
-                  type="text"
-                  inputMode="tel"
+                  type="tel"
+                  name="phone"
+                  id="phone"
                   placeholder="Contact number"
-                  {...blockAutofillInputProps}
+                  autoComplete="tel"
                   value={form.phone}
                   onChange={(e) => {
                     setForm({ ...form, phone: e.target.value });
@@ -318,12 +316,7 @@ export default function RegisterPage() {
                 setForm({ ...form, password });
                 if (passwordError) setPasswordError("");
               }}
-              autoComplete="one-time-code"
-              readOnly
-              onFocus={(e) => e.target.removeAttribute("readonly")}
-              data-lpignore="true"
-              data-1p-ignore="true"
-              data-bwignore="true"
+              autoComplete="new-password"
               className={inputClass(!!passwordError) + " pr-12"}
             />
           </AuthField>

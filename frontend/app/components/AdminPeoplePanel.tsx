@@ -376,6 +376,10 @@ export function AdminPeoplePanel({
       onError("Please enter the teacher's email address.");
       return;
     }
+    if (!teacherForm.email.trim().toLowerCase().endsWith("@gmail.com")) {
+      onError("Teacher email must end with @gmail.com");
+      return;
+    }
     if (!teacherForm.phone.trim()) {
       onError("Please enter contact number.");
       return;
@@ -446,6 +450,10 @@ export function AdminPeoplePanel({
     }
     if (!editForm.email.trim()) {
       onError("Please enter email address.");
+      return;
+    }
+    if (mode === "teachers" && !editForm.email.trim().toLowerCase().endsWith("@gmail.com")) {
+      onError("Teacher email must end with @gmail.com");
       return;
     }
     if (mode === "teachers" && !editForm.phone.trim()) {

@@ -392,7 +392,7 @@ export default function LandingPage() {
           <div className="absolute inset-y-0 left-0 w-24 sm:w-40 bg-gradient-to-r from-slate-50/50 to-transparent z-10 pointer-events-none" />
           <div className="absolute inset-y-0 right-0 w-24 sm:w-40 bg-gradient-to-l from-slate-50/50 to-transparent z-10 pointer-events-none" />
 
-          <div className="flex programs-marquee--left gap-4 md:gap-6 w-max shrink-0 hover:![animation-play-state:paused]">
+          <div className="flex programs-marquee--left gap-4 md:gap-6 w-max shrink-0 hover:![animation-play-state:paused] active:![animation-play-state:paused]">
             {scrollingPrograms.map((program, idx) => (
               <div
                 key={`programs-r1-${program.title}-${idx}`}
@@ -403,7 +403,7 @@ export default function LandingPage() {
             ))}
           </div>
 
-          <div className="flex lg:hidden programs-marquee--right gap-4 md:gap-6 w-max shrink-0 hover:![animation-play-state:paused] mt-8 md:mt-12">
+          <div className="flex lg:hidden programs-marquee--right gap-4 md:gap-6 w-max shrink-0 hover:![animation-play-state:paused] active:![animation-play-state:paused] mt-8 md:mt-12">
             {[...scrollingPrograms].reverse().map((program, idx) => (
               <div
                 key={`programs-r2-${program.title}-${idx}`}
@@ -565,7 +565,7 @@ export default function LandingPage() {
               <div className="absolute inset-y-0 right-0 w-24 sm:w-40 bg-gradient-to-l from-slate-50/50 to-transparent z-10 pointer-events-none" />
 
               {/* Row 1: Right to Left */}
-              <div className="flex animate-scroll-left gap-4 md:gap-6 w-max shrink-0 hover:![animation-play-state:paused]" style={{ animationDuration: '90s' }}>
+              <div className="flex animate-scroll-left gap-4 md:gap-6 w-max shrink-0 hover:![animation-play-state:paused] active:![animation-play-state:paused]" style={{ animationDuration: '90s' }}>
                 {chunkedGallery.map((col, colIdx) => (
                   col.length === 1 ? (
                     <div key={`r1-col-${colIdx}`} className="h-[250px] md:h-[400px] w-[200px] md:w-[320px] shrink-0 rounded-none overflow-hidden shadow-sm relative group/card border border-slate-200">
@@ -602,7 +602,7 @@ export default function LandingPage() {
               </div>
 
               {/* Row 2: Left to Right (Mobile & Tablet Only) */}
-              <div className="flex lg:hidden animate-scroll-right gap-4 md:gap-6 w-max shrink-0 hover:![animation-play-state:paused] mt-8 md:mt-12" style={{ animationDuration: '95s' }}>
+              <div className="flex lg:hidden animate-scroll-right gap-4 md:gap-6 w-max shrink-0 hover:![animation-play-state:paused] active:![animation-play-state:paused] mt-8 md:mt-12" style={{ animationDuration: '95s' }}>
                 {[...chunkedGallery].reverse().map((col, colIdx) => (
                   col.length === 1 ? (
                     <div key={`r2-col-${colIdx}`} className="h-[250px] md:h-[400px] w-[200px] md:w-[320px] shrink-0 rounded-none overflow-hidden shadow-sm relative group/card border border-slate-200">
@@ -709,11 +709,11 @@ export default function LandingPage() {
 
         {displayTestimonials.length > 0 ? (
           <div className="space-y-8 relative">
-            <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-slate-50 to-transparent z-10 pointer-events-none" />
-            <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-slate-50 to-transparent z-10 pointer-events-none" />
+            <div className="hidden md:block absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-slate-50 to-transparent z-10 pointer-events-none" />
+            <div className="hidden md:block absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-slate-50 to-transparent z-10 pointer-events-none" />
 
             <div className="flex overflow-hidden group">
-              <div className="testimonials-marquee testimonials-marquee--left flex gap-6 w-max shrink-0 hover:![animation-play-state:paused] group-hover:![animation-play-state:paused]">
+              <div className="testimonials-marquee testimonials-marquee--left flex gap-6 w-max shrink-0 hover:![animation-play-state:paused] active:![animation-play-state:paused] group-hover:![animation-play-state:paused] group-active:![animation-play-state:paused]">
                 {[...row1Testimonials, ...row1Testimonials, ...row1Testimonials].map((t, idx) => (
                   <TestimonialCard key={`${t.id}-1-${idx}`} testimonial={t} />
                 ))}
@@ -722,7 +722,7 @@ export default function LandingPage() {
 
             {row2Testimonials.length > 0 && (
               <div className="flex overflow-hidden group">
-                <div className="testimonials-marquee testimonials-marquee--right flex gap-6 w-max shrink-0 hover:![animation-play-state:paused] group-hover:![animation-play-state:paused]">
+                <div className="testimonials-marquee testimonials-marquee--right flex gap-6 w-max shrink-0 hover:![animation-play-state:paused] active:![animation-play-state:paused] group-hover:![animation-play-state:paused] group-active:![animation-play-state:paused]">
                   {[...row2Testimonials, ...row2Testimonials, ...row2Testimonials].map((t, idx) => (
                     <TestimonialCard key={`${t.id}-2-${idx}`} testimonial={t} />
                   ))}
