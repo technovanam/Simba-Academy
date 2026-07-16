@@ -748,9 +748,26 @@ export const api = {
       body: JSON.stringify({ audience, targetClass, title }),
     }, token),
 
+  updateDriveAccessRulesBulk: (
+    token: string,
+    items: Array<{ fileId: string; title?: string }>,
+    audience: "BOTH" | "TEACHER" | "STUDENT",
+    targetClass: string | null
+  ) =>
+    request<{ rules: unknown[]; count: number }>("/api/documents/access/bulk", {
+      method: "PUT",
+      body: JSON.stringify({ items, audience, targetClass }),
+    }, token),
+
   revokeDriveAccessRule: (token: string, fileId: string) =>
     request<{ success: boolean; message: string }>(`/api/documents/${fileId}/access`, {
       method: "DELETE",
+    }, token),
+
+  revokeDriveAccessRulesBulk: (token: string, fileIds: string[]) =>
+    request<{ success: boolean; count: number; message: string }>("/api/documents/access/bulk", {
+      method: "DELETE",
+      body: JSON.stringify({ fileIds }),
     }, token),
 
   getDocumentLogs: (token: string) =>

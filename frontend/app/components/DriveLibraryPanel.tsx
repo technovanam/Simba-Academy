@@ -10,11 +10,11 @@ import {
   Search,
   Settings,
   Shield,
-  ShieldX,
   ShieldOff,
   Lock,
   Unlock,
-  AlertTriangle,
+  CheckSquare,
+  Square,
 } from "lucide-react";
 import { api, formatApiError, type DriveItem, type DriveAncestor } from "../lib/api";
 import { DocumentViewerModal } from "./DocumentViewerModal";
@@ -98,9 +98,10 @@ function DriveTableColGroup({ isAdmin }: { isAdmin: boolean }) {
   if (isAdmin) {
     return (
       <colgroup>
-        <col style={{ width: "28%" }} />
-        <col style={{ width: "14%" }} />
-        <col style={{ width: "14%" }} />
+        <col style={{ width: "4%" }} />
+        <col style={{ width: "26%" }} />
+        <col style={{ width: "13%" }} />
+        <col style={{ width: "13%" }} />
         <col style={{ width: "22%" }} />
         <col style={{ width: "22%" }} />
       </colgroup>
@@ -116,10 +117,39 @@ function DriveTableColGroup({ isAdmin }: { isAdmin: boolean }) {
   );
 }
 
-function DriveTableHeader({ isAdmin }: { isAdmin: boolean }) {
+function DriveTableHeader({
+  isAdmin,
+  allSelected,
+  someSelected,
+  onToggleAll,
+}: {
+  isAdmin: boolean;
+  allSelected?: boolean;
+  someSelected?: boolean;
+  onToggleAll?: () => void;
+}) {
   return (
     <thead className="text-slate-500 font-medium text-xs">
       <tr>
+        {isAdmin && (
+          <th className="px-3 py-3 font-semibold">
+            <button
+              type="button"
+              onClick={onToggleAll}
+              className="p-0.5 rounded text-slate-500 hover:text-slate-800 transition"
+              title={allSelected ? "Deselect all" : "Select all"}
+              aria-label={allSelected ? "Deselect all" : "Select all"}
+            >
+              {allSelected ? (
+                <CheckSquare className="w-4 h-4 text-[#8AC926]" />
+              ) : someSelected ? (
+                <CheckSquare className="w-4 h-4 text-slate-400" />
+              ) : (
+                <Square className="w-4 h-4" />
+              )}
+            </button>
+          </th>
+        )}
         <th className="px-4 py-3 font-semibold">Name</th>
         <th className="px-4 py-3 font-semibold">Type</th>
         <th className="px-4 py-3 font-semibold">Date Modified</th>
@@ -185,8 +215,9 @@ export function DriveLibraryPanel({ token, role, classFilter, headerExtras }: Dr
   // Cache to make folder navigation instant
   const cacheRef = useRef<Record<string, { items: DriveItem[]; ancestors: DriveAncestor[] }>>({});
 
-  // Access Rule Modal State
-  const [accessItem, setAccessItem] = useState<DriveItem | null>(null);
+  // Access Rule Modal State — supports single or multi-select
+  const [accessItems, setAccessItems] = useState<DriveItem[]>([]);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [accessForm, setAccessForm] = useState<{
     audiences: ("TEACHER" | "STUDENT")[];
     classes: string[];
@@ -196,7 +227,7 @@ export function DriveLibraryPanel({ token, role, classFilter, headerExtras }: Dr
   });
   const [isSavingAccess, setIsSavingAccess] = useState(false);
 
-  // Revoke confirm state
+  // Revoke confirm state — null | single id | "bulk"
   const [revokeTarget, setRevokeTarget] = useState<string | null>(null);
   const [revokeLoading, setRevokeLoading] = useState(false);
 
@@ -262,7 +293,7 @@ export function DriveLibraryPanel({ token, role, classFilter, headerExtras }: Dr
 
   const handleSaveAccess = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!accessItem || !token) return;
+    if (accessItems.length === 0 || !token) return;
     setIsSavingAccess(true);
     try {
       if (accessForm.audiences.length === 0) {
@@ -279,16 +310,29 @@ export function DriveLibraryPanel({ token, role, classFilter, headerExtras }: Dr
         ? accessForm.classes.join(",") 
         : null;
 
-      await api.updateDriveAccessRule(token, accessItem.id, audience, targetClass, accessItem.name);
+      const ids = accessItems.map((item) => item.id);
+
+      if (accessItems.length === 1) {
+        const item = accessItems[0]!;
+        await api.updateDriveAccessRule(token, item.id, audience, targetClass, item.name);
+      } else {
+        await api.updateDriveAccessRulesBulk(
+          token,
+          accessItems.map((item) => ({ fileId: item.id, title: item.name })),
+          audience,
+          targetClass
+        );
+      }
       
-      // Update local item
-      setItems((prev) => prev.map((item) => 
-        item.id === accessItem.id 
-          ? { ...item, accessRule: { audience, targetClass } }
-          : item
-      ));
-      
-      setAccessItem(null);
+      setItems((prev) =>
+        prev.map((item) =>
+          ids.includes(item.id) ? { ...item, accessRule: { audience, targetClass } } : item
+        )
+      );
+      // Invalidate browse cache so badges stay correct after navigation
+      cacheRef.current = {};
+      setSelectedIds(new Set());
+      setAccessItems([]);
       setActionError("");
     } catch (err) {
       console.error(err);
@@ -298,17 +342,37 @@ export function DriveLibraryPanel({ token, role, classFilter, headerExtras }: Dr
     }
   };
 
-  const handleRevokeAccess = async (fileId: string) => {
+  const handleRevokeAccess = async (fileIdOrBulk: string) => {
     if (!token) return;
     setActionError("");
     setRevokeLoading(true);
     try {
-      await api.revokeDriveAccessRule(token, fileId);
-      setItems((prev) => prev.map((item) => 
-        item.id === fileId 
-          ? { ...item, accessRule: null }
-          : item
-      ));
+      if (fileIdOrBulk === "bulk") {
+        const ids = selectedWithAccess.map((item) => item.id);
+        if (ids.length === 0) {
+          setRevokeTarget(null);
+          setRevokeLoading(false);
+          return;
+        }
+        await api.revokeDriveAccessRulesBulk(token, ids);
+        setItems((prev) =>
+          prev.map((item) => (ids.includes(item.id) ? { ...item, accessRule: null } : item))
+        );
+        setSelectedIds(new Set());
+      } else {
+        await api.revokeDriveAccessRule(token, fileIdOrBulk);
+        setItems((prev) =>
+          prev.map((item) =>
+            item.id === fileIdOrBulk ? { ...item, accessRule: null } : item
+          )
+        );
+        setSelectedIds((prev) => {
+          const next = new Set(prev);
+          next.delete(fileIdOrBulk);
+          return next;
+        });
+      }
+      cacheRef.current = {};
     } catch (err) {
       console.error(err);
       setActionError("Failed to revoke access rule.");
@@ -317,6 +381,41 @@ export function DriveLibraryPanel({ token, role, classFilter, headerExtras }: Dr
       setRevokeTarget(null);
     }
   };
+
+  const openAccessForItems = (targets: DriveItem[]) => {
+    if (targets.length === 0) return;
+    const first = targets[0]!;
+    const aud = first.accessRule?.audience || "BOTH";
+    const tClass = first.accessRule?.targetClass || "";
+    setAccessItems(targets);
+    setAccessForm({
+      audiences: aud === "BOTH" ? ["TEACHER", "STUDENT"] : [aud],
+      classes: tClass ? tClass.split(",") : [],
+    });
+    setActionError("");
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === items.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(items.map((item) => item.id)));
+    }
+  };
+
+  const selectedItems = items.filter((item) => selectedIds.has(item.id));
+  const selectedWithAccess = selectedItems.filter((item) => item.accessRule);
+  const allSelected = items.length > 0 && selectedIds.size === items.length;
+  const someSelected = selectedIds.size > 0 && !allSelected;
 
   const renderAccessBadge = (item: DriveItem) => {
     if (!item.accessRule) {
@@ -356,6 +455,7 @@ export function DriveLibraryPanel({ token, role, classFilter, headerExtras }: Dr
   const handleFolderClick = (folderId: string) => {
     setCurrentFolderId(folderId === "root" ? null : folderId);
     setSearchQuery("");
+    setSelectedIds(new Set());
   };
 
   const isFolder = (mimeType: string) => mimeType === "application/vnd.google-apps.folder";
@@ -421,6 +521,41 @@ export function DriveLibraryPanel({ token, role, classFilter, headerExtras }: Dr
           </div>
         ))}
       </div>
+
+      {role === "ADMIN" && selectedIds.size > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 bg-[#8AC926]/10 border border-[#8AC926]/30 rounded-xl px-3.5 py-2.5 shrink-0">
+          <p className="text-xs font-bold text-slate-800">
+            {selectedIds.size} item{selectedIds.size === 1 ? "" : "s"} selected
+            <button
+              type="button"
+              onClick={() => setSelectedIds(new Set())}
+              className="ml-2 text-[10px] font-extrabold uppercase tracking-wider text-slate-500 hover:text-slate-800"
+            >
+              Clear
+            </button>
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => openAccessForItems(selectedItems)}
+              className="px-3 py-1.5 rounded-lg bg-[#8AC926] text-white text-[10px] font-extrabold uppercase tracking-wider hover:bg-[#78B020] transition flex items-center gap-1.5"
+            >
+              <Shield className="w-3.5 h-3.5" />
+              Grant Access
+            </button>
+            {selectedWithAccess.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setRevokeTarget("bulk")}
+                className="px-3 py-1.5 rounded-lg bg-rose-500 text-white text-[10px] font-extrabold uppercase tracking-wider hover:bg-rose-600 transition flex items-center gap-1.5"
+              >
+                <ShieldOff className="w-3.5 h-3.5" />
+                Revoke Access
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       <AdminPageBody className="flex-1 min-h-0 flex flex-col overflow-hidden">
         {loading ? (
@@ -546,8 +681,22 @@ export function DriveLibraryPanel({ token, role, classFilter, headerExtras }: Dr
                       else if (item.mimeType.includes("google-apps.spreadsheet") || item.mimeType.includes("spreadsheet")) mimeLabel = "Spreadsheet";
 
                       return (
-                        <div key={item.id} className="p-4 bg-white border border-slate-200 rounded-2xl flex flex-col gap-3">
+                        <div key={item.id} className={`p-4 bg-white border rounded-2xl flex flex-col gap-3 ${selectedIds.has(item.id) ? "border-[#8AC926] bg-[#8AC926]/5" : "border-slate-200"}`}>
                           <div className="flex items-start gap-3">
+                            {role === "ADMIN" && (
+                              <button
+                                type="button"
+                                onClick={() => toggleSelect(item.id)}
+                                className="mt-1 shrink-0 text-slate-400 hover:text-slate-700"
+                                aria-label={selectedIds.has(item.id) ? "Deselect" : "Select"}
+                              >
+                                {selectedIds.has(item.id) ? (
+                                  <CheckSquare className="w-5 h-5 text-[#8AC926]" />
+                                ) : (
+                                  <Square className="w-5 h-5" />
+                                )}
+                              </button>
+                            )}
                             {isFolderItem ? (
                               <Folder className="w-10 h-10 text-amber-400 shrink-0 fill-amber-400" />
                             ) : item.mimeType.includes("image") ? (
@@ -597,15 +746,7 @@ export function DriveLibraryPanel({ token, role, classFilter, headerExtras }: Dr
                               <>
                                 <button
                                   type="button"
-                                  onClick={() => {
-                                    const aud = item.accessRule?.audience || "BOTH";
-                                    const tClass = item.accessRule?.targetClass || "";
-                                    setAccessItem(item);
-                                    setAccessForm({
-                                      audiences: aud === "BOTH" ? ["TEACHER", "STUDENT"] : [aud],
-                                      classes: tClass ? tClass.split(",") : [],
-                                    });
-                                  }}
+                                  onClick={() => openAccessForItems([item])}
                                   className={adminActionBtnSettings}
                                   title="Access Settings"
                                 >
@@ -630,12 +771,16 @@ export function DriveLibraryPanel({ token, role, classFilter, headerExtras }: Dr
                   </div>
                 </div>
 
-                {/* Desktop Table View (hidden xl:block) */}
                 <div className="hidden xl:flex flex-col flex-1 min-h-0 overflow-hidden">
                   <div className="overflow-x-auto shrink-0 border-b border-slate-200 bg-slate-50">
                     <table className="w-full text-left text-sm whitespace-nowrap table-fixed">
                       <DriveTableColGroup isAdmin={role === "ADMIN"} />
-                      <DriveTableHeader isAdmin={role === "ADMIN"} />
+                      <DriveTableHeader
+                        isAdmin={role === "ADMIN"}
+                        allSelected={allSelected}
+                        someSelected={someSelected}
+                        onToggleAll={toggleSelectAll}
+                      />
                     </table>
                   </div>
                   <div className="overflow-x-auto flex-1 min-h-0 overflow-y-auto bg-white">
@@ -658,8 +803,26 @@ export function DriveLibraryPanel({ token, role, classFilter, headerExtras }: Dr
                           else if (item.mimeType.includes("google-apps.presentation") || item.mimeType.includes("powerpoint")) mimeLabel = "Presentation";
                           else if (item.mimeType.includes("google-apps.spreadsheet") || item.mimeType.includes("spreadsheet")) mimeLabel = "Spreadsheet";
 
+                          const isSelected = selectedIds.has(item.id);
+
                           return (
-                            <tr key={item.id} className="hover:bg-slate-50/80 transition-colors group">
+                            <tr key={item.id} className={`hover:bg-slate-50/80 transition-colors group ${isSelected ? "bg-[#8AC926]/5" : ""}`}>
+                              {role === "ADMIN" && (
+                                <td className="px-3 py-3 align-middle">
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleSelect(item.id)}
+                                    className="p-0.5 rounded text-slate-400 hover:text-slate-700 transition"
+                                    aria-label={isSelected ? "Deselect" : "Select"}
+                                  >
+                                    {isSelected ? (
+                                      <CheckSquare className="w-4 h-4 text-[#8AC926]" />
+                                    ) : (
+                                      <Square className="w-4 h-4" />
+                                    )}
+                                  </button>
+                                </td>
+                              )}
                               <td className="px-4 py-3 align-middle">
                                 {isFolderItem ? (
                                   <button
@@ -711,16 +874,7 @@ export function DriveLibraryPanel({ token, role, classFilter, headerExtras }: Dr
                                     <>
                                       <button
                                         type="button"
-                                        onClick={() => {
-                                          const aud = item.accessRule?.audience || "BOTH";
-                                          const tClass = item.accessRule?.targetClass || "";
-                                          
-                                          setAccessItem(item);
-                                          setAccessForm({
-                                            audiences: aud === "BOTH" ? ["TEACHER", "STUDENT"] : [aud],
-                                            classes: tClass ? tClass.split(",") : [],
-                                          });
-                                        }}
+                                        onClick={() => openAccessForItems([item])}
                                         className={adminActionBtnSettingsIcon}
                                         title="Access Settings"
                                       >
@@ -777,20 +931,44 @@ export function DriveLibraryPanel({ token, role, classFilter, headerExtras }: Dr
 
       {/* Access Settings Modal */}
       <AdminModal
-        open={!!accessItem}
+        open={accessItems.length > 0}
         onClose={() => {
           if (!isSavingAccess) {
-            setAccessItem(null);
+            setAccessItems([]);
             setActionError("");
           }
         }}
-        title="Access Settings"
+        title={accessItems.length > 1 ? `Access Settings (${accessItems.length} items)` : "Access Settings"}
       >
         <form onSubmit={handleSaveAccess} className="space-y-4">
           {actionError && (
             <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold">
               {actionError}
             </div>
+          )}
+          {accessItems.length > 1 && (
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 max-h-28 overflow-y-auto">
+              <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">
+                Applying to
+              </p>
+              <ul className="space-y-1">
+                {accessItems.map((item) => (
+                  <li key={item.id} className="text-xs font-semibold text-slate-700 truncate flex items-center gap-1.5">
+                    {item.mimeType === "application/vnd.google-apps.folder" ? (
+                      <Folder className="w-3.5 h-3.5 text-amber-400 shrink-0 fill-amber-400" />
+                    ) : (
+                      <FileText className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    )}
+                    {item.name}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {accessItems.length === 1 && (
+            <p className="text-xs font-semibold text-slate-600 truncate">
+              {accessItems[0]?.name}
+            </p>
           )}
           <div>
             <label className="block text-slate-700 font-bold mb-3 text-2xs uppercase tracking-wider">Target Audience</label>
@@ -873,7 +1051,9 @@ export function DriveLibraryPanel({ token, role, classFilter, headerExtras }: Dr
           <div className="flex items-start gap-2 bg-slate-50 p-3 rounded-xl border border-slate-200 mt-2">
             <Shield className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
             <p className="text-xs text-slate-600 font-medium">
-              Access rules apply to this item only. For folders, the rule restricts who can open it, effectively hiding all its contents from restricted users.
+              {accessItems.length > 1
+                ? "The same access rule will be applied to every selected book and folder."
+                : "Access rules apply to this item only. For folders, the rule restricts who can open it, effectively hiding all its contents from restricted users."}
             </p>
           </div>
 
@@ -882,7 +1062,13 @@ export function DriveLibraryPanel({ token, role, classFilter, headerExtras }: Dr
             disabled={isSavingAccess}
             className="w-full py-3 rounded-xl bg-[#8AC926] text-white font-sans font-bold text-xs uppercase hover:bg-[#78B020] transition disabled:opacity-60 flex items-center justify-center gap-2 mt-4"
           >
-            {isSavingAccess ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Access Rule"}
+            {isSavingAccess ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : accessItems.length > 1 ? (
+              `Save Access for ${accessItems.length} Items`
+            ) : (
+              "Save Access Rule"
+            )}
           </button>
         </form>
       </AdminModal>
@@ -898,7 +1084,18 @@ export function DriveLibraryPanel({ token, role, classFilter, headerExtras }: Dr
 
             <h3 className="text-center font-extrabold text-slate-900 text-base mb-1">Revoke Access?</h3>
             <p className="text-center text-xs text-slate-500 font-medium mb-5 leading-relaxed">
-              This will remove the access rule for this item. Teachers and students who currently have access will <span className="font-bold text-rose-600">immediately lose access</span>.
+              {revokeTarget === "bulk" ? (
+                <>
+                  This will remove access rules for{" "}
+                  <span className="font-bold text-rose-600">{selectedWithAccess.length} selected item{selectedWithAccess.length === 1 ? "" : "s"}</span>.
+                  Teachers and students who currently have access will immediately lose access.
+                </>
+              ) : (
+                <>
+                  This will remove the access rule for this item. Teachers and students who currently have access will{" "}
+                  <span className="font-bold text-rose-600">immediately lose access</span>.
+                </>
+              )}
             </p>
 
             <div className="flex gap-2.5">

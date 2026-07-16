@@ -9,6 +9,13 @@ let driveInstance: any = null;
 
 // In-memory cache for folder descendant checks (1 hour TTL)
 const folderAccessCache = new Map<string, { allowed: boolean; expiry: number }>();
+const ancestorCache = new Map<
+  string,
+  {
+    ancestors: Array<{ id: string; name: string; parentId: string | null; mimeType?: string }>;
+    expiry: number;
+  }
+>();
 const CACHE_TTL_MS = 60 * 60 * 1000;
 
 function formatGoogleAuthError(err: unknown): string {
@@ -191,6 +198,11 @@ export async function listItems(folderId?: string | null, search?: string, type?
  * Returns breadcrumb path parents for a given folder.
  */
 export async function getAncestors(folderId: string) {
+  const cached = ancestorCache.get(folderId);
+  if (cached && cached.expiry > Date.now()) {
+    return cached.ancestors;
+  }
+
   const drive = await getDriveClient();
   const rootId = env.GOOGLE_DRIVE_FOLDER_ID;
 
@@ -223,6 +235,7 @@ export async function getAncestors(folderId: string) {
     }
   }
 
+  ancestorCache.set(folderId, { ancestors, expiry: Date.now() + CACHE_TTL_MS });
   return ancestors;
 }
 
@@ -440,22 +453,20 @@ export async function getRecentDocuments() {
   const res = await drive.files.list({
     q: `trashed = false and mimeType != 'application/vnd.google-apps.folder'`,
     orderBy: "createdTime desc",
-    pageSize: 10,
+    pageSize: 40,
     fields: "files(id, name, mimeType, size, createdTime, parents, thumbnailLink)",
   });
 
   const items = res.data.files || [];
-  const filtered: any[] = [];
-  for (const item of items) {
-    if (item.parents && item.parents.length > 0) {
+  const parentChecks = await Promise.all(
+    items.map(async (item: { id?: string | null; parents?: string[] | null; [key: string]: unknown }) => {
+      if (!item.parents || item.parents.length === 0) return null;
       const isAllowed = await checkIsDescendant(item.parents[0]!);
-      if (isAllowed) {
-        filtered.push(item);
-      }
-    }
-  }
+      return isAllowed ? item : null;
+    })
+  );
 
-  return filtered;
+  return parentChecks.filter(Boolean);
 }
 
 const mimeTypeCache = new Map<string, string>();

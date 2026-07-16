@@ -14,7 +14,7 @@ import { PortalToasts } from "../../components/Toast";
 import { PortalSidebarLayout } from "../../components/PortalSidebarLayout";
 import { StudentOutletProvider } from "../../components/student/StudentOutletContext";
 import { FullPortalSkeleton } from "../../components/DashboardSkeleton";
-import { Bell, Book, Compass, Loader2, LogOut, Settings, FolderOpen } from "lucide-react";
+import { Bell, Book, Compass, Settings } from "lucide-react";
 
 const NOTIFICATION_POLL_MS = 12_000;
 
@@ -49,6 +49,7 @@ export default function StudentLayout() {
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const knownNotificationIdsRef = useRef<Set<string>>(new Set());
   const notificationsInitializedRef = useRef(false);
+  const lastUnreadCountRef = useRef(0);
 
   const [driveBooks, setDriveBooks] = useState<DriveItem[]>([]);
   const [driveBooksLoading, setDriveBooksLoading] = useState(false);
@@ -58,25 +59,15 @@ export default function StudentLayout() {
     if (driveBooksFetchedRef.current || driveBooksLoading) return;
     setDriveBooksLoading(true);
     try {
-      const fetchAllFilesRecursively = async (folderId: string | null = null): Promise<DriveItem[]> => {
-        const items = await api.browseDocuments(authToken, folderId);
-        const files = items.filter(
-          (item) => item.mimeType !== "application/vnd.google-apps.folder"
-        );
-        const folders = items.filter(
-          (item) => item.mimeType === "application/vnd.google-apps.folder"
-        );
-
-        const subPromises = folders.map((folder) => fetchAllFilesRecursively(folder.id));
-        const subResults = await Promise.all(subPromises);
-        return [...files, ...subResults.flat()];
-      };
-
-      const fetched = await fetchAllFilesRecursively(null);
-      setDriveBooks(fetched);
+      // One lightweight call instead of recursively crawling every Drive folder.
+      const recent = await api.getRecentDocuments(authToken);
+      const files = recent.filter(
+        (item) => item.mimeType !== "application/vnd.google-apps.folder"
+      );
+      setDriveBooks(files);
       driveBooksFetchedRef.current = true;
     } catch (err) {
-      console.error("Failed to load drive books recursively:", err);
+      console.error("Failed to load recent drive books:", err);
     } finally {
       setDriveBooksLoading(false);
     }
@@ -86,30 +77,30 @@ export default function StudentLayout() {
     if (!token) return;
 
     try {
-      const [countResult, listResult] = await Promise.allSettled([
-        api.getStudentNotificationUnreadCount(token),
-        api.getStudentNotifications(token),
-      ]);
+      const countResult = await api.getStudentNotificationUnreadCount(token);
+      setUnreadNotificationCount(countResult.count);
 
-      if (countResult.status === "fulfilled") {
-        setUnreadNotificationCount(countResult.value.count);
+      // First poll: seed known IDs so we don't toast existing unread as "new".
+      if (!notificationsInitializedRef.current) {
+        const list = await api.getStudentNotifications(token);
+        list.filter((n) => !n.isRead).forEach((n) => knownNotificationIdsRef.current.add(n.id));
+        notificationsInitializedRef.current = true;
+        lastUnreadCountRef.current = countResult.count;
+        return;
       }
 
-      if (listResult.status === "fulfilled") {
-        const unread = listResult.value.filter((n) => !n.isRead);
-
-        if (notificationsInitializedRef.current) {
-          for (const notification of unread) {
-            if (!knownNotificationIdsRef.current.has(notification.id)) {
-              setMessage(notification.message);
-              knownNotificationIdsRef.current.add(notification.id);
-            }
+      // Later polls: only fetch the list when unread count rises.
+      if (countResult.count > lastUnreadCountRef.current) {
+        const list = await api.getStudentNotifications(token);
+        const unread = list.filter((n) => !n.isRead);
+        for (const notification of unread) {
+          if (!knownNotificationIdsRef.current.has(notification.id)) {
+            setMessage(notification.message);
+            knownNotificationIdsRef.current.add(notification.id);
           }
-        } else {
-          unread.forEach((notification) => knownNotificationIdsRef.current.add(notification.id));
-          notificationsInitializedRef.current = true;
         }
       }
+      lastUnreadCountRef.current = countResult.count;
     } catch {
       // Polling is best-effort; avoid spamming errors on transient failures.
     }

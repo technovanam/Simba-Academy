@@ -60,16 +60,22 @@ async function getAllowedFolderIds(user: any, activeClasses: string[]): Promise<
       return teacherMatchesAnyClass(activeClasses, rule.targetClass);
     });
 
-    for (const rule of filteredRules) {
-      try {
-        const ancestors = await getAncestors(rule.fileId);
-        for (const a of ancestors) {
-          allowedFolderIds.add(a.id);
+    const ancestorResults = await Promise.all(
+      filteredRules.map(async (rule) => {
+        try {
+          const ancestors = await getAncestors(rule.fileId);
+          return { fileId: rule.fileId, ancestors };
+        } catch {
+          return { fileId: rule.fileId, ancestors: [] as Awaited<ReturnType<typeof getAncestors>> };
         }
-        allowedFolderIds.add(rule.fileId);
-      } catch (err) {
-        // Skip failed folders
+      })
+    );
+
+    for (const { fileId, ancestors } of ancestorResults) {
+      for (const a of ancestors) {
+        allowedFolderIds.add(a.id);
       }
+      allowedFolderIds.add(fileId);
     }
   } catch (err) {
     console.error("Error gathering allowed folder IDs:", err);
@@ -144,14 +150,20 @@ async function resolveUserActiveClasses(user: any, classQuery?: string): Promise
   return [];
 }
 
-async function hasFolderAccess(fileId: string | null, user: any, classQuery?: string): Promise<boolean> {
+async function hasFolderAccess(
+  fileId: string | null,
+  user: any,
+  classQuery?: string,
+  allowedFolderIdsCache?: Set<string>
+): Promise<boolean> {
   if (user.role === "ADMIN") return true;
   if (!fileId || fileId === "root") return true;
 
   try {
     const activeClasses = await resolveUserActiveClasses(user, classQuery);
 
-    const allowedFolderIds = await getAllowedFolderIds(user, activeClasses);
+    const allowedFolderIds =
+      allowedFolderIdsCache ?? (await getAllowedFolderIds(user, activeClasses));
     if (allowedFolderIds.has(fileId)) {
       return true;
     }
@@ -166,7 +178,13 @@ async function hasFolderAccess(fileId: string | null, user: any, classQuery?: st
 /**
  * Filter items based on user role, class, and the stored DriveAccessRules.
  */
-async function applyAccessControls(items: any[], user: any, folderId: string | null = null, classQuery?: string) {
+async function applyAccessControls(
+  items: any[],
+  user: any,
+  folderId: string | null = null,
+  classQuery?: string,
+  allowedFolderIdsCache?: Set<string>
+) {
   if (items.length === 0) return items;
   
   if (user.role === "ADMIN") {
@@ -191,7 +209,8 @@ async function applyAccessControls(items: any[], user: any, folderId: string | n
 
   const activeClasses = await resolveUserActiveClasses(user, classQuery);
 
-  const allowedFolderIds = await getAllowedFolderIds(user, activeClasses);
+  const allowedFolderIds =
+    allowedFolderIdsCache ?? (await getAllowedFolderIds(user, activeClasses));
 
   const itemIds = items.map((i) => i.id);
   const rules = await prisma.driveAccessRule.findMany({
@@ -262,14 +281,26 @@ router.get("/browse", authenticate, allRoles, async (req, res, next) => {
 
     const classQuery = typeof req.query.class === "string" ? req.query.class : undefined;
 
+    let allowedFolderIdsCache: Set<string> | undefined;
+    if (req.user!.role !== "ADMIN") {
+      const activeClasses = await resolveUserActiveClasses(req.user!, classQuery);
+      allowedFolderIdsCache = await getAllowedFolderIds(req.user!, activeClasses);
+    }
+
     // Verify access to folder hierarchy
-    const allowed = await hasFolderAccess(folderId, req.user!, classQuery);
+    const allowed = await hasFolderAccess(folderId, req.user!, classQuery, allowedFolderIdsCache);
     if (!allowed) {
       throw new AppError("Access denied to this folder", 403);
     }
 
     const items = await listItems(folderId, search, type);
-    const filteredItems = await applyAccessControls(items, req.user!, folderId, classQuery);
+    const filteredItems = await applyAccessControls(
+      items,
+      req.user!,
+      folderId,
+      classQuery,
+      allowedFolderIdsCache
+    );
     res.json(filteredItems);
   } catch (err) {
     next(err);
@@ -528,6 +559,151 @@ router.delete("/:id", authenticate, adminOnly, async (req, res, next) => {
     );
 
     res.json({ success: true, message: "Item deleted successfully" });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * Bulk upsert access rules for multiple files/folders.
+ */
+router.put("/access/bulk", authenticate, adminOnly, async (req, res, next) => {
+  try {
+    const { items, audience, targetClass } = req.body as {
+      items?: Array<{ fileId: string; title?: string }>;
+      audience?: string;
+      targetClass?: string | null;
+    };
+
+    if (!Array.isArray(items) || items.length === 0) {
+      throw new AppError("At least one item is required", 400);
+    }
+    if (items.length > 100) {
+      throw new AppError("You can update at most 100 items at once", 400);
+    }
+
+    const allowedAudiences = ["BOTH", "TEACHER", "STUDENT"];
+    if (!audience || !allowedAudiences.includes(audience)) {
+      throw new AppError("Invalid audience", 400);
+    }
+
+    const uniqueItems = new Map<string, { fileId: string; title?: string }>();
+    for (const item of items) {
+      if (!item?.fileId || typeof item.fileId !== "string") continue;
+      uniqueItems.set(item.fileId, item);
+    }
+    if (uniqueItems.size === 0) {
+      throw new AppError("At least one valid fileId is required", 400);
+    }
+
+    const fileIds = [...uniqueItems.keys()];
+    const existingRules = await prisma.driveAccessRule.findMany({
+      where: { fileId: { in: fileIds } },
+    });
+    const existingById = new Map(existingRules.map((r) => [r.fileId, r]));
+
+    const rules = [];
+    let shouldNotifyStudents = false;
+    let shouldNotifyTeachers = false;
+    let notifyTitle = "Story library items";
+
+    for (const [fileId, item] of uniqueItems) {
+      const existingRule = existingById.get(fileId);
+      const title = item.title || existingRule?.title || "Untitled Document";
+
+      const rule = await prisma.driveAccessRule.upsert({
+        where: { fileId },
+        update: {
+          audience: audience as any,
+          targetClass: targetClass || null,
+          title,
+        },
+        create: {
+          fileId,
+          audience: audience as any,
+          targetClass: targetClass || null,
+          title,
+        },
+      });
+      rules.push(rule);
+
+      const nowHasStudents = audience === "BOTH" || audience === "STUDENT";
+      const didnHaveStudents = !existingRule || existingRule.audience === "TEACHER";
+      const classesChanged = existingRule && existingRule.targetClass !== (targetClass || null);
+      const nowHasTeachers = audience === "BOTH" || audience === "TEACHER";
+      const didnHaveTeachers = !existingRule || existingRule.audience === "STUDENT";
+
+      if (nowHasStudents && (didnHaveStudents || classesChanged)) {
+        shouldNotifyStudents = true;
+        if (uniqueItems.size === 1) notifyTitle = title;
+      }
+      if (nowHasTeachers && (didnHaveTeachers || classesChanged)) {
+        shouldNotifyTeachers = true;
+        if (uniqueItems.size === 1) notifyTitle = title;
+      }
+    }
+
+    if (uniqueItems.size > 1) {
+      notifyTitle = `${uniqueItems.size} story library items`;
+    }
+
+    if (shouldNotifyStudents) {
+      try {
+        await notifyStudentsOfDriveAccess(fileIds[0]!, notifyTitle, targetClass || null);
+      } catch (err) {
+        console.error("Failed to notify students of bulk drive access:", err);
+      }
+    }
+    if (shouldNotifyTeachers) {
+      try {
+        await notifyTeachersOfDriveAccess(notifyTitle, targetClass || null);
+      } catch (err) {
+        console.error("Failed to notify teachers of bulk drive access:", err);
+      }
+    }
+
+    await logActivity(
+      req.user!.userId,
+      "DOCUMENT_ACCESS_BULK_UPDATE",
+      `Updated access for ${rules.length} items to audience: ${audience}, class: ${targetClass || "ALL"}`
+    );
+
+    res.json({ rules, count: rules.length });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * Bulk revoke access rules for multiple files/folders.
+ */
+router.delete("/access/bulk", authenticate, adminOnly, async (req, res, next) => {
+  try {
+    const { fileIds } = req.body as { fileIds?: string[] };
+
+    if (!Array.isArray(fileIds) || fileIds.length === 0) {
+      throw new AppError("At least one fileId is required", 400);
+    }
+    if (fileIds.length > 100) {
+      throw new AppError("You can revoke at most 100 items at once", 400);
+    }
+
+    const uniqueIds = [...new Set(fileIds.filter((id) => typeof id === "string" && id.length > 0))];
+    if (uniqueIds.length === 0) {
+      throw new AppError("At least one valid fileId is required", 400);
+    }
+
+    const result = await prisma.driveAccessRule.deleteMany({
+      where: { fileId: { in: uniqueIds } },
+    });
+
+    await logActivity(
+      req.user!.userId,
+      "DOCUMENT_ACCESS_BULK_REVOKE",
+      `Revoked access for ${result.count} items`
+    );
+
+    res.json({ success: true, count: result.count, message: "Access rules removed successfully" });
   } catch (err) {
     next(err);
   }

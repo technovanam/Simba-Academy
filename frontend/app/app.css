@@ -35,6 +35,15 @@ body {
   }
 }
 
+/* Disable text selection and callouts on mobile and tablet for testimonials only */
+@media (max-width: 1023px) {
+  .testimonials-section {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+}
+
 #root,
 body > * {
   max-width: 100%;
@@ -744,19 +753,19 @@ html:has(.portal-app-shell) body {
 
 @media (max-width: 767px) {
   .programs-section {
-    --programs-marquee-duration: 120s;
+    --programs-marquee-duration: 300s;
   }
 }
 
 @media (min-width: 640px) and (max-width: 1023px) {
   .programs-section {
-    --programs-marquee-duration: 90s;
+    --programs-marquee-duration: 150s;
   }
 }
 
 @media (max-width: 767px) {
   .testimonials-section {
-    --testimonials-marquee-duration: 100s;
+    --testimonials-marquee-duration: 700s;
   }
 }
 

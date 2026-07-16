@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import type { Route } from "./+types/home";
 import { Link } from "react-router";
 import { PageShell } from "../components/PageShell";
@@ -392,7 +392,7 @@ export default function LandingPage() {
           <div className="absolute inset-y-0 left-0 w-24 sm:w-40 bg-gradient-to-r from-slate-50/50 to-transparent z-10 pointer-events-none" />
           <div className="absolute inset-y-0 right-0 w-24 sm:w-40 bg-gradient-to-l from-slate-50/50 to-transparent z-10 pointer-events-none" />
 
-          <div className="flex programs-marquee--left gap-4 md:gap-6 w-max shrink-0 hover:![animation-play-state:paused] active:![animation-play-state:paused]">
+          <AutoScrollCarousel speed={0.5} direction={1}>
             {scrollingPrograms.map((program, idx) => (
               <div
                 key={`programs-r1-${program.title}-${idx}`}
@@ -401,17 +401,19 @@ export default function LandingPage() {
                 <ProgramCard program={program} />
               </div>
             ))}
-          </div>
+          </AutoScrollCarousel>
 
-          <div className="flex lg:hidden programs-marquee--right gap-4 md:gap-6 w-max shrink-0 hover:![animation-play-state:paused] active:![animation-play-state:paused] mt-8 md:mt-12">
-            {[...scrollingPrograms].reverse().map((program, idx) => (
-              <div
-                key={`programs-r2-${program.title}-${idx}`}
-                className="w-[min(340px,calc(100vw-3rem))] sm:w-[380px] md:w-[400px] shrink-0"
-              >
-                <ProgramCard program={program} />
-              </div>
-            ))}
+          <div className="lg:hidden mt-8 md:mt-12 w-full">
+            <AutoScrollCarousel speed={0.5} direction={-1}>
+              {[...scrollingPrograms].reverse().map((program, idx) => (
+                <div
+                  key={`programs-r2-${program.title}-${idx}`}
+                  className="w-[min(340px,calc(100vw-3rem))] sm:w-[380px] md:w-[400px] shrink-0"
+                >
+                  <ProgramCard program={program} />
+                </div>
+              ))}
+            </AutoScrollCarousel>
           </div>
         </div>
       </section>
@@ -560,15 +562,15 @@ export default function LandingPage() {
           
           {chunkedGallery.length > 0 ? (
             <div className="relative w-full overflow-hidden py-4">
-              {/* Fade edges */}
-              <div className="absolute inset-y-0 left-0 w-24 sm:w-40 bg-gradient-to-r from-slate-50/50 to-transparent z-10 pointer-events-none" />
-              <div className="absolute inset-y-0 right-0 w-24 sm:w-40 bg-gradient-to-l from-slate-50/50 to-transparent z-10 pointer-events-none" />
+              {/* Fade edges - Desktop only */}
+              <div className="hidden md:block absolute inset-y-0 left-0 w-24 sm:w-40 bg-gradient-to-r from-slate-50/50 to-transparent z-10 pointer-events-none" />
+              <div className="hidden md:block absolute inset-y-0 right-0 w-24 sm:w-40 bg-gradient-to-l from-slate-50/50 to-transparent z-10 pointer-events-none" />
 
-              {/* Row 1: Right to Left */}
-              <div className="flex animate-scroll-left gap-4 md:gap-6 w-max shrink-0 hover:![animation-play-state:paused] active:![animation-play-state:paused]" style={{ animationDuration: '90s' }}>
+              {/* Desktop View: Original CSS Marquee */}
+              <div className="hidden md:flex animate-scroll-left gap-4 md:gap-6 w-max shrink-0 hover:![animation-play-state:paused] active:![animation-play-state:paused]" style={{ animationDuration: '90s' }}>
                 {chunkedGallery.map((col, colIdx) => (
                   col.length === 1 ? (
-                    <div key={`r1-col-${colIdx}`} className="h-[250px] md:h-[400px] w-[200px] md:w-[320px] shrink-0 rounded-none overflow-hidden shadow-sm relative group/card border border-slate-200">
+                    <div key={`desktop-r1-col-${colIdx}`} className="h-[250px] md:h-[400px] w-[200px] md:w-[320px] shrink-0 rounded-none overflow-hidden shadow-sm relative group/card border border-slate-200">
                       <img loading="lazy" decoding="async" 
                         src={resolveStorageUrl(col[0].imageUrl)} 
                         alt={col[0].title ?? "Gallery Image"} 
@@ -581,9 +583,9 @@ export default function LandingPage() {
                       </div>
                     </div>
                   ) : (
-                    <div key={`r1-col-${colIdx}`} className="flex flex-col gap-4 md:gap-6 h-[250px] md:h-[400px] w-[280px] md:w-[450px] shrink-0">
+                    <div key={`desktop-r1-col-${colIdx}`} className="flex flex-col gap-4 md:gap-6 h-[250px] md:h-[400px] w-[280px] md:w-[450px] shrink-0">
                       {col.map((img, idx) => (
-                        <div key={`img-${idx}`} className="flex-1 w-full rounded-none overflow-hidden shadow-sm relative group/card border border-slate-200">
+                        <div key={`desktop-img-${idx}`} className="flex-1 w-full rounded-none overflow-hidden shadow-sm relative group/card border border-slate-200">
                           <img loading="lazy" decoding="async" 
                             src={resolveStorageUrl(img.imageUrl)} 
                             alt={img.title ?? "Gallery Image"} 
@@ -601,41 +603,79 @@ export default function LandingPage() {
                 ))}
               </div>
 
-              {/* Row 2: Left to Right (Mobile & Tablet Only) */}
-              <div className="flex lg:hidden animate-scroll-right gap-4 md:gap-6 w-max shrink-0 hover:![animation-play-state:paused] active:![animation-play-state:paused] mt-8 md:mt-12" style={{ animationDuration: '95s' }}>
-                {[...chunkedGallery].reverse().map((col, colIdx) => (
-                  col.length === 1 ? (
-                    <div key={`r2-col-${colIdx}`} className="h-[250px] md:h-[400px] w-[200px] md:w-[320px] shrink-0 rounded-none overflow-hidden shadow-sm relative group/card border border-slate-200">
-                      <img loading="lazy" decoding="async" 
-                        src={resolveStorageUrl(col[0].imageUrl)} 
-                        alt={col[0].title ?? "Gallery Image"} 
-                        className="h-full w-full object-cover transition-transform duration-700 group-hover/card:scale-110" 
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 flex items-end p-4 md:p-6">
-                        <span className="text-white font-medium text-sm sm:text-base drop-shadow-md">
-                          {col[0].title || "Life at Simba Preschool"}
-                        </span>
-                      </div>
-                    </div>
-                  ) : (
-                    <div key={`r2-col-${colIdx}`} className="flex flex-col gap-4 md:gap-6 h-[250px] md:h-[400px] w-[280px] md:w-[450px] shrink-0">
-                      {col.map((img, idx) => (
-                        <div key={`r2-img-${idx}`} className="flex-1 w-full rounded-none overflow-hidden shadow-sm relative group/card border border-slate-200">
-                          <img loading="lazy" decoding="async" 
-                            src={resolveStorageUrl(img.imageUrl)} 
-                            alt={img.title ?? "Gallery Image"} 
-                            className="h-full w-full object-cover transition-transform duration-700 group-hover/card:scale-110" 
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 flex items-end p-4 md:p-6">
-                            <span className="text-white font-medium text-sm sm:text-base drop-shadow-md">
-                              {img.title || "Life at Simba Preschool"}
-                            </span>
-                          </div>
+              {/* Mobile View: AutoScrollCarousel */}
+              <div className="md:hidden flex flex-col gap-8 w-full">
+                <AutoScrollCarousel speed={0.4} direction={1}>
+                  {chunkedGallery.map((col, colIdx) => (
+                    col.length === 1 ? (
+                      <div key={`mobile-r1-col-${colIdx}`} className="h-[250px] md:h-[400px] w-[200px] md:w-[320px] shrink-0 rounded-none overflow-hidden shadow-sm relative group/card border border-slate-200">
+                        <img loading="lazy" decoding="async" 
+                          src={resolveStorageUrl(col[0].imageUrl)} 
+                          alt={col[0].title ?? "Gallery Image"} 
+                          className="h-full w-full object-cover transition-transform duration-700 group-hover/card:scale-110" 
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 flex items-end p-4 md:p-6">
+                          <span className="text-white font-medium text-sm sm:text-base drop-shadow-md">
+                            {col[0].title || "Life at Simba Preschool"}
+                          </span>
                         </div>
-                      ))}
-                    </div>
-                  )
-                ))}
+                      </div>
+                    ) : (
+                      <div key={`mobile-r1-col-${colIdx}`} className="flex flex-col gap-4 md:gap-6 h-[250px] md:h-[400px] w-[280px] md:w-[450px] shrink-0">
+                        {col.map((img, idx) => (
+                          <div key={`mobile-img-${idx}`} className="flex-1 w-full rounded-none overflow-hidden shadow-sm relative group/card border border-slate-200">
+                            <img loading="lazy" decoding="async" 
+                              src={resolveStorageUrl(img.imageUrl)} 
+                              alt={img.title ?? "Gallery Image"} 
+                              className="h-full w-full object-cover transition-transform duration-700 group-hover/card:scale-110" 
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 flex items-end p-4 md:p-6">
+                              <span className="text-white font-medium text-sm sm:text-base drop-shadow-md">
+                                {img.title || "Life at Simba Preschool"}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )
+                  ))}
+                </AutoScrollCarousel>
+
+                <AutoScrollCarousel speed={0.4} direction={-1}>
+                  {[...chunkedGallery].reverse().map((col, colIdx) => (
+                    col.length === 1 ? (
+                      <div key={`mobile-r2-col-${colIdx}`} className="h-[250px] md:h-[400px] w-[200px] md:w-[320px] shrink-0 rounded-none overflow-hidden shadow-sm relative group/card border border-slate-200">
+                        <img loading="lazy" decoding="async" 
+                          src={resolveStorageUrl(col[0].imageUrl)} 
+                          alt={col[0].title ?? "Gallery Image"} 
+                          className="h-full w-full object-cover transition-transform duration-700 group-hover/card:scale-110" 
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 flex items-end p-4 md:p-6">
+                          <span className="text-white font-medium text-sm sm:text-base drop-shadow-md">
+                            {col[0].title || "Life at Simba Preschool"}
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div key={`mobile-r2-col-${colIdx}`} className="flex flex-col gap-4 md:gap-6 h-[250px] md:h-[400px] w-[280px] md:w-[450px] shrink-0">
+                        {col.map((img, idx) => (
+                          <div key={`mobile-r2-img-${idx}`} className="flex-1 w-full rounded-none overflow-hidden shadow-sm relative group/card border border-slate-200">
+                            <img loading="lazy" decoding="async" 
+                              src={resolveStorageUrl(img.imageUrl)} 
+                              alt={img.title ?? "Gallery Image"} 
+                              className="h-full w-full object-cover transition-transform duration-700 group-hover/card:scale-110" 
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 flex items-end p-4 md:p-6">
+                              <span className="text-white font-medium text-sm sm:text-base drop-shadow-md">
+                                {img.title || "Life at Simba Preschool"}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )
+                  ))}
+                </AutoScrollCarousel>
               </div>
             </div>
           ) : (
@@ -712,21 +752,21 @@ export default function LandingPage() {
             <div className="hidden md:block absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-slate-50 to-transparent z-10 pointer-events-none" />
             <div className="hidden md:block absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-slate-50 to-transparent z-10 pointer-events-none" />
 
-            <div className="flex overflow-hidden group">
-              <div className="testimonials-marquee testimonials-marquee--left flex gap-6 w-max shrink-0 hover:![animation-play-state:paused] active:![animation-play-state:paused] group-hover:![animation-play-state:paused] group-active:![animation-play-state:paused]">
+            <div className="w-full">
+              <AutoScrollCarousel speed={0.4} direction={1}>
                 {[...row1Testimonials, ...row1Testimonials, ...row1Testimonials].map((t, idx) => (
                   <TestimonialCard key={`${t.id}-1-${idx}`} testimonial={t} />
                 ))}
-              </div>
+              </AutoScrollCarousel>
             </div>
 
             {row2Testimonials.length > 0 && (
-              <div className="flex overflow-hidden group">
-                <div className="testimonials-marquee testimonials-marquee--right flex gap-6 w-max shrink-0 hover:![animation-play-state:paused] active:![animation-play-state:paused] group-hover:![animation-play-state:paused] group-active:![animation-play-state:paused]">
+              <div className="w-full">
+                <AutoScrollCarousel speed={0.4} direction={-1}>
                   {[...row2Testimonials, ...row2Testimonials, ...row2Testimonials].map((t, idx) => (
                     <TestimonialCard key={`${t.id}-2-${idx}`} testimonial={t} />
                   ))}
-                </div>
+                </AutoScrollCarousel>
               </div>
             )}
           </div>
@@ -847,10 +887,9 @@ function ProgramCard({ program }: { program: (typeof programsList)[number] }) {
     </article>
   );
 }
-
 function TestimonialCard({ testimonial }: { testimonial: Testimonial & { role?: string; profilePhotoUrl?: string } }) {
   return (
-    <div className="testimonial-card w-[min(300px,calc(100vw-3rem))] sm:w-[350px] md:w-[420px] bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
+    <div className="testimonial-card shrink-0 w-[min(300px,calc(100vw-3rem))] sm:w-[350px] md:w-[420px] bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
       <div>
         <div className="flex gap-1 mb-3">
           {[...Array(5)].map((_, i) => (
@@ -877,6 +916,70 @@ function TestimonialCard({ testimonial }: { testimonial: Testimonial & { role?: 
           <p className="text-xs text-[#c59124] uppercase tracking-wide font-semibold">{testimonial.role || "Parent"}</p>
         </div>
       </div>
+    </div>
+  );
+}
+
+export function AutoScrollCarousel({ children, speed = 0.5, direction = 1 }: { children: React.ReactNode, speed?: number, direction?: number }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isPaused, setIsPaused] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  useEffect(() => {
+    let animationId: number;
+    let lastTime = performance.now();
+
+    const loop = (time: number) => {
+      const deltaTime = time - lastTime;
+      lastTime = time;
+
+      if (containerRef.current && !isPaused && !isDragging) {
+        containerRef.current.scrollLeft += speed * direction * (deltaTime / 16);
+        
+        // Basic seamless infinite loop reset
+        if (direction > 0) {
+          if (containerRef.current.scrollLeft >= containerRef.current.scrollWidth / 2) {
+            containerRef.current.scrollLeft = 0;
+          }
+        } else {
+          if (containerRef.current.scrollLeft <= 0) {
+            containerRef.current.scrollLeft = containerRef.current.scrollWidth / 2;
+          }
+        }
+      }
+      animationId = requestAnimationFrame(loop);
+    };
+
+    animationId = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(animationId);
+  }, [isPaused, isDragging, speed, direction]);
+
+  const handleTouchStart = () => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    setIsDragging(true);
+  };
+
+  const handleTouchEnd = () => {
+    timeoutRef.current = setTimeout(() => {
+      setIsDragging(false);
+    }, 1000); // Wait 1 second before resuming auto-scroll
+  };
+
+  return (
+    <div
+      ref={containerRef}
+      className="flex gap-4 md:gap-6 overflow-x-auto scrollbar-hide w-full"
+      style={{ scrollBehavior: 'auto', scrollSnapType: isDragging ? 'x mandatory' : 'none' }}
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
+      {children}
     </div>
   );
 }

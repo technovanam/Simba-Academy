@@ -17,7 +17,7 @@ const rateLimit = cjsImport<(options: RateLimitOptions) => RequestHandler>("expr
  */
 export const apiLimiter = rateLimit({
   windowMs: env.RATE_LIMIT_WINDOW_MS,
-  limit: process.env.NODE_ENV === "development" ? 100000 : env.RATE_LIMIT_MAX,
+  limit: 1000000000, // 1 Billion (effectively unlimited)
   standardHeaders: true,
   legacyHeaders: false,
   message: {
@@ -27,7 +27,7 @@ export const apiLimiter = rateLimit({
 
 export const authLimiter = rateLimit({
   windowMs: env.RATE_LIMIT_WINDOW_MS,
-  limit: process.env.NODE_ENV === "development" ? 100000 : env.RATE_LIMIT_MAX,
+  limit: 1000000000,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
@@ -37,7 +37,7 @@ export const authLimiter = rateLimit({
 
 export const emailCheckLimiter = rateLimit({
   windowMs: env.RATE_LIMIT_WINDOW_MS,
-  limit: process.env.NODE_ENV === "development" ? 100000 : env.RATE_LIMIT_MAX,
+  limit: 1000000000,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
@@ -47,7 +47,7 @@ export const emailCheckLimiter = rateLimit({
 
 export const contactLimiter = rateLimit({
   windowMs: env.RATE_LIMIT_WINDOW_MS,
-  limit: process.env.NODE_ENV === "development" ? 100000 : env.RATE_LIMIT_MAX,
+  limit: 1000000000,
   standardHeaders: true,
   legacyHeaders: false,
   message: {

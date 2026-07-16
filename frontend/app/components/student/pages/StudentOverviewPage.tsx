@@ -55,8 +55,6 @@ export function StudentOverviewPage() {
           saveSession(token, activeProfile);
         }
 
-        await loadDriveBooks(token);
-
         if (paymentsResult.status === "fulfilled") {
           setPayments(paymentsResult.value);
           if (PAYMENTS_ENABLED) {
@@ -67,6 +65,9 @@ export function StudentOverviewPage() {
             }
           }
         }
+
+        // Load library preview in the background — do not block the dashboard.
+        void loadDriveBooks(token);
       } catch (err) {
         console.error("Student dashboard load error:", err);
         if (err instanceof ApiError && err.status === 401) {
@@ -104,7 +105,8 @@ export function StudentOverviewPage() {
 
   const accountActive = successfulPayments.length > 0 || !PAYMENTS_ENABLED;
 
-  const isDataLoading = (loading && !profile) || (driveBooksLoading && driveBooks.length === 0);
+  // Show the dashboard as soon as profile is ready; library fills in asynchronously.
+  const isDataLoading = loading && !profile;
 
   if (isDataLoading) return <StudentTabLoader />;
 
@@ -143,7 +145,9 @@ export function StudentOverviewPage() {
                   Available for your class
                 </span>
                 <h3 className={portalHeroMetricClass}>
-                  {classBooks.length} Book{classBooks.length === 1 ? "" : "s"}
+                  {driveBooksLoading && classBooks.length === 0
+                    ? "…"
+                    : `${classBooks.length}${classBooks.length >= 40 ? "+" : ""} Book${classBooks.length === 1 ? "" : "s"}`}
                 </h3>
               </div>
               <div className="bg-white rounded-xl p-2.5 border border-orange-100 flex items-center gap-2">
@@ -242,7 +246,13 @@ export function StudentOverviewPage() {
           </div>
 
           <div className="space-y-2 flex-1 min-h-0 flex flex-col">
-            {recentBooks.length === 0 ? (
+            {driveBooksLoading && recentBooks.length === 0 ? (
+              <div className="flex-1 flex items-center justify-center min-h-[8rem]">
+                <div className="bg-slate-50 rounded-xl p-6 border border-slate-200 text-xs text-center text-slate-600 font-semibold w-full">
+                  Loading recent books…
+                </div>
+              </div>
+            ) : recentBooks.length === 0 ? (
               <div className="flex-1 flex items-center justify-center min-h-[8rem]">
                 <div className="bg-slate-50 rounded-xl p-6 border border-slate-200 text-xs text-center text-slate-600 font-semibold w-full">
                   No story books for your class yet.
